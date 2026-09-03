@@ -31,6 +31,9 @@ def manifest_payload(revision: int, output: Path, protocol_dir: Path) -> dict:
         "path": str(output),
         "sha256": sha256_file(output),
         "protocol_dir": str(protocol_dir),
+        # Record the exact ordered protocol sequence this fingerprint was built from, so a
+        # later registry change can never make this revision's identity ambiguous.
+        "protocol_names": list(PROTOCOL_NAMES),
         "protocol_fingerprint": protocol_fingerprint(protocol_dir),
         "protocol": {name: sha256_file(protocol_dir / name) for name in PROTOCOL_NAMES},
     }
@@ -86,7 +89,9 @@ def main() -> int:
     protocol_dir = revision_root / "protocol"
     output = revision_root / "WORKER_RULES.md"
     manifest_path = revision_root / "MANIFEST.json"
-    required_existing = [output, manifest_path, *[protocol_dir / name for name in PROTOCOL_NAMES]]
+    # Reuse is decided by the revision's own recorded manifest, not by the current registry:
+    # an existing revision may legitimately predate protocol entries added since.
+    required_existing = [output, manifest_path]
     if revision_root.exists():
         if args.reuse_existing and all(path.is_file() for path in required_existing):
             try:
