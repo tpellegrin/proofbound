@@ -6,22 +6,33 @@
 ## 0. Architecture baseline and provenance
 
 ```text
-Original upstream commit:        unknown  (see note below)
-Upstream version identifier:     v15.5.5  (newest CHANGELOG.md entry; not a commit SHA)
-Current project baseline commit: c292eb512113415499211738a8366923f5276eef
+Project:                         Proofbound  (github.com/tpellegrin/proofbound)
+Original DSD upstream commit:    unknown  (see note below)
+Inherited DSD version:           v15.5.5  (newest CHANGELOG.md entry; not a commit SHA)
+
+Imported project baseline:       c292eb512113415499211738a8366923f5276eef
   branch:                        main
   subject:                       chore: bootstrap project from deepseek-and-destroy
   tag / git describe:            no tags; describe -> c292eb5
   working tree before doc work:  clean (only untracked path introduced was docs/)
 
-Architecture validation environment
-  Exploration / slice simulation: Python 3.9.6 (system python3, macOS/darwin 24.6.0)
-  Suite baseline measured on:     Python 3.10.14, 3.12.5, 3.13.14, 3.14.5
-  Canonical test command:         python3 -m unittest discover -s tests -t .
-  Inherited baseline test count:  82  (green on 3.10+)
-  Post-M0 test count:             95
+M0 implementation baseline:      6e30b6574da421641d8b10ca63f80bb07b87b4f8
+  commits:                       acd1ad1 test: add canonical test entrypoint
+                                 d8c63d1 fix: verify worker-rules snapshots against their
+                                         recorded protocol identity
+                                 1eb8b72 ci: protect the supported Python baseline
+                                 6e30b65 docs: establish Proofbound identity and the
+                                         architecture baseline
+  every commit independently green
 
-Architecture validation was performed against this exact source revision.
+Validation environment
+  Suite verified on:              Python 3.10.14, 3.12.5, 3.13.14, 3.14.5
+  Canonical test command:         python3 -m unittest discover -s tests -t .
+  Inherited baseline test count:  82   (green on 3.10+, unmodified)
+  Post-M0:                        98   (82 + 16)
+  Post-M1:                        111  (82 + 16 + 13)
+
+Architecture validation was performed against the imported project baseline.
 ```
 
 **Why the upstream commit is unknown.** The repository's Git history was reinitialized at bootstrap:
@@ -151,11 +162,25 @@ behavior, so it is new coverage rather than characterization; it moves to M1's t
 
 ### M0 outcome
 
-95 tests green on Python 3.10, 3.12, 3.13 and 3.14 via the canonical command. Production diff is two
+98 tests green on Python 3.10, 3.12, 3.13 and 3.14 via the canonical command. Production diff is two
 files. Adding two roles to the registry now produces zero test failures, which is the precondition M1
 needs.
 
-## 4. M1 — Reflection vertical slice
+**Pre-commit audit addition.** Reviewing M0 as an outside PR surfaced one uncovered property rather than a
+code defect. M0 narrowed verification from "every *current* protocol file is present and matching" to
+"every *recorded* protocol file is present and matching". What makes that safe is a compensating control
+elsewhere: launch authority is resolved from the exact snapshot, so a role added after a snapshot was
+frozen fails loudly with `missing launch authority` rather than launching without its protocol. That
+control was untested, and it is directly load-bearing for M1. Three regression tests were added (16 total
+in the module): the compensating control itself, `--reuse-existing` on a historical revision, and refusal
+to reuse a tampered one. No production change was required.
+
+The CI workflow was also parsed mechanically with the system Ruby YAML library — no project dependency
+added. It is structurally valid. Note that a YAML 1.1 parser reads the bare `on:` key as the boolean
+`true`; GitHub Actions uses YAML 1.2 semantics where it is the string `on`, so the idiomatic unquoted form
+is correct and was kept.
+
+## 4. M1 — Reflection vertical slice  *(IMPLEMENTED)*
 
 **M1.1 — Role registry.** *File:* `scripts/_roles.py`. **Append** `spec-author` and `spec-reflector` to
 `ROLE_SKILLS` (**append-only**: v2 manifests recorded no order, so M0.5 reconstructs theirs from the
@@ -226,6 +251,43 @@ prepared worker-rules revision; task `spec/CH-001-proposal`, contract `r0001` wh
 
 **"M1 complete" means** steps 1–12 pass, the suite is green in CI, and the orchestrator never read the
 proposal's content to accept it — only gate JSON and a bounded surface.
+
+### M1 outcome  *(implemented and validated)*
+
+All twelve steps were executed end to end against a scratch git project with a fake `opencode` worker, and
+are additionally pinned as tests in `tests/test_m1_spec_reflection_slice.py` (13 tests). Observed
+enforcement, all of it inherited:
+
+| Step | Observed |
+|---|---|
+| 1–2 | `spec-author-1` wrote `specs/CH-001/proposal.md`; gate `integrity_ok: true` |
+| 3 | author's own gate → *recorded project mutation requires a fresh independent-review integrity gate* |
+| 4–5 | `spec-reflector-1` reserved with `writes_project: false`; gate clean |
+| 6 | acceptance succeeded; task `accepted`; evidence bound to `spec-reflector-1`; `check_state` OK |
+| 7–8 | findings routed via `--input` into `spec-author-2`; `contracts/` still holds only `r0001.md` |
+| 9 | stale reflector → *fresh independent-review requirement violated: accepted review predates later project mutation in spec-author-2* |
+| 10 | `spec-reflector-2` accepted |
+| 11 | stray write → `WRITE-RESTRICTION: 1 path(s) outside explicit Allowed source changes: src.py` |
+| 12 | reflector mutation → `READONLY-SCOPE-MOVED: 1 project path(s)` |
+
+**Production change:** 18 inserted / 4 deleted lines across `scripts/_roles.py` and `scripts/dsd_state.py`,
+plus two role protocol files. No new helper, no new state, no new artifact format, no change to the attempt
+lifecycle.
+
+**Compatibility, verified with a genuine pre-M0 artifact.** A v2 manifest written by the bootstrap code at
+`c292eb5` (11 protocol entries) verifies under the 13-role M1 registry; inherited roles still launch from
+it; M1 roles correctly refuse with `missing launch authority`; tampering is still rejected.
+
+**Architectural refinement forced by implementation.** Independent-review *capability* is shareable and
+mechanical; review *purpose* is doctrinal. A `reviewer` gate will satisfy a spec mutation and a
+`spec-reflector` gate an implementation mutation, because enforcing which review a task warrants would
+require Python to classify task semantics. The capability set stays narrow — `evidence-clerk` and other
+read-only roles do not qualify, and a second `spec-author` attempt never does. RFC §9.1 was amended;
+`tests/test_m1_spec_reflection_slice.py` pins all three facts.
+
+**Deferred to M2 as planned:** `dsd_spec.py`, change/freeze manifests, the artifact DAG, typed staleness,
+task↔freeze binding, cross-artifact consistency, provider/model routing, human gates, worktrees, and any
+DSD→Proofbound internal migration. M1 operates on one bounded artifact under one contract.
 
 ## 6. M2 and later (coarse)
 

@@ -643,6 +643,15 @@ content is correctly not a mutation and does not invalidate a prior reflection (
 | Capability | Project read-only (`ALWAYS_READ_ONLY_ROLES`) | Project read-only (already) |
 | Repair path | New `spec-author` revision, then fresh reflection | `fixer`, then fresh `reviewer` |
 
+**Capability is shared; purpose is not — and only the first is mechanical.** M1 implementation
+established this precisely: both roles carry independent-review *capability*, so at the acceptance layer
+they are interchangeable (a `reviewer` gate will satisfy a spec mutation and a `spec-reflector` gate will
+satisfy an implementation mutation). That is deliberate, not an oversight. Enforcing *which* review a task
+warrants would require Python to classify task semantics, which invariant I1 forbids; role appropriateness
+therefore stays a parent decision, exactly as it already is for every other role. What keeps the two
+distinct is doctrine: each attempt loads exactly one role protocol, and the parent chooses which. The
+capability set is deliberately narrow — other read-only roles, `evidence-clerk` included, do not qualify.
+
 They are separate roles because their *doctrine* differs, not merely their inputs. Collapsing them would
 force one skill file to carry both postures, violating I7's "exactly one specialist role" economy and
 blunting both.
@@ -1594,16 +1603,23 @@ checkout.** Worktrees remain a documented later extension point and are out of s
 | `spec-author` / `spec-reflector` roles and skills | 3 — project-specific |
 | Change manifest, freeze, contract spec binding | 3 — project-specific |
 
-### 25.4 M0 outcome (post-validation)
+### 25.4 M0 and M1 outcomes (post-validation)
 
-M0 has since been implemented against this baseline; the implementation plan §0 and §3 are authoritative
-for what was built. Two findings in §25.2 were superseded by that work and are corrected here:
+M0 and M1 have since been implemented against this baseline; the implementation plan §0, §3 and §4 are
+authoritative for what was built. Two findings in §25.2 were superseded by M0 and are corrected here:
 
 - **X5 (test blast radius)** was a *symptom*, not a separate problem. After the historical-snapshot fix,
   adding two roles causes **zero** test failures, so the planned fixture-derivation change was dropped.
 - **The interpreter claim in §1** conflated the development machine's system `python3` (3.9.6) with the
   supported interpreter. The inherited suite is 82 tests green and unmodified on Python 3.10–3.14; the
   supported minimum is now declared ≥3.10 and no test module needed repair.
+
+**M1 confirmed the central thesis at a smaller cost than this RFC predicted.** The production change was
+18 inserted and 4 deleted lines across `scripts/_roles.py` and `scripts/dsd_state.py`, plus two role
+protocol files. Every rejection in the 12-step acceptance scenario — self-acceptance, stale reflection,
+mutating reflector, stray author write — came from inherited DSD enforcement with no Proofbound-specific
+check. The one architectural refinement it forced is recorded in §9.1: independent-review *capability* is
+shareable and mechanical, while review *purpose* is doctrinal and stays a parent role choice.
 
 ### 25.5 Unresolved architectural questions
 
