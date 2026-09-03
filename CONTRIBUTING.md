@@ -41,4 +41,8 @@ That is the whole suite and the exact command CI runs
 - **Python proves objective facts only.** Helpers must not interpret worker prose or decide
   engineering outcomes; that boundary is enforced by
   `tests/test_v15_3_semantic_boundary.py`.
+- **Git history represents human ownership.** AI agents may draft commit text but must never
+  appear as author, committer, or co-author; `tests/test_repo_git_policy.py` enforces this and
+  `AGENTS.md` states the policy for coding agents. The repository pins the owner identity in
+  repository-local `.git/config`.
 - Architecture work in progress lives in `docs/architecture/`.

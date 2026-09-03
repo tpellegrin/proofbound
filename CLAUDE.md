@@ -1,5 +1,7 @@
 # DSD — Claude Code Parent Adapter
 
+Repository policy for all coding agents, including Git authorship, is in `AGENTS.md`.
+
 Cold-load only when the premium parent is Claude Code. The default technical worker remains external OpenCode/DeepSeek.
 
 Install the project adapter once:
