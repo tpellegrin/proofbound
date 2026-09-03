@@ -233,7 +233,7 @@ class SemanticBoundaryTest(unittest.TestCase):
             (run/'state.json').write_text(json.dumps(state))
             cp=self.run_cmd([PYTHON,str(ROOT/'scripts'/'dsd_state.py'),'accept-task','--run-root',str(run.resolve()),'--phase-id','p1','--task-id','U1','--evidence-gate',str(gate.resolve()),'--semantic-evidence',str(clerk.resolve()),'--semantic-evidence-gate',str(clerk_gate.resolve())])
             self.assertEqual(cp.returncode,2,cp.stdout+cp.stderr)
-            self.assertIn('fresh Reviewer integrity gate',cp.stderr)
+            self.assertIn('fresh independent-review integrity gate',cp.stderr)
 
     def test_removed_semantic_regex_helpers_are_really_gone(self):
         for name in ('check_review_contract.py','_report.py','_report_contract.py','decision_packet.py'):

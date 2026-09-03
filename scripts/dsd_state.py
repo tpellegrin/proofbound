@@ -16,6 +16,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from _roles import INDEPENDENT_REVIEW_ROLES
+
 
 
 def sha256(path: Path) -> str:
@@ -487,8 +489,8 @@ def _reservation_matches_contract(run_root: Path, reservation: dict[str, Any], c
 
 
 def _assert_fresh_reviewer(run_root: Path, contract: Path, source_gate: dict[str, Any]) -> None:
-    if str(source_gate.get("role") or "").lower() != "reviewer":
-        raise ValueError("recorded project mutation requires a fresh Reviewer integrity gate")
+    if str(source_gate.get("role") or "").lower() not in INDEPENDENT_REVIEW_ROLES:
+        raise ValueError("recorded project mutation requires a fresh independent-review integrity gate")
     terminal_raw = source_gate.get("terminal_event")
     if not isinstance(terminal_raw, str):
         raise ValueError("Reviewer gate lacks terminal-event provenance")
@@ -525,7 +527,7 @@ def _assert_fresh_reviewer(run_root: Path, contract: Path, source_gate: dict[str
             raise ValueError(f"project-writing attempt lacks terminal provenance: {event_dir}")
         if reviewer_started <= ended:
             raise ValueError(
-                "fresh Reviewer requirement violated: accepted Reviewer predates later project mutation "
+                "fresh independent-review requirement violated: accepted review predates later project mutation "
                 f"in {event_dir.name}"
             )
 
