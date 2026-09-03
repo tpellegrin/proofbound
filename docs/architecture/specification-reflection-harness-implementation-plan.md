@@ -16,13 +16,21 @@ Imported project baseline:       c292eb512113415499211738a8366923f5276eef
   tag / git describe:            no tags; describe -> c292eb5
   working tree before doc work:  clean (only untracked path introduced was docs/)
 
-M0 implementation baseline:      6e30b6574da421641d8b10ca63f80bb07b87b4f8
-  commits:                       acd1ad1 test: add canonical test entrypoint
-                                 d8c63d1 fix: verify worker-rules snapshots against their
+M0 implementation baseline:      6038d296e4df76ad0aadc7df0346b1b8eaf9ce87
+  commits:                       dc7baf5 test: add canonical test entrypoint
+                                 3e25a0d fix: verify worker-rules snapshots against their
                                          recorded protocol identity
-                                 1eb8b72 ci: protect the supported Python baseline
-                                 6e30b65 docs: establish Proofbound identity and the
+                                 e34d2d1 ci: protect the supported Python baseline
+                                 6038d29 docs: establish Proofbound identity and the
                                          architecture baseline
+  every commit independently green
+
+M1 final:                        b9cb6565a8a9beea2e92250b0d4e99c9ba4d62da
+  commits:                       37dff55 feat: add specification author and reflector roles
+                                 4ecd256 test: prove independent reflection of a
+                                         specification mutation
+                                 b9cb656 docs: record M1 validation and the
+                                         capability/purpose boundary
   every commit independently green
 
 Validation environment
@@ -31,6 +39,7 @@ Validation environment
   Inherited baseline test count:  82   (green on 3.10+, unmodified)
   Post-M0:                        98   (82 + 16)
   Post-M1:                        111  (82 + 16 + 13)
+  Post-authorship-policy:         118  (+ 7 Git authorship policy tests)
 
 Architecture validation was performed against the imported project baseline.
 ```
@@ -43,6 +52,31 @@ here would be a guess, so none is recorded.
 
 **Source of truth.** The local checkout at `c292eb5` is authoritative for this project. Public upstream
 `main` is not consulted for implementation decisions.
+
+### Authorship normalization (object identities changed, content did not)
+
+Before M2, the M0 and M1 commits were rewritten to remove AI attribution trailers
+(`Co-Authored-By: Claude …`, `Claude-Session: …`) that a coding-agent harness appended by
+default. The rewrite was an interactive `reword` of all seven commits: **every file tree is
+byte-identical to its predecessor, no commit message changed except for removing those trailers,
+and no commit was squashed or reordered.** The Git author and committer were the human owner
+throughout and were never an agent. Object identities nevertheless changed, so the mapping is
+recorded here for auditability:
+
+```text
+imported project baseline  c292eb51…  ->  c292eb51…   (root commit; NOT rewritten)
+
+acd1ad14ac39a3f2200dd5fde86dcf599e006e66  ->  dc7baf5298fc4d6f54db951a695d35aecaebf3fc
+d8c63d11679d6df1a5c89f811d576319647c4452  ->  3e25a0d996c1e1da33d58ebc054894cbe2497950
+1eb8b72ecd9f5fba458ab5e2a43e84da13396e3b  ->  e34d2d13d55b7c1baed0e4a67011d15eb3352561
+6e30b6574da421641d8b10ca63f80bb07b87b4f8  ->  6038d296e4df76ad0aadc7df0346b1b8eaf9ce87  (M0)
+c67268919d07478907be2692081d2b01d9d8ef6b  ->  37dff552652cd90ad29926ff513e508134f02e6d
+e6c24e68bc697eb86165332c1baad43044b94873  ->  4ecd256cf10661302d8a30b08fc6446946c6f370
+2af2f6a02d19641076fdb513f21245dd1a95f7b5  ->  b9cb6565a8a9beea2e92250b0d4e99c9ba4d62da  (M1)
+```
+
+The original DSD upstream commit remains **unknown**; nothing about this rewrite changes that.
+Policy and guardrails are in `AGENTS.md` and `tests/test_repo_git_policy.py`.
 
 ## 1. Purpose
 
