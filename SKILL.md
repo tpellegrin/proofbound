@@ -9,7 +9,7 @@ metadata:
   workspace-root: DeepSeekAndDestroy
 ---
 
-# DeepSeek and Destroy
+# Proofbound
 
 > Spend premium context only where premium judgment is required.
 
