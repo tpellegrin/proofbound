@@ -2024,3 +2024,287 @@ Two rows deserve emphasis because they are where naive designs contradict themse
 produces **no contract revision** — M1 proved attempts are the unit of repair history (I4). *New
 acceptance, identical content* must be a no-op: if a fresh acceptance of unchanged bytes invalidated
 downstream artifacts, every re-run would cascade, and the model would be unusable.
+
+## 27. M2A implementation outcome
+
+M2A is implemented. This section records the two decisions that were open at the end of §26, and the
+corrections implementation forced on the design. Sections 5–17 and 26 are not rewritten; where they
+disagree with this section, this section is authoritative.
+
+### 27.1 Decision resolved — the review-purpose vocabulary is fine-grained
+
+The open question in §26.4 was whether to record five purpose names when only two enforcement classes
+exist today. **Decision: keep the five.** `purpose != capability != role`.
+
+| Declared purpose | Qualifying roles today |
+|---|---|
+| `proposal-reflection` | `spec-reflector` |
+| `design-reflection` | `spec-reflector` |
+| `specification-reflection` | `spec-reflector` |
+| `consistency-reflection` | `spec-reflector` |
+| `implementation-review` | `reviewer` |
+
+Four purposes share one role. They stay distinct names because the reason a review existed is not
+recoverable from the role that performed it. Collapsing them would discard provenance permanently and
+force retro-classification of every historical record the first time a role is added — the same class
+of mistake M0 had to repair in the worker-rules manifest, where membership was recorded but order was
+not, and the missing fact could only be reconstructed as a hypothesis.
+
+The risk the decision accepts is that a reader mistakes recorded precision for enforcement. The
+mitigation is to state the guarantee exactly, everywhere it appears:
+
+> the declared purpose was reviewed by a role authorized for that declared purpose
+
+and never:
+
+> Python proved the reviewer performed a philosophically correct architecture review.
+
+The table is validated at import: every purpose must name at least one role that exists and that is
+already in `INDEPENDENT_REVIEW_ROLES`. A typo cannot silently authorize a writer role.
+
+### 27.2 Decision resolved — canonical text identity, and why `-text` was rejected
+
+§26 suggested marking spec artifacts `-text` in `.gitattributes` because artifact hashes were to be
+taken over raw bytes. That suggestion is **withdrawn**. Four options were considered against the
+invariant *the same logical committed text artifact has the same identity on every supported OS and
+under every checkout configuration*:
+
+| Option | Verdict |
+|---|---|
+| `.gitattributes -text` | **Rejected.** Disables Git's text handling — diff, merge and eol behavior — for first-class human-readable documents, purely to stabilize a hash. It also fixes nothing for an artifact that arrives from outside Git, and pushes the wire format into a file any contributor can edit. |
+| `.gitattributes text eol=lf` alone | **Insufficient alone.** Real, but it makes correctness depend on repository configuration rather than on the identity function. Kept as *hygiene*, not as the mechanism. |
+| Hash the Git blob identity | **Rejected.** Makes identity require Git to be installed and the object store to be present, breaks a plain-file read, and inherits Git's own object-format versioning (SHA-1 vs SHA-256 repositories). |
+| **Canonical text hashing** | **Adopted.** The identity function owns the invariant outright. |
+
+The adopted algorithm, versioned as `proofbound-artifact-text-v1`:
+
+```
+strict UTF-8 decode  ->  replace CRLF with LF  ->  encode UTF-8  ->  SHA-256
+```
+
+What *does* change identity: text content, whitespace, wording, added or removed blank lines, a
+trailing newline, and Unicode code points. There is no Unicode normalization and no BOM stripping —
+precomposed and decomposed forms stay distinct, and a BOM is a preserved code point. Hidden
+normalization would let two visibly different documents share one accepted identity, which is exactly
+the failure a content-addressed record must not have.
+
+**Only CRLF is folded; a lone CR is content.** This is deliberate and worth defending. Git's own
+`text` normalization folds CRLF and never rewrites a lone CR, so folding CR here would make Proofbound
+and Git disagree about which files are "the same text". No checkout configuration on a supported
+platform produces lone-CR files, so there is no invariant to justify the extra normalization — and
+over-normalizing silently erases real content.
+
+The digest is a plain, unsalted SHA-256 of the canonical bytes, so on an LF checkout `sha256sum`
+reproduces a ledger value with no Proofbound code in the loop. Version confusion is prevented by the
+ledger recording the identity protocol explicitly, not by perturbing the digest.
+
+`.gitattributes` carries `*.md *.py *.json *.yml text eol=lf` as hygiene. Identity does not depend on
+it: `git add --renormalize .` produced no churn, and a CRLF checkout validates identically.
+
+### 27.3 Corrections forced by implementation
+
+1. **Provenance has three values, not two.** §26 anticipated `verified` and `unavailable`. A third
+   state is required: **`contradicted`** — the recorded gate is still present, but its bytes moved, it
+   is not clean, or it records a different role. Absence and contradiction are materially different
+   signals and must never collapse into one word. `unavailable` is not a failure; `contradicted` is.
+2. **Declared purpose is enforced unconditionally, not only for mutating tasks.** Gating the check on
+   mutation detection would have made the guarantee conditional on an unrelated mechanism. Checking it
+   wherever a purpose is declared is both simpler and strictly stronger.
+3. **`- NONE` had to be rejected at the parser.** `NONE` means "explicitly nothing" elsewhere in the
+   contract grammar; for this field it would have parsed as the literal purpose `"none"` and failed
+   later as an unknown purpose. Failing at the declaration site is clearer, and keeps "absent" cleanly
+   distinct from "malformed".
+4. **Dependency closure needs a topological pre-pass, not just cycle detection.** A recursive closure
+   is bounded by the interpreter's recursion limit; a legitimate 5000-node chain would crash it.
+   Resolving in dependency order holds effective recursion depth at one. Verified at depth 5000 under
+   the default limit of 1000.
+5. **Recording fidelity is a distinct, legitimate check.** When a contract declares
+   `## Allowed source changes`, the artifact being recorded must fall inside it. This is not a second
+   acceptance decision — it cannot approve anything — it only stops the parent from filing an artifact
+   under an acceptance that provably never covered it.
+
+### 27.4 The trust boundary, restated after implementation
+
+| Level | Requires | Proves |
+|---|---|---|
+| Structural | A clean Git checkout, nothing else | Content identity matches the accepted identity; dependency closure is consistent; the ledger schema, purpose vocabulary and purpose→role relation are internally coherent |
+| Provenance | Retained execution evidence | The recorded integrity gate still exists, is byte-identical, is clean, and records the role the ledger claims |
+| Neither | — | That the review actually happened, or who performed it |
+
+A committed SHA-256 is **integrity, not authority**. Anyone with repository write access can hand-write
+an internally consistent false ledger. Git review and retained run evidence are the mitigations.
+Proofbound has no signing keys and no trust roots, and claims none.
+
+## 28. Context economy and refactoring economics
+
+This section is **architecture only**. Nothing in it is implemented, and M2A deliberately contains no
+production code that counts tokens, files, or time. It exists so a real result is recorded where it can
+shape later milestones, rather than being lost.
+
+### 28.1 The empirical result being incorporated
+
+Giles Edwards-Alexander (Thoughtworks), *The Economic Benefit of Refactoring*, published on
+martinfowler.com, 30 July 2026:
+<https://martinfowler.com/articles/exploring-gen-ai/refactoring-economic-benefit.html>
+
+The method matters more than the number. A representative bounded change — add a new
+`ItemWatchStore` public async trait to the Firestore layer — was replayed by a **fresh agent session**
+after each of 15 sequential refactoring steps, with the change discarded between iterations so no
+learning carried over. This is close to a controlled experiment on cost-to-change, and it is the part
+Proofbound can borrow.
+
+| Metric | Baseline | Step 15 | Change |
+|---|---|---|---|
+| Data-access-layer LoC | 17,155 | 16,608 | −547 |
+| Largest file LoC | 17,155 | 3,695 | −13,460 |
+| Total Rust LoC | 50,359 | 49,812 | −547 |
+| Input tokens | 159,564 | 27,360 | **−83%** |
+| Output tokens | 1,705 | 2,113 | +24% |
+
+**The mechanism is the finding, not the percentage.** Total code barely moved — 547 lines out of
+50,359. What collapsed was the *largest file*, and with it the amount of code the agent had to read to
+locate its work. Input tokens stayed flat until the monolith began to split and then fell off a cliff.
+Output tokens rose slightly: the agent wrote a little more, having read far less.
+
+Honest limits, stated by the author and preserved here: one experiment, one greenfield application
+built and maintained by a single developer, one subsystem. Token counts were *approximated* — a
+sub-agent counted characters and divided by four via `tiktoken`, because live token counts were not
+reliably available. The cost of performing the refactoring was never measured precisely; only an upper
+bound of five million tokens is stated. **83% is not a law and must never be quoted as one.**
+
+### 28.2 Two context surfaces
+
+The result refines an existing Proofbound principle. Context economy is not only prompt compression.
+
+**A. Harness context** — what Proofbound deliberately supplies: common protocol, role protocol, task
+contract, selected evidence, explicit inputs. DSD already optimizes this aggressively, and it is
+bounded by design.
+
+**B. Repository discovery context** — what a worker must inspect to find and change the right code:
+files read, bytes read, symbols and dependency surfaces traversed, search results.
+
+DSD has always measured and controlled A. The Fowler result is about **B**, which Proofbound currently
+does not observe at all. A well-factored codebase can shrink B dramatically while total LoC barely
+moves — which is precisely why LoC is the wrong metric and *relevant context* is the right one (I10).
+
+### 28.3 Why this is not a ledger field
+
+Execution economics must not enter the accepted-artifact record. No `tokens`, `files_read`,
+`duration`, `largest_file` or `context_cost` field belongs there.
+
+The ledger answers durable questions: what content was accepted, what it depended on, which declared
+review purpose was satisfied, and which accepted review established it. Economics answers operational
+ones: how much context a task required, whether an area is becoming expensive to navigate, whether a
+refactoring paid for itself. Different trust domain, different lifecycle, different audience — and
+model pricing, token accounting and wall-clock time are exactly the kind of facts that go stale and
+become incomparable. Freezing them into engineering history would contaminate freeze identity with
+data that has no durable meaning. Economics telemetry belongs in run/execution evidence, where model
+identity already lives, and a later subsystem may aggregate it separately.
+
+### 28.4 A future capability, in two modes
+
+**Mode 1 — passive context-economy telemetry.** Record mechanically obtainable facts during ordinary
+execution: repository files read, repository bytes/chars read, files changed, tool calls, wall-clock
+duration, and provider token counts *where reliably exposed*.
+
+Comparability is the hard part, and the Fowler experiment demonstrates it: token counts had to be
+approximated from character counts. Caching, context compression, model changes and tool-protocol
+changes all move token totals without any change in the code being navigated. Proofbound should
+therefore prefer **provider-neutral** measurements — repository files read, repository bytes read — as
+the primary signal, with token counts as additional telemetry rather than the metric.
+
+**Mode 2 — controlled refactoring experiment.** Borrow the experimental structure directly:
+
+```
+representative bounded change C
+    -> fresh worker against baseline R1  -> measure -> discard C
+    -> apply one behavior-preserving refactoring step -> R2
+    -> fresh worker executes the identical C          -> measure -> discard C
+    -> compare
+```
+
+This estimates *did this refactoring reduce future cost-to-change?* — a far stronger claim than *the
+code looks cleaner*. It should control for the same task contract, the same role, the same repository
+semantics apart from the refactoring stage, fresh worker context, and ideally the same
+model/provider/runtime version. Noise and non-determinism must be reported honestly; no statistical
+machinery is designed here.
+
+Proofbound is unusually well suited to this because a **task contract is already a bounded, repeatable
+unit of work**. A contract could later serve as an architecture benchmark. The hazards are real and
+must be captured now: benchmark changes drift out of realism as the code evolves; a contract may stop
+being valid; worker and model versions change underneath the comparison; fresh execution is
+nondeterministic; and benchmark mutation must **never** leak into a real branch.
+
+### 28.5 Measurement is mechanical; refactoring is semantic
+
+Python may measure file sizes, largest files, structurally available dependency counts, files read,
+bytes read, tool calls, duration, repeated context surface, and test outcomes.
+
+Python must **not** conclude from those facts that a module should be refactored. The experiment itself
+is the argument: indiscriminate splitting is not the mechanism of benefit. The benefit came from
+*coherent* factoring that let the agent identify a smaller relevant subset — and the author reports
+that the agent could neither select the valuable refactorings nor apply them reliably; a human guided
+the choice, and the mechanical edits were done with scripts.
+
+So the workflow is:
+
+```
+mechanical signal -> semantic refactoring assessment -> optional proposal
+                  -> behavior-preserving implementation -> controlled economic experiment
+```
+
+and never `file > N lines -> automatic split`. A large-file threshold is a signal, never a verdict
+(I9). This is the same boundary the whole harness is built on: Python compares facts, humans and
+agents judge engineering quality.
+
+### 28.6 Cost of change, and amortization
+
+A future observation vector for a bounded task might include `repository_context_bytes`,
+`repository_files_read`, `input_tokens`, `output_tokens`, `wall_time`, `tool_calls`,
+`verification_time`.
+
+These must not be collapsed into a single score. Providers price tokens differently, caching changes
+effective cost, one model may consume more tokens yet finish faster or more correctly, and a provider
+change invalidates historical monetary comparisons outright. Therefore: **preserve raw observations,
+derive views later, and never freeze monetary pricing into engineering history.** The durable insight
+is trend detection — *changes in subsystem X now require reading four times more repository context
+than a year ago* — which outlives any price list.
+
+Refactoring also has a cost (I11), and the economic claim depends on repeated future change:
+
+```
+refactoring cost R, average per-change saving S  ->  break-even after roughly R / S changes
+```
+
+The published experiment illustrates why this must be stated rather than assumed: the saving was
+132,204 input tokens per change, while the refactoring cost is known only as an upper bound of five
+million tokens. Taken at that bound, break-even is roughly **38 similar changes**. That may be an
+excellent trade for a hot subsystem and a poor one for a quiet corner — which is the entire point of
+measuring rather than asserting.
+
+Not every benefit is token-denominated. Lower defect probability, simpler testing, clearer ownership,
+easier human review and better change isolation are real and unpriced. The system must never reduce
+the value of refactoring to a token price.
+
+### 28.7 Lifecycle integration — what this must not become
+
+There must be **no mandatory refactoring stage between implementation tasks**. That is the wrong lesson
+and would impose a cost the evidence does not justify.
+
+Plausible future hooks instead: a periodic context-economy review that surfaces a refactoring
+*candidate* when accumulated evidence shows an area has become expensive to navigate; opportunistic
+post-change observation that records metrics without forcing action; an explicit behavior-preserving
+refactoring change type that a human or orchestrator opens deliberately and validates with a
+representative-task experiment; and a pre-planning signal, where discovery notices that a requested
+change requires excessive context and proposes a prerequisite refactoring.
+
+The principle: **refactoring is justified by observed change friction and engineering semantics, never
+by automatic aesthetics.**
+
+### 28.8 Why this is deferred past M2A
+
+It depends on nothing in M2A and M2A depends on nothing in it, so bundling them would only have
+enlarged an unproven slice (I12). It also has a genuine architectural prerequisite: Mode 2 requires
+running the *same task contract* against two repository revisions with a fresh worker and discarding
+the mutation each time — which is worktree concurrency, currently listed under M5. Passive telemetry
+(Mode 1) has no such prerequisite and could land earlier as its own research track.
