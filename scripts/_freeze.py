@@ -222,3 +222,90 @@ def load_freeze_object(raw: Any) -> dict[str, Any]:
         raise FreezeError(f"dependency cycle in freeze: {exc}") from exc
 
     return {"format": fmt, "artifacts": members}
+
+
+# ---------------------------------------------------------------- derivation
+
+
+def derive(graph: dict[str, Any], ledger: dict[str, Any]) -> dict[str, Any]:
+    """Build the freeze for a satisfied graph from currently accepted records.
+
+    Members are exactly the graph's declared artifacts — no transitive closure. Graph
+    membership *is* authority's statement of what constitutes this contract; pulling in
+    dependency targets would put artifacts into the frozen contract that no authority
+    declared, inferring membership from structure instead of from declaration.
+
+    Callers must confirm graph satisfaction first (`pb_graph`), which is what guarantees the
+    recorded dependency maps equal the required topology — and therefore that copying the
+    ledger's `depends_on` captures the declared shape without the graph being copied.
+    """
+    records = ledger["artifacts"]
+    artifacts: dict[str, Any] = {}
+    for member in sorted(graph["artifacts"]):
+        record = records.get(member)
+        if record is None:
+            raise FreezeError(f"cannot freeze: {member} has no accepted record")
+        artifacts[member] = binding_of(record)
+    freeze = {"format": FREEZE_FORMAT, "artifacts": artifacts}
+    # Prove the result is loadable under its own schema before anyone sees it, so a
+    # malformed record can never become a persisted freeze.
+    return load_freeze_object(json.loads(canonical_freeze_text(freeze)))
+
+
+def compare(freeze: dict[str, Any], candidate: dict[str, Any]) -> list[dict[str, Any]]:
+    """Differences between a freeze and a freshly derived candidate, as findings.
+
+    Compares engineering meaning only. Role, gate and attempt are absent from both sides by
+    construction, so an equivalent fresh re-review produces no findings at all.
+    """
+    out: list[dict[str, Any]] = []
+    frozen, current = freeze["artifacts"], candidate["artifacts"]
+    for path in sorted(set(frozen) | set(current)):
+        if path not in current:
+            out.append({"code": "member-removed", "artifact": path,
+                        "reason": "frozen artifact is no longer a member of the current contract"})
+            continue
+        if path not in frozen:
+            out.append({"code": "member-added", "artifact": path,
+                        "reason": "current contract has an artifact the freeze does not bind"})
+            continue
+        was, now = frozen[path], current[path]
+        if was["content_sha256"] != now["content_sha256"]:
+            out.append({"code": "content-differs", "artifact": path,
+                        "reason": f"accepted content moved from {was['content_sha256'][:12]} "
+                                  f"to {now['content_sha256'][:12]}"})
+        if was["depends_on"] != now["depends_on"]:
+            out.append({"code": "dependencies-differ", "artifact": path,
+                        "reason": "the accepted dependency identities differ from the frozen set"})
+        if was["review_purpose"] != now["review_purpose"]:
+            out.append({"code": "purpose-differs", "artifact": path,
+                        "reason": f"accepted under {now['review_purpose']!r}, "
+                                  f"frozen under {was['review_purpose']!r}"})
+    return out
+
+
+def repository_findings(freeze: dict[str, Any], project_root: Path) -> list[dict[str, Any]]:
+    """Whether current files still carry the frozen content identities.
+
+    A separate question from candidate equivalence: the ledger can still agree with a freeze
+    while the working tree has drifted, and vice versa.
+    """
+    from _artifact_identity import ArtifactIdentityError, artifact_identity_file
+
+    out: list[dict[str, Any]] = []
+    for path in sorted(freeze["artifacts"]):
+        target = Path(project_root) / path
+        if not target.is_file():
+            out.append({"code": "missing-artifact", "artifact": path,
+                        "reason": "frozen artifact is not present in the working tree"})
+            continue
+        try:
+            current = artifact_identity_file(target)
+        except ArtifactIdentityError as exc:
+            out.append({"code": "unreadable-artifact", "artifact": path, "reason": str(exc)})
+            continue
+        if current != freeze["artifacts"][path]["content_sha256"]:
+            out.append({"code": "content-mismatch", "artifact": path,
+                        "reason": f"working tree holds {current[:12]}, freeze binds "
+                                  f"{freeze['artifacts'][path]['content_sha256'][:12]}"})
+    return out
