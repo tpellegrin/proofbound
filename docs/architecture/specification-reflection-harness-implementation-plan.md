@@ -624,10 +624,156 @@ No freeze, no aggregate identity, no task→freeze binding, no consistency-refle
 provenance, no applicability, no supersession, no coherence audit, no telemetry, no kinds, no profiles, no
 scheduler, no human gates, no provider routing, no worktrees, no naming migration.
 
-- **M2C — Freeze and binding.** Immutable freeze manifest whose canonical hash is the freeze
-  identity; candidate-aggregate consistency reflection (RFC [§26.8](proofbound/evidence/implementation-findings.md#268-direction-for-freeze-and-binding-m2c-not-designed-here)); `spec_freeze` contract binding;
-  `SPEC-BINDING-DRIFT` in the integrity gate; supersession with conservative invalidation of all
-  tasks bound to the superseded freeze; cross-change replay hardening.
+### M2C — Freeze and binding  *(DESIGNED, NOT IMPLEMENTED — split into three)*
+
+Design authority: [`artifacts-and-provenance.md` §A4](proofbound/artifacts-and-provenance.md#a4-freeze-and-binding-m2c--designed-not-implemented).
+
+M2C contains **three independently falsifiable theses**, and the design check recommends proving them
+separately. Bundling them would repeat the mistake the original M2 split already corrected once.
+
+| Slice | Thesis | Proves |
+|---|---|---|
+| **M2C-A** | A satisfied graph plus its accepted bindings can be reduced to one deterministic, content-addressed, self-contained contract identity that later ledger or graph mutation cannot rewrite. | Freeze identity is *correct* |
+| **M2C-B** | An aggregate consistency reflection can be bound to an exact candidate identity, so a review of `C1` can never authorize `C2`. | Freeze is *coherent* |
+| **M2C-C** | An implementation task contract can name an exact freeze, and divergent freeze usage across a run is detectable. | Freeze is *executable* |
+
+**M2C-A is the recommended next slice.** The mistakes that would be most expensive to discover later are
+all freeze-identity mistakes and all independently testable now: content-only bindings failing to
+distinguish different accepted dependency sets; a mutable ledger reference rewriting frozen meaning;
+canonical-serialization ordering bugs; withdrawal breaking freeze-source resolution. None of them needs
+consistency review or task binding to expose.
+
+#### M2C-A invariants
+
+1. **Copy, never reference.** A freeze contains its bindings and needs no ledger, graph or run tree.
+2. **Candidate identity == freeze identity.** One number, recomputable, no stored self-hash.
+3. **Bindings carry content, dependencies and purpose** — never role, gate, attempt, or graph identity
+   ([§A4.3](proofbound/artifacts-and-provenance.md#a43-what-a-binding-contains-decisively)).
+4. **Deterministic generation.** Same graph + ledger produce byte-identical output.
+5. **v1 semantics pinned**, including the purpose vocabulary a v1 freeze may contain (`P6`).
+6. **Parent-owned**; the freeze path lies outside worker write boundaries (`I6`, `P7`).
+7. **Four separate validation layers**, never one boolean.
+
+#### M2C-A acceptance scenario
+
+Reuses M2B's three-node slice, then:
+
+| # | Step | Expected |
+|---|---|---|
+| 1 | Freeze a satisfied graph | freeze written; identity recomputable |
+| 2 | Re-run generation | byte-identical output, same identity |
+| 3 | Re-accept B **byte-identically**, same deps and purpose, new gate/attempt | **candidate identity unchanged** — no contract churn |
+| 4 | Re-accept B byte-identically against a **different dependency set** | **candidate identity changes** — the defining test |
+| 5 | Re-accept B byte-identically under a **different purpose** | candidate identity changes |
+| 6 | Reformat `graph.json` whitespace only | candidate identity **unchanged** |
+| 7 | **Withdraw** a frozen artifact's record | freeze still states its full requirement; candidate equivalence now fails |
+| 8 | Mutate a frozen artifact's bytes | freeze unchanged; repository satisfaction fails; internal validity unaffected |
+| 9 | Hand-edit the freeze file | different identity; the old identity is unaffected |
+| 10 | Delete the run tree | internal validity and repository satisfaction identical; provenance → `unavailable` |
+| 11 | Unknown freeze format | fails closed |
+| 12 | Worker writes a freeze file | inherited `WRITE-RESTRICTION` |
+
+Steps 3, 4 and 6 together are the thesis: engineering meaning is bound, incidental execution history is not.
+
+#### Cross-ledger composition — decided
+
+**A freeze binds bindings drawn from one ledger provenance universe. The recommended layout is a single
+project-wide ledger.**
+
+Per-change ledgers make cross-change reuse impossible — `load_ledger` requires every dependency target to
+be a key in the same file — and reuse of accepted architecture artifacts and, later, decision records is
+not an exotic case but the normal one. A project-wide ledger already works with M2B unchanged, because
+exactness is scoped to the *graph's directory* and evaluates only records inside it; records belonging to
+other changes are ignored rather than reported.
+
+The cost is honest: one file grows without bound and is touched by every acceptance. It is a merge
+hotspot only mildly, since records are per-artifact blocks under sorted keys, so unrelated acceptances
+touch unrelated regions.
+
+**The decision is reversible and requires no code change now.** The ledger path is already a CLI
+argument, and a freeze names no ledger — after generation it is self-contained. If cross-ledger
+composition is ever wanted, it becomes a candidate-construction concern, never a freeze-format change.
+
+#### M2C-C — execution binding (designed, deferred)
+
+The task contract names the freeze in its Markdown:
+
+```
+## Proofbound freeze
+- <freeze identity>
+```
+
+**No new binding machinery is needed, and this was verified in code.** `run_worker.py` records
+`task_contract_sha256` over the whole contract file, and `accept_task` re-verifies it, so a freeze
+reference in the contract is already immutably bound; changing it produces a different contract. Adding a
+launch-reservation field would create a second truth that could disagree.
+
+Workers receive a freeze *identity* plus the task-relevant frozen subset, never the whole contract
+(`P13`). No per-task mini-freezes: one freeze is the baseline for a change, and context is sliced from it.
+
+**Mixed-freeze detection: report, do not gate.** Two accepted tasks naming different freezes must not
+silently constitute one completion baseline. But there is **no mechanical phase-close operation in this
+repository** — phase status is set to `in-progress` at task creation (`dsd_state.py:192`) and never
+mechanically closed, and `test_v15_5_adversarial::test_new_phase_state_does_not_create_barrier_machine`
+exists specifically to stop gating state accumulating in phases. So M2C-C v1 provides a **read-only
+report** enumerating accepted tasks and the freeze each contract names, flagging divergence as a finding
+the parent acts on. Introducing a mechanical phase gate is a separate decision with its own design check,
+not something to acquire as a side effect of freeze work.
+
+Per-task acceptance deliberately does **not** consult a "current freeze": there is no such persisted
+thing (`P3`), and adding one would be the mutable workflow state the architecture has refused throughout.
+
+#### Freeze mutation semantics
+
+| Event | Freeze identity | Old freeze still meaningful? | Repository satisfies it? | Provenance | New freeze needed? | Bound tasks |
+|---|---|---|---|---|---|---|
+| Re-accept, same content/deps/purpose | **unchanged** | yes | yes | may change | no | unaffected |
+| Re-accept, changed dependencies | unchanged (old F) | yes | candidate equivalence fails | — | yes | remain bound to old F |
+| Re-accept, changed purpose | unchanged (old F) | yes | candidate equivalence fails | — | yes | remain bound to old F |
+| Ledger withdrawal | unchanged | **yes — freeze is self-contained** | candidate equivalence fails | — | yes | remain bound |
+| Graph topology edit | unchanged | yes | candidate equivalence fails | — | yes | remain bound |
+| Graph whitespace-only edit | unchanged | yes | **still equivalent** | — | no | unaffected |
+| Artifact bytes mutate | unchanged | yes | repository satisfaction fails | — | yes | remain bound |
+| Run evidence deleted | unchanged | yes | yes | → `unavailable` | no | unaffected |
+| Run evidence corrupted | unchanged | yes | yes | → `contradicted` | no | policy question, not identity |
+
+The column that matters: **freeze identity never changes in response to anything.** That is what makes it
+a ruler (`P9`).
+
+#### Threat resolutions
+
+`F1` artifact mutation, `F2` dependency-set change, `F3` purpose change, `F5` withdrawal, `F6` overwrite,
+`F7` graph change, `F9` evidence deletion, `F11` hand-edit, `F12` copied file — **solved by M2C-A**, all
+covered by the table above and the acceptance scenario; `F12` resolves to *same bytes means same freeze*,
+since the hash is unsalted and location is not protocol.
+
+`F4` role/gate change only and `F16` unknown format — **solved by M2C-A** via §A4.3 exclusions and
+fail-closed versioning. `F17` purpose-registry evolution — **solved by M2C-A** by pinning the v1
+vocabulary rather than consulting the live registry (the M0 lesson).
+
+`F8` graph file deleted — **solved incidentally**: a freeze needs no graph, so internal validity and
+repository satisfaction are unaffected; only candidate equivalence becomes uncomputable, which is
+reported rather than treated as invalidity.
+
+`F10` evidence tampering — **already solved** by M2A's `contradicted`, orthogonal to freeze identity.
+
+`F14` consistency review replayed onto a different candidate — **solved by M2C-B by construction**, since
+the candidate identity the review binds changes whenever any binding changes.
+
+`F13` mixed-freeze completion — **deferred to M2C-C, and only reported, not gated**; residual risk is
+that a parent ignores the report. `F15` mechanically satisfied but semantically contradictory —
+**deferred to M2C-B**; residual risk until then is a freeze that is authoritative and incoherent, which
+is why §A4.6 refuses to call an M2C-A freeze "authorized for execution".
+
+`F18` cross-ledger dependency — **explicitly unsupported in v1** and stated as such rather than implied.
+
+#### Hard stop for M2C-A
+
+No consistency-reflection execution, no task freeze field, no run or phase freeze binding, no phase-close
+gate, no cross-ledger loader changes, no decision provenance, no applicability, no signatures, no
+selective invalidation. Invalidation is whole-contract and conservative in v1: a task bound to `F1`
+remains bound to `F1`, and whether execution may continue is a parent routing decision, not a mechanical
+one.
 - **M3 — Deterministic evidence and gates.** `evidence_bundle.py`; reviewer/auditor wiring; monotonic
   gate policy and approval records; checkpoint manifest additions.
 - **M4 — Provider routing.** `resolve_runtime(state, role)`, `role_routing`, native-transport
@@ -770,8 +916,9 @@ remain readable as ordinary DSD tasks with an unusual role name.
 
 ## 10. Human decisions required
 
-**None blocks M2B.** Items 1, 2 and 4 are decided. Item 3 blocks the *end* of M2B. Items 7–10 arrived with
-the RFC Part II consolidation and belong to capabilities that are not yet scheduled.
+**None blocks M2C-A.** Items 1, 2, 4, 10, 11 and 12 are decided. Item 3 is now urgent — it is the same
+question as the ledger layout settled in the M2C design check, and should be recorded as a repository
+convention before freeze work begins.
 
 1. ~~**Purpose vocabulary granularity**~~ — **decided: keep the fine-grained vocabulary.** Five
    recorded names, two enforcement classes today. `purpose != capability != role`; collapsing names
@@ -780,8 +927,11 @@ the RFC Part II consolidation and belong to capabilities that are not yet schedu
 2. ~~**Artifact line-ending/identity protocol**~~ — **decided: canonical text hashing**
    (`proofbound-artifact-text-v1`), with `.gitattributes text eol=lf` as hygiene only. `-text` was
    evaluated and rejected. RFC [§27.2](proofbound/artifacts-and-provenance.md#272-decision-resolved--canonical-text-identity-and-why--text-was-rejected).
-3. **Committed spec root** — `specs/<change-id>/` versus an existing repository convention. M2A can
-   start against any root; this blocks the *end* of M2B.
+3. **Committed spec root and ledger layout** — `specs/<change-id>/` for graphs and freezes, with a
+   **single project-wide ledger**, is the layout the M2C design check recommends and the only one that
+   permits cross-change artifact reuse. Nothing in code forces it — the ledger path is a CLI argument and
+   a freeze names no ledger — so this is a convention to adopt deliberately rather than a schema change.
+   It should be settled before M2C-A, because freeze candidate construction reads one ledger.
 4. ~~**Minimum interpreter**~~ — decided in M0: Python ≥3.10.
 5. **Upstream posture** — whether the class-1 fixes (M0.2, M0.4, M0.5) are offered upstream. Affects
    branch hygiene, not implementation.
@@ -811,3 +961,10 @@ the RFC Part II consolidation and belong to capabilities that are not yet schedu
     designing as a product feature. **When that capability ships, Proofbound should dogfood it on its own
     architectural decisions** — the non-duplicating path, and a far stronger test of the feature than a
     synthetic one.
+12. ~~**Cross-ledger composition for freeze**~~ — **decided: one ledger provenance universe per freeze**,
+    with cross-ledger composition explicitly unsupported in v1 and stated as such. Reversible: a freeze is
+    self-contained after generation, so this is a candidate-construction concern, never a format change.
+13. **Architecture document split pressure** — `artifacts-and-provenance.md` is now ~38.5 KB against the
+    40 KB cap enforced by `tests/test_docs_architecture_refs.py`. The next substantive addition breaches
+    it. That cap exists to force this decision rather than let a document drift out of selective-reading
+    range; the natural split is a separate `freeze-and-binding.md` when M2C-A lands.
