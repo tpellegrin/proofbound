@@ -6,10 +6,12 @@ import argparse, hashlib, json, re, sys
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from _review_purpose import qualifying_roles
+
 FIELDS = {
     "run_root", "phase_id", "task_id", "revision", "output", "title", "objective",
     "authority", "inputs", "write_paths", "extra_inventory", "acceptance",
-    "proof_obligations", "proof_patterns", "verification", "risks",
+    "proof_obligations", "proof_patterns", "verification", "risks", "review_purpose",
 }
 RETIRED = {"clerk_check", "clerk_checks", "evidence_clerk_checks"}
 
@@ -134,7 +136,16 @@ def main() -> int:
         acceptance_raw = [clean(x) for x in array(spec, "acceptance") if clean(x)]
         acceptance = [x if re.match(r"AC-\d+\b", x, re.I) else f"AC-{i:03d} — {x}" for i, x in enumerate(acceptance_raw, 1)]
 
+        # Optional: omitted for inherited DSD tasks, which keep their exact acceptance
+        # semantics. Validated here against the closed vocabulary so a typo fails at contract
+        # construction rather than surviving until acceptance.
+        review_purpose = spec.get("review_purpose")
+        if review_purpose is not None:
+            review_purpose = clean(review_purpose).lower()
+            qualifying_roles(review_purpose)
+
         lines = [f"# Task {task_id} — {clean(spec.get('title') or task_id)}", f"Contract revision: r{revision:04d}", "", "## Objective", clean(spec["objective"]), ""]
+        if review_purpose: lines += ["## Review purpose", f"- {review_purpose}", ""]
         if authority: lines += ["## Authority", *[f"- `{p}`" for p in authority], ""]
         if inputs: lines += ["## Inputs", *[f"- `{p}`" for p in inputs], ""]
         if write_restriction_declared:

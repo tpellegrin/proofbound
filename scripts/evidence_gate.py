@@ -13,10 +13,11 @@ import argparse
 import json
 import subprocess
 import sys
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import Any
 
-from _contract import allowed_source_changes, has_explicit_write_restriction, role_writes_project
+from _contract import (allowed_source_changes, has_explicit_write_restriction,
+                       path_allowed, role_writes_project)
 from _roles import ROLE_NAMES
 from _rules_snapshot import sha256_file, verify_snapshot
 
@@ -26,11 +27,6 @@ def resolve_run_binding(run_root: Path, value: str) -> Path:
     if not path.is_absolute():
         path = run_root / path
     return path.resolve()
-
-
-def path_allowed(path: str, prefixes: list[str]) -> bool:
-    normalized = PurePosixPath(path.replace("\\", "/")).as_posix()
-    return any(normalized == p or normalized.startswith(p.rstrip("/") + "/") for p in prefixes)
 
 
 def run_scope_compare(skill_root: Path, project_root: Path, baseline: Path, output: Path) -> tuple[int, dict[str, Any]]:

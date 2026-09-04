@@ -16,6 +16,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from _contract import declared_review_purpose
+from _review_purpose import assert_role_qualifies
 from _roles import INDEPENDENT_REVIEW_ROLES
 
 
@@ -552,6 +554,18 @@ def accept_task(args: argparse.Namespace) -> dict[str, Any]:
     source_scope = source_gate.get("scope")
     source_role = str(source_gate.get("role") or "").lower()
     source_can_write = source_gate.get("writes_project") is True or source_role in {"implementer", "fixer", "verification"}
+
+    # Declared review purpose, checked wherever authority declared one. This is a string
+    # compared against a closed table plus a role recorded on the gate: Python never infers
+    # a purpose from prose, filenames, artifact paths or reviewer output. It is enforced
+    # independently of whether the task mutated the project, so the guarantee is absolute
+    # ("a role authorized for the declared purpose performed the accepted review") rather
+    # than conditional on mutation detection. Inherited contracts declare nothing and keep
+    # their exact prior semantics.
+    declared_purpose = declared_review_purpose(contract.read_text(encoding="utf-8"))
+    if declared_purpose is not None:
+        assert_role_qualifies(declared_purpose, source_role)
+
     source_mutated = source_can_write and isinstance(source_scope, dict) and (
         int(source_scope.get("changed_count") or 0) > 0 or bool(source_scope.get("git_head_changed"))
     )

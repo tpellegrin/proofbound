@@ -46,6 +46,16 @@ def _safe_prefixes(text: str, heading: str, *, forbid_dsd: bool = False) -> list
     return list(dict.fromkeys(result))
 
 
+def path_allowed(path: str, prefixes: list[str]) -> bool:
+    """Whether one project-relative path falls inside a declared write boundary.
+
+    Lives here because the prefixes it tests are produced by `_safe_prefixes` above; the
+    two halves of the boundary rule belong in one module.
+    """
+    normalized = PurePosixPath(path.replace("\\", "/")).as_posix()
+    return any(normalized == p or normalized.startswith(p.rstrip("/") + "/") for p in prefixes)
+
+
 def _bullet_values(text: str, heading: str) -> list[str]:
     section = markdown_section(text, heading)
     if not section or section.strip().upper() == "NONE":
@@ -82,6 +92,44 @@ def allowed_source_changes(text: str) -> list[str]:
 
 def extra_scope_inventory(text: str) -> list[str]:
     return _safe_prefixes(text, "Extra scope inventory", forbid_dsd=True)
+
+
+REVIEW_PURPOSE_HEADING = "Review purpose"
+
+
+def declares_review_purpose(text: str) -> bool:
+    """Whether authority declared a review purpose for this task.
+
+    Absence is absence: inherited DSD contracts predate the field and keep their exact
+    acceptance semantics. It is deliberately not a default, because a default purpose
+    would be Python inventing the reason a review existed.
+    """
+    return re.search(rf"^##\s+{REVIEW_PURPOSE_HEADING}\s*$", text, re.I | re.M) is not None
+
+
+def declared_review_purpose(text: str) -> str | None:
+    """Return the single declared review purpose, or None when none was declared.
+
+    Reuses the same bullet parser as every other explicit control field, so no second
+    contract grammar enters the codebase. The purpose is read only from this exact
+    section: prose, filenames and artifact paths never declare one. A present but
+    unreadable section fails rather than degrading to "no purpose declared" — silently
+    dropping the declaration is exactly how the guarantee would be lost.
+    """
+    if not declares_review_purpose(text):
+        return None
+    values = _bullet_values(text, REVIEW_PURPOSE_HEADING)
+    if len(values) != 1:
+        raise ValueError(
+            f"## {REVIEW_PURPOSE_HEADING} must declare exactly one purpose as a single "
+            f"list item; found {len(values)}"
+        )
+    purpose = values[0].strip().lower()
+    if purpose == "none":
+        # `NONE` means "explicitly nothing" elsewhere in the contract grammar. There is no
+        # such thing as a review with explicitly no purpose: omit the section instead.
+        raise ValueError(f"## {REVIEW_PURPOSE_HEADING} cannot be NONE; omit the section instead")
+    return purpose
 
 
 def proof_pattern_tags(text: str) -> list[str]:
