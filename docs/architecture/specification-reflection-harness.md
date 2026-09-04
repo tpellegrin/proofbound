@@ -1636,3 +1636,391 @@ was since decided in M0):
    not a technical one.
 
 Questions 1–3 do not block M0. Question 1 blocks the *end* of M2, not its start.
+
+---
+
+## 26. M2 design check
+
+Baseline inspected: `efddc5307681acb70dbc2cfcb1cd43f0183bc37b` (clean, in sync with `origin/main`,
+118 tests green on 3.10 and 3.14). This section records a design-only pass. Nothing here is
+implemented.
+
+**Where this section differs from §§5–17, this section governs.** Those sections were written before
+M1 existed and are kept for their reasoning, not as current specification. Specific supersessions:
+
+| §§5–17 said | §26 says | Why |
+|---|---|---|
+| `dsd_spec.py` | `pb_ledger.py` (+ `pb_purpose.py`) | The change ledger is a Proofbound-native concept, not an inherited DSD identifier; the `dsd_` prefix is reserved for compatibility-sensitive inherited names |
+| `specs/<id>/manifest.json` | `specs/<id>/ledger.json` | "Manifest" is now reserved for the immutable freeze manifest, whose canonical hash is an identity; the ledger is mutable and is not content-addressed |
+| Ledger records `revision`, `status`, `accepted_at`, `authored_by`, `supersedes`, `pending_gates` | Four keys per artifact only | Each dropped field failed the "which invariant becomes harder?" test (§26.2) |
+| Artifact `status` stored in the ledger | Validity is derived, never stored | I3 |
+| "the review has PASS" | "the parent accepted, citing a qualifying gate" | There is no PASS field in DSD, by design (§26.1) |
+| One M2 milestone | M2A / M2B / M2C | I9: the original M2 coupled three unproven theses |
+
+### 26.1 Validated against current code
+
+- `spec-author ∈ ALWAYS_PROJECT_WRITER_ROLES`; `spec-reflector` is read-only by the computed
+  complement; `INDEPENDENT_REVIEW_ROLES = {reviewer, spec-reflector}` has exactly one production
+  consumer, in `_assert_fresh_reviewer`.
+- `accept_task` persists provenance as `{source_gate, semantic_report, semantic_gate}` — path plus
+  SHA-256 — **into the run tree's `state.json` only**. Nothing reaches version control.
+- The integrity gate already records `role`, `task` + `task_sha256`, `report_sha256`,
+  `launch_reservation` + hash, and the frozen scope summary. Review **role** is therefore already a
+  durable mechanical fact; review **purpose** is recorded nowhere.
+- **There is no PASS field anywhere, by design.** DSD never records a verdict
+  (`test_acceptance_binds_semantic_evidence_without_storing_verdict`). The mechanical fact is *the
+  parent accepted this task citing this gate*. Any M2 clause phrased as "the review has PASS" must be
+  restated as "the parent accepted, citing a qualifying gate", or it invents a field the
+  architecture deliberately removed.
+- `_contract.markdown_section` / `_bullet_values` already parse an arbitrary `## Heading` bullet
+  section; a declared-purpose section needs **no new parser**. `accept_task` already resolves the
+  contract path immediately before calling `_assert_fresh_reviewer`, which is exactly where a purpose
+  check belongs.
+
+### 26.2 Corrected assumptions
+
+**A1 — "the review has PASS" is not available.** See above. Acceptance is an act, not a stored
+verdict. The ledger records that the act occurred against a specific gate.
+
+**A2 — Several fields the RFC previously sketched do not survive the "which invariant becomes
+harder?" test and are dropped:**
+
+| Dropped field | Why |
+|---|---|
+| `accepted_at` | No mechanical invariant depends on it. Ordering is established by DSD freshness at acceptance time; dates are in Git history. |
+| `supersedes` / prior accepted hash | The ledger file's own Git history is the version chain. Duplicating it adds a field that can disagree with Git. |
+| `author.attempt` | Derivable: the reviewer gate binds the contract, the contract locates the task directory, and every attempt lives under it. Recording it adds a second place to be wrong. |
+| artifact `kind` | Nothing in M2A validates graph shape, so kind buys nothing yet (§26.6). |
+| revision counters | I4: attempts are the unit of repair history, not contract revisions. |
+
+**A3 — "proposal changed" and "artifact edited outside the harness" are the same mechanical event**
+(recorded hash ≠ current hash). They differ only in whether the ledger was updated in the same act.
+The design must not pretend Python can distinguish an authorized edit from an unauthorized one by
+inspecting the file; it distinguishes them by whether an acceptance record accompanied the change.
+
+### 26.3 Four concepts, kept separate
+
+| Concept | Where it lives | Who decides |
+|---|---|---|
+| Artifact **content** | project tree, Git | agents / humans |
+| Artifact **identity** | content SHA-256 + recorded dependency hashes | Python |
+| Review **capability** | `INDEPENDENT_REVIEW_ROLES`, scope confinement, freshness | Python (inherited, unchanged) |
+| Review **purpose** | *declared* in the task contract, recorded in the ledger | parent declares; Python checks the declaration against a static table |
+
+### 26.4 Review-purpose model — the central M2 decision
+
+M1 exposed that capability alone lets a `reviewer` gate accept a specification mutation and a
+`spec-reflector` gate accept an implementation mutation. The fix must not have Python read prose.
+
+**Mechanism.** The task contract declares one purpose in a `## Review purpose` section. A static
+table maps each purpose to the roles permitted to serve it. `accept_task`, immediately beside the
+existing freshness assertion, checks that the accepted gate's `role` is permitted for the declared
+purpose. An absent section preserves today's behavior exactly, so every existing contract and test
+is unaffected.
+
+```text
+purpose (declared, closed set)      permitted roles
+---------------------------------  --------------------
+proposal-reflection                {spec-reflector}
+design-reflection                  {spec-reflector}
+specification-reflection           {spec-reflector}
+consistency-reflection             {spec-reflector}
+implementation-review              {reviewer}
+```
+
+Python knows: the declared string, the role in the gate, and a constant table. Python does **not**
+know whether `design.md` "looks architectural". I1 holds.
+
+**Honest limitation, stated up front.** Today the first four entries are *enforcement-equivalent* —
+they all resolve to `{spec-reflector}`. Only the specification/implementation split is actually
+enforced. The finer names are recorded, not enforced. That is deliberate: the recorded value is what
+M2B's graph validation will key on, and adding it now avoids retro-classifying ledger entries later.
+But it is the weakest element of this model, and the two-value alternative
+(`specification-reflection` | `implementation-review`) is a legitimate choice — see §26.9.
+
+**What this does not do.** It does not prove the reflector applied design-reflection *reasoning*.
+Nothing mechanical can. It proves the contract declared a purpose, and a role permitted for that
+purpose served it.
+
+### 26.5 The durable change ledger
+
+**Why a committed ledger is necessary** (the strongest falsification attempt): everything else is
+already recorded somewhere. Git versions the artifact; the run tree records acceptance. What no
+existing store provides is **the binding between an artifact and the upstream content it was
+reviewed against, surviving into a clone where the run tree is absent.** Staleness is inherently
+cross-run and cross-machine — a proposal edited months later, in a different run, must invalidate a
+design's reflection. Without a committed record of what the design was accepted against, that is
+unprovable. That single invariant justifies the ledger; nothing else in it does.
+
+One file per change, `specs/<change-id>/ledger.json`, so changes do not contend for one file:
+
+```jsonc
+{
+  "format": "proofbound-change-ledger-v1",
+  "change": "CH-001",
+  "artifacts": {
+    "specs/CH-001/design.md": {
+      "content_sha256": "b1c2…",
+      "depends_on": { "specs/CH-001/proposal.md": "a0f3…" },
+      "review": {
+        "purpose": "design-reflection",
+        "role": "spec-reflector",
+        "gate": "phases/spec/tasks/CH-001-design/attempts/spec-reflector-2/evidence-gate.json",
+        "gate_sha256": "9d7e…"
+      }
+    }
+  }
+}
+```
+
+Four keys per artifact. Each survives the invariant test: `content_sha256` → drift detection;
+`depends_on` → needs-revalidation; `review.purpose` + `review.role` → purpose provenance checkable
+without the run tree; `review.gate` + hash → the pointer into run evidence for full provenance
+validation. `gate` is **run-relative**, not absolute — an absolute machine path is noise in a
+committed file.
+
+**Who writes it.** A parent-only Proofbound helper, mirroring `dsd_state.py`'s posture. Two rules
+make that safe, both inherited: every spec task's `## Allowed source changes` names only the artifact
+being authored, so `ledger.json` is outside the boundary and a worker touching it is a
+`WRITE-RESTRICTION` failure; and the parent writes it **between attempts**, because a parent write
+during a live read-only attempt would appear in that attempt's frozen scope diff and trip
+`READONLY-SCOPE-MOVED`. This is I12 applied, not a new rule.
+
+**Not a second acceptance engine (I6).** The ledger records what DSD already established. It performs
+no freshness check, no scope check, no role-capability check of its own. Its only independent
+computation is derived validity (§26.7), which is arithmetic over recorded hashes.
+
+### 26.6 Is artifact kind mechanical?
+
+**Not yet.** Kind buys exactly one thing — validating graph *shape* ("tasks must depend on an
+accepted specification") — and no such validation exists in the first slice. Dependencies are
+declared explicitly per artifact by path and hash, which is strictly more general. The declared
+purpose vocabulary already carries a coarse kind signal for free. Make kind first-class in M2B, when
+something actually validates the graph. Knowing an artifact *is* a design may reasonably be
+mechanical; knowing the design is *correct* never is.
+
+### 26.7 Staleness, defined mechanically
+
+Two **local** conditions plus a **transitive** rule. All are derived; nothing is stored (I3).
+
+| State | Trigger | Re-author? | Re-reflect? | Old provenance |
+|---|---|---|---|---|
+| `accepted` | `sha256(file) == content_sha256`, every `depends_on` hash equals that dependency's current recorded `content_sha256`, and every dependency is recursively `accepted` | — | — | current |
+| `invalid` | `sha256(file) != content_sha256` (or file missing) | yes, or revert | yes | retained in Git history; no longer current |
+| `needs-revalidation` | own hash matches, but a `depends_on` hash no longer matches the dependency's recorded accepted hash | **not necessarily** | yes | retained |
+
+**The transitive rule matters and closes a real hole.** If `proposal` is `invalid`, `design`'s
+recorded dependency hash still matches proposal's *recorded accepted* hash — so `design` would look
+fine. It is not. An artifact is `accepted` only if it is locally accepted **and** its full dependency
+closure is accepted. Report the reason chain, not just the state.
+
+Against the prompt's cases: **A** proposal content changes and is re-accepted → design
+`needs-revalidation`, not `invalid` — its own bytes are untouched, only the ground it was reviewed
+against moved. **B** design edited outside an author attempt → `invalid`, because no acceptance
+record accompanied the change. **C** byte-identical re-author → hash unchanged → nothing invalidated;
+M1 already proved DSD's content-based scope treats a byte-identical rewrite as no mutation. **D** spec
+changes → tasks `needs-revalidation`; design unaffected (siblings). **E** task wording changes with
+identical meaning → `invalid`, and a fresh reflection is required. Proofbound cannot and must not
+guess semantic equivalence; the cost of a cheap re-reflection is the price of mechanical
+enforceability. The wrong fix would be a "re-accept without re-review" escape hatch, which would
+break I6.
+
+### 26.8 Direction for freeze and binding (M2C, not designed here)
+
+Confirmed direction, deliberately not detailed: an **immutable freeze manifest** aggregating the
+accepted hashes of all authoritative artifacts, whose own canonical hash is the freeze identity.
+Binding `specification.md` alone permits an inconsistent combination — spec revision *n* paired with
+a drifted design — which is precisely the drift a freeze exists to prevent. Implementation contracts
+bind the freeze identity, and because DSD already hashes the contract into every
+`launch-reservation.json`, "which accepted contract did this attempt run against" stays a
+cryptographic fact with no new protocol.
+
+The **candidate-aggregate** idea for consistency reflection looks right and should be evaluated in
+M2C: reflect against an aggregate identity, so that any artifact change changes the aggregate and
+invalidates the consistency review automatically, rather than marking it stale by a separate rule.
+It is the same content-addressing trick applied one level up.
+
+Post-freeze changes create a **new freeze that supersedes the old**; freezes are never edited. First
+implementation should **conservatively invalidate every task bound to the superseded freeze**;
+selective preservation of tasks whose dependency closure is unchanged is an optimization, not a
+correctness requirement, and belongs later.
+
+### 26.9 Canonical serialization and schema evolution
+
+The M0 protocol-snapshot defect was caused by a hash whose ordering input was implicit. Apply the
+lesson from v1:
+
+- **Hash the canonical serialization of the parsed object, never the file bytes**, so pretty-printing
+  for diffability cannot change identity: UTF-8, `sort_keys=True`, `separators=(",", ":")`,
+  `ensure_ascii=False`, no trailing newline. Sorting removes any hidden ordering input — the exact
+  failure M0 had.
+- **Artifact content hashes are over raw file bytes**, matching the inherited `sha256_file`. This
+  makes them sensitive to line-ending translation; ship a `.gitattributes` entry marking spec
+  artifacts `-text` so a Windows checkout cannot silently change every accepted hash. *This is a
+  concrete, easily-missed footgun of the same family as the M0 bug.*
+- Paths: repository-root-relative, POSIX separators, no `./`, no `..`.
+- **Format identity from v1** (`proofbound-change-ledger-v1`). Verification dispatches on the
+  *recorded* version and applies that version's canonicalization and field set. Never load an old
+  record, fill today's defaults, and re-hash under today's rules (I7). Unknown fields are preserved,
+  not stripped. M2A needs version *dispatch*, not a migration framework.
+
+### 26.10 Trust boundary — what the hashes actually prove
+
+Stated plainly, because it is easy to overclaim (I8):
+
+- A SHA-256 in a committed JSON file proves **content integrity relative to a record**. It is **not a
+  signature** and proves nothing about authorship or authority. Anyone with repository write access
+  can edit both the artifact and the ledger and produce a fully consistent forgery.
+- What the ledger does buy: **accidental drift becomes impossible to miss, and deliberate divergence
+  becomes visible in a diff** that a human reviews. That is a real and sufficient property for a
+  single-owner repository; it is not cryptographic authenticity.
+- Two explicit validation levels:
+  - **Structural validation** — from a clean clone, no run tree. Proves artifact hashes, dependency
+    consistency, ledger internal consistency, and that the recorded role is permitted for the
+    recorded purpose.
+  - **Provenance validation** — requires the retained run tree. Proves the referenced gate exists,
+    hashes as recorded, names that role, and binds that contract.
+- After the run tree is deleted, provenance validation is permanently unavailable for those records.
+  That is **accepted**, not solved: forcing worker logs into Git to make every proof portable would
+  be worse. Evidence export/archival is a later milestone, not M2. Do not describe the ledger as
+  proving a review happened when the run tree is gone — it proves a review was *recorded* as having
+  happened.
+
+### 26.11 Adversarial pass
+
+| Attack / accident | Outcome |
+|---|---|
+| Artifact edited after acceptance | `invalid`; structural validation fails from a clone |
+| Ledger hand-edited to claim acceptance | **Not prevented.** Structural validation passes; only Git review and (if retained) provenance validation catch it. Stated as a limitation, not a defense. |
+| Reviewer role changed in the ledger | Detected by provenance validation against the gate; undetectable from a clone alone |
+| Dependency hash edited | Consistency check fails against the dependency's recorded accepted hash |
+| Old review reattached to a new artifact hash | Fails: the artifact's `content_sha256` and the gate's bound contract no longer correspond |
+| `spec-reflector` used where implementation review was intended | **Now prevented** by the declared-purpose table (§26.4) — the gap M1 exposed |
+| Run evidence missing | Structural validation only; say so explicitly rather than implying full proof |
+| Merge resolves the ledger incorrectly | Derived validity recomputation catches hash/dependency inconsistency; a semantically wrong but internally consistent merge is not caught |
+| Two branches, two freezes for one change | Legitimate divergent histories. Freeze identity is content-derived, so they are distinguishable; merge policy is an M2C question |
+| Replay of evidence from another change | Bounded but not eliminated: the gate binds a contract, and the contract names its task. Cross-change replay within one run is conceivable and should be checked in M2C when the freeze binds a change id |
+
+### 26.12 Unresolved questions
+
+1. **Purpose vocabulary granularity** — five recorded names with two enforced classes, or two names
+   only? Recording finer names costs nothing now and avoids retro-classification later, but it lets a
+   reader mistake recorded precision for enforcement. **Human decision.**
+2. **Where the ledger lives** — `specs/<change-id>/ledger.json` assumes the `specs/` root decided
+   earlier. Still the only open naming question that blocks M2B, not M2A.
+3. **Change profiles (§17)** — the recommended direction is that the **parent declares the required
+   artifact set explicitly** and Python enforces the declared graph, keeping subjective complexity
+   judgments out of Python. No policy language. Not needed until M2B.
+4. **Does discovery require reflection?** Deferred with the graph.
+5. **Is `request.md` a versioned artifact or immutable input?** It has no upstream dependency and no
+   author attempt; treating it as a *dependency-only* node — hashed, never reviewed — is the cheapest
+   coherent answer, but it is unvalidated.
+
+### 26.13 Worked examples (illustrative, not implementation)
+
+**(1) Accepted artifact + (2) dependency + (3) review-purpose provenance.** One record carries all
+three; they are separated here only for explanation.
+
+```jsonc
+// specs/CH-001/ledger.json  — committed
+{
+  "format": "proofbound-change-ledger-v1",
+  "change": "CH-001",
+  "artifacts": {
+    "specs/CH-001/proposal.md": {
+      "content_sha256": "a0f3…",
+      "depends_on": {},                                   // (2) root: no upstream
+      "review": {                                         // (3) purpose provenance
+        "purpose": "proposal-reflection",
+        "role": "spec-reflector",
+        "gate": "phases/spec/tasks/CH-001-proposal/attempts/spec-reflector-2/evidence-gate.json",
+        "gate_sha256": "4b81…"
+      }
+    },
+    "specs/CH-001/design.md": {                           // (1) accepted artifact
+      "content_sha256": "b1c2…",
+      "depends_on": { "specs/CH-001/proposal.md": "a0f3…" },
+      "review": {
+        "purpose": "design-reflection",
+        "role": "spec-reflector",
+        "gate": "phases/spec/tasks/CH-001-design/attempts/spec-reflector-1/evidence-gate.json",
+        "gate_sha256": "9d7e…"
+      }
+    }
+  }
+}
+```
+
+**(4) `needs-revalidation` after an upstream re-acceptance.** The proposal was re-authored and
+re-reflected, so its record now reads `"content_sha256": "c7d4…"`. Nothing in the design record
+changed — that is the point:
+
+```text
+$ pb validate CH-001
+specs/CH-001/proposal.md   accepted
+specs/CH-001/design.md     needs-revalidation
+    depends_on specs/CH-001/proposal.md recorded a0f3… but proposal is now accepted at c7d4…
+    design.md content is unchanged (b1c2…); re-authoring may be unnecessary,
+    a fresh design-reflection against the new proposal is required
+exit 1
+```
+
+Contrast `invalid`, where the artifact's own bytes moved:
+
+```text
+specs/CH-001/design.md     invalid
+    recorded b1c2… but file hashes e5a9… — changed with no accompanying acceptance
+```
+
+**(5) Candidate freeze (deferred to M2C — shown only to test that the ledger shape supports it).**
+The freeze is a separate immutable file whose canonical hash is the identity; it names accepted
+hashes, never paths-plus-content:
+
+```jsonc
+// specs/CH-001/freeze-0001.json  — immutable once written
+{
+  "format": "proofbound-freeze-v1",
+  "change": "CH-001",
+  "artifacts": {
+    "specs/CH-001/proposal.md":  "c7d4…",
+    "specs/CH-001/design.md":    "f012…",
+    "specs/CH-001/specification.md": "77ab…",
+    "specs/CH-001/tasks.md":     "31de…"
+  },
+  "consistency_review": {
+    "purpose": "consistency-reflection",
+    "role": "spec-reflector",
+    "gate": "phases/spec/tasks/CH-001-consistency/attempts/spec-reflector-1/evidence-gate.json",
+    "gate_sha256": "aa10…"
+  }
+}
+// freeze identity = sha256(canonical_json(this object without its own identity field))
+// implementation contracts embed that identity; DSD already hashes the contract into every
+// launch-reservation.json, so "which contract did this attempt run against" stays mechanical.
+```
+
+Absent optional artifacts are represented by **omission plus the change's declared required set**
+(M2B), not by null entries — a null would be a second way to say the same thing.
+
+### 26.14 Decision table
+
+Derived states only; nothing is stored. "Freeze/execution" describes the M2C direction and is not
+implemented.
+
+| Mutation | Becomes `needs-revalidation` | Becomes `invalid` | Re-author required | Re-reflection required | Freeze / execution |
+|---|---|---|---|---|---|
+| **Proposal changes** (authored + re-accepted) | design, specification, and their closure | — | no | yes, downstream | freeze superseded |
+| **Design changes** (re-accepted) | tasks | — | no | yes, tasks | freeze superseded |
+| **Specification changes** (re-accepted) | tasks; every contract bound to a freeze containing it | — | no | yes, tasks | freeze superseded |
+| **Tasks change** (re-accepted) | nothing upstream | — | no | no upstream | freeze superseded |
+| **Artifact changes outside the harness** | its dependents, transitively (closure not accepted) | that artifact | yes, or revert | yes | binding void |
+| **Review FAIL** | — | — | yes (new attempt, **same contract**, findings via `--input`) | yes, fresh reflector after the new mutation | never reached |
+| **New acceptance, identical content** | nothing | nothing | no | no | unchanged — recorded hash did not move |
+| **Byte-identical re-author** | nothing | nothing | no | no | unchanged — DSD records no mutation |
+| **Dependency set edited** (edge added/removed in the ledger) | that artifact, if a recorded hash no longer matches | — | no | yes | freeze superseded |
+| **Freeze already exists** | — | — | — | — | new freeze supersedes; **all** tasks bound to the old one conservatively invalidated |
+
+Two rows deserve emphasis because they are where naive designs contradict themselves. *Review FAIL*
+produces **no contract revision** — M1 proved attempts are the unit of repair history (I4). *New
+acceptance, identical content* must be a no-op: if a fresh acceptance of unchanged bytes invalidated
+downstream artifacts, every re-run would cascade, and the model would be unusable.

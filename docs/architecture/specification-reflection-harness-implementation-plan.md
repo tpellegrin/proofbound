@@ -322,30 +322,133 @@ read-only roles do not qualify, and a second `spec-author` attempt never does. R
 **Deferred to M2 as planned:** `dsd_spec.py`, change/freeze manifests, the artifact DAG, typed staleness,
 task↔freeze binding, cross-artifact consistency, provider/model routing, human gates, worktrees, and any
 DSD→Proofbound internal migration. M1 operates on one bounded artifact under one contract.
+## 6. M2A — Durable artifact provenance  *(NEXT SLICE — designed, not implemented)*
 
-## 6. M2 and later (coarse)
+Design authority: RFC §26. M2 was **split** because the original single milestone coupled the artifact
+model, the full DAG, and freeze into one landing — which violates I9 and would have shipped three
+unproven theses at once.
 
-- **M2 — Artifact model and lifecycle.** Committed `specs/<id>/manifest.json`; dependency DAG with typed
-  staleness (`needs-revalidation` vs `invalid`, each with a reason); `dsd_spec.py` (`init/record/status`);
-  the five artifacts plus the cross-artifact consistency reflection; the `SKILL.md` byte trade.
-- **M3 — Freeze and contract binding.** Immutable freeze manifest whose own hash is the specification
-  identity; `spec_freeze`/`requirements` contract fields; `_contract.spec_binding`; `SPEC-BINDING-DRIFT`;
-  amendment/supersession; the traceability query.
-- **M4 — Deterministic evidence and gates.** `evidence_bundle.py`; reviewer/auditor wiring; monotonic gate
-  policy and approval records; checkpoint manifest additions.
-- **M5 — Provider routing.** `resolve_runtime(state, role)`, `role_routing`, native-transport dispatch,
-  adapter contract tests.
-- **M6 — Optional.** Transport-level permission profiles; worktree concurrency; model-neutral naming
-  behind a `workspace_root()` helper.
+### Thesis
 
-## 7. Deferred work (explicit)
+> An accepted specification artifact can carry durable, version-controlled provenance — its content
+> identity, what it was reviewed against, and for what declared purpose — such that validity and
+> staleness are **derived** from Git alone, without a second acceptance engine and without Python
+> reading engineering prose.
 
-Project renaming; the `DeepSeekAndDestroy` workspace literal; worktree/concurrency orchestration; any
-stored workflow-state enum; the lifecycle beyond one artifact; provider routing; a policy language; UI,
-database, or remote service; plugin framework; file reorganization; replacing the worker transport;
-changing Evidence Clerk or phase-close semantics.
+### Why this slice and not something smaller or larger
 
-## 8. Risks and rollback
+The highest-risk unknowns, in order:
+
+1. **The ledger write is itself a project mutation by the parent.** It must not be writable by
+   workers and must not trip a live attempt's scope check. This is mechanics, and mechanics is where
+   this design can actually be wrong.
+2. **Declared purpose must close M1's capability/purpose gap** without Python classifying prose.
+3. **Dependency staleness must survive the run tree being absent** — the invariant that justifies the
+   ledger existing at all.
+
+(3) needs two artifacts and one edge. (1) and (2) need one. Two artifacts with a single dependency
+edge is therefore the smallest slice that can falsify all three. Anything smaller cannot test
+staleness — the mechanism the rest of M2 is built on.
+
+### Invariants this slice must not violate
+
+Beyond §2: **no stored workflow state** (validity is computed, never written); **no second acceptance
+engine** (the ledger records; DSD decides); **no PASS field** (acceptance is the parent's act citing a
+gate, not a stored verdict); **an absent `## Review purpose` section preserves today's behavior
+exactly**, so every existing contract and all 118 tests are unaffected.
+
+### Expected surface
+
+| File | Change |
+|---|---|
+| `scripts/pb_ledger.py` | **new** — parent-only: `record`, `validate`. Proofbound-native name, no `dsd_` prefix, but in `scripts/` so the existing sys.path root and helpers apply |
+| `scripts/pb_purpose.py` | **new** — the closed purpose vocabulary and its purpose→roles table. Tiny; separate so `_roles.py` stays a role registry |
+| `scripts/dsd_state.py` | one call beside `_assert_fresh_reviewer`, enforcing declared purpose against the accepted gate's role |
+| `scripts/render_task_contract.py` | `review_purpose` added to `FIELDS`; renders `## Review purpose` |
+| `scripts/_contract.py` | `declared_review_purpose(text)` — one call to the existing `_bullet_values`; no new parser |
+| `.gitattributes` | **new** — spec artifacts marked `-text` so EOL translation cannot silently move accepted hashes |
+| `tests/test_m2a_*.py` | **new** — see below |
+
+Nothing else. If this slice starts needing `dsd_attempt.py`, `evidence_gate.py`, or the scope
+machinery, the design is wrong and should be re-checked before continuing.
+
+### Tests required before any production change
+
+1. **Purpose table** — pure-function tests: each vocabulary entry maps to its permitted roles;
+   an unknown purpose is rejected; the table is a closed set.
+2. **Canonicalization** — a record hashes identically under key reordering and pretty-printing;
+   differs under any value change; the recorded `format` selects the canonicalization used.
+3. **Derived validity** — table-driven over the §26.14 decision table, including the transitive rule
+   (a dependent of an `invalid` artifact is not `accepted` even when its own recorded dependency hash
+   still matches).
+4. **Characterization** — an existing contract with no `## Review purpose` accepts exactly as today.
+
+### Acceptance scenario
+
+Scratch project, fake worker, two artifacts and one edge (`proposal → design`):
+
+| # | Step | Expected |
+|---|---|---|
+| 1 | `spec-author` writes `proposal.md`; `spec-reflector` reflects; `accept-task` | accepted, as M1 |
+| 2 | `pb_ledger record` for the proposal | ledger committed with content hash, empty `depends_on`, purpose `proposal-reflection`, role, run-relative gate + hash |
+| 3 | `pb_ledger validate` | `proposal accepted` |
+| 4 | Same cycle for `design.md`, declaring `depends_on: proposal` | `proposal accepted`, `design accepted` |
+| 5 | Accept the design citing a **`reviewer`** gate while the contract declares `design-reflection` | **rejected** — the M1 gap, now closed |
+| 6 | Hand-edit `design.md` | `design invalid`; exit non-zero |
+| 7 | Revert; re-author + re-reflect + re-accept the **proposal**; record it | `design needs-revalidation`, naming the old and new proposal hashes; design's own hash unchanged |
+| 8 | Delete the run tree entirely, then `pb_ledger validate` | structural validation still reports the same states; provenance validation reports **unavailable**, not "passed" |
+| 9 | Byte-identical re-author of the proposal | nothing invalidated |
+| 10 | Worker attempts to write `ledger.json` | `WRITE-RESTRICTION` — inherited confinement |
+| 11 | Full suite | green; all 118 inherited tests unchanged |
+
+Step 8 is the one that matters most: it is the invariant that justifies the ledger's existence.
+
+### Regression surfaces
+
+`accept_task` (the only inherited file touched — one call), the contract renderer's field whitelist,
+and the parent's write discipline around live attempts. Rollback is per-file: the new scripts are
+additive, and the `accept_task` change is one call guarded by an absent-section default.
+
+### Hard stop for M2A
+
+No freeze, no aggregate identity, no artifact kinds, no graph-shape validation, no change profiles,
+no implementation-task binding, no consistency reflection, no evidence export, no provider routing,
+no human gates.
+
+## 7. M2B / M2C and later (coarse)
+
+- **M2B — Artifact graph.** First-class artifact kinds; declared required-artifact set per change
+  (parent declares, Python enforces — no policy language, no complexity scoring); graph-shape
+  validation; transitive staleness reporting across the full DAG; whether `discovery` requires
+  reflection and whether `request` is a dependency-only node.
+- **M2C — Freeze and binding.** Immutable freeze manifest whose canonical hash is the freeze
+  identity; candidate-aggregate consistency reflection (RFC §26.8); `spec_freeze` contract binding;
+  `SPEC-BINDING-DRIFT` in the integrity gate; supersession with conservative invalidation of all
+  tasks bound to the superseded freeze; cross-change replay hardening.
+- **M3 — Deterministic evidence and gates.** `evidence_bundle.py`; reviewer/auditor wiring; monotonic
+  gate policy and approval records; checkpoint manifest additions.
+- **M4 — Provider routing.** `resolve_runtime(state, role)`, `role_routing`, native-transport
+  dispatch, adapter contract tests. Provenance records **role**, never model or provider; model
+  identity stays in run evidence, where it already is.
+- **M5 — Optional.** Evidence export/archival; transport-level permission profiles; worktree
+  concurrency; model-neutral naming behind a `workspace_root()` helper.
+
+## 8. Deferred work (explicit)
+
+Not in M2A, and not implicitly acquired by it: freeze and freeze identity; artifact kinds and
+graph-shape validation; change profiles; implementation-task binding; consistency reflection;
+evidence export or archival; human-gate policy; provider/model routing; worktree concurrency; any
+stored workflow-state enum; project renaming or the `DeepSeekAndDestroy` workspace literal; UI,
+database, or remote service; replacing the worker transport; changing Evidence Clerk or phase-close
+semantics.
+
+Two are worth naming as *deliberate non-solutions* rather than omissions. **Semantic equivalence** —
+a wording-only edit changes the hash and costs a fresh reflection; the alternative (re-accept without
+re-review) would break I6, so the cost is accepted. **Ledger forgery** — anyone with repository write
+access can produce an internally consistent false ledger; Git review and retained run evidence are
+the mitigations, and the ledger is never described as cryptographic proof (RFC §26.10).
+
+## 9. Risks and rollback
 
 | Surface | Regression risk | Detection | Rollback |
 |---|---|---|---|
@@ -354,19 +457,27 @@ changing Evidence Clerk or phase-close semantics.
 | `_assert_fresh_reviewer` (M1.3) | Widening what counts as independent review | Scenario steps 2 and 7; the set is explicit and closed | One-expression revert |
 | Role registry (M1.1) | Fingerprint change for new revisions; unexpected capability | M0.5 tests; M0.6 capability matrix | Remove entries; existing runs pin their own snapshot |
 | CI (M0.3) | Flaky process/timing tests | First green run | Delete workflow |
+| `accept_task` purpose check (M2A) | Rejecting acceptances that used to work | Absent `## Review purpose` defaults to today's behavior; characterization test pins it | One guarded call reverted |
+| Parent ledger write (M2A) | Tripping a live attempt's scope check | Acceptance step 10; parent writes only between attempts | New file; delete it |
+| Canonicalization (M2A) | An implicit ordering or encoding input, as in M0.5 | Reorder/pretty-print/EOL tests; `sort_keys` removes hidden ordering | Format is versioned from v1 |
 
 **General property:** M0/M1 add no persisted state, no new artifact formats, and no change to the attempt
 lifecycle. Reverting returns the repository to upstream behaviour exactly; already-accepted spec tasks
 remain readable as ordinary DSD tasks with an unusual role name.
 
-## 9. Human decisions required
+## 10. Human decisions required
 
-None blocks starting M0.
+One blocks M2A; the rest do not.
 
-1. ~~**Minimum interpreter**~~ — **decided in M0: Python ≥3.10**, on the evidence in §3 (M0.2). Reopen
-   only if 3.9 support is a product requirement; production scripts would run there after a one-line
-   change to one test module.
-2. **Committed spec root** — `specs/<change-id>/` versus an existing convention. Blocks the *end* of M2.
-3. **Upstream posture** — whether the class-1 fixes (M0.2, M0.4, M0.5) are offered to
-   `frozenpepper/deepseek-and-destroy`. Affects branch hygiene, not implementation.
-4. **Gate policy vocabulary ownership** — needed for M4 only.
+1. **Purpose vocabulary granularity — blocks M2A.** Five recorded names with two enforced classes
+   (`proposal-`/`design-`/`specification-`/`consistency-reflection` all resolving to
+   `{spec-reflector}`, plus `implementation-review` → `{reviewer}`), or only the two names that are
+   actually enforced today? Recording finer names costs nothing and avoids retro-classifying ledger
+   entries in M2B, but it lets a reader mistake recorded precision for enforcement. Everything else
+   in M2A is unaffected by the answer. RFC §26.4.
+2. **Committed spec root** — `specs/<change-id>/` versus an existing repository convention. M2A can
+   start against any root; this blocks the *end* of M2B.
+3. ~~**Minimum interpreter**~~ — decided in M0: Python ≥3.10.
+4. **Upstream posture** — whether the class-1 fixes (M0.2, M0.4, M0.5) are offered upstream. Affects
+   branch hygiene, not implementation.
+5. **Gate policy vocabulary ownership** — needed for M3 only.
