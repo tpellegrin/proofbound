@@ -1,0 +1,15 @@
+# Repository text is stored and checked out with LF on every platform.
+#
+# This is hygiene, not the mechanism. Proofbound artifact identity does not depend on it:
+# scripts/_artifact_identity.py normalizes CRLF to LF before hashing, so a CRLF checkout
+# produces the same recorded identity with or without this file. The rule exists so the
+# committed bytes and the canonical form agree, which keeps `sha256sum` on a checkout a
+# usable cross-check against the ledger.
+#
+# Deliberately NOT `-text`: that would disable Git's text handling for these files —
+# degrading diff, merge and eol behavior for first-class human-readable documents — purely
+# to stabilize a hash that is already stable by construction.
+*.md   text eol=lf
+*.py   text eol=lf
+*.json text eol=lf
+*.yml  text eol=lf
