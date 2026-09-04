@@ -696,6 +696,68 @@ corruption move provenance without touching identity; and a worker writing a fre
 Corrections in [`freeze-and-binding.md` §A4.8](proofbound/freeze-and-binding.md#a48-corrections-from-implementation),
 including the resolution of the external-closure question the design check left open.
 
+#### M2C-B — aggregate consistency  *(DESIGNED, NOT IMPLEMENTED)*
+
+Design authority: [`freeze-and-binding.md` §A5](proofbound/freeze-and-binding.md#a5-aggregate-consistency-acceptance-m2c-b--designed-not-implemented).
+
+**Thesis.** An exact candidate can be independently challenged as a whole, and the durable fact that it
+*was* challenged survives deletion of the run tree — without Python asserting that the engineering is
+coherent, and without a second acceptance engine.
+
+**The durable fact**, worded exactly: *candidate `C` received a qualifying consistency-reflection review,
+and the parent accepted it.* Not "C is consistent" (a semantic verdict) and not "C is authorized"
+(M2C-C).
+
+**Four models were rejected against code before the fifth was chosen**, most usefully: the artifact
+ledger cannot carry it (`derive_states` resolves every key as a file path, so a candidate key is
+permanently `invalid`), an attestation artifact cannot be authored by a read-only reflector without
+breaking M1 independence, and deriving it from the task contract plus gate fails because `accept_task`
+writes acceptance into `run_root/state.json` — which is `L3` and expendable.
+
+**Substrate findings that reduce the slice.** Verified in code, not assumed:
+
+- **Freshness needs nothing new.** `accept_task` checks both that the contract hash still matches and
+  that the accepted gate's `task` resolves to that exact contract path. A contract naming `C1` has
+  different bytes from one naming `C2`, so a `C1` review cannot be accepted for a `C2` task. No
+  reservation field, nonce or freeze revision.
+- **No new role.** `consistency-reflection` already maps to `spec-reflector`.
+- **No new write restriction.** The record path sits outside worker write boundaries like the ledger,
+  graph and freezes.
+- **M2C-A stays sound.** Verified empirically: when a graph-external dependency's bytes drift, the
+  dependent member goes `needs-revalidation` through ledger closure, the graph stops being satisfied and
+  the candidate becomes non-computable. So a computable current candidate implies every external
+  dependency is still at its pinned content, and the reviewer may rely on it.
+
+**Expected surface** — small, and entirely above M2A/M2B/M2C-A:
+
+| File | Change |
+|---|---|
+| `scripts/_consistency.py` | **new** — v1 record schema, pinned qualifying-role constant, internal validation |
+| `scripts/pb_consistency.py` | **new, small** — `record`, `validate`, and a lookup answering "has `C` been challenged?" |
+| `scripts/_contract.py` | one parser for the declared candidate, reusing the existing helpers as `review_purpose` did |
+| `scripts/render_task_contract.py` | one whitelist entry so the supported constructor can build such a contract |
+
+**Expected inherited-core diff: zero.** No change to `dsd_state.py`, the evidence gate, acceptance,
+roles, worker launch, the ledger, the graph, or the freeze format. If implementation starts needing any
+of them, the design is wrong.
+
+**Tests first**, in this order: the record schema and its pinned historical semantics; that a `C1` review
+cannot be accepted for a `C2` contract (the replay proof, through real mechanics); that recording refuses
+a task that is not accepted, a gate that is not clean, a wrong purpose and a non-qualifying role; and
+that after the run tree is deleted the record still answers "was `C` challenged?" while provenance falls
+to `unavailable`.
+
+**Acceptance slice.** Reuse the M2C-A three-node scratch project: derive `C`, launch a
+`consistency-reflection` contract naming `C`, accept it, record it. Then prove the orthogonal states —
+delete the run tree (record intact, provenance `unavailable`); corrupt the gate (record and identity
+unchanged, provenance `contradicted`); change an artifact so the current candidate becomes `C2` (the `C`
+record stands, `C2` has none, and the `C1` review cannot be accepted for a contract naming `C2`); and
+have a worker attempt to write the record (inherited `WRITE-RESTRICTION`).
+
+**Non-goals.** No task-to-freeze binding, no mixed-freeze reporting, no phase behaviour, no
+`current_freeze` or accepted-contract pointer, no consistency fixer or candidate revision, no repository
+coherence audit, no freeze schema change, no new review purpose or role.
+
 #### Cross-ledger composition — decided
 
 **A freeze binds bindings drawn from one ledger provenance universe. The recommended layout is a single

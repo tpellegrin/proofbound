@@ -202,3 +202,193 @@ identity is content, so a copy under any name is the same freeze.
 or phase binding, no mixed-freeze reporting, no consistency reflection, and no cross-ledger composition.
 A freeze is a durable engineering-contract candidate; calling it "approved" or "authorized for execution"
 would claim exactly what [A4.6](#a46-what-a-freeze-does-not-prove) says it cannot.
+
+---
+
+## A5. Aggregate consistency acceptance (M2C-B — designed, not implemented)
+
+*Normative direction. No production code implements any of this.*
+
+### A5.1 The durable fact that must exist
+
+M2C-A can say *which* exact engineering contract existed. It cannot say that anyone challenged it as a
+whole. Individually reflected artifacts can still contradict each other — a design that quietly violates
+its own proposal, two specifications that disagree about the same behaviour — and
+[A4.6](#a46-what-a-freeze-does-not-prove) is explicit that freezing such a set produces an authoritative
+record of an *incoherent* contract.
+
+The fact M2C-B must establish durably, worded precisely because the wording decides what Proofbound
+claims authority over:
+
+> Candidate `C` received a qualifying consistency-reflection review, and the parent accepted it.
+
+Not *"C is consistent"* — that is a semantic verdict, and Python asserting it would recreate the PASS
+enum DSD deliberately deleted. Not *"C is the accepted engineering contract"* — that is authorization to
+execute, which is M2C-C. The record is **provenance of a challenge**, exactly as the M2A ledger records
+that an artifact was accepted under a purpose rather than that the artifact is good.
+
+### A5.2 Why a new durable surface is required
+
+The obvious cheap answers were tested against code and all fail.
+
+| Model | Verdict |
+|---|---|
+| **Reuse the artifact ledger** | **Rejected by code.** `derive_states` resolves every key as `project_root / key` and requires `is_file()`. A candidate identity is not a file, so a synthetic key would be permanently reported `invalid`. Ledger keys *mean* repository artifact path; reusing them would require the record to lie about what it is. |
+| **A consistency-attestation artifact** | **Rejected by architecture.** `spec-reflector` is in `ALWAYS_READ_ONLY_ROLES`; it cannot author the attestation without becoming a writer and tripping `READONLY-SCOPE-MOVED`. Having an author write it and a reflector review it makes the attestation's own acceptance need an attestation. Its content would also be a semantic verdict persisted as data. |
+| **Derive from the task contract and gate** | **Rejected by the trust model.** `accept_task` writes acceptance into `run_root/state.json` — inside the run tree, which is `L3` and expendable by design. Deleting the run tree would destroy the only proof, promoting execution evidence into durable engineering authority. |
+| **No new durable construct** | **Rejected.** Following from the above: after `L3` deletion, no file in project state records that any aggregate challenge happened. The information is simply absent. |
+| **Wrapper object around the freeze** | **Rejected as a distinct model** — it is the record below under another name, and modifying or re-hashing `C` would break `A4`. |
+| **Separate record keyed by candidate identity** | **Adopted.** |
+
+This is the same two-step shape M2A already established and proved: DSD accepts through inherited
+mechanics (`L3`), then the parent copies the durable consequence into project state (`L4`).
+
+### A5.3 The v1 record
+
+One file per accepted candidate, beside the freezes:
+
+```
+specs/<change>/freezes/<identity>.json        the contract candidate      (M2C-A)
+specs/<change>/consistency/<identity>.json    it was challenged           (M2C-B)
+```
+
+```jsonc
+{
+  "format": "proofbound-consistency-acceptance-v1",
+  "candidate": "<candidate identity>",
+  "gate": "phases/spec/…/evidence-gate.json",
+  "gate_sha256": "…"
+}
+```
+
+| Field | The invariant it enables |
+|---|---|
+| `format` | Historical semantics (`P6`); unknown version fails closed. |
+| `candidate` | The subject. Without it the record's meaning would live only in its filename, and a copy elsewhere would mean nothing — the same self-containment that makes a freeze durable. The filename is a convenience index, cross-checkable against this field. |
+| `gate` + `gate_sha256` | The only thing that makes the claim falsifiable. Without them the record is an unfalsifiable assertion that a review happened, and provenance verification is impossible. Run-relative, never a machine path. |
+
+**Rejected**, each because no invariant depends on it: `review_purpose` and `role` (v1 *is* the
+consistency-reflection record, and the qualifying role set is a pinned v1 constant; the hash-pinned gate
+already states the actual role, so a recorded copy could only duplicate or contradict it); `timestamp`
+and `accepted_at` (Git); `attempt`, `provider`, `model` (execution mechanics, `P4`); the artifact list or
+freeze bytes (already in the freeze at `candidate`); `graph_sha256` (excluded from freeze identity for
+the reasons in [A4.3](#a43-what-a-binding-contains-decisively), and reintroducing it here would smuggle
+it back); `status`, `approved`, `consistent`, `semantic_valid` (`P3`, and see A5.1); `revision`,
+`supersedes`, `current` (see A5.4).
+
+**Historical pinning.** v1 must pin the qualifying role set for `consistency-reflection` as its own
+constant rather than consulting the live `REVIEW_PURPOSE_ROLES`. Otherwise a later registry change would
+silently reinterpret which reviews had been qualifying — the M0 failure, at a new boundary.
+
+### A5.4 Supersession needs no field
+
+`C1` and `C2` are different subjects, not versions of one thing, so both records coexist naturally under
+content-addressed names and nothing supersedes anything. Re-reviewing the same `C` overwrites that one
+file — a current-provenance snapshot with Git as history, matching the ledger exactly, and adding no
+chronology field for events Git already keeps.
+
+There is **no `current_freeze`, no `active_candidate`, no accepted-contract pointer.** Which candidate is
+current is derived from the graph and ledger; whether it has been challenged is a file lookup by its
+identity. Both are computed, never stored (`P3`).
+
+### A5.5 Freshness is already solved
+
+No new freshness machinery is required, and this is provable from the substrate rather than asserted.
+
+The consistency-review task contract names the exact candidate identity in its Markdown. Because
+`accept_task` verifies both that `sha256(contract)` still matches what the task bound **and** that the
+accepted gate's own `task` field resolves to *that exact contract path*, a review performed under a
+contract naming `C1` cannot be accepted for a task whose contract names `C2`: the two contracts have
+different bytes, therefore different hashes, therefore are different files. Editing one in place fails
+the first check instead.
+
+So a review of `C1` can never qualify `C2` — for free, from the same mechanism that has enforced M1
+freshness since the beginning. **No reservation field, no candidate nonce, no freeze revision.**
+
+### A5.6 What the reviewer actually reviews
+
+The contract binds an *identity*; the reviewer needs *material*. Nobody can judge a SHA-256.
+
+The subject is the engineering meaning the candidate denotes: the member artifacts' accepted content,
+the dependency relationships between them, and the declared purpose each was accepted under. The
+reviewer reads the freeze for the exact membership and bindings, and the member artifact files for
+substance. Retrieval material is context, never identity — the order files are read in must never enter
+what `C` means.
+
+Its questions are the ones no single-artifact reflection can reach: do these artifacts contradict each
+other, does the design actually satisfy the proposal it depends on, are assumptions consistent across the
+set, is the aggregate coherent enough to become the baseline for implementation. It is **bounded to
+`C`** — repository-wide architectural coherence is a different capability and stays out.
+
+**A stated v1 limitation.** A freeze pins content *hashes*, not content *bytes*. So a candidate whose
+artifacts still match on disk can be reviewed directly, while re-reviewing a historical candidate whose
+artifacts have since moved would require recovering those bytes from Git. M2C-B v1 therefore reviews the
+**current** candidate, derived at launch time and bound by identity. Embedding artifact bytes in a freeze
+to remove this limitation would be a large and speculative change to a shipped format; the limitation is
+better stated than designed around.
+
+**Graph-external dependencies remain sound.** A member may depend on an accepted artifact outside the
+graph ([A3.4](artifacts-and-provenance.md#a34-membership-dependency-targets-and-what-exact-means)), and
+that artifact is not a freeze member. Verified empirically: if such a dependency's bytes drift, the
+member becomes `needs-revalidation` through ledger closure, the graph stops being satisfied, and the
+current candidate becomes **non-computable** — so whenever a current candidate exists, every external
+dependency is still at the content it was pinned against. The reviewer may therefore read it as context
+and rely on it. The review claims nothing about *that artifact's own* coherence, which belongs to
+whatever contract declared it. M2C-A's membership decision does not need reopening.
+
+### A5.7 Findings return to artifact level
+
+If the reflection finds a contradiction, no acceptance is recorded — absence of the record is the whole
+representation, and there is no failure object, no rejected state, no PASS/FAIL enum.
+
+Repair cannot happen under the aggregate contract, and this is structural rather than a policy choice.
+`C` is *derived*, not a file anyone can edit; fixing a contradiction means changing an underlying
+artifact, which moves that artifact's accepted binding, which changes the candidate identity. The
+aggregate contract's binding would no longer describe anything.
+
+So aggregate findings route **back into artifact-level workflows** — the relevant proposal, design or
+specification is revised under its own contract and its own reflection — and the resulting candidate
+`C2` gets its own fresh aggregate challenge. There is no consistency fixer, and no candidate revision
+number: engineering changes produce a new identity by themselves.
+
+### A5.8 Four orthogonal questions
+
+M2C-B adds one dimension and must not collapse into any existing one.
+
+| Question | Answered from |
+|---|---|
+| Is the acceptance record well-formed? | The record alone |
+| Was candidate `C` challenged and accepted? | Does a record for `C` exist |
+| Is `C` still what the project produces? | Current graph + ledger (M2C-A candidate equivalence) |
+| Is the aggregate review's evidence still verifiable? | Run tree — `verified` / `unavailable` / `contradicted` |
+
+States that must all be representable without contradiction: `C` accepted and still current with verified
+provenance; `C` accepted while the project has moved to `C2` (the historical record stands, and `C2` has
+no acceptance); `C` accepted with the run tree deleted (record intact, provenance `unavailable`); `C`
+accepted with retained evidence corrupted (**record and identity unchanged**, provenance `contradicted`);
+a current candidate with no acceptance at all; and a satisfied graph of individually valid artifacts whose
+aggregate review found contradictions, which is simply the absence of a record.
+
+Two consequences worth stating. Corrupted evidence changes *provenance*, never the historical record —
+creation policy and later verification policy are different questions, as in M2C-A. And because
+acceptance is keyed by identity, "this candidate was challenged" and "this candidate is current" can
+never be confused for one another.
+
+### A5.9 Authority
+
+Recording is parent-owned, protected by the mechanism that already protects the ledger, the graph and
+the freezes: the path lies outside every worker's `Allowed source changes`, so a worker writing it trips
+the inherited `WRITE-RESTRICTION` before any acceptance can exist (`I6`, `P7`). The reviewer cannot
+self-record by writing a file, and no new permission system is needed — only the usual contract
+discipline when the workflow is built.
+
+Recording must verify what `pb_ledger record` already verifies, and refuse otherwise: the task is
+`accepted`, the accepted gate is intact and clean, the contract is unchanged, its declared review purpose
+is `consistency-reflection`, and the gate's role qualifies for that purpose under the pinned v1 set.
+Unlike freeze creation — where absent evidence is normal for an old repository — recording an aggregate
+acceptance whose evidence is already gone would be recording a claim the parent cannot evidence at the
+moment it makes it, so the gate must be present.
+
+**A freeze with an acceptance record is still not authorization to execute.** Binding implementation work
+to an exact contract is M2C-C. What M2C-B establishes is precisely one thing: that this exact candidate
+was independently challenged as a whole, and that the challenge qualified.
