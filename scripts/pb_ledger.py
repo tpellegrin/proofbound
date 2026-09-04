@@ -49,6 +49,7 @@ from _artifact_identity import (
     ArtifactIdentityError,
     artifact_identity_file,
 )
+from _dag import CycleError, assert_acyclic, topological_order
 from _contract import (allowed_source_changes, declared_review_purpose,
                        has_explicit_write_restriction, path_allowed)
 from _review_purpose import assert_role_qualifies
@@ -182,37 +183,22 @@ def load_ledger(path: Path) -> dict[str, Any]:
     return {"format": fmt, "artifact_identity": identity, "artifacts": normalized}
 
 
+def _dependency_edges(artifacts: dict[str, Any]) -> dict[str, list[str]]:
+    """Adapt accepted-ledger records to the shared DAG shape."""
+    return {name: list(entry["depends_on"]) for name, entry in artifacts.items()}
+
+
 def _assert_acyclic(artifacts: dict[str, Any]) -> None:
     """Reject cycles before any traversal derives state.
 
     The dependency graph is a DAG by construction; a cycle means the ledger is malformed.
-    Failing here is the safe outcome: no state at all beats a plausible-looking state
-    derived from a graph whose closure is undefined. Iterative, so a deep or hostile graph
-    cannot exhaust the interpreter stack.
+    Traversal itself lives in `_dag`, shared with the declared change graph so the two can
+    never disagree about what a cycle is.
     """
-    WHITE, GREY, BLACK = 0, 1, 2
-    color = dict.fromkeys(artifacts, WHITE)
-    for start in artifacts:
-        if color[start] != WHITE:
-            continue
-        stack: list[tuple[str, list[str]]] = [(start, list(artifacts[start]["depends_on"]))]
-        color[start] = GREY
-        path = [start]
-        while stack:
-            node, pending = stack[-1]
-            if not pending:
-                color[node] = BLACK
-                stack.pop()
-                path.pop()
-                continue
-            nxt = pending.pop()
-            if color[nxt] == GREY:
-                raise LedgerError("dependency cycle in ledger: " + " -> ".join(path + [nxt]))
-            if color[nxt] == BLACK:
-                continue
-            color[nxt] = GREY
-            path.append(nxt)
-            stack.append((nxt, list(artifacts[nxt]["depends_on"])))
+    try:
+        assert_acyclic(_dependency_edges(artifacts))
+    except CycleError as exc:
+        raise LedgerError(f"dependency cycle in ledger: {exc}") from exc
 
 
 # ---------------------------------------------------------------- derived state
@@ -277,32 +263,10 @@ def derive_states(ledger: dict[str, Any], project_root: Path) -> dict[str, dict[
     # Resolve dependencies before dependents. `visit` recurses, but every dependency it
     # reaches is already cached by then, so effective recursion depth stays at one and a
     # legitimately deep chain cannot hit the interpreter limit (proved at depth 5000).
-    order = _topological_order(artifacts)
+    order = topological_order(_dependency_edges(artifacts))
     for node in order:
         visit(node)
     return resolved
-
-
-def _topological_order(artifacts: dict[str, Any]) -> list[str]:
-    """Dependencies before dependents. Only called on a graph already proved acyclic."""
-    order: list[str] = []
-    seen: set[str] = set()
-    for start in sorted(artifacts):
-        if start in seen:
-            continue
-        stack = [(start, iter(sorted(artifacts[start]["depends_on"])))]
-        seen.add(start)
-        while stack:
-            node, children = stack[-1]
-            nxt = next(children, None)
-            if nxt is None:
-                order.append(node)
-                stack.pop()
-                continue
-            if nxt not in seen:
-                seen.add(nxt)
-                stack.append((nxt, iter(sorted(artifacts[nxt]["depends_on"]))))
-    return order
 
 
 # ---------------------------------------------------------------- provenance
