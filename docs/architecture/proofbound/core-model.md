@@ -64,12 +64,12 @@ future milestone may introduce a value that implies it.
 
 ## 33. Consolidated principles
 
-**On numbering.** `I<n>` had come to mean four different things: None[§3](execution-and-review.md#3-existing-invariants-that-must-be-preserved)'s inherited DSD invariants, the
-implementation plan's list, None[§26](evidence/implementation-findings.md#26-m2-design-check)'s design-check list, and M2A's task list. `I4` variously meant "fresh
+**On numbering.** `I<n>` had come to mean four different things: [§3](execution-and-review.md#3-existing-invariants-that-must-be-preserved)'s inherited DSD invariants, the
+implementation plan's list, [§26](evidence/implementation-findings.md#26-m2-design-check)'s design-check list, and M2A's task list. `I4` variously meant "fresh
 independent review", "same contract, multiple attempts", and "artifact state is derived". That is a rule
-graveyard, and it is exactly the retrieval failure None[§28](context-economy.md#28-context-economy-and-refactoring-economics) warns about.
+graveyard, and it is exactly the retrieval failure [§28](context-economy.md#28-context-economy-and-refactoring-economics) warns about.
 
-From here: **`I1`–`I15` in None[§3](execution-and-review.md#3-existing-invariants-that-must-be-preserved) are the inherited DSD mechanical invariants and keep their meaning
+From here: **`I1`–`I15` in [§3](execution-and-review.md#3-existing-invariants-that-must-be-preserved) are the inherited DSD mechanical invariants and keep their meaning
 unchanged.** Proofbound's own principles are `P1`–`P13` below, and this table is their single canonical
 statement. Other sections cite `P<n>`; they do not restate it.
 
@@ -84,13 +84,13 @@ stops being read, which is the failure it is supposed to prevent.
 | **P4** | **Durable provenance and execution evidence are separate trust layers** (§31). Losing execution evidence must cost provenance verification and nothing else. | The run tree is large, machine-local and deletable; the record must outlive it. | Deleting a run tree changes an artifact's structural validity, or absent evidence is reported as verified or as invalid. |
 | **P5** | **Hashes establish integrity, not authority.** A committed digest proves content did not drift. It proves nothing about who wrote it or whether a review occurred. | Proofbound has no signing keys and no trust roots. | Any document or message describes a SHA-256 as authentication, signature, or proof of authorship. |
 | **P6** | **Historical formats are verified under the semantics they recorded**, never reinterpreted under the current registry. Every input to an identity is recorded from v1. | M0: an order-dependent fingerprint whose order was never recorded. | A format is verified using present-day defaults for something it did not record, or old evidence is regenerated to make it pass. |
-| **P7** | **Local adaptation is not global policy** (None[§35](long-running-autonomy.md#35-local-adaptation-escalation-and-promotion)). A bounded task may solve its problem within its authority; it may not silently establish, broaden or replace a cross-cutting rule. | The primary defense against cumulative drift. | A bounded worker establishes a repository-wide rule with no escalation and no decision record, and later workers treat it as authoritative. |
-| **P8** | **Architectural decisions carry explicit, bounded provenance** (None[§36](long-running-autonomy.md#36-decision-provenance-direction-deferred)). A decision states its scope, not only its conclusion. | Conclusions generalize; boundaries do not travel with them unless recorded. | A future worker cannot determine the scope under which an accepted policy was adopted. |
-| **P9** | **Accepted baselines change by supersession, never by mutation** (None[§37](long-running-autonomy.md#37-baseline-erosion-and-drift)). | If the ruler moves with the thing it measures, drift becomes unmeasurable. | Current accepted intent can be edited in place without producing a new accepted identity, or history is rewritten to match the present. |
-| **P10** | **Local correctness does not imply global coherence** (None[§38](long-running-autonomy.md#38-cumulative-coherence)). Per-task independent review is necessary and insufficient. | 100 individually valid changes can compose into an incoherent system. | The architecture treats "every task passed" as equivalent to "the system is sound". |
+| **P7** | **Local adaptation is not global policy** ([§35](long-running-autonomy.md#35-local-adaptation-escalation-and-promotion)). A bounded task may solve its problem within its authority; it may not silently establish, broaden or replace a cross-cutting rule. | The primary defense against cumulative drift. | A bounded worker establishes a repository-wide rule with no escalation and no decision record, and later workers treat it as authoritative. |
+| **P8** | **Architectural decisions carry explicit, bounded provenance** ([§36](long-running-autonomy.md#36-decision-provenance-direction-deferred)). A decision states its scope, not only its conclusion. | Conclusions generalize; boundaries do not travel with them unless recorded. | A future worker cannot determine the scope under which an accepted policy was adopted. |
+| **P9** | **Accepted baselines change by supersession, never by mutation** ([§37](long-running-autonomy.md#37-baseline-erosion-and-drift)). | If the ruler moves with the thing it measures, drift becomes unmeasurable. | Current accepted intent can be edited in place without producing a new accepted identity, or history is rewritten to match the present. |
+| **P10** | **Local correctness does not imply global coherence** ([§38](long-running-autonomy.md#38-cumulative-coherence)). Per-task independent review is necessary and insufficient. | 100 individually valid changes can compose into an incoherent system. | The architecture treats "every task passed" as equivalent to "the system is sound". |
 | **P11** | **Repository patterns are evidence, not authority** (§34). Existing code shows what was done, not what is required. | Agents imitate the repository strongly; debt is as imitable as design. | A worker adopts a convention solely because it is frequent, against authoritative guidance, without surfacing the conflict. |
 | **P12** | **Fresh independent evaluation at semantic boundaries**, and evaluators do not inherit the execution context that produced what they judge. | M1's independence rule, generalized: an evaluator carrying the reasoning that produced a change cannot independently assess it. | A drift or coherence evaluator is handed the execution narrative of the work it evaluates, or the parent substitutes its own accumulated judgment for a required reflection. |
-| **P13** | **Context is an economic resource, on two surfaces** (None[§28.2](context-economy.md#282-two-context-surfaces)): harness context, which Proofbound supplies, and repository discovery context, which architecture quality determines. Refactoring value is assessed through cost-of-change evidence, never through a size metric alone. | The Fowler result: total code barely moved while the readable surface collapsed. | A size threshold is treated as an architectural verdict, or a durable record is inflated with telemetry that has no invariant depending on it. |
+| **P13** | **Context is an economic resource, on two surfaces** ([§28.2](context-economy.md#282-two-context-surfaces)): harness context, which Proofbound supplies, and repository discovery context, which architecture quality determines. Refactoring value is assessed through cost-of-change evidence, never through a size metric alone. | The Fowler result: total code barely moved while the readable surface collapsed. | A size threshold is treated as an architectural verdict, or a durable record is inflated with telemetry that has no invariant depending on it. |
 
 
 ## 34. Authority, and how knowledge acquires it
@@ -104,7 +104,7 @@ explicit ordering so that resolution is a decision rather than an accident.
 |---|---|---|
 | **A1** | Accepted engineering contract for the change — proposal/design/spec/tasks, eventually the freeze | Normative. What must be true. |
 | **A2** | Accepted architectural decisions applicable to this scope | Normative constraints on *how*. |
-| **A3** | Mechanically enforced invariants (None[§37.4](long-running-autonomy.md#374-executable-invariants--accepted-decisions-made-operative)) | Operative. The executable projection of A1/A2 and of inherited DSD mechanics. |
+| **A3** | Mechanically enforced invariants ([§37.4](long-running-autonomy.md#374-executable-invariants--accepted-decisions-made-operative)) | Operative. The executable projection of A1/A2 and of inherited DSD mechanics. |
 | **A4** | The current task contract | Bounded authority for this unit of work. |
 | **A5** | Approved repository guidance — `AGENTS.md`, role protocols, `CONTRIBUTING.md` | Standing convention. |
 | **A6** | Repository implementation patterns | **Evidence only.** What was done. |
@@ -118,7 +118,7 @@ decision, which tempts an ordering that puts it higher. But a contract that can 
 violating an accepted decision is either an authoring error or an unrecorded architectural change — which
 is precisely P7's failure mode. The two rarely compete in practice because they govern different axes:
 **the contract governs scope, accepted decisions govern constraints.** When they genuinely conflict, that
-conflict *is* the escalation trigger (None[§35.2](long-running-autonomy.md#352-escalation-reuses-decisionrequired)), not a ranking problem to be resolved silently.
+conflict *is* the escalation trigger ([§35.2](long-running-autonomy.md#352-escalation-reuses-decisionrequired)), not a ranking problem to be resolved silently.
 
 **A3 below A2, though A3 is what actually blocks.** An invariant is a mechanical projection of a decision
 and cannot outrank its source. If an invariant disagrees with the decision it encodes, the invariant is

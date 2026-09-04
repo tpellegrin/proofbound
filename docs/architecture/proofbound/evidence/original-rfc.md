@@ -190,9 +190,9 @@ idle parent is woken by `terminal.json` without model-level polling.
 
 ---
 
-> **None[§3](../execution-and-review.md#3-existing-invariants-that-must-be-preserved) moved.** The canonical `I1`–`I15` invariant table now lives in
+> **[§3](../execution-and-review.md#3-existing-invariants-that-must-be-preserved) moved.** The canonical `I1`–`I15` invariant table now lives in
 > [../execution-and-review.md](../execution-and-review.md), where it is defined exactly once. No `## 3.`
-> heading remains here, so `None[§3](../execution-and-review.md#3-existing-invariants-that-must-be-preserved)` resolves unambiguously to that document.
+> heading remains here, so `[§3](../execution-and-review.md#3-existing-invariants-that-must-be-preserved)` resolves unambiguously to that document.
 
 ## 4. Problem statement / gaps
 
@@ -390,7 +390,7 @@ artifact in its `depends_on` map now has an accepted SHA-256 different from the 
 `invalid` iff its own file hash no longer matches its recorded accepted hash. This is the same staleness
 rule DSD already applies to phase evidence (I13), expressed over documents — and it is content-based, so
 a re-author that produces byte-identical content correctly does **not** invalidate a prior reflection
-(verified against `scope_snapshot`'s content-based diff, None[§25](implementation-findings.md#25-validation-pass-post-authoring-review-against-the-checkout)).
+(verified against `scope_snapshot`'s content-based diff, [§25](implementation-findings.md#25-validation-pass-post-authoring-review-against-the-checkout)).
 
 ```mermaid
 stateDiagram-v2
@@ -468,7 +468,7 @@ The **manifest is a committed project artifact**, not run evidence. `WORKSPACE.m
 files are "orchestration evidence, not project source", and the skill's own `.gitignore` excludes
 `DeepSeekAndDestroy/`. If the manifest lived only in the run tree, a checkout could not establish what
 was accepted. It therefore lives beside the artifacts it describes and references run evidence by path +
-hash rather than copying it (None[§25](implementation-findings.md#25-validation-pass-post-authoring-review-against-the-checkout), Objective B).
+hash rather than copying it ([§25](implementation-findings.md#25-validation-pass-post-authoring-review-against-the-checkout), Objective B).
 
 ```jsonc
 // specs/<change-id>/manifest.json  — COMMITTED; written ONLY by dsd_spec.py, never by a worker,
@@ -570,7 +570,7 @@ revalidates tasks **and every contract bound to a freeze containing it**; a task
 nothing upstream.
 
 Staleness is content-based because `scope_snapshot` is content-based: a re-author producing byte-identical
-content is correctly not a mutation and does not invalidate a prior reflection (None[§25](implementation-findings.md#25-validation-pass-post-authoring-review-against-the-checkout)).
+content is correctly not a mutation and does not invalidate a prior reflection ([§25](implementation-findings.md#25-validation-pass-post-authoring-review-against-the-checkout)).
 
 ### 8.5 Who writes the manifest, and when
 
@@ -990,7 +990,7 @@ remain the preferred parent without the workflow depending on it.
 
 | Failure | Handling | New mechanism? |
 |---|---|---|
-| Reflection finds blocking issues | New `spec-author` **attempt on the same contract**, findings passed via `--input`; then a fresh reflector attempt. Identical to Implementer → Reviewer → Fixer → Reviewer; **no new contract revision** (verified, None[§25](implementation-findings.md#25-validation-pass-post-authoring-review-against-the-checkout)) | No — existing fix/re-review loop |
+| Reflection finds blocking issues | New `spec-author` **attempt on the same contract**, findings passed via `--input`; then a fresh reflector attempt. Identical to Implementer → Reviewer → Fixer → Reviewer; **no new contract revision** (verified, [§25](implementation-findings.md#25-validation-pass-post-authoring-review-against-the-checkout)) | No — existing fix/re-review loop |
 | Reflection loop does not converge | Round count derivable from `attempts/`; parent escalates to human after a policy cap (default 5, per the reference article) | No — policy, not stored state |
 | Finding invalidates an upstream artifact | Re-author upstream ⇒ hash changes ⇒ downstream `stale` ⇒ `freeze` refuses | No — hash-derived staleness |
 | `spec-author` mutates a frozen artifact | `WRITE-RESTRICTION` integrity failure (contract confines it to one path) | No (I6) |
@@ -1316,7 +1316,7 @@ declare a conservative default (`"default": "human"`) for high-risk repositories
 
 ## 23. Open questions requiring human architectural input
 
-> **Superseded by None[§25.5](implementation-findings.md#255-unresolved-architectural-questions).** The validation pass answered most of these from repository evidence; None[§25.5](implementation-findings.md#255-unresolved-architectural-questions)
+> **Superseded by [§25.5](implementation-findings.md#255-unresolved-architectural-questions).** The validation pass answered most of these from repository evidence; [§25.5](implementation-findings.md#255-unresolved-architectural-questions)
 > carries the reduced set that genuinely needs a human decision. This section is kept for the reasoning.
 
 1. **Spec root and commit policy.** Should `specs/<change-id>/` be committed to the repository (versioned

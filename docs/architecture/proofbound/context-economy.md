@@ -207,7 +207,7 @@ Which is why the two stay **separate dimensions and are never combined into one 
 | Dimension | Question | Measured how |
 |---|---|---|
 | Context economy | How much repository context does a bounded change require? | Mechanically (§28.4) |
-| Architectural coherence | Does repository reality align with accepted intent and decisions? | Semantically, against baseline + decisions (None[§37.3](long-running-autonomy.md#373-what-counts-as-a-drift-finding)) |
+| Architectural coherence | Does repository reality align with accepted intent and decisions? | Semantically, against baseline + decisions ([§37.3](long-running-autonomy.md#373-what-counts-as-a-drift-finding)) |
 
 A subsystem can be cheap to navigate and incoherent, or coherent and expensive. A single "health score"
 would destroy both signals and create precisely the optimizable target T10 warns about.

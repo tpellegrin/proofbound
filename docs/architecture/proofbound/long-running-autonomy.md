@@ -162,7 +162,7 @@ integrates provider Y, hits a timeout, and reads the codebase. It finds a retry 
   the accepted policy does not extend to Y.
 - Under **P7**, adopting retries for Y is therefore a *new* bounded response, and if it would establish a
   general rule it is a new `DECISION_REQUIRED` — not an inference from existing code.
-- Under **None[§28.4](context-economy.md#284-a-future-capability-in-two-modes)/None[§34](core-model.md#34-authority-and-how-knowledge-acquires-it)**, the worker was given the X decision only because its scope intersected the task's
+- Under **[§28.4](context-economy.md#284-a-future-capability-in-two-modes)/[§34](core-model.md#34-authority-and-how-knowledge-acquires-it)**, the worker was given the X decision only because its scope intersected the task's
   scope. It was not handed every decision the project ever made.
 
 Without the recorded scope, the honest reading of the repository is "this project retries provider
@@ -183,7 +183,7 @@ applied to ADR practice rather than adopting ADR templates wholesale.
 | Candidate | Verdict |
 |---|---|
 | **decision** | **Keep.** The conclusion. |
-| **scope** / `applies_to` | **Keep — the load-bearing field.** Without it P8 fails outright: a later worker cannot determine whether an accepted policy governs its task. It is also what makes progressive disclosure possible (None[§36.3](artifacts-and-provenance.md#363-applicability-is-not-a-dependency-edge)). |
+| **scope** / `applies_to` | **Keep — the load-bearing field.** Without it P8 fails outright: a later worker cannot determine whether an accepted policy governs its task. It is also what makes progressive disclosure possible ([§36.3](artifacts-and-provenance.md#363-applicability-is-not-a-dependency-edge)). |
 | **trigger** | **Keep, as a compact reference.** Not an incident narrative. The invariant that depends on it is *retirement*: "is the condition that justified this still true?" is unanswerable without it (§36.4). |
 | **rationale** | **Keep.** Perry & Wolf treat rationale as a first-class component of architecture, not commentary. The dependent invariant is supersession review: without rationale a later reviewer can check whether a decision is being *followed*, but not whether it should still *stand*. |
 | **consequences** | **Drop as a field.** Real content, but it is rationale prose, not a separately checkable fact. |
@@ -214,7 +214,7 @@ Architecture accumulates obsolete defensive rules even when every rule was justi
 decision system that can only add is a scar-tissue generator with better formatting.
 
 Retirement must be explicit and immutable: a new decision supersedes the old, the old remains readable as
-history, and its authority drops from A2 to A7 (None[§34.2](core-model.md#342-the-knowledge-lifecycle)). The old record is never edited — editing an
+history, and its authority drops from A2 to A7 ([§34.2](core-model.md#342-the-knowledge-lifecycle)). The old record is never edited — editing an
 accepted artifact makes it structurally invalid until re-accepted, which is exactly the right pressure.
 
 `review_when: <condition>` — "revisit when provider X ships feature Y" — is attractive and introduces
@@ -235,7 +235,7 @@ not what `design-reflection` is aimed at.
 The argument against: the mechanics would be identical (`spec-reflector`), and purpose-vocabulary
 inflation has its own cost.
 
-None[§27.1](execution-and-review.md#271-decision-resolved--the-review-purpose-vocabulary-is-fine-grained) already settled the tie-breaking rule — purposes with identical mechanics stay distinct when their
+[§27.1](execution-and-review.md#271-decision-resolved--the-review-purpose-vocabulary-is-fine-grained) already settled the tie-breaking rule — purposes with identical mechanics stay distinct when their
 engineering meaning differs — which leans toward adding one. **Recorded for the milestone that implements
 decision provenance, not for M2B.**
 
@@ -358,7 +358,7 @@ against a fixed external standard does.
 
 | Mechanism | Defenses |
 |---|---|
-| Context degradation | Durable artifacts (L4); bounded worker context (`I7`); explicit accepted decisions; progressive disclosure (None[§36.3](artifacts-and-provenance.md#363-applicability-is-not-a-dependency-edge)); fresh reviewers (P12) |
+| Context degradation | Durable artifacts (L4); bounded worker context (`I7`); explicit accepted decisions; progressive disclosure ([§36.3](artifacts-and-provenance.md#363-applicability-is-not-a-dependency-edge)); fresh reviewers (P12) |
 | Decision compounding | Immutable baselines (P9); decision provenance with scope (P8); escalation before policy (P7); cumulative coherence review (§38.2); executable invariants (§37.4) |
 
 Note that most of the first column already exists and most of the second does not. That is the honest
@@ -436,7 +436,7 @@ from established software-engineering literature about human-maintained systems:
   Engineering Notes 17(4), 1992, 40–52 — architectural erosion versus drift, and rationale as a
   first-class architectural component. <https://dl.acm.org/doi/10.1145/141874.141884>
 - G. Edwards-Alexander, *The Economic Benefit of Refactoring*, martinfowler.com, 2026 — one controlled
-  experiment on repository context cost (None[§28.1](context-economy.md#281-the-empirical-result-being-incorporated)), with its limits stated there.
+  experiment on repository context cost ([§28.1](context-economy.md#281-the-empirical-result-being-incorporated)), with its limits stated there.
 
 Both predate or sit outside the agent-specific claim. The classical literature describes these failures in
 *human* systems; the hypothesis that autonomous agents encounter them faster, and with less friction
@@ -472,8 +472,8 @@ indistinguishable. It is now a routed corpus with explicit authority classes
 mitigation rather than a reading convention, but it is not a permanent one: the corpus can grow again, and
 nothing mechanically bounds the size of a normative document. The residual risk is recorded in the plan.
 
-**T10 is a risk created by None[§28](context-economy.md#28-context-economy-and-refactoring-economics) and §37.4.** The moment Proofbound measures repository context cost or
+**T10 is a risk created by [§28](context-economy.md#28-context-economy-and-refactoring-economics) and §37.4.** The moment Proofbound measures repository context cost or
 invariant violations, those numbers become optimizable — and an agent can reduce "bytes read" by reading
 less than it should, or satisfy an invariant by routing around it. This is why P1 and P13 forbid a metric
-from becoming a verdict, why None[§37.5](context-economy.md#375-coherence-and-context-economy-are-different-measurements) rejects a composite debt score, and why every drift signal terminates in
+from becoming a verdict, why [§37.5](context-economy.md#375-coherence-and-context-economy-are-different-measurements) rejects a composite debt score, and why every drift signal terminates in
 a semantic evaluator rather than a gate. It is mitigated by construction, not by monitoring.

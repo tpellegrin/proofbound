@@ -98,7 +98,7 @@ Do not add another single-letter namespace without a reason that survives the fi
 ## Principles index
 
 One line each. **The canonical definitions, with their falsifiers, are in
-[core-model.md None[§33](core-model.md#33-consolidated-principles)](core-model.md#33-consolidated-principles)** — cite that, not this index.
+[core-model.md §33](core-model.md#33-consolidated-principles)** — cite that, not this index.
 
 | | | | |
 |---|---|---|---|

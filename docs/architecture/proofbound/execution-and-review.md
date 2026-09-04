@@ -4,7 +4,7 @@
 > invariants `I1`–`I15`, the review-purpose registry enforced at acceptance, what a repair iteration is,
 > and the boundary of the parent's authority.
 >
-> Background on how DSD works is in [evidence/original-rfc.md None[§2](evidence/original-rfc.md#2-current-dsd-architecture-relevant-to-this-change)](evidence/original-rfc.md).
+> Background on how DSD works is in [evidence/original-rfc.md §2](evidence/original-rfc.md).
 > Entry point: [README.md](README.md).
 
 ## 3. Existing invariants that must be preserved
@@ -43,11 +43,11 @@ earlier mutating attempts from the freshness scan and a stale review could then 
 
 A new contract revision means the *intent* changed, not that the work needed another round.
 
-Evidence: [evidence/implementation-findings.md None[§30.2](evidence/implementation-findings.md#302-m1--capability-and-purpose-are-different-questions)](evidence/implementation-findings.md#302-m1--capability-and-purpose-are-different-questions).
+Evidence: [evidence/implementation-findings.md §30.2](evidence/implementation-findings.md#302-m1--capability-and-purpose-are-different-questions).
 
 ### 27.1 Decision resolved — the review-purpose vocabulary is fine-grained
 
-The open question in None[§26.4](evidence/implementation-findings.md#264-review-purpose-model--the-central-m2-decision) was whether to record five purpose names when only two enforcement classes
+The open question in [§26.4](evidence/implementation-findings.md#264-review-purpose-model--the-central-m2-decision) was whether to record five purpose names when only two enforcement classes
 exist today. **Decision: keep the five.** `purpose != capability != role`.
 
 | Declared purpose | Qualifying roles today |
@@ -85,5 +85,5 @@ that required reflection occurred, and bind execution to accepted artifacts.
 
 It may not substitute its own accumulated judgment for independent reflection. The parent is the least
 independent evaluator in the system — it has been present for every decision and is maximally
-contaminated by exactly the execution context None[§38.2](long-running-autonomy.md#382-the-cumulative-coherence-audit) excludes. An orchestrator that reviews cumulative
+contaminated by exactly the execution context [§38.2](long-running-autonomy.md#382-the-cumulative-coherence-audit) excludes. An orchestrator that reviews cumulative
 coherence itself is the clearest possible violation of P12.

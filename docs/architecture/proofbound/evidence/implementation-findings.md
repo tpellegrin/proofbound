@@ -28,7 +28,7 @@ version and a separately versioned artifact-identity protocol, because the two e
 
 `reviewer` and `spec-reflector` are mechanically interchangeable at acceptance: both carry the
 independent-review capability. Nothing in the mechanics distinguished *why* a review happened. M1 proved
-the capability half and left the purpose half open; M2A closed it (None[§27.1](../execution-and-review.md#271-decision-resolved--the-review-purpose-vocabulary-is-fine-grained)).
+the capability half and left the purpose half open; M2A closed it ([§27.1](../execution-and-review.md#271-decision-resolved--the-review-purpose-vocabulary-is-fine-grained)).
 
 M1 also corrected the repair model. Reflection findings do **not** require a new contract revision: a new
 *attempt* under the unchanged contract is the unit of repair history, and rebinding the contract would
@@ -48,7 +48,7 @@ false claim either way.
 Three findings are load-bearing beyond M2A:
 
 1. **Provenance needs three values.** `verified`, `unavailable`, `contradicted`. Absence and contradiction
-   are not the same signal, and neither is an artifact-validity verdict (None[§32](../core-model.md#32-three-independent-dimensions)).
+   are not the same signal, and neither is an artifact-validity verdict ([§32](../core-model.md#32-three-independent-dimensions)).
 2. **Dependency validity is transitive.** A direct-edge validator reports a downstream artifact valid when
    every recorded edge still matches its target and the ground two levels up has moved. Closure is
    required, and it needs a topological pre-pass rather than recursion.
@@ -59,12 +59,12 @@ Three findings are load-bearing beyond M2A:
 
 | Earlier statement | Status |
 |---|---|
-| None[§4](original-rfc.md#4-problem-statement--gaps) **G4** — independence is mechanical for code but only doctrinal for documents | **Closed by construction.** Specification artifacts live in *project* state, so authoring them moves project scope and `_assert_fresh_reviewer` engages. The gap existed only for artifacts written into the run tree; putting them in the project was the fix, and it required no new independence mechanism. |
-| None[§4](original-rfc.md#4-problem-statement--gaps) **G5** — no way to declare in advance that a class of change needs sign-off | **Open, and reframed.** None[§35](../long-running-autonomy.md#35-local-adaptation-escalation-and-promotion) argues the missing piece is not a pre-declared class list but an escalation boundary plus durable decision provenance. |
-| None[§4](original-rfc.md#4-problem-statement--gaps) **G3** — traceability stops at the contract | **Partially closed.** M2A gives artifact and dependency identity; requirement→task mapping remains M2B/M2C. |
-| None[§6](original-rfc.md#6-end-to-end-workflow) and None[§7](original-rfc.md#7-state-machine-design) diagrams — *"findings → new contract revision"* | **Superseded.** Corrected in §25.5 (X1) and restated in §30.2; the diagrams themselves were left unedited. |
-| §26 suggestion to mark spec artifacts `-text` | **Withdrawn** by None[§27.2](../artifacts-and-provenance.md#272-decision-resolved--canonical-text-identity-and-why--text-was-rejected). |
-| Scattered `I<n>` numbering | **Superseded** by None[§33](../core-model.md#33-consolidated-principles). See the note there. |
+| [§4](original-rfc.md#4-problem-statement--gaps) **G4** — independence is mechanical for code but only doctrinal for documents | **Closed by construction.** Specification artifacts live in *project* state, so authoring them moves project scope and `_assert_fresh_reviewer` engages. The gap existed only for artifacts written into the run tree; putting them in the project was the fix, and it required no new independence mechanism. |
+| [§4](original-rfc.md#4-problem-statement--gaps) **G5** — no way to declare in advance that a class of change needs sign-off | **Open, and reframed.** [§35](../long-running-autonomy.md#35-local-adaptation-escalation-and-promotion) argues the missing piece is not a pre-declared class list but an escalation boundary plus durable decision provenance. |
+| [§4](original-rfc.md#4-problem-statement--gaps) **G3** — traceability stops at the contract | **Partially closed.** M2A gives artifact and dependency identity; requirement→task mapping remains M2B/M2C. |
+| [§6](original-rfc.md#6-end-to-end-workflow) and [§7](original-rfc.md#7-state-machine-design) diagrams — *"findings → new contract revision"* | **Superseded.** Corrected in §25.5 (X1) and restated in §30.2; the diagrams themselves were left unedited. |
+| §26 suggestion to mark spec artifacts `-text` | **Withdrawn** by [§27.2](../artifacts-and-provenance.md#272-decision-resolved--canonical-text-identity-and-why--text-was-rejected). |
+| Scattered `I<n>` numbering | **Superseded** by [§33](../core-model.md#33-consolidated-principles). See the note there. |
 
 
 ## 25. Validation pass (post-authoring review against the checkout)
@@ -95,7 +95,7 @@ the artifact, accepting the *first* reflector's gate failed with *"fresh Reviewe
 accepted Reviewer predates later project mutation in spec-author-2"*; a second reflector attempt was
 accepted.
 
-**C6 — Role addition breaks historical snapshots.** Reproduced exactly (None[§17.1](original-rfc.md#171-scriptsrulessnapshotpy--blocker-fix-first)), with the five affected
+**C6 — Role addition breaks historical snapshots.** Reproduced exactly ([§17.1](original-rfc.md#171-scriptsrulessnapshotpy--blocker-fix-first)), with the five affected
 call sites enumerated and `context_checkpoint.py` confirmed unaffected.
 
 **C7 — Existing capability classification is undisturbed.** `role_writes_project` still returns
@@ -115,22 +115,22 @@ reflector's report passed via `--input`. A new revision would additionally be ha
 matched to acceptance by contract hash, so rebinding a revision drops earlier mutating attempts from the
 freshness scan.
 
-**X2 — The change manifest is a committed project artifact, not run evidence.** Corrected in None[§8.1](original-rfc.md#81-split-markdown-for-reasoning-json-for-bindings)/None[§8.5](original-rfc.md#85-who-writes-the-manifest-and-when).
+**X2 — The change manifest is a committed project artifact, not run evidence.** Corrected in [§8.1](original-rfc.md#81-split-markdown-for-reasoning-json-for-bindings)/[§8.5](original-rfc.md#85-who-writes-the-manifest-and-when).
 The run tree is explicitly not project source and is git-ignored, so a manifest living only there could
 not establish what a checkout accepted.
 
-**X3 — The artifact model is a DAG, not a chain.** Corrected in None[§8.4](original-rfc.md#84-dependency-dag-and-typed-staleness). `design` and `specification` are
+**X3 — The artifact model is a DAG, not a chain.** Corrected in [§8.4](original-rfc.md#84-dependency-dag-and-typed-staleness). `design` and `specification` are
 siblings under `proposal`; this is what gives the cross-artifact consistency reflection a purpose.
 
-**X4 — Staleness needed to be typed.** Corrected in None[§8.4](original-rfc.md#84-dependency-dag-and-typed-staleness): `needs-revalidation` (upstream dependency
+**X4 — Staleness needed to be typed.** Corrected in [§8.4](original-rfc.md#84-dependency-dag-and-typed-staleness): `needs-revalidation` (upstream dependency
 moved) versus `invalid` (own content changed outside the harness), each reported with its reason.
 
 **X5 — The test blast radius was understated.** Not "four `PROTOCOL_NAMES` constants" but 17 failures
-across three modules; deriving the tuple from `_rules_snapshot` reduces it to one assertion (None[§17.1](original-rfc.md#171-scriptsrulessnapshotpy--blocker-fix-first)).
+across three modules; deriving the tuple from `_rules_snapshot` reduces it to one assertion ([§17.1](original-rfc.md#171-scriptsrulessnapshotpy--blocker-fix-first)).
 
 **X6 — The snapshot fix has a non-obvious ordering constraint.** The manifest stores protocol keys
 sorted while the fingerprint hashes them in registry order; only ordering by the current tuple restricted
-to the recorded set reproduces historical fingerprints (None[§17.1](original-rfc.md#171-scriptsrulessnapshotpy--blocker-fix-first)).
+to the recorded set reproduces historical fingerprints ([§17.1](original-rfc.md#171-scriptsrulessnapshotpy--blocker-fix-first)).
 
 ### 25.3 Decisions refined
 
@@ -189,12 +189,12 @@ checkout.** Worktrees remain a documented later extension point and are out of s
 
 ### 25.4 M0 and M1 outcomes (post-validation)
 
-M0 and M1 have since been implemented against this baseline; the implementation plan [§0](../README.md#0-project-identity-boundary), None[§3](../execution-and-review.md#3-existing-invariants-that-must-be-preserved) and None[§4](original-rfc.md#4-problem-statement--gaps) are
+M0 and M1 have since been implemented against this baseline; the implementation plan [§0](../README.md#0-project-identity-boundary), [§3](../execution-and-review.md#3-existing-invariants-that-must-be-preserved) and [§4](original-rfc.md#4-problem-statement--gaps) are
 authoritative for what was built. Two findings in §25.2 were superseded by M0 and are corrected here:
 
 - **X5 (test blast radius)** was a *symptom*, not a separate problem. After the historical-snapshot fix,
   adding two roles causes **zero** test failures, so the planned fixture-derivation change was dropped.
-- **The interpreter claim in None[§1](original-rfc.md#1-executive-summary)** conflated the development machine's system `python3` (3.9.6) with the
+- **The interpreter claim in [§1](original-rfc.md#1-executive-summary)** conflated the development machine's system `python3` (3.9.6) with the
   supported interpreter. The inherited suite is 82 tests green and unmodified on Python 3.10–3.14; the
   supported minimum is now declared ≥3.10 and no test module needed repair.
 
@@ -202,12 +202,12 @@ authoritative for what was built. Two findings in §25.2 were superseded by M0 a
 18 inserted and 4 deleted lines across `scripts/_roles.py` and `scripts/dsd_state.py`, plus two role
 protocol files. Every rejection in the 12-step acceptance scenario — self-acceptance, stale reflection,
 mutating reflector, stray author write — came from inherited DSD enforcement with no Proofbound-specific
-check. The one architectural refinement it forced is recorded in None[§9.1](original-rfc.md#91-two-review-classes-deliberately-not-collapsed): independent-review *capability* is
+check. The one architectural refinement it forced is recorded in [§9.1](original-rfc.md#91-two-review-classes-deliberately-not-collapsed): independent-review *capability* is
 shareable and mechanical, while review *purpose* is doctrinal and stays a parent role choice.
 
 ### 25.5 Unresolved architectural questions
 
-Reduced from None[§23](original-rfc.md#23-open-questions-requiring-human-architectural-input) to those repository evidence genuinely cannot answer (the interpreter question
+Reduced from [§23](original-rfc.md#23-open-questions-requiring-human-architectural-input) to those repository evidence genuinely cannot answer (the interpreter question
 was since decided in M0):
 
 1. **Committed spec root path and naming** — `specs/<change-id>/` versus an existing convention the target
@@ -230,10 +230,10 @@ Baseline inspected: `efddc5307681acb70dbc2cfcb1cd43f0183bc37b` (clean, in sync w
 118 tests green on 3.10 and 3.14). This section records a design-only pass. Nothing here is
 implemented.
 
-**Where this section differs from §None[§5](original-rfc.md#5-proposed-target-architecture)–17, this section governs.** Those sections were written before
+**Where this section differs from §[§5](original-rfc.md#5-proposed-target-architecture)–17, this section governs.** Those sections were written before
 M1 existed and are kept for their reasoning, not as current specification. Specific supersessions:
 
-| §None[§5](original-rfc.md#5-proposed-target-architecture)–17 said | §26 says | Why |
+| §[§5](original-rfc.md#5-proposed-target-architecture)–17 said | §26 says | Why |
 |---|---|---|
 | `dsd_spec.py` | `pb_ledger.py` (+ `pb_purpose.py`) | The change ledger is a Proofbound-native concept, not an inherited DSD identifier; the `dsd_` prefix is reserved for compatibility-sensitive inherited names |
 | `specs/<id>/manifest.json` | `specs/<id>/ledger.json` | "Manifest" is now reserved for the immutable freeze manifest, whose canonical hash is an identity; the ledger is mutable and is not content-addressed |
@@ -493,7 +493,7 @@ Stated plainly, because it is easy to overclaim (I8):
    reader mistake recorded precision for enforcement. **Human decision.**
 2. **Where the ledger lives** — `specs/<change-id>/ledger.json` assumes the `specs/` root decided
    earlier. Still the only open naming question that blocks M2B, not M2A.
-3. **Change profiles (None[§17](original-rfc.md#17-integration-points-with-current-dsd-code))** — the recommended direction is that the **parent declares the required
+3. **Change profiles ([§17](original-rfc.md#17-integration-points-with-current-dsd-code))** — the recommended direction is that the **parent declares the required
    artifact set explicitly** and Python enforces the declared graph, keeping subjective complexity
    judgments out of Python. No policy language. Not needed until M2B.
 4. **Does discovery require reflection?** Deferred with the graph.

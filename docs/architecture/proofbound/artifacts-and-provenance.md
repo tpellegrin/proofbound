@@ -8,7 +8,7 @@
 
 ### 27.2 Decision resolved — canonical text identity, and why `-text` was rejected
 
-None[§26](evidence/implementation-findings.md#26-m2-design-check) suggested marking spec artifacts `-text` in `.gitattributes` because artifact hashes were to be
+[§26](evidence/implementation-findings.md#26-m2-design-check) suggested marking spec artifacts `-text` in `.gitattributes` because artifact hashes were to be
 taken over raw bytes. That suggestion is **withdrawn**. Four options were considered against the
 invariant *the same logical committed text artifact has the same identity on every supported OS and
 under every checkout configuration*:
@@ -50,7 +50,7 @@ it: `git add --renormalize .` produced no churn, and a CRLF checkout validates i
 
 *Normative. Implemented in `scripts/pb_ledger.py`; this states what it guarantees.*
 
-The ledger is the durable-provenance layer `L4` ([core-model.md None[§31](core-model.md#31-the-truth-model--four-layers)](core-model.md#31-the-truth-model--four-layers)):
+The ledger is the durable-provenance layer `L4` ([core-model.md §31](core-model.md#31-the-truth-model--four-layers)):
 version-controlled project state recording which content was accepted, what it was reviewed against, and
 under which declared purpose. It is deliberately not a summary of execution evidence.
 
@@ -155,7 +155,7 @@ scope is a region, not a node.
 So: **a separate relation, deferred.** Its likely form reuses an existing pattern — a declared path-prefix
 set, exactly like `Allowed source changes`: authority declares it, Python compares prefixes, nothing is
 interpreted (P1). Selecting the applicable decisions for a task then becomes a prefix intersection
-against the task's scope, which is what makes None[§28](context-economy.md#28-context-economy-and-refactoring-economics)'s progressive disclosure implementable.
+against the task's scope, which is what makes [§28](context-economy.md#28-context-economy-and-refactoring-economics)'s progressive disclosure implementable.
 
 The honest limit: some scopes are conceptual ("everything doing authorization") rather than path-shaped.
 Those can be stated in prose and reviewed semantically, but they cannot be mechanically selected. The
@@ -170,7 +170,7 @@ discovered late:
 
 - **The graph stays generic.** Artifact kinds may label nodes and drive required-set validation, but
   dependency edges must remain plain path→identity relations with no kind-specific semantics, so decision
-  artifacts can join later without a schema break (None[§36.2](long-running-autonomy.md#362-a-decision-is-an-artifact)).
+  artifacts can join later without a schema break ([§36.2](long-running-autonomy.md#362-a-decision-is-an-artifact)).
 - **Applicability is not a dependency edge** (§36.3). M2B must not model any decision-like "governs"
   relation as a dependency, and should not add a second edge type speculatively either.
 

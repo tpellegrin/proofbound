@@ -123,8 +123,34 @@ def check_section_uniqueness(failures: list[str]) -> int:
     return len(seen)
 
 
+def check_link_syntax(failures: list[str]) -> int:
+    """Reject malformed link syntax, not just unresolvable targets.
+
+    A link whose text contains another link renders as literal brackets and reads as
+    corruption. This check exists because an earlier automated reference rewrite emitted
+    exactly that — and a checker that validated only link *targets* passed it, because the
+    targets were fine. Validating that a reference resolves is not the same as validating
+    that it is well formed.
+    """
+    checked = 0
+    for f in markdown_files():
+        for line_no, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+            stripped = re.sub(r"`[^`]*`", "", line)          # code spans may contain brackets
+            for m in re.finditer(r"\[([^\]]*)\]\(", stripped):
+                checked += 1
+                if "[" in m.group(1):
+                    failures.append(f"{f.name}:{line_no}: nested brackets in link text: {m.group(0)[:60]}")
+            if "None[" in stripped:
+                failures.append(f"{f.name}:{line_no}: literal 'None[' — a broken generated reference")
+    return checked
+
+
 def check_no_bare_cross_references(failures: list[str]) -> int:
-    """A bare §N inside the corpus must belong to the document it appears in."""
+    """A bare §N inside the corpus must belong to the document it appears in.
+
+    A §N inside link text is not bare — `[core-model.md §33](...)` is a correct citation —
+    so links are removed before scanning.
+    """
     owner: dict[str, Path] = {}
     for f in sorted(CORPUS.rglob("*.md")):
         for line in f.read_text(encoding="utf-8").splitlines():
@@ -136,6 +162,7 @@ def check_no_bare_cross_references(failures: list[str]) -> int:
         for line_no, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
             if line.startswith("#"):
                 continue
+            line = LINK.sub("", line)
             for num in BARE_SECTION.findall(line):
                 checked += 1
                 home = owner.get(num) or owner.get(num.split(".")[0])
@@ -156,8 +183,10 @@ def main() -> int:
     ids = check_canonical_identifiers(failures)
     sections = check_section_uniqueness(failures)
     bare = check_no_bare_cross_references(failures)
+    syntax = check_link_syntax(failures)
 
     print(f"links checked:              {links}")
+    print(f"link syntax checked:        {syntax}")
     print(f"canonical identifiers:      {ids}")
     print(f"inherited sections indexed: {sections}")
     print(f"bare section references:    {bare}")
