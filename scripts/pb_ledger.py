@@ -518,6 +518,55 @@ def record(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
                "depends_on": depends_on, "review": ledger["artifacts"][artifact_key]["review"]}
 
 
+def withdraw(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
+    """Remove one accepted record. Parent-owned; never a worker operation.
+
+    Withdrawal is consistent with what the ledger already is. `record` overwrites an
+    existing entry, so a re-accepted artifact's previous identity is already gone from
+    current state: the ledger is a snapshot of *currently* accepted provenance, and Git is
+    the history chain. Withdrawal is that same class of operation, made explicit — it is
+    not supersession of a frozen baseline, which is a different mechanism for a different
+    object and is not implemented here.
+
+    It cannot fabricate acceptance, does not touch artifact content or run evidence, and
+    refuses to leave the ledger unloadable.
+    """
+    ledger_path = args.ledger.resolve()
+    ledger = load_ledger(ledger_path)
+    project_root = args.project_root.resolve()
+
+    artifact = args.artifact.resolve()
+    try:
+        artifact_key = artifact.relative_to(project_root).as_posix()
+    except ValueError as exc:
+        raise LedgerError(f"artifact is outside the project worktree: {artifact}") from exc
+    if artifact_key not in ledger["artifacts"]:
+        raise LedgerError(f"no accepted record to withdraw: {artifact_key}")
+
+    # A record something else was accepted against cannot simply vanish: the remaining
+    # records would name a dependency absent from the ledger, which `load_ledger` rejects,
+    # and the ledger would no longer load at all.
+    dependents = sorted(
+        name for name, entry in ledger["artifacts"].items()
+        if artifact_key in entry["depends_on"] and name != artifact_key
+    )
+    if dependents:
+        raise LedgerError(
+            f"cannot withdraw {artifact_key}: still a recorded dependency of "
+            f"{', '.join(dependents)}. Withdraw or re-accept those first."
+        )
+
+    ledger["artifacts"].pop(artifact_key)
+    ledger_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = ledger_path.with_name(ledger_path.name + ".tmp")
+    tmp.write_text(canonical_ledger_text(ledger), encoding="utf-8")
+    tmp.replace(ledger_path)
+    load_ledger(ledger_path)
+
+    return 0, {"ledger": str(ledger_path), "withdrawn": artifact_key,
+               "remaining": sorted(ledger["artifacts"])}
+
+
 # ---------------------------------------------------------------- cli
 
 
@@ -534,6 +583,12 @@ def parser() -> argparse.ArgumentParser:
                      help="an accepted artifact this one was reviewed against; repeatable")
     rec.add_argument("--ledger", type=Path, required=True)
     rec.set_defaults(handler=record)
+
+    wd = sub.add_parser("withdraw", help="remove one accepted record (parent-owned)")
+    wd.add_argument("--ledger", type=Path, required=True)
+    wd.add_argument("--project-root", type=Path, required=True)
+    wd.add_argument("--artifact", type=Path, required=True)
+    wd.set_defaults(handler=withdraw)
 
     val = sub.add_parser("validate", help="derive artifact validity from content and closure")
     val.add_argument("--ledger", type=Path, required=True)
