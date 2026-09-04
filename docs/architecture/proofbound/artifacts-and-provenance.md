@@ -198,9 +198,10 @@ interacts badly with (6): if a narrow decision invalidates a wide task graph, th
 enough to be worked around, which is its own failure. That tension is real and should be designed
 explicitly rather than discovered.
 
-## A3. The change graph (M2B — designed, not implemented)
+## A3. The change graph (M2B — IMPLEMENTED)
 
-*Normative direction. No production code implements any of this.*
+*Normative. Implemented in `scripts/_change_graph.py` and `scripts/pb_graph.py`; this states what it
+guarantees. Corrections implementation forced on the design check are in [A3.9](#a39-corrections-from-implementation).*
 
 ### A3.1 What M2A cannot answer
 
@@ -376,6 +377,42 @@ later by the validator. The honest resulting state is "historically accepted, cu
 which is informative rather than dangerous. This preserves immutable contracts (`I3`) and avoids inventing
 a lock, and it is the reason no `graph_sha256` needs to enter a contract: nothing about accepting an
 artifact depends on which topology was current when it launched.
+
+### A3.9 Corrections from implementation
+
+Four design-check statements changed when the code was written. Everything else survived unaltered.
+
+1. **Withdrawal is consistent, and the reason is stronger than the design check knew.** The question was
+   whether deleting durable provenance conflicts with supersession-not-mutation. It does not, and the
+   proof is in existing behavior: `record` **overwrites** an entry, so a re-accepted artifact's previous
+   identity is *already* gone from current state. The ledger is a snapshot of currently accepted
+   provenance and Git is the history chain — exactly why M2A rejected a `supersedes` field. Withdrawal is
+   that same operation made explicit. `P9` governs future frozen baselines, a different object; applying
+   it to every ledger entry would contradict shipped M2A behavior. Withdrawal refuses to orphan a
+   dependency, because removing a record another was accepted against leaves the ledger unloadable.
+2. **Exactness needed two exclusions the design check did not anticipate.** Proofbound's own control
+   files (`graph.json`, `ledger.json`) never count toward exactness and may not be declared as members.
+   Without this a record nothing is permitted to declare would make a graph permanently unsatisfiable.
+3. **Edge comparison is skipped for a member with no accepted record.** Otherwise a single unaccepted
+   artifact produces a missing-record finding *plus* one missing-edge finding per required dependency,
+   burying the actual problem.
+4. **A self-dependency is reported precisely, not as a cycle.** It is a cycle, but naming it exactly is
+   more useful, and both fail closed identically.
+
+**Graph identity is text identity.** `artifact_identity_file(graph.json)` under the existing
+`proofbound-artifact-text-v1` — no second hashing protocol. The consequence is deliberate: a
+whitespace-only edit is a new graph identity. Semantic-graph identity would avoid that at the cost of a
+new canonicalization protocol, and this project has repeatedly been right to refuse unnecessary
+normalization. Nothing in M2B consumes graph identity; M2C will, and it is available with no new code.
+
+**External dependency support, stated exactly.** The format permits an edge to any target. The v1
+validator resolves a target only within the ledger it is given: a target that is a member is internal, one
+that is in the same ledger but outside the graph's scope is external and legal, and one that is in neither
+is `unresolved-dependency-target`. A path merely existing in the repository is never a legal target — it
+has no accepted identity to have been reviewed against. **Cross-change composition therefore works if and
+only if the composing changes share a ledger**, since `load_ledger` requires every dependency target to be
+a key in the same file. M2B does not decide whether ledgers are per-change or project-wide, and does not
+foreclose either.
 
 ### A3.8 What M2B does not do
 

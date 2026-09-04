@@ -475,9 +475,9 @@ refuses any task whose status is not already `accepted`.
 
 M2B is designed in full below. M2C and beyond remain coarse until their own design checks.
 
-### M2B — Change graph  *(DESIGNED, NOT IMPLEMENTED)*
+### M2B — Change graph  *(IMPLEMENTED)*
 
-Design authority: [`proofbound/artifacts-and-provenance.md` §A3](proofbound/artifacts-and-provenance.md#a3-the-change-graph-m2b--designed-not-implemented).
+Design authority: [`proofbound/artifacts-and-provenance.md` §A3](proofbound/artifacts-and-provenance.md#a3-the-change-graph-m2b--implemented).
 
 **Thesis** *(revised — see the correction below)*:
 
@@ -587,6 +587,36 @@ is the failure the design exists to prevent.
 
 `pb_ledger.py` only, and only to extract shared traversal. M2A's schema, states, precedence and trust
 boundary are unchanged. If a graph change forces an M2A semantic change, stop.
+
+### M2B outcome  *(implemented and validated)*
+
+Design authority: [`artifacts-and-provenance.md` §A3](proofbound/artifacts-and-provenance.md#a3-the-change-graph-m2b--implemented),
+with the implementation corrections in
+[§A3.9](proofbound/artifacts-and-provenance.md#a39-corrections-from-implementation).
+
+| File | Role |
+|---|---|
+| `scripts/_dag.py` | **new** — the one DAG traversal, shared by ledger closure and graph topology |
+| `scripts/_change_graph.py` | **new** — v1 schema, path rules, exactness scope, findings |
+| `scripts/pb_graph.py` | **new** — `validate`, one command |
+| `scripts/pb_ledger.py` | DAG extraction (behaviour-neutral) plus parent-owned `withdraw` |
+
+**Zero changes** to `dsd_state.py`, the evidence gate, the role registry, worker launch, snapshot
+protocols, or task acceptance. M2B sits above M2A's accepted-artifact primitive, which was the discipline
+test for whether the design was right.
+
+**Tests: 251 green on 3.10 and 3.14** — 211 inherited and unchanged, 35 graph unit tests, 5 vertical-slice
+tests. The decisive pair is the topology revisions: adding a sibling leaves every artifact `valid`, and
+requiring a new edge from an already-accepted node reports `missing-required-edge` while that node's
+content stays `valid`. Artifact validity and graph satisfaction are demonstrably separate dimensions.
+
+**Proved end to end** through real DSD mechanics: three nodes declared and accepted in order, satisfaction
+only at completion; ordinary files beside the artifacts never becoming members; content drift producing
+ordinary M2A transitive staleness and restoration returning satisfaction; a re-authored node requiring its
+dependent's revalidation in turn; a worker writing `graph.json` caught by the inherited
+`WRITE-RESTRICTION` with no graph-specific blocker; withdrawal clearing a removed node and refusing to
+orphan a dependency; and run-tree removal leaving findings and states identical while only provenance
+degrades.
 
 ### Hard stop for M2B
 
