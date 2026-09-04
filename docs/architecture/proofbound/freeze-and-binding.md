@@ -9,6 +9,9 @@
 
 ## A4. Freeze and binding
 
+*M2C-A is implemented in `scripts/_freeze.py` and `scripts/pb_freeze.py`; M2C-B and M2C-C are not.
+Implementation corrections are in [A4.8](#a48-corrections-from-implementation).*
+
 ### A4.1 The identity that was missing
 
 M2B proves a topology is satisfied *now*. That proof evaporates: the ledger is a current snapshot
@@ -157,3 +160,45 @@ Never one `freeze_valid` boolean. Four independent questions, each answered sepa
 
 A freeze can be internally valid, no longer satisfied by the repository, and still the correct binding for
 work already authorized under it. Collapsing these would make that state unrepresentable.
+
+### A4.8 Corrections from implementation
+
+Three things changed or were settled when M2C-A was built. The schema, identity model and
+binding semantics survived unaltered.
+
+1. **External dependency closure: members are exactly the graph's declared artifacts.** The design
+   check left this open as the largest edge case, with three candidate models. Resolved in favour of
+   graph membership, because **membership is authority's declaration of what constitutes the contract**.
+   Including the transitive closure would put artifacts into the frozen contract that no authority
+   declared, letting Proofbound infer contract membership from dependency structure rather than from
+   declaration — an inversion of `P7` and `P11`. A dependency target outside the graph stays a recorded
+   identity the contract was reviewed against; its own binding belongs to whatever contract declared it.
+   Consequently **no `roots` field is needed**, and the two-field schema stands.
+
+   The honest limit: a freeze pins an external target's *content* (the dependency hash is that content
+   identity) but not its provenance. If the external artifact's own accepted dependencies move while its
+   bytes do not, the freeze is unaffected — that staleness is M2A closure's question against the current
+   ledger, which is a different layer.
+
+2. **A non-computable candidate is a finding, not success.** Found by the vertical slice: after a
+   withdrawal the graph is unsatisfied and no candidate exists, and returning "no differences" would
+   have asserted the project still produces the freeze when nothing established it. Not computable is
+   not equivalence.
+
+3. **Provenance policy at creation, never in identity.** `verified` and `unavailable` may be frozen;
+   `contradicted` refuses creation. Identity is unaffected either way, because freeze bytes derive from
+   graph and ledger alone — a contradiction cannot change what a freeze says, only whether a *new*
+   durable record should be minted from evidence that disagrees with itself. Absent evidence is not
+   disagreement, so an old repository with no run tree can still freeze. The check runs only when a run
+   root is supplied; it is a guard, not a gate (`P5`).
+
+**Storage.** `specs/<change>/freezes/<identity>.json` — content-addressed and append-only, so
+supersession needs no `supersedes` field and no mutable pointer (`P3`). Re-deriving an unchanged contract
+rewrites nothing. Validation reports a `filename-identity-mismatch` when a 64-character filename does not
+match its content, which catches a renamed or hand-edited file without making the filename authoritative:
+identity is content, so a copy under any name is the same freeze.
+
+**Not implemented, and not implied.** M2C-A authorizes nothing. There is no task freeze reference, no run
+or phase binding, no mixed-freeze reporting, no consistency reflection, and no cross-ledger composition.
+A freeze is a durable engineering-contract candidate; calling it "approved" or "authorized for execution"
+would claim exactly what [A4.6](#a46-what-a-freeze-does-not-prove) says it cannot.

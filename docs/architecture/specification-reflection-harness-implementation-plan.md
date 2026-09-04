@@ -633,7 +633,7 @@ separately. Bundling them would repeat the mistake the original M2 split already
 
 | Slice | Thesis | Proves |
 |---|---|---|
-| **M2C-A** | A satisfied graph plus its accepted bindings can be reduced to one deterministic, content-addressed, self-contained contract identity that later ledger or graph mutation cannot rewrite. | Freeze identity is *correct* |
+| **M2C-A** *(IMPLEMENTED)* | A satisfied graph plus its accepted bindings can be reduced to one deterministic, content-addressed, self-contained contract identity that later ledger or graph mutation cannot rewrite. | Freeze identity is *correct* |
 | **M2C-B** | An aggregate consistency reflection can be bound to an exact candidate identity, so a review of `C1` can never authorize `C2`. | Freeze is *coherent* |
 | **M2C-C** | An implementation task contract can name an exact freeze, and divergent freeze usage across a run is detectable. | Freeze is *executable* |
 
@@ -674,6 +674,27 @@ Reuses M2B's three-node slice, then:
 | 12 | Worker writes a freeze file | inherited `WRITE-RESTRICTION` |
 
 Steps 3, 4 and 6 together are the thesis: engineering meaning is bound, incidental execution history is not.
+
+#### M2C-A outcome  *(implemented and validated)*
+
+| File | Role |
+|---|---|
+| `scripts/_freeze.py` | **new** — bindings, canonical v1 serialization, identity, internal validation, derivation, comparison |
+| `scripts/pb_freeze.py` | **new** — `create`, `validate`, `compare` |
+
+**Zero changes** to `dsd_state.py`, the evidence gate, task contracts, acceptance, worker launch, roles,
+`pb_ledger.py` or `pb_graph.py`. M2C-A sits entirely above M2A and M2B.
+
+**Tests: 286 green on 3.10 and 3.14** — 251 inherited and unchanged, 30 freeze unit tests, 5 vertical
+slice. The decisive pair: an equivalent re-review through a new attempt and gate leaves the identity
+unchanged, while a changed dependency set changes it with byte-identical content. Also proved: a purpose
+change alone moves the identity; a graph reformat does not; the freeze survives withdrawal and graph
+deletion and remains interpretable from its own bytes alone in an empty directory; run-evidence loss and
+corruption move provenance without touching identity; and a worker writing a freeze trips the inherited
+`WRITE-RESTRICTION`.
+
+Corrections in [`freeze-and-binding.md` §A4.8](proofbound/freeze-and-binding.md#a48-corrections-from-implementation),
+including the resolution of the external-closure question the design check left open.
 
 #### Cross-ledger composition — decided
 
