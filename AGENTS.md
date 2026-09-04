@@ -38,9 +38,18 @@ repository scope rather than relying on remembering not to emit it.
 `DeepSeekAndDestroy/` workspace root, `dsd_*` helpers and their CLI surface, protocol and manifest
 format strings, state keys, environment variables, and existing role names — are
 compatibility-sensitive **wire identifiers**, not branding. Do not rename them for consistency; that
-needs its own migration milestone. See `docs/architecture/specification-reflection-harness.md` §0.
+needs its own migration milestone. See
+[`docs/architecture/proofbound/README.md`](docs/architecture/proofbound/README.md) §0.
 
 ## Before changing anything
 
 Read `CONTRIBUTING.md` for the supported interpreter and the canonical test command, and keep the
 suite green.
+
+For architecture-affecting work, start at
+[`docs/architecture/proofbound/README.md`](docs/architecture/proofbound/README.md) and follow its
+"Read this if…" map to the documents your task actually touches. The architecture is deliberately
+several documents so a bounded task does not have to ingest all of it; the entry point routes, and the
+normative rules live in the documents it links. Do not rely on a summary of a rule found near your
+code — cite the canonical definition. This file is not a copy of the architecture and must not become
+one.

@@ -1,6 +1,9 @@
 # Implementation Plan — Specification & Reflection Harness
 
-- **Authority:** `docs/architecture/specification-reflection-harness.md` (RFC), especially §17, §19, §25
+- **Authority:** [`docs/architecture/proofbound/README.md`](proofbound/README.md) and the normative
+  documents it routes to. Historical design intent: RFC [§17](proofbound/evidence/original-rfc.md#17-integration-points-with-current-dsd-code), §19 in
+  [`proofbound/evidence/original-rfc.md`](proofbound/evidence/original-rfc.md); validation record: RFC [§25](proofbound/evidence/implementation-findings.md#25-validation-pass-post-authoring-review-against-the-checkout) in
+  [`proofbound/evidence/implementation-findings.md`](proofbound/evidence/implementation-findings.md)
 - **Scope:** M0/M1 executable; M2+ coarse only
 
 ## 0. Architecture baseline and provenance
@@ -91,10 +94,10 @@ stop and reassess** — that falsifies the RFC's central claim.
 
 ## 2. Invariants
 
-**Canonical statement lives elsewhere.** Proofbound's architectural principles are RFC §33, `P1`–`P13`;
-the inherited DSD mechanical invariants are RFC §3, `I1`–`I15`. This list is neither — it is the
+**Canonical statement lives elsewhere.** Proofbound's architectural principles are RFC [§33](proofbound/core-model.md#33-consolidated-principles), `P1`–`P13`;
+the inherited DSD mechanical invariants are RFC [§3](proofbound/execution-and-review.md#3-existing-invariants-that-must-be-preserved), `I1`–`I15`. This list is neither — it is the
 *implementation-facing* restatement of what code in this plan must not break, and it cites the principle
-it serves rather than competing with it. If this list and RFC §33 disagree, §33 wins.
+it serves rather than competing with it. If this list and RFC [§33](proofbound/core-model.md#33-consolidated-principles) disagree, §33 wins.
 
 Each is already enforced by existing code or tests. Implementation must not violate them.
 
@@ -321,7 +324,7 @@ it; M1 roles correctly refuse with `missing launch authority`; tampering is stil
 mechanical; review *purpose* is doctrinal. A `reviewer` gate will satisfy a spec mutation and a
 `spec-reflector` gate an implementation mutation, because enforcing which review a task warrants would
 require Python to classify task semantics. The capability set stays narrow — `evidence-clerk` and other
-read-only roles do not qualify, and a second `spec-author` attempt never does. RFC §9.1 was amended;
+read-only roles do not qualify, and a second `spec-author` attempt never does. RFC [§9.1](proofbound/evidence/original-rfc.md#91-two-review-classes-deliberately-not-collapsed) was amended;
 `tests/test_m1_spec_reflection_slice.py` pins all three facts.
 
 **Deferred to M2 as planned:** `dsd_spec.py`, change/freeze manifests, the artifact DAG, typed staleness,
@@ -329,7 +332,7 @@ task↔freeze binding, cross-artifact consistency, provider/model routing, human
 DSD→Proofbound internal migration. M1 operates on one bounded artifact under one contract.
 ## 6. M2A — Durable artifact provenance  *(IMPLEMENTED)*
 
-Design authority: RFC §26. M2 was **split** because the original single milestone coupled the artifact
+Design authority: RFC [§26](proofbound/evidence/implementation-findings.md#26-m2-design-check). M2 was **split** because the original single milestone coupled the artifact
 model, the full DAG, and freeze into one landing — which violates I9 and would have shipped three
 unproven theses at once.
 
@@ -422,7 +425,7 @@ no human gates.
 
 ### M2A outcome  *(implemented and validated)*
 
-Design authority: RFC §26, with the two open decisions resolved and the implementation corrections
+Design authority: RFC [§26](proofbound/evidence/implementation-findings.md#26-m2-design-check), with the two open decisions resolved and the implementation corrections
 recorded in RFC §27.
 
 **Production surface added** (all additive except one guarded call):
@@ -435,7 +438,7 @@ recorded in RFC §27.
 | `scripts/_contract.py` | `declares_review_purpose` / `declared_review_purpose`; `path_allowed` moved here from `evidence_gate` so the ledger does not depend on the gate CLI |
 | `scripts/dsd_state.py` | One guarded call in `accept_task`: declared purpose → qualifying role |
 | `scripts/render_task_contract.py` | `review_purpose` added to the strict `FIELDS` whitelist; renders `## Review purpose` and rejects an unknown purpose at construction time |
-| `.gitattributes` | `text eol=lf` hygiene; **not** `-text` (RFC §27.2) |
+| `.gitattributes` | `text eol=lf` hygiene; **not** `-text` (RFC [§27.2](proofbound/artifacts-and-provenance.md#272-decision-resolved--canonical-text-identity-and-why--text-was-rejected)) |
 
 **Deviations from the designed surface in §6, and why.** `scripts/_review_purpose.py`, not
 `pb_purpose.py` — the leading underscore is this repository's convention for a shared helper module
@@ -449,7 +452,7 @@ caught a real coupling, and moving one pure function was the correct resolution 
 exception to the rule.
 
 **Decisions resolved.** Fine-grained review-purpose vocabulary retained (five names, two enforcement
-classes today) — RFC §27.1. Canonical text hashing adopted and `-text` rejected — RFC §27.2.
+classes today) — RFC [§27.1](proofbound/execution-and-review.md#271-decision-resolved--the-review-purpose-vocabulary-is-fine-grained). Canonical text hashing adopted and `-text` rejected — RFC [§27.2](proofbound/artifacts-and-provenance.md#272-decision-resolved--canonical-text-identity-and-why--text-was-rejected).
 
 **Tests.** 205 green on Python 3.10 and 3.14 via `python3 -m unittest discover -s tests -t .`; the 118
 inherited tests are unmodified and still green. New: 20 artifact-identity characterization tests, 21
@@ -484,7 +487,7 @@ settled one question that would otherwise have surfaced during M2C.
 |---|---|
 | Does the artifact graph need to change for future decision artifacts? | **No.** M2A's `depends_on` is already a plain path→identity map with no kind semantics. A decision record is an artifact with content, dependencies and a reviewed purpose — the existing shape carries it. |
 | Should the graph be generic enough to represent them later? | **Yes, and this is a constraint on M2B.** Kinds may label nodes and drive required-set validation. Edges must stay kind-agnostic. A kind-specific edge semantic would need a schema break to admit decisions later. |
-| Is applicability a dependency edge or a separate relation? | **A separate relation, deferred** (RFC §36.3). A dependency means "reviewed against this exact content; revalidate if it moves". Applicability means "this constraint governs this region". Modelling applicability as a dependency would make superseding one decision invalidate every artifact in its scope. M2B must not add it, and must not add a speculative second edge type either. |
+| Is applicability a dependency edge or a separate relation? | **A separate relation, deferred** (RFC [§36.3](proofbound/artifacts-and-provenance.md#363-applicability-is-not-a-dependency-edge)). A dependency means "reviewed against this exact content; revalidate if it moves". Applicability means "this constraint governs this region". Modelling applicability as a dependency would make superseding one decision invalidate every artifact in its scope. M2B must not add it, and must not add a speculative second edge type either. |
 | Does M2B need artifact kinds? | **Yes** — a required/optional artifact set is meaningless without them. But a kind is a *label plus a declared required set*, never behaviour-switching logic. |
 | Does M2B need profiles? | **Prefer the explicit declared required graph.** A profile is acceptable only as pure data expansion — a named, reusable declared set — and never as a policy language, a complexity score, or anything that selects a workflow by judging the change. |
 | What is the smallest M2B thesis? | *A change's required artifact set and its dependency shape can be declared by authority and enforced mechanically, with staleness propagating across the whole declared graph — without Python judging whether the decomposition is any good.* |
@@ -495,7 +498,7 @@ required set, a graph whose shape is validated against that declaration, and sta
 across more than one hop — which M2A's closure already implements and tests to depth 5000, so the
 remaining risk is in declaration and shape validation, not in traversal.
 - **M2C — Freeze and binding.** Immutable freeze manifest whose canonical hash is the freeze
-  identity; candidate-aggregate consistency reflection (RFC §26.8); `spec_freeze` contract binding;
+  identity; candidate-aggregate consistency reflection (RFC [§26.8](proofbound/evidence/implementation-findings.md#268-direction-for-freeze-and-binding-m2c-not-designed-here)); `spec_freeze` contract binding;
   `SPEC-BINDING-DRIFT` in the integrity gate; supersession with conservative invalidation of all
   tasks bound to the superseded freeze; cross-change replay hardening.
 - **M3 — Deterministic evidence and gates.** `evidence_bundle.py`; reviewer/auditor wiring; monotonic
@@ -506,13 +509,13 @@ remaining risk is in declaration and shape validation, not in traversal.
 - **M5 — Optional.** Evidence export/archival; transport-level permission profiles; worktree
   concurrency; model-neutral naming behind a `workspace_root()` helper.
 
-**Research track — Context economy and refactoring economics.** Architecture recorded in RFC §28; no
+**Research track — Context economy and refactoring economics.** Architecture recorded in RFC [§28](proofbound/context-economy.md#28-context-economy-and-refactoring-economics); no
 production code exists and none is planned before M2C. Two stages, with a genuine dependency between
 them:
 
 - **CE1 — passive context-economy telemetry.** Provider-neutral first (repository files read,
   repository bytes read), token counts as secondary telemetry only. Recorded in run/execution evidence,
-  never in the artifact ledger (RFC §28.3). No prerequisite; could land any time after M2C.
+  never in the artifact ledger (RFC [§28.3](proofbound/context-economy.md#283-why-this-is-not-a-ledger-field)). No prerequisite; could land any time after M2C.
 - **CE2 — controlled representative-change experiment.** Replays one task contract against two
   repository revisions with a fresh worker, discarding the mutation each time. **Depends on worktree
   concurrency (M5)**: the experiment must never leak benchmark mutation into a real branch.
@@ -569,7 +572,7 @@ capabilities placed in the graph.
    policy, which is threat T2 arriving through the tooling. The edge is a soundness constraint, not a
    build-order one.
 
-**The CE chain is genuinely independent.** RFC §37.5's reinforcing-loop hypothesis — erosion enlarges the
+**The CE chain is genuinely independent.** RFC [§37.5](proofbound/context-economy.md#375-coherence-and-context-economy-are-different-measurements)'s reinforcing-loop hypothesis — erosion enlarges the
 relevant context surface, which increases pattern imitation, which accelerates erosion — is a *hypothesis
 worth measuring*, not a dependency. The two chains stay separate, and the two dimensions are never
 collapsed into one health score:
@@ -584,20 +587,20 @@ them into a single number would destroy both signals and create a gameable targe
 
 ## 7B. Threat mitigation status
 
-RFC §39 states the threats. This table is their single mitigation record, kept here rather than in the RFC
+RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC
 so the roadmap and the coverage claim cannot drift apart. **Planned mitigation is not current protection.**
 
 | ID | Threat | Current mitigation | Planned | Residual risk |
 |---|---|---|---|---|
 | T1 | Context rationale loss | Durable artifacts (M2A ledger); bounded worker context (`I7`); immutable contracts and reports | Decision provenance with rationale + trigger | **High.** M2A records *what* was accepted, never *why*. Rationale currently survives only in commit messages and worker reports, and reports are deletable run evidence. |
 | T2 | Local workaround promotion | `Allowed source changes` bounds each task's blast radius; `DECISION_REQUIRED` exists as an escalation path | Decision provenance with mandatory scope; applicability selection | **High.** Nothing today distinguishes a bounded adaptation from a policy. Escalation is doctrinal — a worker that does not recognize the boundary simply does not escalate, and nothing detects that. |
-| T3 | Pattern imitation | Role protocols; contract-scoped authority | Authority hierarchy in worker doctrine (RFC §34.1); coherence audit | **High.** Fully unmitigated mechanically, and unmitigable mechanically — distinguishing debt from design is semantic. |
+| T3 | Pattern imitation | Role protocols; contract-scoped authority | Authority hierarchy in worker doctrine (RFC [§34.1](proofbound/core-model.md#341-the-evidence-hierarchy)); coherence audit | **High.** Fully unmitigated mechanically, and unmitigable mechanically — distinguishing debt from design is semantic. |
 | T4 | Decision compounding | None | Immutable baselines; coherence audit; decision provenance | **High.** The threat that most motivated Part II is the one with the least current coverage. |
 | T5 | Baseline drift | Immutable contracts and worker-rules revisions; M0's rule that history is judged by what it recorded | Freeze identity + supersession (M2C) | **Medium.** The *mechanism* (content-addressed, append-only, supersede-don't-mutate) is proven at artifact scale in M2A; no baseline object exists yet to apply it to. |
 | T6 | Reviewer contamination | **Real and enforced.** `_assert_fresh_reviewer` requires a fresh independent attempt; reviewers are project-read-only; cross-role transitions start a fresh session | Fresh-context requirement extended to the coherence audit | **Low** per task. **High** across a run: nothing today evaluates anything larger than one task. |
-| T7 | Stale defensive policy | None | Trigger provenance + explicit supersession (RFC §36.4) | **High.** No decisions exist, so none can go stale — the risk arrives with the capability, and the design must not ship without retirement. |
-| T8 | Guidance accumulation | Hot-doctrine byte caps (`test_v15_4_consolidation.py`); cold-load discipline | RFC split (§29); progressive disclosure of applicable decisions | **Medium and self-inflicted.** Worker doctrine is capped and tested. The *architecture* documentation is not: this RFC is ~190 KB and grew by a third in this pass. |
-| T9 | Local-pass / global-fail | Per-task independent review; phase audit against frozen evidence | Cumulative coherence audit; completion/coherence split (RFC §38.4) | **High.** Phase audit is the closest existing analogue and is scoped to one phase's evidence, not to architectural coherence. |
+| T7 | Stale defensive policy | None | Trigger provenance + explicit supersession (RFC [§36.4](proofbound/long-running-autonomy.md#364-retirement)) | **High.** No decisions exist, so none can go stale — the risk arrives with the capability, and the design must not ship without retirement. |
+| T8 | Guidance accumulation | Hot-doctrine byte caps (`test_v15_4_consolidation.py`); **architecture corpus split into routed documents with an entry point, size caps and a reference checker** (`tests/test_docs_architecture_refs.py`) | Progressive disclosure of applicable decisions, once decision provenance exists | **Low–medium.** Both worker doctrine and architecture documentation are now capped and mechanically checked. Residual: nothing bounds the *number* of normative documents, and the routing map is hand-maintained — an unlinked document is caught, a badly-routed one is not. |
+| T9 | Local-pass / global-fail | Per-task independent review; phase audit against frozen evidence | Cumulative coherence audit; completion/coherence split (RFC [§38.4](proofbound/long-running-autonomy.md#384-final-audit-is-two-audits)) | **High.** Phase audit is the closest existing analogue and is scoped to one phase's evidence, not to architectural coherence. |
 | T10 | Metric gaming | **By construction.** No metric is a gate anywhere; no composite score exists; every signal terminates in a semantic evaluator (P1, P13) | Keep it that way when CE1 lands | **Low, conditional.** Low only while the "signal, never verdict" rule holds. The first CI check that fails on a context-cost threshold reintroduces it. |
 
 The honest summary: **six of ten threats are largely unmitigated today.** The two that are genuinely
@@ -618,7 +621,7 @@ Two are worth naming as *deliberate non-solutions* rather than omissions. **Sema
 a wording-only edit changes the hash and costs a fresh reflection; the alternative (re-accept without
 re-review) would break I6, so the cost is accepted. **Ledger forgery** — anyone with repository write
 access can produce an internally consistent false ledger; Git review and retained run evidence are
-the mitigations, and the ledger is never described as cryptographic proof (RFC §26.10).
+the mitigations, and the ledger is never described as cryptographic proof (RFC [§26.10](proofbound/evidence/implementation-findings.md#2610-trust-boundary--what-the-hashes-actually-prove)).
 
 ## 9. Risks and rollback
 
@@ -645,10 +648,10 @@ the RFC Part II consolidation and belong to capabilities that are not yet schedu
 1. ~~**Purpose vocabulary granularity**~~ — **decided: keep the fine-grained vocabulary.** Five
    recorded names, two enforcement classes today. `purpose != capability != role`; collapsing names
    because their mechanics currently coincide would discard provenance and force retro-classification
-   in M2B. RFC §27.1.
+   in M2B. RFC [§27.1](proofbound/execution-and-review.md#271-decision-resolved--the-review-purpose-vocabulary-is-fine-grained).
 2. ~~**Artifact line-ending/identity protocol**~~ — **decided: canonical text hashing**
    (`proofbound-artifact-text-v1`), with `.gitattributes text eol=lf` as hygiene only. `-text` was
-   evaluated and rejected. RFC §27.2.
+   evaluated and rejected. RFC [§27.2](proofbound/artifacts-and-provenance.md#272-decision-resolved--canonical-text-identity-and-why--text-was-rejected).
 3. **Committed spec root** — `specs/<change-id>/` versus an existing repository convention. M2A can
    start against any root; this blocks the *end* of M2B.
 4. ~~**Minimum interpreter**~~ — decided in M0: Python ≥3.10.
@@ -659,13 +662,24 @@ the RFC Part II consolidation and belong to capabilities that are not yet schedu
    distinct `architecture-decision-reflection` belong in the registry? The review questions genuinely
    differ (soundness versus scope boundedness), and §27.1's tie-breaker leans toward adding one. **No
    registry change is made now.** Needed by the milestone that implements decision provenance, not by
-   M2B. RFC §36.5.
+   M2B. RFC [§36.5](proofbound/long-running-autonomy.md#365-does-decision-review-need-its-own-purpose).
 8. **Scope vocabulary for decisions** — path prefixes reuse the `Allowed source changes` pattern and are
    mechanically selectable, but some scopes are genuinely conceptual ("everything doing authorization")
    and cannot be. How much conceptual scope is acceptable before applicability selection stops working is
-   an open design question. RFC §36.3.
+   an open design question. RFC [§36.3](proofbound/artifacts-and-provenance.md#363-applicability-is-not-a-dependency-edge).
 9. **Coherence audit trigger policy** — which event boundaries actually correlate with incoherence.
-   Deliberately unresolved: it should be chosen from evidence, not guessed. RFC §38.3.
-10. **RFC documentation split** — whether to perform the §29 split now or wait for the stated trigger
-    (a bounded task can no longer be given the relevant architecture within a reasonable context budget).
-    The document is ~190 KB and this is threat T8 against Proofbound's own repository.
+   Deliberately unresolved: it should be chosen from evidence, not guessed. RFC [§38.3](proofbound/long-running-autonomy.md#383-when-audits-happen).
+10. ~~**RFC documentation split**~~ — **done.** The 195 KB single document became a routed corpus under
+    [`proofbound/`](proofbound/README.md): an entry point that routes rather than summarizes, four
+    normative documents, one research document, and historical evidence under `evidence/`. Authoritative
+    bytes for a bounded task fell 66–92%. Reference integrity is enforced by
+    `scripts/check_docs_refs.py` and `tests/test_docs_architecture_refs.py`.
+11. ~~**ADRs for Proofbound itself**~~ — **decided: no ADR program now.** Applying the M2A field test,
+    no invariant becomes impossible without one: rules live in the normative documents and their
+    rationale in [`evidence/implementation-findings.md`](proofbound/evidence/implementation-findings.md),
+    one link away. An ADR corpus would add a third document class and a fourth identifier namespace
+    (against the namespace discipline in [`README.md`](proofbound/README.md)) to solve a retrieval problem
+    the split already solved. It would also compete with the decision-provenance capability Proofbound is
+    designing as a product feature. **When that capability ships, Proofbound should dogfood it on its own
+    architectural decisions** — the non-duplicating path, and a far stronger test of the feature than a
+    synthetic one.

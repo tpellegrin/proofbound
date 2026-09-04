@@ -7,7 +7,8 @@ test suite is the baseline that protects every invariant. Keep it green.
 **Naming boundary.** `Proofbound` is the project identity. Inherited `dsd_*` helpers, the
 `DeepSeekAndDestroy/` workspace root, protocol/manifest format strings, state keys and role
 names are compatibility-sensitive wire identifiers — do not rename them for consistency. See
-`docs/architecture/specification-reflection-harness.md` §0.
+[`docs/architecture/proofbound/README.md`](docs/architecture/proofbound/README.md) §0, which is
+also the entry point to the architecture and routes to the documents relevant to a given change.
 
 ## Supported interpreter
 
