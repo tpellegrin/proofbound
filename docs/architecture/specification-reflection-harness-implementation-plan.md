@@ -91,6 +91,11 @@ stop and reassess** — that falsifies the RFC's central claim.
 
 ## 2. Invariants
 
+**Canonical statement lives elsewhere.** Proofbound's architectural principles are RFC §33, `P1`–`P13`;
+the inherited DSD mechanical invariants are RFC §3, `I1`–`I15`. This list is neither — it is the
+*implementation-facing* restatement of what code in this plan must not break, and it cites the principle
+it serves rather than competing with it. If this list and RFC §33 disagree, §33 wins.
+
 Each is already enforced by existing code or tests. Implementation must not violate them.
 
 1. **Historical runs stay verifiable** against the protocol identity they actually recorded, without
@@ -469,6 +474,26 @@ refuses any task whose status is not already `accepted`.
   (parent declares, Python enforces — no policy language, no complexity scoring); graph-shape
   validation; transitive staleness reporting across the full DAG; whether `discovery` requires
   reflection and whether `request` is a dependency-only node.
+
+### M2B readiness after the Part II consolidation
+
+**Scope is unchanged.** Part II added no work to M2B and removed none. It added two constraints and
+settled one question that would otherwise have surfaced during M2C.
+
+| Question | Answer |
+|---|---|
+| Does the artifact graph need to change for future decision artifacts? | **No.** M2A's `depends_on` is already a plain path→identity map with no kind semantics. A decision record is an artifact with content, dependencies and a reviewed purpose — the existing shape carries it. |
+| Should the graph be generic enough to represent them later? | **Yes, and this is a constraint on M2B.** Kinds may label nodes and drive required-set validation. Edges must stay kind-agnostic. A kind-specific edge semantic would need a schema break to admit decisions later. |
+| Is applicability a dependency edge or a separate relation? | **A separate relation, deferred** (RFC §36.3). A dependency means "reviewed against this exact content; revalidate if it moves". Applicability means "this constraint governs this region". Modelling applicability as a dependency would make superseding one decision invalidate every artifact in its scope. M2B must not add it, and must not add a speculative second edge type either. |
+| Does M2B need artifact kinds? | **Yes** — a required/optional artifact set is meaningless without them. But a kind is a *label plus a declared required set*, never behaviour-switching logic. |
+| Does M2B need profiles? | **Prefer the explicit declared required graph.** A profile is acceptable only as pure data expansion — a named, reusable declared set — and never as a policy language, a complexity score, or anything that selects a workflow by judging the change. |
+| What is the smallest M2B thesis? | *A change's required artifact set and its dependency shape can be declared by authority and enforced mechanically, with staleness propagating across the whole declared graph — without Python judging whether the decomposition is any good.* |
+| What stays outside M2B? | Freeze and binding; baseline identity; decision provenance; applicability; executable invariants; drift detection; coherence audit; context telemetry; human gates; provider routing; worktrees; naming migration. |
+
+The M2A slice proved two artifacts and one edge. M2B's proof obligation is the step up: a *declared*
+required set, a graph whose shape is validated against that declaration, and staleness that propagates
+across more than one hop — which M2A's closure already implements and tests to depth 5000, so the
+remaining risk is in declaration and shape validation, not in traversal.
 - **M2C — Freeze and binding.** Immutable freeze manifest whose canonical hash is the freeze
   identity; candidate-aggregate consistency reflection (RFC §26.8); `spec_freeze` contract binding;
   `SPEC-BINDING-DRIFT` in the integrity gate; supersession with conservative invalidation of all
@@ -494,6 +519,91 @@ them:
 
 Ordering is set by that dependency, not by preference. Neither stage may add fields to the accepted
 artifact record, and neither may turn a mechanical signal into an automatic refactoring verdict.
+
+## 7A. Capability dependency graph
+
+RFC Part II (§§29–40) added future capabilities whose ordering is set by real dependencies, not by
+preference. Milestone numbers are assigned only where the dependency is settled; the rest are named
+capabilities placed in the graph.
+
+```
+                    M2A  durable artifact provenance          [DONE]
+                          |
+                          v
+                    M2B  artifact graph                       [NEXT]
+                          |  generic kinds + plain path->identity edges
+             +------------+------------------+
+             |                               |
+             v                               v
+        M2C  freeze / binding          decision provenance
+             |                               |
+             v                               v
+        baseline identity              applicable-decision selection
+             |                               |   (scope prefix intersection)
+             v                               |
+        execution binding                    +--> executable invariants
+             |                               |     (soundness link: an invariant
+             |                               |      must cite its source decision)
+             +-------------+-----------------+
+                           v
+                 cumulative coherence audit
+
+  separately, no dependency on the above:
+
+        execution telemetry -> CE1 context economy -> controlled replay -> CE2 refactoring
+                                                       (needs worktrees, M5)      economics
+```
+
+**Three corrections to the ordering that was assumed before this pass.**
+
+1. **Decision provenance depends on M2B, not on M2C.** A decision record is an artifact with content
+   identity, dependencies and a declared review purpose — exactly M2A's model. What it needs beyond M2A is
+   artifact *kinds* (M2B), not freeze. Nothing about accepting a scoped decision requires a frozen
+   baseline. Placing it after M2C would have delayed it behind an unrelated milestone.
+2. **The coherence audit genuinely needs both branches.** It compares repository reality against *baseline
+   plus authorized divergence*. With a baseline but no decision provenance it would report every
+   authorized change as drift, which makes it worse than useless — high-volume false findings train
+   reviewers to ignore it.
+3. **Executable invariants are feasible without decision provenance but not *sound* without it.** Lint
+   rules can be written today; a rule with no cited source decision is an unattributed cross-cutting
+   policy, which is threat T2 arriving through the tooling. The edge is a soundness constraint, not a
+   build-order one.
+
+**The CE chain is genuinely independent.** RFC §37.5's reinforcing-loop hypothesis — erosion enlarges the
+relevant context surface, which increases pattern imitation, which accelerates erosion — is a *hypothesis
+worth measuring*, not a dependency. The two chains stay separate, and the two dimensions are never
+collapsed into one health score:
+
+| Dimension | Question |
+|---|---|
+| Context economy | How much repository context does a bounded change require? |
+| Architectural coherence | How well does repository reality align with accepted intent and decisions? |
+
+A subsystem can be cheap to navigate and architecturally incoherent, or coherent and expensive. Merging
+them into a single number would destroy both signals and create a gameable target (T10).
+
+## 7B. Threat mitigation status
+
+RFC §39 states the threats. This table is their single mitigation record, kept here rather than in the RFC
+so the roadmap and the coverage claim cannot drift apart. **Planned mitigation is not current protection.**
+
+| ID | Threat | Current mitigation | Planned | Residual risk |
+|---|---|---|---|---|
+| T1 | Context rationale loss | Durable artifacts (M2A ledger); bounded worker context (`I7`); immutable contracts and reports | Decision provenance with rationale + trigger | **High.** M2A records *what* was accepted, never *why*. Rationale currently survives only in commit messages and worker reports, and reports are deletable run evidence. |
+| T2 | Local workaround promotion | `Allowed source changes` bounds each task's blast radius; `DECISION_REQUIRED` exists as an escalation path | Decision provenance with mandatory scope; applicability selection | **High.** Nothing today distinguishes a bounded adaptation from a policy. Escalation is doctrinal — a worker that does not recognize the boundary simply does not escalate, and nothing detects that. |
+| T3 | Pattern imitation | Role protocols; contract-scoped authority | Authority hierarchy in worker doctrine (RFC §34.1); coherence audit | **High.** Fully unmitigated mechanically, and unmitigable mechanically — distinguishing debt from design is semantic. |
+| T4 | Decision compounding | None | Immutable baselines; coherence audit; decision provenance | **High.** The threat that most motivated Part II is the one with the least current coverage. |
+| T5 | Baseline drift | Immutable contracts and worker-rules revisions; M0's rule that history is judged by what it recorded | Freeze identity + supersession (M2C) | **Medium.** The *mechanism* (content-addressed, append-only, supersede-don't-mutate) is proven at artifact scale in M2A; no baseline object exists yet to apply it to. |
+| T6 | Reviewer contamination | **Real and enforced.** `_assert_fresh_reviewer` requires a fresh independent attempt; reviewers are project-read-only; cross-role transitions start a fresh session | Fresh-context requirement extended to the coherence audit | **Low** per task. **High** across a run: nothing today evaluates anything larger than one task. |
+| T7 | Stale defensive policy | None | Trigger provenance + explicit supersession (RFC §36.4) | **High.** No decisions exist, so none can go stale — the risk arrives with the capability, and the design must not ship without retirement. |
+| T8 | Guidance accumulation | Hot-doctrine byte caps (`test_v15_4_consolidation.py`); cold-load discipline | RFC split (§29); progressive disclosure of applicable decisions | **Medium and self-inflicted.** Worker doctrine is capped and tested. The *architecture* documentation is not: this RFC is ~190 KB and grew by a third in this pass. |
+| T9 | Local-pass / global-fail | Per-task independent review; phase audit against frozen evidence | Cumulative coherence audit; completion/coherence split (RFC §38.4) | **High.** Phase audit is the closest existing analogue and is scoped to one phase's evidence, not to architectural coherence. |
+| T10 | Metric gaming | **By construction.** No metric is a gate anywhere; no composite score exists; every signal terminates in a semantic evaluator (P1, P13) | Keep it that way when CE1 lands | **Low, conditional.** Low only while the "signal, never verdict" rule holds. The first CI check that fails on a context-cost threshold reintroduces it. |
+
+The honest summary: **six of ten threats are largely unmitigated today.** The two that are genuinely
+covered — T6 within a task, T10 by construction — are covered because they were designed for. Part II's
+value is naming the other eight precisely enough to be built against; it is not a claim that they are
+handled.
 
 ## 8. Deferred work (explicit)
 
@@ -529,7 +639,8 @@ remain readable as ordinary DSD tasks with an unusual role name.
 
 ## 10. Human decisions required
 
-One blocks M2A; the rest do not.
+**None blocks M2B.** Items 1, 2 and 4 are decided. Item 3 blocks the *end* of M2B. Items 7–10 arrived with
+the RFC Part II consolidation and belong to capabilities that are not yet scheduled.
 
 1. ~~**Purpose vocabulary granularity**~~ — **decided: keep the fine-grained vocabulary.** Five
    recorded names, two enforcement classes today. `purpose != capability != role`; collapsing names
@@ -544,3 +655,17 @@ One blocks M2A; the rest do not.
 5. **Upstream posture** — whether the class-1 fixes (M0.2, M0.4, M0.5) are offered upstream. Affects
    branch hygiene, not implementation.
 6. **Gate policy vocabulary ownership** — needed for M3 only.
+7. **Decision review purpose** — does `design-reflection` cover architecture-decision review, or does a
+   distinct `architecture-decision-reflection` belong in the registry? The review questions genuinely
+   differ (soundness versus scope boundedness), and §27.1's tie-breaker leans toward adding one. **No
+   registry change is made now.** Needed by the milestone that implements decision provenance, not by
+   M2B. RFC §36.5.
+8. **Scope vocabulary for decisions** — path prefixes reuse the `Allowed source changes` pattern and are
+   mechanically selectable, but some scopes are genuinely conceptual ("everything doing authorization")
+   and cannot be. How much conceptual scope is acceptable before applicability selection stops working is
+   an open design question. RFC §36.3.
+9. **Coherence audit trigger policy** — which event boundaries actually correlate with incoherence.
+   Deliberately unresolved: it should be chosen from evidence, not guessed. RFC §38.3.
+10. **RFC documentation split** — whether to perform the §29 split now or wait for the stated trigger
+    (a bounded task can no longer be given the relevant architecture within a reasonable context budget).
+    The document is ~190 KB and this is threat T8 against Proofbound's own repository.

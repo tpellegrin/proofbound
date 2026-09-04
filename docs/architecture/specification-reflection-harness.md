@@ -2308,3 +2308,840 @@ enlarged an unproven slice (I12). It also has a genuine architectural prerequisi
 running the *same task contract* against two repository revisions with a fresh worker and discarding
 the mutation each time — which is worktree concurrency, currently listed under M5. Passive telemetry
 (Mode 1) has no such prerequisite and could land earlier as its own research track.
+
+---
+
+# Part II — Long-running autonomy
+
+Sections 29–40 consolidate what M0–M2A proved into an architectural baseline, and extend it to the
+problem M2A made visible: a harness that is correct on every individual task can still degrade over a
+long autonomous run. Part II is the authority for the principles it states. Where an earlier section
+disagrees, Part II wins; §30.4 lists the specific supersessions.
+
+Nothing in Part II is implemented. It is the standard against which M2B is designed.
+
+## 29. Reading map
+
+The RFC is now ~190 KB — Part II itself added ~50 KB. That is well past the point where an agent can
+reliably ingest it as a unit, which
+makes it a live instance of the context-economy problem it describes (§28.2). Until the split proposed
+below happens, this map is the progressive-disclosure layer: load the rows your task needs, not the
+document.
+
+| If you are… | Read | Skip |
+|---|---|---|
+| Implementing a bounded task | §33 (principles), §3 (inherited invariants), your role protocol | Everything else |
+| Designing M2B | §31, §32, §33, §34, §40, plan §6–7 | §§5–24 except §8 |
+| Reviewing an artifact | §32 (dimensions), §27 (identity, purpose) | Part II beyond §33 |
+| Auditing coherence | Part II entire | §§5–24 |
+| Asking "why is this like this?" | §25, §26, §27, §30 | The original §§5–24, which are pre-implementation |
+
+**Status of §§1–24.** These were written before any implementation and are *design intent*, not a record
+of behavior. Where they describe mechanisms that were built differently — `dsd_spec.py`,
+`specs/<id>/manifest.json`, the fix-loop model, the artifact-kind DAG — the later sections are
+authoritative. §26's supersession table and §30.4 record the specific corrections.
+
+**Proposed future split** (not performed in this pass; it would be disruptive and is not yet forced):
+
+| File | Contents |
+|---|---|
+| `proofbound-architecture.md` | §0, §29–§40 — the standing architecture and principles |
+| `proofbound-artifact-model.md` | §8, §26, §27 — artifacts, identity, ledger, purpose |
+| `proofbound-execution-model.md` | §2, §3, §9, §13 — inherited DSD mechanics as Proofbound relies on them |
+| `proofbound-rfc-history.md` | §§1, 4–7, 10–12, 14–25 — original design intent, retained for rationale |
+| `proofbound-research.md` | §28 and successors — context economy, refactoring economics |
+
+The trigger for performing it: when a bounded task can no longer be given the relevant architecture
+without exceeding a reasonable context budget. That is a measurable condition, not an aesthetic one, and
+CE1 telemetry (§28.4) would measure it directly. Until then the reading map is cheaper than a migration.
+
+## 30. Reconciliation — what implementation settled
+
+Implementation evidence outranks design intent. This section records where M0–M2A changed the
+architecture, not merely where it confirmed it.
+
+### 30.1 M0 — historical protocol semantics are a protocol concern
+
+A newer harness must never reinterpret older persisted evidence according to the current registry. The
+worker-rules manifest recorded protocol *membership* but not its *order*, while the fingerprint was
+order-dependent — so adding a role silently invalidated every historical snapshot. The repair was not to
+regenerate snapshots or relax the check but to judge each snapshot by the protocol identity it recorded
+and then *prove* that reconstruction by reproducing its fingerprint.
+
+The generalizable finding: **ordering, membership and schema details that participate in an identity are
+protocol, not implementation trivia.** Any format that will be verified later must record every input to
+its own identity, explicitly, from v1. M2A's ledger applies this directly — it carries both a schema
+version and a separately versioned artifact-identity protocol, because the two evolve independently.
+
+### 30.2 M1 — capability and purpose are different questions
+
+`reviewer` and `spec-reflector` are mechanically interchangeable at acceptance: both carry the
+independent-review capability. Nothing in the mechanics distinguished *why* a review happened. M1 proved
+the capability half and left the purpose half open; M2A closed it (§27.1).
+
+M1 also corrected the repair model. Reflection findings do **not** require a new contract revision: a new
+*attempt* under the unchanged contract is the unit of repair history, and rebinding the contract would
+drop earlier mutating attempts from the freshness scan — making the repair loop actively unsafe. Attempts
+are repair history; contract revisions are changes of intent.
+
+And the parent does not re-review worker semantics after a qualifying independent review. Its input is
+gate JSON and a bounded surface, never a reflection transcript.
+
+### 30.3 M2A — the durable/execution boundary
+
+M2A established the split Part II is built on. Durable provenance is *project* state, version-controlled
+and small. Run evidence is *execution* state, large and eventually deleted. Structural validity survives
+the loss of run evidence; provenance verification cannot, and must say so rather than degrading into a
+false claim either way.
+
+Three findings are load-bearing beyond M2A:
+
+1. **Provenance needs three values.** `verified`, `unavailable`, `contradicted`. Absence and contradiction
+   are not the same signal, and neither is an artifact-validity verdict (§32).
+2. **Dependency validity is transitive.** A direct-edge validator reports a downstream artifact valid when
+   every recorded edge still matches its target and the ground two levels up has moved. Closure is
+   required, and it needs a topological pre-pass rather than recursion.
+3. **Hashes are integrity, not authority.** A committed ledger is not a signature. Anyone with write access
+   can produce an internally consistent false one.
+
+### 30.4 Gaps and statements this closes or supersedes
+
+| Earlier statement | Status |
+|---|---|
+| §4 **G4** — independence is mechanical for code but only doctrinal for documents | **Closed by construction.** Specification artifacts live in *project* state, so authoring them moves project scope and `_assert_fresh_reviewer` engages. The gap existed only for artifacts written into the run tree; putting them in the project was the fix, and it required no new independence mechanism. |
+| §4 **G5** — no way to declare in advance that a class of change needs sign-off | **Open, and reframed.** §35 argues the missing piece is not a pre-declared class list but an escalation boundary plus durable decision provenance. |
+| §4 **G3** — traceability stops at the contract | **Partially closed.** M2A gives artifact and dependency identity; requirement→task mapping remains M2B/M2C. |
+| §6 and §7 diagrams — *"findings → new contract revision"* | **Superseded.** Corrected in §25.5 (X1) and restated in §30.2; the diagrams themselves were left unedited. |
+| §26 suggestion to mark spec artifacts `-text` | **Withdrawn** by §27.2. |
+| Scattered `I<n>` numbering | **Superseded** by §33. See the note there. |
+
+## 31. The truth model — four layers
+
+Proofbound was using one word, "state", for four different things that fail in different ways and are
+proved by different means. They are now named separately.
+
+| Layer | Name | What it is | Lives in | Can prove | Cannot prove |
+|---|---|---|---|---|---|
+| L1 | **Intent** | What *should* be true: proposal, design, specification, accepted decisions, constraints, task definitions, future freeze | Project source, version-controlled | What was accepted as the goal | That anything implements it |
+| L2 | **Repository reality** | What *is* true now: artifact bytes, implementation, dependency structure, configuration, tests | Working tree / Git | What the system currently is | That this is what was intended |
+| L3 | **Execution evidence** | What *happened*: reservations, scope movement, gates, reports, verification output, reviewer role | Run tree, machine-local, deletable | That a bounded reviewed process occurred | What is true now, or what should be |
+| L4 | **Durable provenance** | Which *relationships* were established: accepted artifact identity, dependency identity, declared review purpose, gate reference | Project source (the ledger) | That L2 content matches what L3 accepted, and what it depended on | That the review was good; that it happened, once L3 is gone |
+
+L4 is the load-bearing invention. It is deliberately not a summary of L3 — it is the minimum needed to
+connect L1, L2 and L3 without duplicating execution history. That is why the field test for a ledger
+field is *which invariant becomes impossible without it*, and why timestamps, attempt identifiers and
+model identity all failed that test (§27, plan §6).
+
+Two consequences worth stating explicitly:
+
+- **L3 is expendable by design.** Deleting a run tree must lose provenance verification and nothing else.
+  If losing L3 changed an artifact's validity, the ledger would not be durable.
+- **L4 cannot replace L3.** Anything L4 asserts about L3 is a *reference*, checkable only while L3 exists.
+  This is the honest limit, and `unavailable` is how it is reported.
+
+## 32. Three independent dimensions
+
+M2A exposed a conflation that would have propagated into every later milestone. An artifact has three
+dimensions, and they are orthogonal.
+
+**Structural validity** — `valid` / `invalid` / `needs-revalidation`. Derived from current content
+identity, accepted content identity, and dependency closure. Computable from L2 + L4 alone.
+
+**Provenance status** — `verified` / `unavailable` / `contradicted`. Derived from whether L3 is retained
+and consistent with L4. Says nothing about whether the artifact is currently correct.
+
+**Semantic correctness** — no enum, no field, no Python value. It is the judgment an accepted independent
+review established at a point in time. Proofbound records *that a qualifying review occurred for a
+declared purpose*; it never records a verdict, because there is no verdict field anywhere in the system
+and adding one would recreate the PASS/FAIL machinery DSD deliberately deleted.
+
+The combinations that legitimately occur:
+
+| Structural | Provenance | Meaning |
+|---|---|---|
+| valid | verified | The normal healthy case: content matches, evidence retained and consistent. |
+| valid | unavailable | **The expected steady state of an old repository.** Content still matches what was accepted; the run tree is long gone. Not a defect, and must never be reported as one. |
+| valid | contradicted | Content matches, but retained evidence disagrees with the record — tampering, corruption, or a bug. Serious: the record's own provenance claim is false even though the artifact is intact. |
+| invalid | verified | Someone edited an accepted artifact after acceptance. The review genuinely happened; the artifact is no longer the thing that was reviewed. |
+| invalid | unavailable | Content drifted and the evidence is gone. Requires re-authoring and re-review; nothing can be recovered by inspection. |
+| needs-revalidation | verified | The artifact is intact and its own review is sound, but ground it depended on moved. Re-review, not re-authoring. |
+
+The trap this prevents: reading `valid` as "correct", or `verified` as "good". A structurally valid,
+provenance-verified artifact can be terrible engineering. Proofbound has never claimed otherwise, and no
+future milestone may introduce a value that implies it.
+
+## 33. Consolidated principles
+
+**On numbering.** `I<n>` had come to mean four different things: §3's inherited DSD invariants, the
+implementation plan's list, §26's design-check list, and M2A's task list. `I4` variously meant "fresh
+independent review", "same contract, multiple attempts", and "artifact state is derived". That is a rule
+graveyard, and it is exactly the retrieval failure §28 warns about.
+
+From here: **`I1`–`I15` in §3 are the inherited DSD mechanical invariants and keep their meaning
+unchanged.** Proofbound's own principles are `P1`–`P13` below, and this table is their single canonical
+statement. Other sections cite `P<n>`; they do not restate it.
+
+Thirteen, consolidated from seventeen candidates — because a principle set that grows monotonically
+stops being read, which is the failure it is supposed to prevent.
+
+| # | Principle | Why it exists | Falsified if… |
+|---|---|---|---|
+| **P1** | **The semantic boundary.** Python proves objective facts. Humans and agents judge engineering quality. Mechanical signals inform semantic review; they never replace, pre-empt or summarize it. | The whole harness. Absorbs "deterministic facts are mechanically enforced" and "mechanical signals inform rather than replace" — they are one boundary seen from both sides. | Any code path assigns PASS/FAIL, parses worker prose for meaning, or converts a threshold into a verdict. |
+| **P2** | **Purpose ≠ capability ≠ role.** Why a review existed, whether a role *can* review, and which doctrine ran are three separate facts. | M1 found roles interchangeable at acceptance; M2A found purposes that share a role. | Two purposes are merged because their mechanics coincide, or a purpose is inferred from a role, path or prose. |
+| **P3** | **Artifact state is derived.** Validity is computed from content identity and dependency closure; no mutable state enum is authoritative. | A stored state becomes a second truth that silently disagrees with the content. | Any persisted field records `valid`/`invalid`/`needs-revalidation`, or validation trusts a stored state over recomputation. |
+| **P4** | **Durable provenance and execution evidence are separate trust layers** (§31). Losing execution evidence must cost provenance verification and nothing else. | The run tree is large, machine-local and deletable; the record must outlive it. | Deleting a run tree changes an artifact's structural validity, or absent evidence is reported as verified or as invalid. |
+| **P5** | **Hashes establish integrity, not authority.** A committed digest proves content did not drift. It proves nothing about who wrote it or whether a review occurred. | Proofbound has no signing keys and no trust roots. | Any document or message describes a SHA-256 as authentication, signature, or proof of authorship. |
+| **P6** | **Historical formats are verified under the semantics they recorded**, never reinterpreted under the current registry. Every input to an identity is recorded from v1. | M0: an order-dependent fingerprint whose order was never recorded. | A format is verified using present-day defaults for something it did not record, or old evidence is regenerated to make it pass. |
+| **P7** | **Local adaptation is not global policy** (§35). A bounded task may solve its problem within its authority; it may not silently establish, broaden or replace a cross-cutting rule. | The primary defense against cumulative drift. | A bounded worker establishes a repository-wide rule with no escalation and no decision record, and later workers treat it as authoritative. |
+| **P8** | **Architectural decisions carry explicit, bounded provenance** (§36). A decision states its scope, not only its conclusion. | Conclusions generalize; boundaries do not travel with them unless recorded. | A future worker cannot determine the scope under which an accepted policy was adopted. |
+| **P9** | **Accepted baselines change by supersession, never by mutation** (§37). | If the ruler moves with the thing it measures, drift becomes unmeasurable. | Current accepted intent can be edited in place without producing a new accepted identity, or history is rewritten to match the present. |
+| **P10** | **Local correctness does not imply global coherence** (§38). Per-task independent review is necessary and insufficient. | 100 individually valid changes can compose into an incoherent system. | The architecture treats "every task passed" as equivalent to "the system is sound". |
+| **P11** | **Repository patterns are evidence, not authority** (§34). Existing code shows what was done, not what is required. | Agents imitate the repository strongly; debt is as imitable as design. | A worker adopts a convention solely because it is frequent, against authoritative guidance, without surfacing the conflict. |
+| **P12** | **Fresh independent evaluation at semantic boundaries**, and evaluators do not inherit the execution context that produced what they judge. | M1's independence rule, generalized: an evaluator carrying the reasoning that produced a change cannot independently assess it. | A drift or coherence evaluator is handed the execution narrative of the work it evaluates, or the parent substitutes its own accumulated judgment for a required reflection. |
+| **P13** | **Context is an economic resource, on two surfaces** (§28.2): harness context, which Proofbound supplies, and repository discovery context, which architecture quality determines. Refactoring value is assessed through cost-of-change evidence, never through a size metric alone. | The Fowler result: total code barely moved while the readable surface collapsed. | A size threshold is treated as an architectural verdict, or a durable record is inflated with telemetry that has no invariant depending on it. |
+
+## 34. Authority, and how knowledge acquires it
+
+### 34.1 The evidence hierarchy
+
+Agents resolve conflicts by whichever source is nearest, most numerous, or easiest. Proofbound needs an
+explicit ordering so that resolution is a decision rather than an accident.
+
+| Class | Source | Authority |
+|---|---|---|
+| **A1** | Accepted engineering contract for the change — proposal/design/spec/tasks, eventually the freeze | Normative. What must be true. |
+| **A2** | Accepted architectural decisions applicable to this scope | Normative constraints on *how*. |
+| **A3** | Mechanically enforced invariants (§37.4) | Operative. The executable projection of A1/A2 and of inherited DSD mechanics. |
+| **A4** | The current task contract | Bounded authority for this unit of work. |
+| **A5** | Approved repository guidance — `AGENTS.md`, role protocols, `CONTRIBUTING.md` | Standing convention. |
+| **A6** | Repository implementation patterns | **Evidence only.** What was done. |
+| **A7** | Historical execution artifacts — old reports, logs, superseded decisions | Evidence about the past only. |
+| **A8** | Worker inference and assumption | Lowest. Must be surfaced, never silently promoted. |
+
+Three placements deserve defence, because the obvious ordering is wrong.
+
+**A4 below A2, deliberately.** A task contract is more specific and more immediate than an architectural
+decision, which tempts an ordering that puts it higher. But a contract that can only be satisfied by
+violating an accepted decision is either an authoring error or an unrecorded architectural change — which
+is precisely P7's failure mode. The two rarely compete in practice because they govern different axes:
+**the contract governs scope, accepted decisions govern constraints.** When they genuinely conflict, that
+conflict *is* the escalation trigger (§35.2), not a ranking problem to be resolved silently.
+
+**A3 below A2, though A3 is what actually blocks.** An invariant is a mechanical projection of a decision
+and cannot outrank its source. If an invariant disagrees with the decision it encodes, the invariant is
+stale or buggy — it is not a new policy. (Inherited DSD invariants `I1`–`I15` have no Proofbound decision
+behind them; they are accepted architecture by inheritance, and sit at A2/A3 jointly.)
+
+**A6 above A7 but both far below A5.** Current code is better evidence than an old log, and neither is
+authority. This is the ordering that stops "the code already does X" from defeating "accepted
+architecture requires Y".
+
+**The conflict rule: surface, do not choose.** When a worker finds sources in genuine conflict, the
+correct action is to report the conflict — with both sources cited — not to pick the more convenient one
+and proceed. Silent resolution is how an unrecorded policy is born.
+
+### 34.2 The knowledge lifecycle
+
+Authority is acquired, not inherent. A fact moves up this ladder only through an explicit step:
+
+```
+observation  ->  evidence  ->  proposal  ->  accepted decision  ->  enforced invariant
+                                                                    or standing guidance
+                                                                          |
+                                                                          v
+                                                                  superseded decision
+```
+
+Each level is a different kind of thing, not a stronger version of the same thing. An observation that a
+timeout occurred is not evidence that timeouts are systemic; evidence of that is not a proposal; a
+proposal is not accepted; and an accepted decision is not automatically mechanically enforced.
+
+A **superseded** decision does not vanish — it remains visible as history (P9) and keeps its value as
+rationale — but it loses authority entirely. It drops from A2 to A7. This is the distinction that lets
+Proofbound retire obsolete rules without erasing why they existed.
+
+## 35. Local adaptation, escalation, and promotion
+
+### 35.1 The promotion ladder
+
+The single most consequential confusion in a long autonomous run is treating these five as
+interchangeable. They are not, and movement between them requires explicit authority.
+
+```
+incident / observation
+   ->  bounded local response        (within existing authority; needs no decision)
+   ->  candidate reusable pattern    (noticed, not yet authoritative)
+   ->  explicit engineering decision (proposed, independently reflected, accepted)
+   ->  accepted policy / invariant   (constrains future work; may become mechanical)
+```
+
+**Nothing is promoted by repetition, age, or presence in the repository.** Code existing is not evidence
+that it should exist; three instances of a workaround are three instances of a workaround. This is P7 and
+P11 stated as a process rather than as a prohibition.
+
+The concrete failure it prevents: a task hits a provider timeout, adds a retry, and ships. Two milestones
+later a worker reads the codebase, infers "this project retries network calls", and adds retries to a
+non-idempotent payment submission. No one decided that. No review rejected it. Every individual change
+was locally reasonable and independently reviewed.
+
+### 35.2 Escalation reuses `DECISION_REQUIRED`
+
+DSD already has the right control-flow primitive, and Proofbound must not invent a second one.
+
+`worker/COMMON.md` line 22: a worker facing *"a consequential authority/product/safety decision you cannot
+legitimately make"* keeps evidence current and returns a bounded `DECISION_REQUIRED` carrying the
+question, consequences, recommendation, and evidence pointers. `dsd_attempt.py --resume-session` then
+continues *the same session* once the parent decides.
+
+Three properties make it correct for architectural escalation, unchanged:
+
+- **It is prose, consumed by the parent.** No Python parses it (`COMMON.md` line 20 is explicit that
+  report formatting is not a machine protocol). Escalation therefore cannot become a classifier — P1 holds
+  for free.
+- **It is bounded.** The worker states the question, not a policy.
+- **It is cheap.** Same-session resume means escalation costs a round-trip, not a restart. This is the
+  main reason escalation can be required without destroying throughput (§35.4).
+
+So there is **no `ARCHITECTURE_ESCALATION_REQUIRED`**. What Proofbound adds later is not a second signal
+but a durable representation of the *outcome*:
+
+| Concern | Mechanism | Status |
+|---|---|---|
+| Runtime escalation | `DECISION_REQUIRED` + `--resume-session` | **Inherited, exists** |
+| Durable accepted decision | Decision provenance (§36) | Deferred |
+
+### 35.3 Significance is decided semantically
+
+Proofbound must not classify diffs. There will be no architecture classifier, because "does this change
+architectural policy" is a semantic question and P1 forbids Python answering it.
+
+The control flow instead:
+
+```
+worker recognizes a broader implication
+   ->  DECISION_REQUIRED
+   ->  parent evaluates significance
+   ->  decision proposal, if warranted
+   ->  independent reflection
+   ->  accepted, scoped decision
+   ->  implementation resumes (same session)
+```
+
+Mechanical signals may *surface candidates* for the parent's attention — changes touching cross-cutting
+configuration, dependency policy, retry/backoff defaults, global logging, authn/authz, persistence
+strategy, caching, concurrency, public APIs, dependency-direction rules, shared middleware, or
+framework/tooling policy. These are prompts to look, never findings. A change touching none of them can
+still be architecturally significant, and a change touching several can be entirely routine.
+
+### 35.4 Why this does not become bureaucracy
+
+Adversarially: an architecture that routes every `if` statement through a decision record would be worse
+than no architecture, because it would be abandoned.
+
+The defenses are structural, not exhortative:
+
+1. **The default is to execute.** Escalation is the exception, triggered by the worker recognizing a
+   boundary or the parent noticing a signal. Silence is the normal path.
+2. **The worker decides only whether to *ask*.** It never authors policy, which is a much lower bar than
+   asking it to assess architectural significance.
+3. **Escalation is a round-trip, not a restart** (§35.2). This is what makes the cost bearable.
+4. **The parent decides whether a decision artifact is warranted.** Most escalations should end in a
+   direct answer, not a decision record. A decision record is for the case where the answer will
+   constrain *future* work.
+5. **Scope is bounded by default** (§36). A decision that applies to one client is cheap to accept and
+   cheap to ignore elsewhere.
+
+The design target: architectural escalation is **possible and enforceable without being universal**.
+
+### 35.5 Worked example — a network timeout
+
+**Incident.** An implementation task integrating payment provider X hits a 30-second timeout on a status
+query. The task's acceptance criteria cannot be met.
+
+**The branch that matters** is not "should we retry" but *"does responding require establishing a rule
+beyond this task?"*
+
+```
+timeout observed
+      |
+      v
+is a bounded response within existing accepted authority?
+      |                                        |
+     yes                                       no
+      |                                        |
+      v                                        v
+retry this idempotent status query      DECISION_REQUIRED:
+per an existing accepted decision       "Provider X status queries time out under load.
+that already covers this client          A retry policy is needed. I can retry this call,
+      |                                  but I cannot determine whether this project
+      v                                  wants retry behavior for provider clients
+continue; no decision record             generally. Consequences / recommendation /
+                                         evidence: <attempt, log, scope>."
+                                                      |
+                                                      v
+                                        parent evaluates significance
+                                                      |
+                                                      v
+                                        decision proposal authored, independently
+                                        reflected, accepted:
+
+                                          Trigger:   repeated 30s timeouts on X status
+                                                     queries under load  <evidence ref>
+                                          Decision:  bounded exponential backoff, max 3
+                                                     attempts, idempotent requests only
+                                          Scope:     the provider-X client
+                                          Rationale: X publishes no SLA for this endpoint;
+                                                     the query is idempotent by contract
+                                          Alternatives: raise timeout (rejected: hides
+                                                     load); circuit breaker (deferred:
+                                                     no evidence of sustained failure)
+                                                      |
+                                                      v
+                                        implementation resumes, same session
+```
+
+**The part that pays for the ceremony** is what a *future* worker does. Six months later, a task
+integrates provider Y, hits a timeout, and reads the codebase. It finds a retry helper in the X client.
+
+- Under **P11**, that helper is A6 evidence — what was done — not authority.
+- Under **P8**, the accepted decision carries `scope: provider-X client`. The worker can determine that
+  the accepted policy does not extend to Y.
+- Under **P7**, adopting retries for Y is therefore a *new* bounded response, and if it would establish a
+  general rule it is a new `DECISION_REQUIRED` — not an inference from existing code.
+- Under **§28.4/§34**, the worker was given the X decision only because its scope intersected the task's
+  scope. It was not handed every decision the project ever made.
+
+Without the recorded scope, the honest reading of the repository is "this project retries provider
+calls", and the generalization happens silently and reasonably. **The scope, not the conclusion, is what
+makes the decision safe to leave lying around.**
+
+## 36. Decision provenance (direction; deferred)
+
+Not designed here in implementable detail and explicitly not in M2B. What follows fixes the *shape*, so
+that M2B's graph does not foreclose it.
+
+### 36.1 The field test, applied
+
+M2A's field test — *which invariant becomes impossible or materially harder without this field?* — is
+applied to ADR practice rather than adopting ADR templates wholesale.
+
+| Candidate | Verdict |
+|---|---|
+| **decision** | **Keep.** The conclusion. |
+| **scope** / `applies_to` | **Keep — the load-bearing field.** Without it P8 fails outright: a later worker cannot determine whether an accepted policy governs its task. It is also what makes progressive disclosure possible (§36.3). |
+| **trigger** | **Keep, as a compact reference.** Not an incident narrative. The invariant that depends on it is *retirement*: "is the condition that justified this still true?" is unanswerable without it (§36.4). |
+| **rationale** | **Keep.** Perry & Wolf treat rationale as a first-class component of architecture, not commentary. The dependent invariant is supersession review: without rationale a later reviewer can check whether a decision is being *followed*, but not whether it should still *stand*. |
+| **consequences** | **Drop as a field.** Real content, but it is rationale prose, not a separately checkable fact. |
+| **alternatives considered** | **Drop as a field.** Same: valuable, and it belongs inside rationale. Nothing checks it. |
+| **review purpose / role / gate** | **Drop — already provided.** A decision record should *be* a ledger artifact (§36.2), so its review provenance comes from its ledger entry. Duplicating it would create a second, divergable copy. |
+| **status: accepted / superseded** | **Drop as a stored status** (P3). Derived: a decision is in force iff nothing supersedes it. |
+| **supersedes** | **Keep — and note the reversal.** M2A *rejected* `supersedes` for artifacts because Git already supplies a version chain. For decisions the field test comes out the other way: D-007 replacing D-003 is not a new version of one artifact, it is one artifact retiring another, and Git's history of `D-003` cannot express it. Recording it on the *new* decision keeps the old one untouched and append-only (P9). |
+| **expires_at** | **Reject.** Elapsed time almost never determines architectural validity; a date would license either premature removal or false confidence. |
+
+The survivors: **decision, scope, trigger, rationale, and optionally supersedes** — plus everything the
+ledger already records about how it was accepted. The same discipline that reduced the artifact record to
+four keys applies here, and produced a different answer for one field. That is the test working, not a
+template being copied.
+
+### 36.2 A decision is an artifact
+
+The strong default is that decision records are ordinary Proofbound artifacts: content-addressed, with
+dependencies, accepted through the same mutation → independent reflection → acceptance path, and recorded
+in the same ledger. No parallel store, no second acceptance engine (P1, and the M2A prohibition).
+
+This matters for M2B: **the artifact graph must stay generic enough to carry them.** M2A's `depends_on` is
+already a plain path→identity map with no kind semantics baked in, which is the right shape.
+
+### 36.3 Applicability is not a dependency edge
+
+The tempting shortcut — model "decision D applies to artifact A" as a dependency edge — is wrong, and
+recognizing why sharpens the model.
+
+A dependency edge means *"I was reviewed against this exact content; if it moves, I need revalidation."*
+Applicability means *"this constraint governs this region of the repository."* If applicability were a
+dependency edge, superseding one decision would mark every artifact in its scope `needs-revalidation`.
+Sometimes that is right. As a default it is catastrophic — a single retry-policy update would invalidate
+an entire subsystem's specification set, and the model would be abandoned within a week.
+
+They also differ in shape: dependencies are artifact→artifact; applicability is decision→*scope*, and
+scope is a region, not a node.
+
+So: **a separate relation, deferred.** Its likely form reuses an existing pattern — a declared path-prefix
+set, exactly like `Allowed source changes`: authority declares it, Python compares prefixes, nothing is
+interpreted (P1). Selecting the applicable decisions for a task then becomes a prefix intersection
+against the task's scope, which is what makes §28's progressive disclosure implementable.
+
+The honest limit: some scopes are conceptual ("everything doing authorization") rather than path-shaped.
+Those can be stated in prose and reviewed semantically, but they cannot be mechanically selected. The
+architecture should not pretend otherwise, and should prefer path-shaped scope where it is truthful.
+
+### 36.4 Retirement
+
+Architecture accumulates obsolete defensive rules even when every rule was justified when adopted. A
+decision system that can only add is a scar-tissue generator with better formatting.
+
+Retirement must be explicit and immutable: a new decision supersedes the old, the old remains readable as
+history, and its authority drops from A2 to A7 (§34.2). The old record is never edited — editing an
+accepted artifact makes it structurally invalid until re-accepted, which is exactly the right pressure.
+
+`review_when: <condition>` — "revisit when provider X ships feature Y" — is attractive and introduces
+condition semantics Proofbound cannot mechanically evaluate. **Unresolved; deferred.** The captured
+requirement is narrower and firmer: *Proofbound must eventually make it possible to retire an obsolete
+architectural adaptation explicitly, rather than letting it become permanent by default.* The trigger
+reference is what makes that possible, which is why it survived the field test.
+
+### 36.5 Does decision review need its own purpose?
+
+Open, and deliberately not answered here. **No change is made to the five-value registry in this pass.**
+
+The argument for a distinct `architecture-decision-reflection`: the review question genuinely differs. A
+design reflection asks whether an approach is sound. A decision reflection must primarily ask *whether
+the scope is correctly bounded* — over-generalization is the failure mode P7 exists to prevent, and it is
+not what `design-reflection` is aimed at.
+
+The argument against: the mechanics would be identical (`spec-reflector`), and purpose-vocabulary
+inflation has its own cost.
+
+§27.1 already settled the tie-breaking rule — purposes with identical mechanics stay distinct when their
+engineering meaning differs — which leans toward adding one. **Recorded for the milestone that implements
+decision provenance, not for M2B.**
+
+## 37. Baseline, erosion, and drift
+
+### 37.1 Baselines evolve by supersession
+
+Both extremes are wrong. A continuously mutable baseline cannot measure anything. An immutable-forever
+baseline guarantees that a correct system is eventually judged non-conforming.
+
+```
+accepted baseline F1
+      ->  new evidence or requirement
+      ->  proposal  ->  independent reflection  ->  accepted
+      ->  accepted baseline F2
+```
+
+F1 remains immutable historical truth; F2 becomes authoritative. This is P9, and it is the same
+content-addressed, append-only shape as M2A's ledger — supersession is a new accepted identity, never an
+edit to an accepted one.
+
+> **The critical invariant:** the ruler used to measure drift may change only through an explicit accepted
+> engineering decision.
+
+Without it, the baseline drifts alongside the implementation and drift measurement becomes a tautology —
+the system silently redefines conformance to mean whatever it currently does (T5).
+
+### 37.2 Erosion and drift are different failures
+
+Perry & Wolf's 1992 distinction is precise and Proofbound should not blur it: **erosion** results from
+*violating* architectural principles; **drift** results from *insensitivity* to the architecture.
+
+The consequence is sharp and load-bearing:
+
+| | Erosion | Drift |
+|---|---|---|
+| What happened | A change contradicts accepted architecture | Changes were made without reference to it |
+| Shape | A violation — something present that should not be | An absence — no relation to the architecture at all |
+| Detectable mechanically? | **Partly.** A violated invariant is checkable; a contradicted decision is sometimes checkable | **No.** You cannot detect the absence of reference by checking for violations |
+| Primary defense | Executable invariants (§37.4), accepted decisions | Cumulative coherence review (§38) — semantic, unavoidably |
+
+This is why mechanical invariants, however good, cannot be the whole answer. They detect erosion.
+Drift produces a repository where every rule passes and nothing coheres — the T9 case.
+
+### 37.3 What counts as a drift finding
+
+Drift is **not** "differs from older code". Architecture must evolve, and a system forbidden to differ
+from its past is not an architecture but a museum.
+
+The objective comparison is:
+
+```
+accepted baseline  +  accepted subsequent decisions        (what is authorized)
+                        versus
+current repository reality                                  (what exists)
+```
+
+A difference is a **candidate finding** when repository behavior or structure cannot be reconciled with
+accepted intent plus the decisions that authorize divergence from it. Authorized divergence is not drift;
+that is the entire purpose of recording decisions.
+
+Mechanical tooling may surface differences. Whether a difference is justified evolution or erosion is
+semantic (P1), and is decided by a fresh evaluator (P12).
+
+### 37.4 Executable invariants — accepted decisions, made operative
+
+When an accepted decision can be expressed mechanically, enforcing it beats asking every future agent to
+remember it. Repeated semantic recollection is the weakest possible enforcement: it degrades with context
+pressure, it is invisible when it fails, and it competes with everything else in the prompt.
+
+```
+accepted decision
+      |
+   mechanically expressible?
+      |            |
+     yes           no
+      |            |
+      v            v
+  invariant   semantic guidance
+      |
+      v
+  CI / integrity gate
+```
+
+Candidates: forbidden dependency directions, module boundaries, layering constraints, required API
+shapes, schema constraints, generated-file boundaries, import restrictions, security requirements.
+
+Two constraints:
+
+- **Not every rule can or should become lint.** Forcing a semantic constraint into a mechanical check
+  produces a rule that is either trivially satisfiable or constantly wrong, and teaches agents to work
+  around it. "No rule left unmechanized" is not the goal.
+- **An invariant must reference the decision it projects.** An unattributed mechanical rule is a
+  cross-cutting policy with no provenance — exactly T2, arriving through the tooling instead of the code.
+  It also cannot be retired, because nothing records what it was for.
+
+This is also the answer to "why not just add a linter": a linter without decision provenance is
+unfalsifiable policy, and Proofbound's whole thesis is that policy needs attribution.
+
+### 37.5 Coherence and context economy are different measurements
+
+There is a plausible reinforcing loop between architectural erosion and context cost:
+
+```
+architecture erodes  ->  the relevant repository surface grows  ->  a bounded change must
+read more to find its work  ->  more imitation of whatever is nearby (T3)  ->  more
+workaround-shaped changes  ->  architecture erodes further
+```
+
+and a mirror-image virtuous one: coherent structure keeps the relevant surface small, which keeps
+bounded reasoning bounded, which produces cleaner isolated changes.
+
+**This is a hypothesis worth measuring, not established causation.** Nothing in the Fowler experiment
+(§28.1) tested it — that experiment measured context cost across refactoring stages, not coherence, and it
+ran on a single greenfield codebase. Proofbound should be able to observe both quantities and look for the
+correlation; it must not assume it, and must not design as though it were proven.
+
+Which is why the two stay **separate dimensions and are never combined into one score**:
+
+| Dimension | Question | Measured how |
+|---|---|---|
+| Context economy | How much repository context does a bounded change require? | Mechanically (§28.4) |
+| Architectural coherence | Does repository reality align with accepted intent and decisions? | Semantically, against baseline + decisions (§37.3) |
+
+A subsystem can be cheap to navigate and incoherent, or coherent and expensive. A single "health score"
+would destroy both signals and create precisely the optimizable target T10 warns about.
+
+**No composite technical-debt score.** `large file = bad`, `retry count = bad`, `dependency pins = bad`,
+`verbose logs = bad` are not conclusions. Each can be a legitimate response to a real constraint. A future
+drift detector may surface that retry behavior expanded substantially, that dependency constraints
+tightened, that shared middleware changed, that module coupling increased, or that the context surface
+grew — and every one of those terminates in a fresh semantic evaluator that decides whether it represents
+justified evolution or erosion (P1, P13). Measurement mechanical; judgment semantic. A number that gates
+anything has become a verdict, and has stopped being a measurement.
+
+## 38. Cumulative coherence
+
+### 38.1 Two mechanisms, not one
+
+Long-horizon failure is routinely explained as context-window overflow. That is at most half of it, and
+treating it as the whole story produces defenses that cannot work.
+
+**Context degradation.** Original rationale becomes unavailable, compressed, stale, or hard to retrieve.
+The system still *could* be coherent; it has lost the information needed to stay so.
+
+**Decision compounding.** Each local decision changes the environment in which the next is made. A
+retry helper becomes the pattern; the pattern becomes the assumption; the assumption shapes the next
+design. Every step is locally rational and independently reviewed.
+
+The distinction matters because **perfect memory would not prevent compounding.** An agent with total
+recall of every prior decision still faces a repository whose accumulated shape makes the next locally
+reasonable change slightly worse than the last. Context defenses do not address this; only comparison
+against a fixed external standard does.
+
+| Mechanism | Defenses |
+|---|---|
+| Context degradation | Durable artifacts (L4); bounded worker context (`I7`); explicit accepted decisions; progressive disclosure (§36.3); fresh reviewers (P12) |
+| Decision compounding | Immutable baselines (P9); decision provenance with scope (P8); escalation before policy (P7); cumulative coherence review (§38.2); executable invariants (§37.4) |
+
+Note that most of the first column already exists and most of the second does not. That is the honest
+current position, and §39 states it as residual risk rather than as coverage.
+
+### 38.2 The cumulative coherence audit
+
+Per-task independent review is necessary and insufficient (P10). A sequence of individually valid changes
+can compose into an incoherent system, and no amount of reviewing the latest change detects it, because
+the latest change is fine.
+
+The audit's question is therefore different in kind:
+
+> Does the current repository remain coherent with the accepted architectural baseline plus the
+> explicitly accepted decisions that authorize divergence from it?
+
+Not "was the last task done correctly". That has already been answered, by a review that was competent to
+answer it.
+
+**Inputs** — the accepted/frozen baseline; accepted subsequent decision provenance; relevant current
+repository structure; a cumulative structural summary; mechanical invariant results; relevant
+specifications.
+
+**Deliberately not inputs** — worker transcripts, failed tool calls, accumulated execution reasoning,
+historical noise. This is not only context economy. An evaluator that inherits the reasoning which
+produced the drift will find that reasoning persuasive, because it was persuasive; each step really was
+locally justified. **Fresh context is an independence property, not just a budget** (P12). It is the M1
+independence rule generalized from one task to a whole run.
+
+The honest caveat: **fresh context alone does not eliminate long-horizon drift.** It removes contamination
+from the evaluator. It does nothing about a baseline that was wrong, a scope that was recorded too
+broadly, or drift that is genuinely ambiguous. It is a necessary condition, not a solution.
+
+### 38.3 When audits happen
+
+Not on wall-clock intervals. "Every 300 hours" is unmeasurable in any way that matters — agent lifetime is
+not the unit of architectural change, and a run that does nothing for 300 hours needs no audit while one
+that lands forty changes in an afternoon does.
+
+Prefer **event and contract boundaries**: before creating a new freeze; after a phase closes; after N
+accepted changes; when the accepted-decision count crosses a threshold; when mechanical invariants report
+new violations; before release; on explicit request.
+
+Final trigger policy is deliberately unresolved — it should be chosen when there is evidence about which
+boundaries actually correlate with incoherence, not now.
+
+### 38.4 Final audit is two audits
+
+The eventual final audit must not collapse into "all tasks passed".
+
+| Audit | Question | Evidence |
+|---|---|---|
+| **Completion** | Did every bounded task satisfy its evidence requirements? | Per-task gates and acceptances |
+| **Coherence** | Does the resulting repository conform to the accepted engineering contract and applicable decisions? | Baseline + decisions versus repository reality |
+
+These are different questions, likely different review purposes, and plausibly different surfaces. A run
+can pass completion perfectly and fail coherence — that is precisely T9, and a single undifferentiated
+final step is structurally incapable of detecting it. Role and purpose mapping are not decided here.
+
+### 38.5 The parent does not become the auditor
+
+The parent's authority is unchanged (`I<n>` §3, plan §2.5). It may identify that a broader decision is
+required, route and escalate, select the artifact workflow, choose relevant authoritative context, enforce
+that required reflection occurred, and bind execution to accepted artifacts.
+
+It may not substitute its own accumulated judgment for independent reflection. The parent is the least
+independent evaluator in the system — it has been present for every decision and is maximally
+contaminated by exactly the execution context §38.2 excludes. An orchestrator that reviews cumulative
+coherence itself is the clearest possible violation of P12.
+
+## 39. Long-running autonomy threat model
+
+### 39.1 Research discipline
+
+The motivating account for this section — an agent accumulating defensive "scar tissue" over a long
+autonomous run — is an **anecdotal report from an online forum**. It is not evidence, it is not cited
+here as support, and no part of Part II depends on it being true.
+
+That is a deliberate quality test: **the architecture must stand if the anecdote were fabricated.** It
+does, because each threat below is derivable either from mechanisms already observed in this repository
+(M0's silent snapshot invalidation, M1's interchangeable reviewers, M2A's non-transitive-closure trap) or
+from established software-engineering literature about human-maintained systems:
+
+- D. E. Perry and A. L. Wolf, *Foundations for the Study of Software Architecture*, ACM SIGSOFT Software
+  Engineering Notes 17(4), 1992, 40–52 — architectural erosion versus drift, and rationale as a
+  first-class architectural component. <https://dl.acm.org/doi/10.1145/141874.141884>
+- G. Edwards-Alexander, *The Economic Benefit of Refactoring*, martinfowler.com, 2026 — one controlled
+  experiment on repository context cost (§28.1), with its limits stated there.
+
+Both predate or sit outside the agent-specific claim. The classical literature describes these failures in
+*human* systems; the hypothesis that autonomous agents encounter them faster, and with less friction
+because they neither tire of a bad pattern nor feel its cost, is **plausible and unproven**. Proofbound
+should not assert it. The mitigations are worth building regardless, because they are the same mitigations
+the human case has always needed.
+
+### 39.2 Threats
+
+| ID | Threat |
+|---|---|
+| **T1** | **Context rationale loss** — original rationale becomes unavailable, compressed or unretrievable |
+| **T2** | **Local workaround promotion** — a bounded adaptation silently becomes global convention |
+| **T3** | **Pattern imitation** — agents reproduce historical code patterns that were never authoritative |
+| **T4** | **Decision compounding** — individually reasonable changes compose into poor architecture |
+| **T5** | **Baseline drift** — the standard the system evaluates itself against moves with it |
+| **T6** | **Reviewer contamination** — the evaluator inherits the reasoning that produced the change |
+| **T7** | **Stale defensive policy** — a workaround outlives the condition that justified it |
+| **T8** | **Guidance accumulation** — instructions grow until authoritative rules cannot be retrieved |
+| **T9** | **Local-pass / global-fail** — every task passes; the aggregate violates architectural intent |
+| **T10** | **Metric gaming** — drift and context metrics become targets and are optimized instead of quality |
+
+The full mitigation matrix, including what is *not* mitigated today, is in the implementation plan
+alongside the roadmap that would close each gap. It is kept in one place deliberately: duplicating it here
+would create two copies that disagree within a milestone.
+
+Two threats deserve a note because they are self-inflicted by this very document.
+
+**T8 is live right now.** This RFC is ~190 KB and grew by a third in this pass. §29's reading map is the
+current mitigation and it is a
+weak one — it depends on an agent choosing to use it. The proposed split is the real fix, and the trigger
+condition is stated so the decision is evidence-driven rather than aesthetic.
+
+**T10 is a risk created by §28 and §37.4.** The moment Proofbound measures repository context cost or
+invariant violations, those numbers become optimizable — and an agent can reduce "bytes read" by reading
+less than it should, or satisfy an invariant by routing around it. This is why P1 and P13 forbid a metric
+from becoming a verdict, why §37.5 rejects a composite debt score, and why every drift signal terminates in
+a semantic evaluator rather than a gate. It is mitigated by construction, not by monitoring.
+
+## 40. Deferrals, falsification, and consequences for M2B/M2C
+
+### 40.1 What Part II does not add
+
+No production behavior changes. Nothing here adds a decision record, ledger field, review purpose, drift
+detector, architecture classifier, telemetry, freeze, graph, role, or gate. §36's field analysis fixes a
+shape; it does not authorize an implementation.
+
+### 40.2 Falsification
+
+Each principle in §33 carries its own falsifier in the table; they are not restated here. Three
+system-level claims need more than a line, and are the ones to watch:
+
+1. **"Escalation is possible without being universal."** Falsified if, in practice, either almost no
+   `DECISION_REQUIRED` escalations occur on architecturally significant changes (the boundary is not
+   recognizable to workers) *or* they occur on routine changes at a rate that degrades throughput. Both
+   directions are observable; neither is currently observed, because neither is instrumented.
+2. **"Coherence review is a distinct capability."** Falsified if the audit, once built, produces findings
+   indistinguishable from per-task code review — i.e. it cannot use the baseline-plus-decisions comparison
+   and falls back to reading diffs.
+3. **"Scope makes decisions safe to leave lying around."** Falsified if workers routinely need decisions
+   whose scope is not path-shaped, making mechanical applicability selection useless and returning the
+   system to "read all decisions", which recreates T8.
+
+### 40.3 Consequences for M2B
+
+**M2B's scope does not change.** Decision provenance, drift detection and coherence audit stay out. Part
+II imposes two constraints on the artifact graph and answers one question that would otherwise be
+discovered late:
+
+- **The graph stays generic.** Artifact kinds may label nodes and drive required-set validation, but
+  dependency edges must remain plain path→identity relations with no kind-specific semantics, so decision
+  artifacts can join later without a schema break (§36.2).
+- **Applicability is not a dependency edge** (§36.3). M2B must not model any decision-like "governs"
+  relation as a dependency, and should not add a second edge type speculatively either.
+
+### 40.4 Questions flagged for M2C
+
+Freeze design must answer these; they are not answered here, and only the last has a forced answer.
+
+1. Does freeze bind only proposal/design/spec/tasks?
+2. Does freeze also bind the applicable architectural decisions?
+3. How is the applicable decision set determined — declared, or derived from scope intersection?
+4. Does consistency reflection cover decisions as well as primary artifacts?
+5. May a decision be superseded while implementation tasks remain bound to an older freeze?
+6. What happens when a new decision invalidates only part of a frozen task graph?
+7. Does the initial implementation conservatively invalidate all tasks bound to a superseded freeze?
+
+On (2) and (3), one leaning is already forced by existing architecture rather than by preference: a freeze
+should bind **the accepted identities of the applicable decisions**, not their contents and not a
+separately stored decision-set identity. Binding contents duplicates them; a stored set identity is a
+second truth that can disagree with the set (P3). Binding identities gives a derived set identity for free
+via the freeze's own canonical hash.
+
+On (7), conservative invalidation is the safe default and should be the initial behavior — but note it
+interacts badly with (6): if a narrow decision invalidates a wide task graph, the model becomes expensive
+enough to be worked around, which is its own failure. That tension is real and should be designed
+explicitly rather than discovered.
