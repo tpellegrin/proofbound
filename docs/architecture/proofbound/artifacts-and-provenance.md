@@ -197,3 +197,203 @@ On (7), conservative invalidation is the safe default and should be the initial 
 interacts badly with (6): if a narrow decision invalidates a wide task graph, the model becomes expensive
 enough to be worked around, which is its own failure. That tension is real and should be designed
 explicitly rather than discovered.
+
+## A3. The change graph (M2B — designed, not implemented)
+
+*Normative direction. No production code implements any of this.*
+
+### A3.1 What M2A cannot answer
+
+M2A validates relationships that were **already recorded**. It cannot answer a different class of
+question, because nothing in the system declares the answer:
+
+*Which artifacts were required for this change? Which dependency edges were supposed to exist? Is an
+expected artifact missing? Is an unexpected one present? Was design deliberately omitted, or forgotten?*
+
+The ledger is a set of accepted records with no notion of completeness. Ask it "is this change's
+engineering contract complete?" and it has no opinion, because nothing ever stated what complete means.
+
+M2B supplies exactly that missing statement — and nothing more. Proofbound will be able to prove:
+
+> authority declared graph G, and the repository satisfies G
+
+It will **not** claim:
+
+> G was the correct engineering decomposition
+
+The second is semantic and stays with humans and agents (`P1`). Declaring a graph is an act of authority,
+not a judgement Python makes or reviews.
+
+### A3.2 Three relations, kept apart
+
+| Relation | Shape | Means | Status |
+|---|---|---|---|
+| **Dependency** | artifact → artifact@identity | *A's accepted meaning was established against this exact content.* If it moves, A may need revalidation. | M2A, extended by M2B |
+| **Membership / required topology** | authority → set of nodes and required edges | *These artifacts and these edges constitute this change's contract candidate.* | **M2B** |
+| **Applicability** | decision → scope | *This policy governs work in this region.* | **Deferred** (§36.3) |
+
+Collapsing the second into the first is the error M2B most needs to avoid. A graph declaration says what
+*should* exist (`L1` intent); a ledger record says what *has been accepted* (`L4` provenance). They are
+different truth layers and must not become one mutable object.
+
+### A3.3 The v1 representation
+
+One new committed file per change, beside its ledger:
+
+```
+specs/<change-id>/graph.json     intended topology     (L1)
+specs/<change-id>/ledger.json    accepted records      (L4)
+```
+
+```jsonc
+{
+  "format": "proofbound-change-graph-v1",
+  "artifacts": {
+    "specs/CH-001/proposal.md":      [],
+    "specs/CH-001/design.md":        ["specs/CH-001/proposal.md"],
+    "specs/CH-001/specification.md": ["specs/CH-001/proposal.md", "specs/CH-001/design.md"]
+  }
+}
+```
+
+**Two fields.** Membership is the key set; required topology is the values. Merging them into one map is
+not tidiness — it makes "every edge has a declared source" true *by construction* instead of being a rule
+that has to be checked and can be got wrong.
+
+| Field | The invariant it enables |
+|---|---|
+| `format` | Historical semantics (`P6`). v1 means *exact*; a future v2 must not silently reinterpret it. Unknown version fails closed. |
+| `artifacts` | Membership — without it there is no required set, and completeness is undefinable. Values give required edges — without them, topology is unstated and a missing dependency is undetectable. |
+
+Rejected, each because no invariant depends on it: **`change_id`** (the directory already says it — see
+A3.4), **artifact `kind`** (A3.8), **`graph_sha256`** (self-hashing; computable externally),
+**revision/timestamps** (Git), **labels/descriptions**, **any status field** (`P3`), **review metadata**
+(the contract and ledger own it), **freeze metadata** (M2C), **profile** (A3.8).
+
+Serialization is canonical: UTF-8, `sort_keys=True`, 2-space indent, trailing newline, sorted dependency
+lists, duplicates rejected, unknown fields rejected. Paths are one normalized repository-relative POSIX
+form; `./x`, `a/../a`, backslashes, absolute paths and `..` are **rejected rather than normalized**, so an
+artifact has exactly one legal spelling. Two entries that differ only by case are rejected together,
+because on a case-insensitive filesystem they would name one file and the graph would be ambiguous.
+
+Graph identity, when M2C needs it, is `artifact_identity_file(graph.json)` — the existing
+`proofbound-artifact-text-v1` protocol applied to a canonical text file. No new protocol, and nothing
+stored inside the file about itself.
+
+### A3.4 Membership, dependency targets, and what "exact" means
+
+A dependency target need **not** be a graph member. This distinction costs no syntax: members are keys,
+targets are values, and a target that is not a key is external.
+
+```
+specs/CH-001/specification.md  ->  specs/CH-001/design.md      member,  inside the graph
+specs/CH-002/spec.md           ->  specs/CH-001/design.md      external, accepted elsewhere
+```
+
+The ledger already forces the useful constraint here: `load_ledger` rejects a dependency on any artifact
+absent from the same ledger, so **the ledger is a closed dependency universe**. An external target must
+therefore have an accepted record in the same ledger — which is exactly the right requirement, since
+without one it has no accepted identity to depend on. Cross-change composition consequently works if and
+only if the composing changes share a ledger. M2B does not decide whether ledgers are per-change or
+project-wide; it must simply not foreclose the project-wide case, and this model does not.
+
+**Exactness is narrow and deliberate.** v1 semantics:
+
+> Within the graph's scope, the declared nodes are exactly the change's contract-candidate artifacts, and
+> the declared edges are exactly the dependency edges its members may record.
+
+Scope is the graph file's own directory, derived — not a field, so it cannot disagree with reality. Every
+member must lie within it. Exactness is evaluated over **ledger records**, never over the filesystem: a
+`notes.md`, a screenshot, or a research scratchpad in the same directory is not a graph member and is not
+a finding, because it was never accepted into the durable record. Directory membership never implies graph
+membership (`P11`); authority comes from declaration and acceptance.
+
+This narrowness answers most objections to exact graphs. The remaining cost is real: authority must
+declare every dependency edge, including external ones. That is accepted, because the alternative — a
+minimum graph — lets a worker's accepted record add contract topology that authority never declared, which
+is `P7` violated at the level of the contract itself.
+
+### A3.5 Graph satisfaction is not artifact validity
+
+**The most important statement in this section.** M2A's three states describe an *artifact*. Graph
+satisfaction describes a *topology*. They are orthogonal, and M2B must not widen `needs-revalidation` to
+mean "the workflow now expects another artifact".
+
+| Situation | Artifact structural validity | Graph satisfaction | Provenance | Re-author? | Re-reflect? | Freeze later |
+|---|---|---|---|---|---|---|
+| Declared, file missing | `invalid` (missing from tree) | unsatisfied | unchanged | yes | yes | blocked |
+| File exists, never accepted | no record to evaluate | unsatisfied — `missing-artifact-record` | none yet | no | yes (first review) | blocked |
+| Accepted and current | `valid` | satisfied, if all members are | per `L3` | no | no | eligible |
+| Own content moved | `invalid` | unsatisfied | unchanged | yes, or restore bytes | yes | blocked |
+| A dependency's identity moved | `needs-revalidation` | unsatisfied | unchanged | no | yes | blocked |
+| **Graph adds a sibling node** | **unchanged — existing members stay `valid`** | unsatisfied — `missing-artifact-record` for the new node | unchanged | no | **no, not for the siblings** | blocked until accepted |
+| **Graph adds a dependency to an existing node B** | **B stays `valid` — its bytes did not move** | unsatisfied — `missing-required-edge` | unchanged | no | **yes — B must be re-accepted against the new dependency set** | blocked |
+| Graph removes a dependency from B | B stays `valid` | unsatisfied — `undeclared-edge` | unchanged | no | yes, to re-accept without it | blocked |
+| Graph removes a node | others unchanged | unsatisfied — `undeclared-member` until the record is withdrawn | unchanged | no | no | blocked |
+| Ledger has an undeclared member in scope | that artifact may be `valid` | unsatisfied — `undeclared-member` | unchanged | no | no | blocked |
+| Ledger has an undeclared edge | source may be `valid` | unsatisfied — `undeclared-edge` | unchanged | no | yes | blocked |
+| External dependency moves | dependents → `needs-revalidation` via closure | unsatisfied | unchanged | no | yes | blocked |
+| Graph declaration changes | **unchanged** | recomputed against the new graph | unchanged | no | only where edges changed | binds the new graph identity |
+| Run evidence disappears | **unchanged** | **unchanged** | → `unavailable` | no | no | structurally fine, unverifiable |
+
+Two rows carry the design. Adding a *sibling* must not disturb anyone — topology grew, no artifact's
+reviewed context changed. Adding an *edge to B* must require B's re-review even though B's bytes are
+identical, because B's authoritative dependency context expanded and its accepted record no longer
+reflects the contract. Python reaches that conclusion by comparing a declared edge set against a recorded
+one — never by knowing what a "design" is.
+
+Note also what collapses: M2A already reports a declared-but-missing file as `invalid` with a reason, so
+"materialized" needs no separate check. The useful observations are **declared** (graph), **accepted**
+(a ledger record exists), and **structurally current** (M2A state). All three are derived; none is stored.
+
+### A3.6 Findings
+
+The validator takes graph `G`, ledger `L` and repository `R` and returns findings — a code, the paths
+involved, and a reason. Not prose, and not a lifecycle.
+
+`unknown-graph-format` · `illegal-path` · `member-outside-scope` · `graph-cycle` ·
+`missing-artifact-record` · `artifact-not-valid` (carrying the M2A state and its reasons) ·
+`missing-required-edge` · `undeclared-edge` · `undeclared-member` · `unknown-dependency-target`
+
+"Satisfied" is the absence of findings; it may appear as a derived output field, mirroring M2A's
+`structural_ok`, but it is never stored. **Graph satisfied is a mechanical topology and integrity
+property. It does not mean the engineering contract is semantically coherent** — that requires the
+aggregate consistency reflection M2C will run, and no amount of green topology substitutes for it
+(`P10`).
+
+### A3.7 Ownership, and topology changing under a live attempt
+
+The graph is **parent-owned**, protected by the same inherited mechanism as the ledger: its path lies
+outside every worker contract's `Allowed source changes`, so a worker writing it trips `WRITE-RESTRICTION`
+before any acceptance can exist (`I6`). No new mechanism, and no way for a worker to enlarge its own
+contract by discovering during execution that another artifact "is needed" — that is an escalation, not an
+edit (`P7`).
+
+**No global lock, and no graph identity in task contracts.** If authority changes G1 → G2 while an attempt
+launched under G1 is running, the attempt completes and is accepted on the terms of its own immutable
+contract; whether the resulting record satisfies the *current* graph is a separate question, answered
+later by the validator. The honest resulting state is "historically accepted, current graph unsatisfied",
+which is informative rather than dangerous. This preserves immutable contracts (`I3`) and avoids inventing
+a lock, and it is the reason no `graph_sha256` needs to enter a contract: nothing about accepting an
+artifact depends on which topology was current when it launched.
+
+### A3.8 What M2B does not do
+
+**No artifact kinds.** Every candidate invariant was tested and none requires them: review purpose is
+declared in the contract and must never be inferred from a filename (`P2`, and the registry in
+[execution-and-review.md §27.1](execution-and-review.md#271-decision-resolved--the-review-purpose-vocabulary-is-fine-grained));
+freeze ordering
+comes from the dependency DAG; consistency review reads the aggregate; decision artifacts are explicitly
+easier without kinds. Paths already carry human meaning. A kind would be a taxonomy Python does not need,
+and taxonomies attract behaviour.
+
+**No profiles.** Authority declares the graph directly. If named templates ever appear they must be pure
+data expansion into an explicit graph — never a policy language, never complexity scoring, never anything
+that picks a workflow by judging the change.
+
+**No readiness scheduler.** A derived "nodes whose dependencies are satisfied and whose own record is
+missing" set is computable and may be useful to the parent later, but it must never rank or prioritize,
+and M2B does not need it.
+
+Also out: freeze and binding, aggregate identity, decision provenance, applicability, supersession,
+consistency-reflection execution, coherence audit, telemetry, human gates, provider routing, worktrees.

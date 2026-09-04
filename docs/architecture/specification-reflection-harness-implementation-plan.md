@@ -471,32 +471,129 @@ restoring A's exact accepted content.
 is called from exactly one place. `pb_ledger.py` contains zero references to worker reports. `record`
 refuses any task whose status is not already `accepted`.
 
-## 7. M2B / M2C and later (coarse)
+## 7. M2B and later
 
-- **M2B — Artifact graph.** First-class artifact kinds; declared required-artifact set per change
-  (parent declares, Python enforces — no policy language, no complexity scoring); graph-shape
-  validation; transitive staleness reporting across the full DAG; whether `discovery` requires
-  reflection and whether `request` is a dependency-only node.
+M2B is designed in full below. M2C and beyond remain coarse until their own design checks.
 
-### M2B readiness after the Part II consolidation
+### M2B — Change graph  *(DESIGNED, NOT IMPLEMENTED)*
 
-**Scope is unchanged.** Part II added no work to M2B and removed none. It added two constraints and
-settled one question that would otherwise have surfaced during M2C.
+Design authority: [`proofbound/artifacts-and-provenance.md` §A3](proofbound/artifacts-and-provenance.md#a3-the-change-graph-m2b--designed-not-implemented).
 
-| Question | Answer |
+**Thesis** *(revised — see the correction below)*:
+
+> A change's contract-candidate artifacts and its required dependency topology can be declared by
+> authority in one committed file and enforced mechanically against the accepted ledger, such that
+> completeness and topology conformance are derived — without Python judging whether the decomposition is
+> good, and without disturbing M2A's meaning of artifact validity.
+
+The clause after the final "and" is new and load-bearing. The earlier thesis said "with staleness
+propagating across the declared graph", which invited exactly the wrong implementation: overloading
+`needs-revalidation` to also mean "the workflow now expects another artifact". Staleness already
+propagates — M2A's closure does it, tested to depth 5000. M2B adds a *second, separate* dimension.
+
+**Correction to the previous readiness assessment.** That table answered "Does M2B need artifact kinds?"
+with **Yes**, on the grounds that a required/optional artifact set is meaningless without them. Working
+the design through falsifies this. If authority declares paths explicitly, the required set *is* those
+paths, and every candidate invariant that might need a kind — review purpose, freeze ordering, consistency
+review, decision handling — was tested and needs none
+([§A3.8](proofbound/artifacts-and-provenance.md#a38-what-m2b-does-not-do)). The earlier answer was
+reasoning from *profiles*, which are themselves deferred. **M2B introduces no artifact kinds.**
+
+### M2B invariants
+
+1. **Graph satisfaction and artifact validity are separate dimensions.** Adding a sibling node must leave
+   every existing artifact `valid`. Only a change to a node's *own required dependency set* may require
+   its re-review, and that is reported as a graph finding, never by mutating its M2A state.
+2. **Exactness is scoped and record-based.** Evaluated over ledger records within the graph file's own
+   directory. Never over the filesystem; an undeclared *file* is not a finding, an undeclared *record* is.
+3. **Membership and dependency targets are different.** A target that is not a member is external and must
+   have an accepted record in the same ledger — which the existing `load_ledger` already enforces.
+4. **Parent-owned.** The graph path stays outside every worker's `Allowed source changes`; a worker
+   writing it trips the inherited `WRITE-RESTRICTION` (`I6`, `P7`).
+5. **No stored state** (`P3`), **no kinds**, **no profiles**, **no scheduler**, **no graph identity in task
+   contracts**, **no lock on topology change during live attempts**.
+6. **v1 semantics are exact and frozen** (`P6`). A future v2 must not reinterpret a v1 file as a minimum
+   graph.
+
+### Likely surface
+
+| File | Change |
 |---|---|
-| Does the artifact graph need to change for future decision artifacts? | **No.** M2A's `depends_on` is already a plain path→identity map with no kind semantics. A decision record is an artifact with content, dependencies and a reviewed purpose — the existing shape carries it. |
-| Should the graph be generic enough to represent them later? | **Yes, and this is a constraint on M2B.** Kinds may label nodes and drive required-set validation. Edges must stay kind-agnostic. A kind-specific edge semantic would need a schema break to admit decisions later. |
-| Is applicability a dependency edge or a separate relation? | **A separate relation, deferred** (RFC [§36.3](proofbound/artifacts-and-provenance.md#363-applicability-is-not-a-dependency-edge)). A dependency means "reviewed against this exact content; revalidate if it moves". Applicability means "this constraint governs this region". Modelling applicability as a dependency would make superseding one decision invalidate every artifact in its scope. M2B must not add it, and must not add a speculative second edge type either. |
-| Does M2B need artifact kinds? | **Yes** — a required/optional artifact set is meaningless without them. But a kind is a *label plus a declared required set*, never behaviour-switching logic. |
-| Does M2B need profiles? | **Prefer the explicit declared required graph.** A profile is acceptable only as pure data expansion — a named, reusable declared set — and never as a policy language, a complexity score, or anything that selects a workflow by judging the change. |
-| What is the smallest M2B thesis? | *A change's required artifact set and its dependency shape can be declared by authority and enforced mechanically, with staleness propagating across the whole declared graph — without Python judging whether the decomposition is any good.* |
-| What stays outside M2B? | Freeze and binding; baseline identity; decision provenance; applicability; executable invariants; drift detection; coherence audit; context telemetry; human gates; provider routing; worktrees; naming migration. |
+| `scripts/_change_graph.py` | **new** — schema load, canonical serialization, path normalization, membership/edge comparison against a ledger, findings |
+| `scripts/pb_graph.py` | **new, small** — `validate` (and nothing else until something needs it) |
+| `scripts/pb_ledger.py` | extract the shared traversal primitive; **no semantic change** |
+| `tests/test_m2b_*.py` | **new** |
 
-The M2A slice proved two artifacts and one edge. M2B's proof obligation is the step up: a *declared*
-required set, a graph whose shape is validated against that declaration, and staleness that propagates
-across more than one hop — which M2A's closure already implements and tests to depth 5000, so the
-remaining risk is in declaration and shape validation, not in traversal.
+**Expected inherited-code diff: near zero.** M2B sits above M2A's accepted-artifact primitive. If
+implementation starts needing `dsd_state.py`, worker launch, the evidence gate, or role machinery, the
+design is wrong and should be re-checked before continuing.
+
+**One genuine gap found.** `pb_ledger.py` has no way to withdraw a record. Removing a node from the graph
+therefore leaves an `undeclared-member` finding that cannot be cleared. M2B needs a small parent-owned
+withdrawal operation, or must accept that node removal is unsatisfiable — the former is correct and
+belongs in scope; it is a recording operation, not an acceptance one.
+
+**Shared traversal.** `pb_ledger.py` already has `_assert_acyclic` and `_topological_order` over a
+`node -> dependencies` mapping. The graph needs identical semantics. The smallest shared primitive is
+those two functions generalized to `Mapping[str, Iterable[str]]`. Extract, do not reimplement: two
+traversals that could disagree about a cycle would be a defect factory, and freeze aggregation will be a
+third caller.
+
+### Tests before production code
+
+1. **Schema and paths** — unknown format fails closed; canonical serialization is stable; every illegal
+   path spelling is rejected rather than normalized; case-colliding entries rejected; unknown fields
+   rejected; cycles fail closed.
+2. **Separation of dimensions** — adding a sibling leaves existing artifacts `valid`; adding an edge to an
+   existing node leaves its content `valid` while producing `missing-required-edge`. This is the test that
+   protects M2A's meaning, and it should be written first.
+3. **Membership** — external dependency targets are legal; a target with no ledger record is
+   `unknown-dependency-target`; an undeclared record within scope is `undeclared-member`; a stray
+   non-accepted file in the directory is **not** a finding.
+4. **Findings** — one per code, table-driven, deterministic.
+5. **Run-tree independence** — findings identical with and without run evidence; provenance moves
+   independently.
+
+### M2B acceptance scenario
+
+Scratch project, real DSD mechanics, three nodes — because M2A already proved two nodes and one edge, and
+three is the smallest graph that has a topology rather than an edge.
+
+Declare `A`, `B → A`, `C → A, B`. Then:
+
+| # | Step | Expected |
+|---|---|---|
+| 1 | Validate the empty graph | unsatisfied; three `missing-artifact-record` |
+| 2 | Author, reflect, accept, record `A` | still unsatisfied (B, C missing) |
+| 3 | Same for `B` against `A` | still unsatisfied (C missing) |
+| 4 | Same for `C` against `A` and `B` | **satisfied** |
+| 5 | Mutate `A`'s bytes | `A` invalid; `B`, `C` `needs-revalidation` transitively; unsatisfied |
+| 6 | Restore `A`'s exact accepted bytes | satisfied again |
+| 7 | Add undeclared record `D` in scope | unsatisfied — `undeclared-member` |
+| 8 | Declare `D` in the graph | unsatisfied — now `missing-artifact-record` is gone but D's record must still be valid; satisfied once it is |
+| 9 | **Add sibling `E` to the graph only** | `A`–`D` remain **`valid`**; unsatisfied solely by `missing-artifact-record` for `E`; **no artifact becomes `needs-revalidation`** |
+| 10 | **Change the graph so `B → A, C`** | `B`'s content still `valid`; unsatisfied by `missing-required-edge`; satisfied only after `B` is re-accepted against the new set |
+| 11 | Remove an edge the ledger still records | `undeclared-edge` |
+| 12 | Declare a dependency on an accepted artifact outside the graph | legal; validity propagates through it |
+| 13 | Point an edge at a target with no ledger record | `unknown-dependency-target` |
+| 14 | Delete the run tree | **identical findings**; provenance → `unavailable` |
+| 15 | Worker attempts to write `graph.json` | `WRITE-RESTRICTION`; no acceptance possible |
+| 16 | Full suite | green; all 211 existing tests unchanged |
+
+Steps 9 and 10 are the decisive pair: they separate topology incompleteness from artifact staleness, which
+is the failure the design exists to prevent.
+
+### Regression surfaces
+
+`pb_ledger.py` only, and only to extract shared traversal. M2A's schema, states, precedence and trust
+boundary are unchanged. If a graph change forces an M2A semantic change, stop.
+
+### Hard stop for M2B
+
+No freeze, no aggregate identity, no task→freeze binding, no consistency-reflection execution, no decision
+provenance, no applicability, no supersession, no coherence audit, no telemetry, no kinds, no profiles, no
+scheduler, no human gates, no provider routing, no worktrees, no naming migration.
+
 - **M2C — Freeze and binding.** Immutable freeze manifest whose canonical hash is the freeze
   identity; candidate-aggregate consistency reflection (RFC [§26.8](proofbound/evidence/implementation-findings.md#268-direction-for-freeze-and-binding-m2c-not-designed-here)); `spec_freeze` contract binding;
   `SPEC-BINDING-DRIFT` in the integrity gate; supersession with conservative invalidation of all
@@ -610,7 +707,8 @@ handled.
 
 ## 8. Deferred work (explicit)
 
-Not in M2A, and not implicitly acquired by it: freeze and freeze identity; artifact kinds and
+Not in M2A, and not implicitly acquired by it (artifact kinds were subsequently examined for M2B and
+rejected outright — see [§A3.8](proofbound/artifacts-and-provenance.md#a38-what-m2b-does-not-do)): freeze and freeze identity; artifact kinds and
 graph-shape validation; change profiles; implementation-task binding; consistency reflection;
 evidence export or archival; human-gate policy; provider/model routing; worktree concurrency; any
 stored workflow-state enum; project renaming or the `DeepSeekAndDestroy` workspace literal; UI,
