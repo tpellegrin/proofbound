@@ -626,7 +626,7 @@ scheduler, no human gates, no provider routing, no worktrees, no naming migratio
 
 ### M2C — Freeze and binding  *(DESIGNED, NOT IMPLEMENTED — split into three)*
 
-Design authority: [`artifacts-and-provenance.md` §A4](proofbound/artifacts-and-provenance.md#a4-freeze-and-binding-m2c--designed-not-implemented).
+Design authority: [`artifacts-and-provenance.md` §A4](proofbound/freeze-and-binding.md#a4-freeze-and-binding).
 
 M2C contains **three independently falsifiable theses**, and the design check recommends proving them
 separately. Bundling them would repeat the mistake the original M2 split already corrected once.
@@ -648,7 +648,7 @@ consistency review or task binding to expose.
 1. **Copy, never reference.** A freeze contains its bindings and needs no ledger, graph or run tree.
 2. **Candidate identity == freeze identity.** One number, recomputable, no stored self-hash.
 3. **Bindings carry content, dependencies and purpose** — never role, gate, attempt, or graph identity
-   ([§A4.3](proofbound/artifacts-and-provenance.md#a43-what-a-binding-contains-decisively)).
+   ([§A4.3](proofbound/freeze-and-binding.md#a43-what-a-binding-contains-decisively)).
 4. **Deterministic generation.** Same graph + ledger produce byte-identical output.
 5. **v1 semantics pinned**, including the purpose vocabulary a v1 freeze may contain (`P6`).
 6. **Parent-owned**; the freeze path lies outside worker write boundaries (`I6`, `P7`).

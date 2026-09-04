@@ -45,7 +45,8 @@ point. Byte figures are the authoritative-architecture cost of each route.
 | Your task | Read | Skip | ≈ bytes |
 |---|---|---|---|
 | **A.** Changing reviewer freshness, attempts, gates, roles, or acceptance | README + [execution-and-review](execution-and-review.md) + [core-model](core-model.md) | everything else | ~28 KB |
-| **B.** Implementing the M2B artifact graph | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + plan | autonomy, research, history | ~40 KB + plan |
+| **B.** Implementing the artifact graph or ledger | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + plan | freeze, autonomy, research, history | ~54 KB + plan |
+| **B2.** Implementing freeze / contract identity (M2C) | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [freeze-and-binding](freeze-and-binding.md) + plan | autonomy, research, history | ~64 KB + plan |
 | **C.** Implementing decision provenance | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [long-running-autonomy](long-running-autonomy.md) | research, history | ~68 KB |
 | **D.** Implementing context telemetry | README + [core-model](core-model.md) + [context-economy](context-economy.md) | artifacts, autonomy, history | ~34 KB |
 | **E.** Fixing a bug in inherited DSD mechanics | README + [execution-and-review](execution-and-review.md) | everything else | ~12 KB |
@@ -65,7 +66,8 @@ split.
 |---|---|---|
 | [core-model.md](core-model.md) | **Normative** | Truth layers `L1`–`L4`; structural validity vs provenance vs semantics; **canonical `P1`–`P13`**; authority hierarchy `A1`–`A8`; knowledge lifecycle |
 | [execution-and-review.md](execution-and-review.md) | **Normative** | **Canonical `I1`–`I15`**; attempts as repair history; review-purpose registry; parent's authority boundary |
-| [artifacts-and-provenance.md](artifacts-and-provenance.md) | **Normative** | Canonical text identity; ledger v1; derived validity and closure; trust boundary; dependency ≠ applicability; M2B/M2C constraints |
+| [artifacts-and-provenance.md](artifacts-and-provenance.md) | **Normative** | Canonical text identity; ledger v1; derived validity and closure; trust boundary; dependency ≠ applicability; the M2B change graph |
+| [freeze-and-binding.md](freeze-and-binding.md) | **Normative** | Accepted engineering binding; freeze v1 schema and identity; validation layers; what a freeze does *not* authorize |
 | [long-running-autonomy.md](long-running-autonomy.md) | **Normative + rationale** | Promotion ladder; escalation; decision provenance direction; baseline supersession; erosion vs drift; coherence audit; **canonical `T1`–`T10`** |
 | [context-economy.md](context-economy.md) | **Research** | External evidence and hypotheses. Not production behavior. Supports `P13`, which is defined in core-model. |
 | [evidence/implementation-findings.md](evidence/implementation-findings.md) | **Historical evidence** | What M0–M2A proved and where it corrected the design. Why we trust the rules. |
