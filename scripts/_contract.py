@@ -132,6 +132,41 @@ def declared_review_purpose(text: str) -> str | None:
     return purpose
 
 
+CANDIDATE_HEADING = "Proofbound candidate"
+_CANDIDATE_IDENTITY = re.compile(r"^[0-9a-f]{64}$")
+
+
+def declares_candidate(text: str) -> bool:
+    """Whether authority bound this task to an exact engineering candidate."""
+    return re.search(rf"^##\s+{CANDIDATE_HEADING}\s*$", text, re.I | re.M) is not None
+
+
+def declared_candidate(text: str) -> str | None:
+    """Return the exact candidate identity this task is bound to, or None.
+
+    Reuses the same bullet parser as every other explicit control field, so no second
+    contract grammar enters the codebase. Read only from this exact section: prose and
+    filenames never bind a candidate. Because the whole contract file is hashed and bound
+    at launch, naming the candidate here is what makes a review of one candidate
+    mechanically unusable for another — no nonce or reservation field is needed.
+    """
+    if not declares_candidate(text):
+        return None
+    values = _bullet_values(text, CANDIDATE_HEADING)
+    if len(values) != 1:
+        raise ValueError(
+            f"## {CANDIDATE_HEADING} must declare exactly one candidate identity as a "
+            f"single list item; found {len(values)}"
+        )
+    candidate = values[0].strip()
+    if not _CANDIDATE_IDENTITY.match(candidate):
+        raise ValueError(
+            f"## {CANDIDATE_HEADING} must be a lowercase hex SHA-256 candidate identity; "
+            f"got {candidate!r}"
+        )
+    return candidate
+
+
 def proof_pattern_tags(text: str) -> list[str]:
     """Explicit loading hints only; tags are not acceptance semantics."""
     return _bullet_values(text, "Proof patterns")

@@ -12,6 +12,7 @@ FIELDS = {
     "run_root", "phase_id", "task_id", "revision", "output", "title", "objective",
     "authority", "inputs", "write_paths", "extra_inventory", "acceptance",
     "proof_obligations", "proof_patterns", "verification", "risks", "review_purpose",
+    "candidate",
 }
 RETIRED = {"clerk_check", "clerk_checks", "evidence_clerk_checks"}
 
@@ -144,8 +145,18 @@ def main() -> int:
             review_purpose = clean(review_purpose).lower()
             qualifying_roles(review_purpose)
 
+        # Optional: binds this task to one exact engineering candidate. Because the whole
+        # contract file is hashed at launch, naming it here is what makes a review of one
+        # candidate mechanically unusable for another.
+        candidate = spec.get("candidate")
+        if candidate is not None:
+            candidate = clean(candidate).lower()
+            if not re.fullmatch(r"[0-9a-f]{64}", candidate):
+                raise ValueError(f"candidate must be a lowercase hex SHA-256 identity: {candidate!r}")
+
         lines = [f"# Task {task_id} — {clean(spec.get('title') or task_id)}", f"Contract revision: r{revision:04d}", "", "## Objective", clean(spec["objective"]), ""]
         if review_purpose: lines += ["## Review purpose", f"- {review_purpose}", ""]
+        if candidate: lines += ["## Proofbound candidate", f"- {candidate}", ""]
         if authority: lines += ["## Authority", *[f"- `{p}`" for p in authority], ""]
         if inputs: lines += ["## Inputs", *[f"- `{p}`" for p in inputs], ""]
         if write_restriction_declared:
