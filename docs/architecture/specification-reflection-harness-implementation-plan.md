@@ -634,7 +634,7 @@ separately. Bundling them would repeat the mistake the original M2 split already
 | Slice | Thesis | Proves |
 |---|---|---|
 | **M2C-A** *(IMPLEMENTED)* | A satisfied graph plus its accepted bindings can be reduced to one deterministic, content-addressed, self-contained contract identity that later ledger or graph mutation cannot rewrite. | Freeze identity is *correct* |
-| **M2C-B** | An aggregate consistency reflection can be bound to an exact candidate identity, so a review of `C1` can never authorize `C2`. | Freeze is *coherent* |
+| **M2C-B** *(IMPLEMENTED)* | An aggregate consistency reflection can be bound to an exact candidate identity, so a review of `C1` can never authorize `C2`. | Freeze is *coherent* |
 | **M2C-C** | An implementation task contract can name an exact freeze, and divergent freeze usage across a run is detectable. | Freeze is *executable* |
 
 **M2C-A is the recommended next slice.** The mistakes that would be most expensive to discover later are
@@ -696,9 +696,9 @@ corruption move provenance without touching identity; and a worker writing a fre
 Corrections in [`freeze-and-binding.md` §A4.8](proofbound/freeze-and-binding.md#a48-corrections-from-implementation),
 including the resolution of the external-closure question the design check left open.
 
-#### M2C-B — aggregate consistency  *(DESIGNED, NOT IMPLEMENTED)*
+#### M2C-B — aggregate consistency  *(IMPLEMENTED)*
 
-Design authority: [`freeze-and-binding.md` §A5](proofbound/freeze-and-binding.md#a5-aggregate-consistency-acceptance-m2c-b--designed-not-implemented).
+Design authority: [`freeze-and-binding.md` §A5](proofbound/freeze-and-binding.md#a5-aggregate-consistency-acceptance-m2c-b--implemented).
 
 **Thesis.** An exact candidate can be independently challenged as a whole, and the durable fact that it
 *was* challenged survives deletion of the run tree — without Python asserting that the engineering is
@@ -757,6 +757,26 @@ have a worker attempt to write the record (inherited `WRITE-RESTRICTION`).
 **Non-goals.** No task-to-freeze binding, no mixed-freeze reporting, no phase behaviour, no
 `current_freeze` or accepted-contract pointer, no consistency fixer or candidate revision, no repository
 coherence audit, no freeze schema change, no new review purpose or role.
+
+#### M2C-B outcome  *(implemented and validated)*
+
+| File | Role |
+|---|---|
+| `scripts/_consistency.py` | **new** — v1 record, pinned v1 purpose/role constants, validation, lookup, provenance |
+| `scripts/pb_consistency.py` | **new** — `record` (parent-owned) and `status` |
+| `scripts/_contract.py` | `declares_candidate` / `declared_candidate`, reusing the existing bullet parser |
+| `scripts/render_task_contract.py` | one whitelist entry so the supported constructor can bind a candidate |
+
+**Inherited core untouched** — no change to `dsd_state.py`, the evidence gate, acceptance, roles, worker
+launch, the ledger, the graph, or the freeze format. The two edited files took additive changes only.
+
+**Tests: 318 green on 3.10 and 3.14** — 286 inherited and unchanged, 27 unit, 5 vertical slice. The slice
+proves the replay refusal through real mechanics, the four-field record with no verdict of any kind, that
+a challenge does not move `C`, re-review refreshing one subject, `C1` and `C2` coexisting, run-tree
+deletion leaving the record intact with provenance `unavailable`, corruption leaving it intact with
+provenance `contradicted`, and a reflector's forged record caught by three independent barriers.
+
+Corrections in [`freeze-and-binding.md` §A5.10](proofbound/freeze-and-binding.md#a510-corrections-from-implementation).
 
 #### Cross-ledger composition — decided
 

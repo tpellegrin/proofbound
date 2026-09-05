@@ -205,9 +205,10 @@ would claim exactly what [A4.6](#a46-what-a-freeze-does-not-prove) says it canno
 
 ---
 
-## A5. Aggregate consistency acceptance (M2C-B — designed, not implemented)
+## A5. Aggregate consistency acceptance (M2C-B — IMPLEMENTED)
 
-*Normative direction. No production code implements any of this.*
+*Normative. Implemented in `scripts/_consistency.py` and `scripts/pb_consistency.py`; this states what it
+guarantees. Implementation corrections are in [A5.10](#a510-corrections-from-implementation).*
 
 ### A5.1 The durable fact that must exist
 
@@ -392,3 +393,38 @@ moment it makes it, so the gate must be present.
 **A freeze with an acceptance record is still not authorization to execute.** Binding implementation work
 to an exact contract is M2C-C. What M2C-B establishes is precisely one thing: that this exact candidate
 was independently challenged as a whole, and that the challenge qualified.
+
+### A5.10 Corrections from implementation
+
+The design survived implementation intact — schema, storage, authority model, freshness reuse and the
+purpose/role exclusions all shipped as designed. Three points were sharpened by building it.
+
+1. **The record must verify that the freeze it names is real.** Recording takes the freeze whose identity
+   the contract declared and refuses unless `freeze_identity(freeze) == declared candidate`. Without it an
+   acceptance could be recorded for an identity that never denoted anything — the record would be
+   syntactically fine and about nothing. This is a creation-time check only; the record itself still
+   stores no freeze path, so it stays independent of storage layout.
+
+2. **Creation checks the v1 constants, not the live registry.** The design said verification must pin
+   them; implementation showed *creation* must too, or a record could be written today that fails to
+   verify tomorrow under the very semantics it claims. Refusing to write a v1 record for something v1
+   does not recognize is the correct asymmetry.
+
+3. **Re-review refreshes provenance in place, and the record's bytes legitimately change.** The candidate
+   is one subject, so a second qualifying challenge repoints `gate`/`gate_sha256` at the newer evidence
+   while `candidate` is unchanged. The durable *subject* is stable; what evidences it is not, and Git
+   carries that history. Nothing accrues: one candidate, one file.
+
+**The replay proof is inherited, not new.** The slice takes a genuinely accepted `C1` review and attempts
+to accept it against a contract naming `C2`; it is refused by `accept_task` with *"source gate is not
+bound to task.current_contract"*. Contracts naming different candidates are different files with
+different hashes, so no nonce, reservation field or freshness token was added.
+
+**Authority.** A reflector that writes into the consistency directory trips the inherited read-only scope
+check, its gate is unclean, acceptance refuses, and recording then refuses because there is no acceptance
+to record — three independent barriers, none of them new. The CLI is two commands: `record` (parent-owned)
+and `status`, so callers ask a domain question rather than using `Path.exists()` as the definition of
+acceptance.
+
+**Still not authorization.** A candidate with an acceptance record has been *challenged*, not authorized
+to execute. Binding implementation work to an exact contract remains M2C-C.
