@@ -1109,6 +1109,36 @@ it can show regressions and reliability, and humans still decide what becomes ac
 deterministic product tests stay separate from model-driven pipeline evaluation. The 340-test suite is
 not the harness.
 
+## 7D. Eval V1 — semantic reflection reliability  *(DESIGNED, NOT IMPLEMENTED)*
+
+Design authority: [`evaluation.md`](proofbound/evaluation.md).
+
+**Thesis.** A fresh spec-reflector, given an artifact it did not author, reliably detects a planted
+engineering contradiction, and the pipeline routes it as findings rather than acceptance.
+
+**The finding that shrinks the milestone.** No provider adapter is needed. `run_worker.py` launches a
+worker as `subprocess.Popen(["opencode", "run", "--model", …])` resolved through `shutil.which` — exactly
+the seam every vertical slice substitutes with a fake binary on `PATH`. A real trial is the *same pipeline*
+with the real binary and credentials present, so evaluation exercises the product rather than a parallel
+implementation. `launch-prompt.txt`, `terminal.json`, `worker.log` and the scope diff already supply
+prompt bytes, timing, output and effects.
+
+**Expected surface** — outside the deterministic suite, which must never depend on it or on credentials:
+
+| Area | Content |
+|---|---|
+| `evals/scenarios/<name>/` | Synthetic fixture, accepted context, task contract, planted property, mechanical expectations, rubric |
+| `evals/` runner | Copy fixture → run the real pipeline → grade mechanically via Proofbound's own APIs → grade semantically → write a structured result |
+| `evals/results/` | Committed summaries; transcripts stay local and uncommitted |
+
+**Scope:** 3–5 planted-contradiction scenarios in the M1 shape, 5 independent trials each, one harness,
+mechanical grading through existing domain APIs, one model-grader path plus a human calibration sample,
+per-scenario metric vector, no composite score, no CI gate.
+
+**Non-goals:** control arm (deferred to V2 with a stated trigger — see `evaluation.md` E10), aggregate
+consistency scenarios, holdouts, scenario mutation, pairwise grading, cost dashboards, scheduled runs,
+any evaluation result influencing engineering authority.
+
 ## 7B. Threat mitigation status
 
 RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC
@@ -1215,6 +1245,9 @@ convention before freeze work begins.
 12. ~~**Cross-ledger composition for freeze**~~ — **decided: one ledger provenance universe per freeze**,
     with cross-ledger composition explicitly unsupported in v1 and stated as such. Reversible: a freeze is
     self-contained after generation, so this is a candidate-construction concern, never a format change.
+16. ~~**First evaluation milestone**~~ — **decided: Eval V1, semantic reflection reliability.** Scoped in
+    §7D; the provider seam already exists, so the milestone is scenarios and grading rather than
+    infrastructure.
 14. ~~**What follows M2C**~~ — **decided: the evaluation/regression track, not durable implementation
     provenance.** The durable claim cannot be chosen truthfully before an authoritative implementation
     decomposition exists, and it has no consumer; meanwhile no test has ever exercised a real model. See
