@@ -1040,6 +1040,75 @@ collapsed into one health score:
 A subsystem can be cheap to navigate and architecturally incoherent, or coherent and expensive. Merging
 them into a single number would destroy both signals and create a gameable target (T10).
 
+## 7C. Post-M2C architecture decision  *(design check; nothing implemented)*
+
+M2C is complete, and it left one visible gap: after the run tree is deleted, no project file records that
+an accepted implementation task was governed by candidate `C`. The obvious next move is a durable
+implementation-provenance record. **That move is wrong right now**, and the investigation that shows why
+is more useful than the record would have been.
+
+### The claim that is missing, and why it cannot yet be recorded truthfully
+
+Stated exactly, the missing claim is *"accepted task `T` was governed by `C`"*. Three findings, each
+verified against code, say it is the wrong thing to persist today.
+
+**1. Nothing declares what implementation satisfies `C`.** The change graph is scoped to its own
+directory — specification artifacts — and a freeze binds exactly those members. The only occurrence of
+"implementation" anywhere in the graph, freeze or consistency layers is the `implementation-review`
+purpose string. So there is no authoritative denominator: *"`C` has been implemented"* is currently
+**undefinable**, and durable per-task provenance could only ever support *"these N tasks were accepted
+under `C`"* — a count, not a completion. A record whose only consumer is a theorem that cannot be stated
+is speculative state.
+
+**2. Task identity is the wrong durable subject.** Take `C` implemented as `T1, T2, T3`, and the same
+repository result reached as `T1, T2`. Task-keyed provenance makes those two histories permanently
+different while the engineering fact — *this content implements this accepted intent* — is identical.
+Task decomposition is a parent orchestration choice; promoting it to durable provenance would make local
+adaptation into permanent architecture, which is exactly what `P7` forbids. Task contracts belong in
+`L3`, and M2C-C was right to leave them there.
+
+**3. The artifact ledger can carry implementation output but not its authority.** Verified empirically:
+`pb_ledger record` *accepts* a source file from an accepted implementation task, the graph stays satisfied
+because source lies outside its scope, and the candidate does not move. But the stored record is
+`content_sha256` + `depends_on: {}` + `review_purpose: implementation-review` — it has **no field for the
+governing candidate**, and `C` cannot become a `depends_on` entry because that map holds artifact paths
+that must already be ledger keys. So Model D records *that* code was reviewed, never *which contract
+governed it*. Extending the ledger to carry `C` would change what ledger membership means.
+
+No stable repository-result identity exists to use instead: scope snapshots live in attempt directories
+(`L3`), and Git commit identity is unstable across rebase, can span several tasks, and is historical
+substrate rather than Proofbound protocol.
+
+### Decision
+
+**Durable implementation provenance is not the next milestone.** The prerequisite is an authoritative
+model of what implementation `C` requires — an implementation decomposition that authority declares and
+Python can enforce, the way M2B declares required artifacts. Until that exists, the durable subject
+cannot be chosen without encoding orchestration accident. Recording the gap is the right outcome; filling
+it now would be building a primitive because a box looked empty.
+
+**The recommended next step is the evaluation/regression track**, and the reason is a measurement gap
+larger than the durability gap:
+
+> All six vertical slices drive a **stub worker**. The reflector writes a canned line. No test in this
+> repository has ever exercised a real model.
+
+The 340-test suite proves the *mechanics* work — hashes, scope, freshness, binding, refusals. It proves
+nothing about whether a real spec-reflector catches a real contradiction, whether purpose distinctions
+change reviewer behavior, or whether context economy holds under real prompts. Seven milestones rest on
+the premise that fresh independent semantic review is worth its cost, and that premise has never been
+measured. Meanwhile the durability gap has **no consumer at all**.
+
+The evaluation track also has **no dependency** on the durability relationship: it runs disposable
+scenarios and grades outcomes, and the existing slices are natural scenario seeds. It would additionally
+supply evidence for the decomposition question above — whether reviewers behave differently across task
+granularities is exactly the kind of thing that should be measured before it is designed around.
+
+Two boundaries to carry into that design check: evaluation evidence is **not** architecture authority —
+it can show regressions and reliability, and humans still decide what becomes accepted policy; and
+deterministic product tests stay separate from model-driven pipeline evaluation. The 340-test suite is
+not the harness.
+
 ## 7B. Threat mitigation status
 
 RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC
@@ -1146,6 +1215,12 @@ convention before freeze work begins.
 12. ~~**Cross-ledger composition for freeze**~~ — **decided: one ledger provenance universe per freeze**,
     with cross-ledger composition explicitly unsupported in v1 and stated as such. Reversible: a freeze is
     self-contained after generation, so this is a candidate-construction concern, never a format change.
+14. ~~**What follows M2C**~~ — **decided: the evaluation/regression track, not durable implementation
+    provenance.** The durable claim cannot be chosen truthfully before an authoritative implementation
+    decomposition exists, and it has no consumer; meanwhile no test has ever exercised a real model. See
+    §7C.
+15. **Authoritative implementation decomposition** — the real prerequisite for any completion theorem
+    and for durable implementation provenance. Not scheduled; not designed.
 13. **Architecture document split pressure** — `artifacts-and-provenance.md` is now ~38.5 KB against the
     40 KB cap enforced by `tests/test_docs_architecture_refs.py`. The next substantive addition breaches
     it. That cap exists to force this decision rather than let a document drift out of selective-reading
