@@ -1,6 +1,6 @@
 # Evaluation and regression
 
-> **Design track, not implemented.** How Proofbound measures whether its agent pipeline actually works,
+> **Eval V1 is implemented** (`evals/`); later capabilities remain designed only. How Proofbound measures whether its agent pipeline actually works,
 > stays reliable, and does not drift. Orthogonal to the contract-binding chain: nothing here participates
 > in engineering authority, and understanding it requires no M2 detail.
 >
@@ -279,3 +279,38 @@ dashboards; scheduled or CI-gated runs; token accounting normalized across provi
 
 Live-model evaluation is **not** part of normal CI. Contributors must never need paid credentials to run
 the deterministic suite.
+
+## E14. Eval V1 implementation outcome
+
+Implemented in `evals/`, with 25 deterministic harness tests in `tests/test_evals_harness.py`.
+The deterministic suite never invokes a model and needs no credentials.
+
+**Two corrections the implementation forced.**
+
+1. **The mechanical half of the thesis was overstated.** The thesis says the pipeline routes a
+   contradiction *"as findings rather than acceptance"*. Python cannot grade that: DSD has no
+   machine-readable verdict, acceptance is a parent decision, and a clean gate means *safe to
+   interpret*, never *the engineering passed*. So the mechanical grade is what the substrate can
+   actually establish — a valid, fresh, independent, read-only reflection was delivered for
+   interpretation — and whether its content warrants findings is the semantic grade. The thesis is
+   otherwise unchanged.
+
+2. **Prompt bytes are not context supplied.** The launch prompt is a *pointer list*: Proofbound hands
+   the worker paths, not content. The envelope is therefore small and says almost nothing about context
+   cost. V1 records `prompt_bytes` (the envelope) and `supplied_bytes` (the worker-rules snapshot, role
+   protocol and task contract the launcher names) separately. Neither is a token count and neither may
+   be described as one; what the worker chooses to open afterwards is not measured.
+
+**Two things the substrate already did better than expected.** A worker that produces nothing is
+classified by Proofbound itself — the gate reports `report_state: launcher-skeleton` and
+`needs_report_recovery`, so the harness asks rather than applying its own emptiness heuristic. And the
+`gate` CLI returns a deliberately reduced surface for parent context economy, so the harness reads the
+authoritative `evidence-gate.json` for role, scope and readiness.
+
+**Calibration** is a `calibration.json` written beside retained evidence, pairing the planted property
+with the report and the grader's call — enough for a human to check a sample, with no annotation tooling.
+
+**No live baseline was collected.** No worker executable and no provider configuration exist in the
+environment where V1 was implemented, so `run` refuses with an explicit setup failure. The harness is
+validated deterministically and is ready to execute the moment a harness is configured. **No baseline
+was fabricated**, and the first real run is what will produce one.

@@ -1109,7 +1109,7 @@ it can show regressions and reliability, and humans still decide what becomes ac
 deterministic product tests stay separate from model-driven pipeline evaluation. The 340-test suite is
 not the harness.
 
-## 7D. Eval V1 — semantic reflection reliability  *(DESIGNED, NOT IMPLEMENTED)*
+## 7D. Eval V1 — semantic reflection reliability  *(IMPLEMENTED; no live baseline yet)*
 
 Design authority: [`evaluation.md`](proofbound/evaluation.md).
 
@@ -1130,6 +1130,14 @@ prompt bytes, timing, output and effects.
 | `evals/scenarios/<name>/` | Synthetic fixture, accepted context, task contract, planted property, mechanical expectations, rubric |
 | `evals/` runner | Copy fixture → run the real pipeline → grade mechanically via Proofbound's own APIs → grade semantically → write a structured result |
 | `evals/results/` | Committed summaries; transcripts stay local and uncommitted |
+
+**Outcome.** Implemented in `evals/` (scenario model with identity and a leak check, trial runner over
+the real pipeline, mechanical + semantic grading, versioned summary, CLI) with 25 deterministic harness
+tests. **365 tests green** on 3.10 and 3.14 — 340 inherited unchanged. Four scenarios ship. Two design
+corrections are recorded in [`evaluation.md` §E14](proofbound/evaluation.md#e14-eval-v1-implementation-outcome):
+the mechanical half of the thesis was overstated, and prompt bytes are not context supplied.
+**No live baseline was collected** — no worker executable or provider configuration exists in this
+environment, and none was fabricated.
 
 **Scope:** 3–5 planted-contradiction scenarios in the M1 shape, 5 independent trials each, one harness,
 mechanical grading through existing domain APIs, one model-grader path plus a human calibration sample,
