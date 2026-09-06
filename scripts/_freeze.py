@@ -252,6 +252,29 @@ def derive(graph: dict[str, Any], ledger: dict[str, Any]) -> dict[str, Any]:
     return load_freeze_object(json.loads(canonical_freeze_text(freeze)))
 
 
+def current_candidate(graph_path: Path, ledger_path: Path,
+                      project_root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """Derive the contract candidate the project currently produces.
+
+    Refuses unless the graph is mechanically satisfied, which is what guarantees the
+    recorded dependency maps equal the required topology. A domain function rather than CLI
+    logic, so callers that need the current candidate — freeze comparison, execution
+    authorization — compose it instead of reimplementing the sequence.
+    """
+    from _change_graph import load_graph, evaluate
+    from pb_ledger import derive_states, load_ledger
+
+    project_root = Path(project_root).resolve()
+    graph = load_graph(graph_path, project_root)
+    ledger = load_ledger(ledger_path)
+    findings = evaluate(graph, ledger, derive_states(ledger, project_root))
+    if findings:
+        raise FreezeError(
+            "refusing to derive a contract identity from an unsatisfied graph: "
+            + "; ".join(f"{f['code']} {f['artifact']}" for f in findings[:6]))
+    return graph, ledger, derive(graph, ledger)
+
+
 def compare(freeze: dict[str, Any], candidate: dict[str, Any]) -> list[dict[str, Any]]:
     """Differences between a freeze and a freshly derived candidate, as findings.
 

@@ -24,23 +24,15 @@ import sys
 from pathlib import Path
 
 from _artifact_identity import ArtifactIdentityError
-from _change_graph import ChangeGraphError, evaluate, load_graph
-from _freeze import (FreezeError, canonical_freeze_text, compare, derive, freeze_identity,
-                     load_freeze, repository_findings)
-from pb_ledger import LedgerError, check_provenance, derive_states, load_ledger
+from _change_graph import ChangeGraphError
+from _freeze import (FreezeError, canonical_freeze_text, compare, current_candidate,
+                     freeze_identity, load_freeze, repository_findings)
+from pb_ledger import LedgerError, check_provenance
 
 
 def _candidate(args: argparse.Namespace) -> tuple[dict, dict, dict]:
-    """Derive the current candidate, refusing unless the graph is mechanically satisfied."""
-    project_root = args.project_root.resolve()
-    graph = load_graph(args.graph, project_root)
-    ledger = load_ledger(args.ledger)
-    findings = evaluate(graph, ledger, derive_states(ledger, project_root))
-    if findings:
-        raise FreezeError(
-            "refusing to derive a contract identity from an unsatisfied graph: "
-            + "; ".join(f"{f['code']} {f['artifact']}" for f in findings[:6]))
-    return graph, ledger, derive(graph, ledger)
+    """Derive the current candidate from CLI arguments; the logic lives in `_freeze`."""
+    return current_candidate(args.graph, args.ledger, args.project_root)
 
 
 def create(args: argparse.Namespace) -> tuple[int, dict]:
