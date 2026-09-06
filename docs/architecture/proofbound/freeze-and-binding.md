@@ -9,7 +9,7 @@
 
 ## A4. Freeze and binding
 
-*M2C-A and M2C-B are implemented; M2C-C is designed but not implemented.
+*M2C-A, M2C-B and M2C-C are implemented.
 Implementation corrections are in [A4.8](#a48-corrections-from-implementation).*
 
 ### A4.1 The identity that was missing
@@ -431,9 +431,9 @@ to execute. Binding implementation work to an exact contract remains M2C-C.
 
 ---
 
-## A6. Execution binding (M2C-C — designed, not implemented)
+## A6. Execution binding (M2C-C — IMPLEMENTED)
 
-*Normative direction. No production code implements any of this.*
+*Normative. Implemented in `scripts/_execution.py` and `scripts/pb_execution.py`.*
 
 ### A6.1 What must become mechanically true
 
@@ -572,3 +572,24 @@ inherited-core change, no completion theorem, no coherence audit.
 Accepting a task bound to `C` proves that task was executed and reviewed under that authority. It does
 **not** prove that every required implementation exists, that the repository globally coheres with `C`, or
 that the change is finished.
+
+### A6.9 Implementation outcome
+
+Shipped as designed: **no new identity, no persistent state, no inherited-core change.**
+`authorize` composes current-candidate derivation, the consistency lookup and provenance;
+`report` derives task bindings from the immutable contracts a run already holds. The only other
+change was moving current-candidate derivation out of the freeze CLI into `_freeze` so it could be
+composed rather than duplicated — behaviour-neutral, verified against the unchanged suite.
+
+Two refinements from implementation. Authorization accepts a **contract** as well as a bare candidate,
+because the contract is the artifact that becomes the authority and a contract declaring no candidate
+must be reported as unbound rather than silently authorized — that is the explicit compatibility
+boundary for inherited tasks. And a wrong candidate legitimately yields *two* findings (not current, and
+never challenged), which is more informative than the first failure alone.
+
+The slice proves the chain against real mechanics, including that a freeze alone does not authorize, that
+`C1` review evidence is refused for a `C2` contract, and that a worker rewriting the candidate in its own
+contract breaks acceptance with *"current contract missing or changed"*.
+
+**Unchanged boundary.** Execution binding only. Task contracts and acceptance both live in the run tree,
+so nothing durably records that an accepted task was governed by `C` once that tree is gone (A6.6).

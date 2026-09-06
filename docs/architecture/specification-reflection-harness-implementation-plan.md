@@ -635,7 +635,7 @@ separately. Bundling them would repeat the mistake the original M2 split already
 |---|---|---|
 | **M2C-A** *(IMPLEMENTED)* | A satisfied graph plus its accepted bindings can be reduced to one deterministic, content-addressed, self-contained contract identity that later ledger or graph mutation cannot rewrite. | Freeze identity is *correct* |
 | **M2C-B** *(IMPLEMENTED)* | An aggregate consistency reflection can be bound to an exact candidate identity, so a review of `C1` can never authorize `C2`. | Freeze is *coherent* |
-| **M2C-C** *(designed)* | An implementation task contract can name an exact freeze, and divergent freeze usage across a run is detectable. | Freeze is *executable* |
+| **M2C-C** *(IMPLEMENTED)* | An implementation task contract can name an exact freeze, and divergent freeze usage across a run is detectable. | Freeze is *executable* |
 
 **M2C-A is the recommended next slice.** The mistakes that would be most expensive to discover later are
 all freeze-identity mistakes and all independently testable now: content-only bindings failing to
@@ -797,9 +797,9 @@ touch unrelated regions.
 argument, and a freeze names no ledger — after generation it is self-contained. If cross-ledger
 composition is ever wanted, it becomes a candidate-construction concern, never a freeze-format change.
 
-#### M2C-C — execution binding  *(DESIGNED, NOT IMPLEMENTED)*
+#### M2C-C — execution binding  *(IMPLEMENTED)*
 
-Design authority: [`freeze-and-binding.md` §A6](proofbound/freeze-and-binding.md#a6-execution-binding-m2c-c--designed-not-implemented).
+Design authority: [`freeze-and-binding.md` §A6](proofbound/freeze-and-binding.md#a6-execution-binding-m2c-c--implemented).
 
 **Requires no new persistent state.** The design check found no invariant that composition of shipped
 primitives cannot establish, and the substrate reason is that M2C-B already shipped the contract
@@ -823,7 +823,35 @@ after deletion nothing in project state records that accepted task `T` was gover
 invariant consumes that fact, so no durable record is added; the trigger for revisiting is a completion
 theorem or coherence audit.
 
-##### Expected slice
+##### M2C-C outcome  *(implemented and validated)*
+
+| File | Role |
+|---|---|
+| `scripts/_execution.py` | **new** — `authorize` (composes current candidate + consistency acceptance + provenance) and `bound_candidates` (derives task bindings from immutable contracts) |
+| `scripts/pb_execution.py` | **new** — `authorize`, `report` |
+| `scripts/_freeze.py` | `current_candidate` extracted from the CLI so it can be composed rather than duplicated — behaviour-neutral |
+| `scripts/pb_freeze.py` | delegates to it; orphaned imports removed |
+
+**No new identity, no persistent state, zero inherited-core change.** Nothing in `dsd_state.py`, the
+evidence gate, acceptance, roles, worker launch, the ledger, the graph, the freeze format or the
+consistency record was touched.
+
+**Tests: 340 green on 3.10 and 3.14** — 318 inherited and unchanged, 18 unit, 4 vertical slice.
+
+**Proved end to end:** a freeze alone does not authorize (the aggregate challenge is required); a
+challenged current candidate does; a task authorized against `C1` stays `C1`-bound through
+implementation, review and acceptance after intent moves to `C2`; the historical candidate stops
+authorizing *new* work; `C2` must earn its own challenge; divergence is reported without any task being
+marked failed and with inherited unbound tasks reported honestly; `C1` review evidence is refused for a
+`C2` contract; a worker rewriting the candidate in its own contract breaks acceptance; deleting the
+consistency run evidence still authorizes while corrupting it refuses.
+
+**Two refinements from implementation.** Authorization accepts a contract as well as a bare candidate,
+since the contract is what becomes the authority and one declaring no candidate must be reported unbound
+rather than silently authorized. And a wrong candidate yields two findings — not current, and never
+challenged — which is more informative than stopping at the first.
+
+##### Original expected slice
 
 | File | Change |
 |---|---|
