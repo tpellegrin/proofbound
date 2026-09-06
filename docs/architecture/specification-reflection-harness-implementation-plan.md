@@ -635,7 +635,7 @@ separately. Bundling them would repeat the mistake the original M2 split already
 |---|---|---|
 | **M2C-A** *(IMPLEMENTED)* | A satisfied graph plus its accepted bindings can be reduced to one deterministic, content-addressed, self-contained contract identity that later ledger or graph mutation cannot rewrite. | Freeze identity is *correct* |
 | **M2C-B** *(IMPLEMENTED)* | An aggregate consistency reflection can be bound to an exact candidate identity, so a review of `C1` can never authorize `C2`. | Freeze is *coherent* |
-| **M2C-C** | An implementation task contract can name an exact freeze, and divergent freeze usage across a run is detectable. | Freeze is *executable* |
+| **M2C-C** *(designed)* | An implementation task contract can name an exact freeze, and divergent freeze usage across a run is detectable. | Freeze is *executable* |
 
 **M2C-A is the recommended next slice.** The mistakes that would be most expensive to discover later are
 all freeze-identity mistakes and all independently testable now: content-only bindings failing to
@@ -797,7 +797,58 @@ touch unrelated regions.
 argument, and a freeze names no ledger — after generation it is self-contained. If cross-ledger
 composition is ever wanted, it becomes a candidate-construction concern, never a freeze-format change.
 
-#### M2C-C — execution binding (designed, deferred)
+#### M2C-C — execution binding  *(DESIGNED, NOT IMPLEMENTED)*
+
+Design authority: [`freeze-and-binding.md` §A6](proofbound/freeze-and-binding.md#a6-execution-binding-m2c-c--designed-not-implemented).
+
+**Requires no new persistent state.** The design check found no invariant that composition of shipped
+primitives cannot establish, and the substrate reason is that M2C-B already shipped the contract
+primitive: `## Proofbound candidate` is hash-bound by the inherited mechanism and `declared_candidate`
+parses it. The M2C-B slice already proves the replay refusal end to end.
+
+**Launch authorization** — three derived checks: the current graph and ledger derive exactly `C`; `C` has
+a consistency acceptance record; that record's provenance is not `contradicted`. `verified` and
+`unavailable` both authorize, because blocking on absent evidence would make provenance availability into
+authority and invert the `L3`/`L4` separation.
+
+**Authority is fixed at launch.** If intent moves to `C2` while a `C1` task runs, the task remains a `C1`
+task through review, the fixer loop and acceptance. Rechecking currentness at acceptance would require
+either discarding correct work or applicability inference, which is deferred.
+
+**Divergence is reported, not gated** — there is still no mechanical phase close, and an adversarial test
+guards against adding one.
+
+**Stated limitation: execution binding only.** Task contracts and acceptance both live in the run tree, so
+after deletion nothing in project state records that accepted task `T` was governed by `C`. No current
+invariant consumes that fact, so no durable record is added; the trigger for revisiting is a completion
+theorem or coherence audit.
+
+##### Expected slice
+
+| File | Change |
+|---|---|
+| `scripts/pb_execution.py` *(name provisional)* | **new, small** — `authorize` (may a task launch against `C`?) and `report` (which candidate does each accepted task name?) |
+| `scripts/render_task_contract.py` | none — `candidate` is already whitelisted |
+| `scripts/_contract.py` | none — `declared_candidate` already exists |
+
+**Expected inherited-core diff: zero.** Acceptance is deliberately not modified: the contract's binding is
+already verified by inherited mechanics, and adding Proofbound semantics to `accept_task` would buy no
+invariant.
+
+**Tests first:** authorization refuses a non-derivable candidate, a candidate with no consistency record,
+and one whose provenance is `contradicted`, while allowing `unavailable`; an implementation contract
+naming `C` is hash-bound (extend the shipped replay proof to an implementation role); a `C1` task remains
+acceptable after the current candidate becomes `C2`; the divergence report enumerates two accepted tasks
+naming different candidates.
+
+**Acceptance slice:** reuse the M2C-B scratch project — freeze, challenge, accept, then launch an
+implementation task bound to `C`, run implementer → reviewer → accept, move intent to `C2`, and show the
+`C1` task still accepts while the report surfaces the divergence.
+
+**Non-goals:** durable implementation provenance, phase barriers, mixed-candidate gating, applicability,
+completion semantics, coherence audit, any inherited-core change.
+
+#### M2C-C — earlier sketch (superseded by the section above)
 
 The task contract names the freeze in its Markdown:
 

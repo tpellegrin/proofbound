@@ -9,7 +9,7 @@
 
 ## A4. Freeze and binding
 
-*M2C-A is implemented in `scripts/_freeze.py` and `scripts/pb_freeze.py`; M2C-B and M2C-C are not.
+*M2C-A and M2C-B are implemented; M2C-C is designed but not implemented.
 Implementation corrections are in [A4.8](#a48-corrections-from-implementation).*
 
 ### A4.1 The identity that was missing
@@ -428,3 +428,147 @@ acceptance.
 
 **Still not authorization.** A candidate with an acceptance record has been *challenged*, not authorized
 to execute. Binding implementation work to an exact contract remains M2C-C.
+
+---
+
+## A6. Execution binding (M2C-C — designed, not implemented)
+
+*Normative direction. No production code implements any of this.*
+
+### A6.1 What must become mechanically true
+
+> An implementation task's engineering authority is one exact candidate, fixed immutably when the task is
+> authorized, and it may only be authorized against a candidate that is both currently derivable and
+> already independently challenged.
+
+Everything in that sentence is a composition of facts Proofbound can already establish. The design check
+found **no invariant requiring new persistent state**, and the substrate reason is that M2C-B shipped the
+primitive M2C-C needs: a contract section naming an exact candidate, hash-bound by the inherited
+mechanism, with `declared_candidate` already parsing it.
+
+### A6.2 Binding is already solved
+
+An implementation contract carries the same section a consistency contract carries:
+
+```
+## Proofbound candidate
+- <candidate identity>
+```
+
+This is not a new mechanism and needs no launch-path change. The whole contract file is hashed, the
+reservation binds that hash, and acceptance verifies both the hash and that the gate was produced under
+that exact contract path. M2C-B's shipped slice proves it end to end: a genuinely accepted review of one
+candidate is refused for a contract naming another, with *"source gate is not bound to
+task.current_contract"*.
+
+The field stays **optional**. Inherited DSD tasks declare no candidate and keep their exact semantics —
+the same compatibility seam M2A used for `## Review purpose`. Presence is what selects Proofbound
+binding; absence is absence, never a default.
+
+### A6.3 Launch authorization
+
+Three checks, all derived, none stored:
+
+1. the current graph and ledger derive exactly `C` (`pb_freeze compare`);
+2. `C` has a durable consistency acceptance record (`pb_consistency status`);
+3. that record's provenance is not `contradicted`.
+
+**Provenance policy, derived rather than copied.** `verified` and `unavailable` both authorize;
+`contradicted` refuses.
+
+`unavailable` must authorize, and the reason is structural. Execution evidence is expendable *by design*;
+if losing it blocked all future implementation, then deleting an old run tree would silently destroy the
+operational value of the durable acceptance it can no longer verify. That would make provenance
+*availability* into authority, contradicting both `P5` and the `L3`/`L4` separation the whole architecture
+rests on. `contradicted` is different in kind: retained evidence actively disagrees with the record, and
+authorizing new work on it would launder a known inconsistency.
+
+A candidate that is not currently derivable cannot authorize anything, because check 1 cannot pass. A
+freeze without a consistency acceptance cannot either — that is exactly the gap M2C-B exists to close.
+
+These are **parent-side guards, not gates** (`P5`). Nothing prevents a determined operator from writing a
+contract by hand; the guard exists so the normal path is the correct one.
+
+### A6.4 Authority is fixed at launch — the central decision
+
+When `C1` is current and task `T` launches against it, and engineering intent later becomes `C2` while
+`T` is still running:
+
+**`T` remains a `C1` task, permanently and honestly.** It continues, is reviewed, repairs through the
+fixer loop, and is accepted on the terms of its own immutable contract. Nothing rechecks currentness at
+acceptance.
+
+Three independent reasons, none of them convenience:
+
+- **Consistency with two shipped milestones.** M2C-A already treats "historically accepted, current graph
+  unsatisfied" as informative rather than dangerous; M2C-B already keeps `C1`'s acceptance after the
+  project moves to `C2`. Rechecking currentness at acceptance would make implementation the only layer
+  that retroactively invalidates completed work.
+- **The alternative requires forbidden inference.** Rejecting `T` only when `C2` *matters to it* is an
+  applicability judgement, and applicability is explicitly deferred
+  ([artifacts-and-provenance.md §36.3](artifacts-and-provenance.md#363-applicability-is-not-a-dependency-edge)). Rejecting `T` whenever any
+  unrelated artifact moved would discard hours of correct work and teach people to route around the
+  system.
+- **The contract is immutable.** Its identity already includes `C1`. A task whose authority could change
+  after launch would have a contract that no longer describes it.
+
+The fixer loop inherits this for free: implementer, reviewer, fixer and re-reviewer all operate under the
+one immutable contract, so the whole repair cycle stays `C1`-bound with no additional machinery.
+
+### A6.5 Divergent candidates are reported, not gated
+
+Two accepted tasks may legitimately name different candidates — engineering intent evolving mid-phase is
+normal, and A6.4 makes each task honestly what it is. What must not happen is that divergence being
+*invisible*.
+
+So M2C-C supplies a **read-only report**: enumerate the accepted tasks in a run and the candidate each
+contract names. Divergence is a finding the parent acts on, not a barrier.
+
+Gating would require a mechanical phase-close, and there is none — phase status is set to `in-progress`
+at task creation and never mechanically closed, with
+`test_v15_5_adversarial::test_new_phase_state_does_not_create_barrier_machine` existing specifically to
+stop gating state accumulating in phases. Inventing one is a separate architectural decision with its own
+design check, not something to acquire as a side effect of binding work.
+
+### A6.6 Execution binding only — the durability limitation, stated
+
+**M2C-C provides execution binding, not durable implementation provenance.** This is a real limitation and
+is recorded rather than hidden.
+
+Verified from code: task contracts live at `run/phases/<phase>/tasks/<task>/contracts/rNNNN.md` and
+acceptance is written into `run_root/state.json` — both inside the run tree, which must live under
+`<project>/DeepSeekAndDestroy/`. Both are `L3`. After the run tree is deleted, **no file in project state
+records that accepted task `T` was governed by `C`**. The ledger records accepted artifacts, the freeze
+records candidates, the consistency record records challenges; none records implementation tasks.
+
+This is the same gap M2C-B found for aggregate challenges and closed with a durable record. It is
+deliberately *not* closed here, because no current invariant consumes it: the things that would — a
+completion theorem over required implementation tasks, or a cumulative coherence audit — are separate,
+deferred capabilities. Adding a durable record now would be speculative state under the field test.
+
+The canonical thesis is scoped to match: *divergent freeze usage **across a run** is detectable*. When a
+completion theorem is genuinely wanted, the missing fact is precisely "accepted implementation task `T`
+was governed by `C`", and the shape to reach for is the one the ledger and the consistency record already
+established.
+
+### A6.7 Models considered
+
+| Model | Verdict |
+|---|---|
+| **Pure composition** (current candidate + consistency acceptance + candidate in the immutable contract) | **Adopted.** No new state; every fact derived from shipped primitives. |
+| Composition + acceptance-time currentness recheck | **Rejected** — see A6.4. Requires either discarding correct work or forbidden applicability inference. |
+| Composition + reporting | **Adopted as part of the above**; the report is derived, not stored. |
+| Durable implementation-binding record | **Rejected for M2C-C** — no current invariant consumes it (A6.6). |
+| Phase-level freeze reservation | **Rejected** — needs a barrier that does not exist and that an adversarial test guards against. |
+| Reuse stale-prerequisite machinery | **Rejected — nothing to reuse.** Verified: the inherited core has no stale-prerequisite or revalidation mechanism. Candidate movement is a distinct dimension, not another task dependency. |
+
+### A6.8 What M2C-C does not do
+
+No new persistent state, no `current_freeze` or `active_candidate` pointer, no new identity — the
+implementation contract's existing hash already composes task instructions with engineering authority, so
+hashing a hash would add nothing. No phase barrier, no mixed-candidate gate, no applicability, no
+inherited-core change, no completion theorem, no coherence audit.
+
+Accepting a task bound to `C` proves that task was executed and reviewed under that authority. It does
+**not** prove that every required implementation exists, that the repository globally coheres with `C`, or
+that the change is finished.
