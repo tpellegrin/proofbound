@@ -1,0 +1,8 @@
+{
+  "artifact": "specs/CH-004/design.md",
+  "format": "proofbound-eval-scenario-v1",
+  "kind": "capability",
+  "property": "The design relies on events arriving in the order they were produced, using arrival order to decide which update wins. The accepted proposal states plainly that the transport does not preserve order between partitions and that ordering must be established from data carried in the event itself. Using arrival order can therefore apply an older update after a newer one.",
+  "review_purpose": "design-reflection",
+  "summary": "A design assumes an ordering guarantee that the accepted proposal explicitly says the transport does not provide."
+}

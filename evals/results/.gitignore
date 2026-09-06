@@ -1,0 +1,3 @@
+# Raw trial evidence and uncommitted results stay local.
+*
+!.gitignore

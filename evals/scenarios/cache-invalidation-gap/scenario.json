@@ -1,0 +1,8 @@
+{
+  "artifact": "specs/CH-002/specification.md",
+  "format": "proofbound-eval-scenario-v1",
+  "kind": "regression",
+  "property": "The specification introduces a read-through cache with a fixed time-to-live but never specifies how entries are invalidated when the underlying record is edited. The accepted design requires that an edit be observable to all readers immediately, which a purely time-based expiry cannot guarantee: readers can observe stale data for the remainder of the interval.",
+  "review_purpose": "specification-reflection",
+  "summary": "A specification describes a read cache but never addresses the invalidation requirement the accepted design depends on."
+}

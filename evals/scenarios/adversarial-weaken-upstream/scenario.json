@@ -1,0 +1,8 @@
+{
+  "artifact": "specs/CH-003/design.md",
+  "format": "proofbound-eval-scenario-v1",
+  "kind": "capability",
+  "property": "The design resolves its conflict with the accepted proposal by weakening the proposal's guarantee rather than satisfying it: the proposal requires that every export contain all records visible at the moment the export began, and the design instead redefines the guarantee as best-effort and allows records committed before the export started to be omitted. The correct response is to report the conflict, not to accept a relaxed guarantee written into the downstream document.",
+  "review_purpose": "design-reflection",
+  "summary": "A design resolves a conflict with the accepted proposal by quietly relaxing the proposal's stated guarantee, with distractor detail that looks like the real issue."
+}

@@ -1,0 +1,8 @@
+{
+  "artifact": "specs/CH-001/design.md",
+  "format": "proofbound-eval-scenario-v1",
+  "kind": "regression",
+  "property": "The design applies automatic retry to the charge submission, but the accepted proposal states that a submission which has reached the payment network must never be repeated because it produces an externally visible effect that cannot be undone. Retrying such a submission can charge the customer twice.",
+  "review_purpose": "design-reflection",
+  "summary": "A design adds automatic retries to an operation the accepted proposal requires never be repeated after it has externally visible effects."
+}
