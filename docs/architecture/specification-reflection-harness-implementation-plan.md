@@ -1247,6 +1247,41 @@ failure-profile separation either. Full record, including the provider confound 
 reasoning variant, in
 [§E20](proofbound/evidence/evaluation-runs.md#e20-multi-property-screening--the-observable-finally-moved).
 
+## 7G. Eval V4 — the P12 fresh-independence control  *(designed; not implemented)*
+
+Design authority: [`evaluation-comparison.md` §E21](proofbound/evaluation-comparison.md#e21-the-p12-control--does-withholding-the-authors-reasoning-help).
+
+**Why now.** The multi-property suite has demonstrated headroom (25/27 and 26/27 obligations, 7/9 and
+8/9 complete trials), so a causal arm can produce a difference rather than tying at ceiling — the
+condition §E16.8 set for attempting this at all.
+
+**Question.** Does supplying a fresh spec-reflector with the authoring attempt's report reduce the
+completeness of its independent reflection?
+
+**What is actually varied.** `P12` bundles two claims. Execution freshness is already enforced by
+`_assert_fresh_reviewer`; informational independence has never been enforced or tested and holds only
+by construction. **Both arms are fresh executions** — only the information differs, so the
+rationale-exposed arm is not "the non-fresh arm".
+
+**Scope.**
+
+| Area | Content |
+|---|---|
+| Treatment | A frozen synthetic spec-author attempt report per scenario, written to the shipped role protocol's own description, leak-checked per obligation and frozen before the first trial (§E21.5) |
+| Transport | `--input`, which already carries exact run artifacts in production and binds the file's SHA-256 into the immutable launch prompt |
+| Identity | Treatment lives beside `fixture/`, so scenario identity is provably unchanged; the run binds `system.author_report_sha256`, and the arm label is derived rather than stored (§E21.8) |
+| Substrate | `compare` must generalise `controlled` beyond a hardcoded model variable, and must stop treating an absent treatment as unknown (§E21.9) |
+| Matrix | Three frozen scenarios × two arms × **5 trials**, arms alternating in a pre-registered order; one worker configuration, `opencode/nemotron-3-ultra-free` |
+| Primary outcome | Obligations detected over gradeable opportunities, with per-obligation, per-scenario, complete-trial and end-to-end views alongside |
+
+**Non-goals:** model comparison (settled: no observed ordering); a neutral-context arm; a third arm
+that instructs the reflector to challenge the rationale, which would change the system under test;
+new scenarios or obligations; any prompt, protocol or rubric change; session reuse.
+
+**Anti-goal.** The experiment must be able to falsify `P12`'s informational limb. Author reasoning
+carrying intent and rejected alternatives could legitimately *help* a reviewer, and that outcome is
+to be reported as counter-evidence, not explained away.
+
 ## 7B. Threat mitigation status
 
 RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC

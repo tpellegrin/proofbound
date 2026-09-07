@@ -256,3 +256,186 @@ ranking on it inherits that provenance.
 **Holdout trigger, documented and not built:** when Proofbound begins repeatedly selecting or tuning
 models or prompts against known calibration scenarios, held-out scenarios become justified. Until then
 they would guard against a practice that does not exist.
+
+## E21. The P12 control — does withholding the author's reasoning help?
+
+The multi-property suite finally has headroom: 25/27 and 26/27 obligations, 7/9 and 8/9 complete
+trials, with one obligation repeatedly missed by both configurations. A causal experiment can now
+produce a difference instead of tying at ceiling, which is the condition E16.8 set.
+
+### E21.1 What `P12` actually claims, and which half has never been tested
+
+Canonically: *fresh independent evaluation at semantic boundaries, and evaluators do not inherit the
+execution context that produced what they judge* — because *an evaluator carrying the reasoning that
+produced a change cannot independently assess it*. Its falsifier is an evaluator **handed the
+execution narrative of the work it evaluates**.
+
+That is two claims, and Proofbound enforces only the first:
+
+| Limb | Status |
+|---|---|
+| **Execution freshness** — the evaluation is a separate, later attempt | Mechanically enforced. `_assert_fresh_reviewer` requires the reviewer's launch to postdate every project-mutating attempt on the same contract |
+| **Informational independence** — the evaluator does not receive the reasoning that produced the artifact | **Never enforced and never tested.** It holds by construction: a fresh worker gets pointers to accepted artifacts and a contract, and nothing hands it the author's narrative |
+
+The second limb is a design choice nobody has ever measured. This experiment measures it.
+
+### E21.2 Freshness and independence are not the same variable
+
+They are routinely conflated and must not be here. **Freshness** is a property of the execution: a
+new process, a new session, no carried conversational state. **Independence** is a property of the
+information: whether the evaluator receives the reasoning that produced what it judges. A fresh
+execution can be handed an author's narrative; a resumed session can carry reasoning without any
+document naming it.
+
+**Both arms are fresh executions.** Only the information differs. The rationale-exposed arm is
+therefore *not* "the non-fresh arm", and calling it that would describe an experiment nobody ran.
+Freshness is held constant; independence is varied. Session reuse — the other way to vary this — is
+not used, and would in any case be blocked by the OpenCode session-lookup gap recorded in E16.10.
+
+### E21.3 The mechanism under test is architectural, not psychological
+
+Proofbound never claimed anything about cognition, and the experiment should not smuggle one in. The
+architectural claim is narrow: an evaluator that receives the reasoning which produced an artifact
+tends to re-derive that reasoning rather than independently deriving what the accepted context
+requires. The observable consequence is specific — **obligations the author's reasoning path talks
+around go unreported**, while obligations it never touches are unaffected.
+
+The architecture already asserts this about its own orchestrator: the parent *"is the least
+independent evaluator in the system — it has been present for every decision and is maximally
+contaminated by exactly the execution context"*. The control tests that same claim where it can
+actually be measured.
+
+### E21.4 The treatment is an artifact the system already produces
+
+The author's reasoning is not an invention for this experiment. The shipped spec-author protocol
+instructs an author to *"report what you wrote, the decisive reasoning behind consequential
+choices, what you verified against the repository, and any unresolved question"* — an attempt report
+that is, in P12's own words, the execution narrative of the work.
+
+And supplying it is already expressible. `--input` exists to hand a worker exact run artifacts;
+production uses it to give the Evidence Clerk a source report and its gate, and DSD's own test suite
+passes an implementer's report to a *reviewer* the same way. Nothing prevents a parent doing this for
+a reflector — Proofbound's current default simply does not.
+
+So the experiment compares **current behaviour against a supported alternative a parent could choose
+today**, which is what makes it an architectural question rather than a benchmark trick. The
+treatment is a frozen synthetic spec-author attempt report per scenario, written to the role
+protocol's own description of what such a report contains.
+
+### E21.5 Constructing a rationale that anchors without cheating
+
+Four rules, because the treatment is where this experiment is easiest to corrupt.
+
+- **Plausible, never adversarial.** It explains mechanisms and tradeoffs as a competent engineer on a
+  deadline would. No lie, no instruction to the reviewer, no stated conclusion about correctness. A
+  rationale that says *"ignore availability concerns"* would test obedience to persuasion, which is
+  not `P12`.
+- **Blind spots preserved.** It must explain why the artifact is as it is **without ever naming the
+  accepted obligation it breaks**. For the migration design it may argue for a single coordinated
+  deploy to avoid mixed schema versions; it may not mention an interval with nothing serving, which
+  would hand over the obligation.
+- **It should discuss the declared distractors as things it considered.** This is realistic, involves
+  no dishonesty, and is precisely the anchoring surface: a narrative that visibly canvassed several
+  concerns invites a reader to believe the space was covered.
+- **Mechanically leak-checked.** The existing per-property check runs against the treatment artifact:
+  no distinctive run of any planted property statement may appear in it. Human review confirms the
+  rest, and every treatment artifact is **frozen before the first trial**.
+
+### E21.6 The rationale never becomes engineering authority
+
+It is experimental context and nothing else. It is not an accepted artifact, never enters the ledger,
+never becomes a graph dependency, is never frozen as engineering intent, and no artifact's validity
+depends on it. The reflector is free to reject every word of it. The accepted proposal and design
+remain the only authority in the scenario, exactly as before.
+
+### E21.7 The context confound is real, deliberate, and bounds the claim
+
+The rationale-exposed arm receives more material. If it performs worse, anchoring is one
+explanation and additional context load is another, and two arms cannot separate them.
+
+That is accepted, because the decision Proofbound faces is operational: **should a parent hand a
+fresh reflector the authoring attempt's report?** The alternative to supplying it is supplying
+nothing — there is no neutral filler in the real system, and inventing one would measure a
+configuration the product will never run. A matched-neutral-context arm answers a different
+question, one the architecture does not currently need decided.
+
+Two things bound the confound without a third arm. The treatment is small against what is already
+supplied — roughly 17.5 KB of rules, protocol and contract — and the ratio is recorded, so
+"attention dilution" can be judged rather than asserted. And the per-obligation vector gives a shape
+test worth **pre-registering**: diffuse context load should depress detection roughly evenly across
+obligations, whereas anchoring should preferentially depress the obligations the rationale reasons
+around. That is not proof, and it is not the primary outcome; it is a discriminating observation
+recorded before any result exists.
+
+### E21.8 Treatment binds to the run; the engineering scenario is untouched
+
+Verified rather than assumed: a file placed **beside** `fixture/` in a scenario directory leaves
+scenario identity unchanged, and the same file placed **inside** `fixture/` changes it. The treatment
+artifact therefore lives beside the fixture and is copied into the run tree at launch, so the three
+frozen multi-property scenarios keep the identities their screening recorded.
+
+The run binds the exact bytes through `system.author_report_sha256`. Field test: without it, two
+control runs using different author reports produce identical system metadata and look like the same
+experiment. State test: the **arm label is derived**, not stored — a run is the fresh arm exactly
+when it carries no author report — so no `arm` field is persisted, the same discipline that keeps
+`provider` derived from the model identifier.
+
+Scope is unaffected: the launcher excludes `DeepSeekAndDestroy` from the scope baseline and the run
+root must live under it, so a treatment artifact in the run tree cannot make the reflector look like
+it mutated the project.
+
+### E21.9 Two changes the comparison substrate needs first
+
+Found by inspection, and both would silently misreport the experiment:
+
+- **`controlled` hardcodes the model as the only legitimate variable** (`differing == ["model"]`). A
+  `P12` control varies the treatment and holds the model fixed, so it must generalise to *exactly one
+  comparison-relevant field differs*, with the render naming which one.
+- **Absent currently means "unknown", not "no treatment".** `configuration_diff` marks a field
+  recorded by neither run as unverified and excludes it from the difference. If the fresh arm stored
+  a null treatment, `compare` would report that nothing material differs — for the one comparison
+  where the treatment is the whole point. The fresh arm therefore records an explicit "no author
+  report" value rather than an absence.
+
+With both, `compare` **proves** the two runs differ only by treatment instead of taking it on trust,
+which is why no `controlled: true` is ever persisted.
+
+### E21.10 The experiment
+
+| | |
+|---|---|
+| Population | All three frozen multi-property scenarios, all nine obligations. Not the weak obligation alone — selecting on a prior outcome would build the result in |
+| Worker | One configuration: `opencode/nemotron-3-ultra-free`. Continuity with every prior measurement, and — decisively — it exposes no reasoning-effort variants, while the alternative runs at an unpinned provider default. A causal experiment should not carry an uncontrolled variable it can simply avoid |
+| Grader | Unchanged: `opencode/big-pickle`, one blind call per obligation, never told the arm, the hypothesis, the other arm's results, or the worker model. Reports are compared mechanically afterwards, never by the grader |
+| N | **5 trials per scenario per arm** — 30 worker trials, 90 property classifications. Fixed before execution |
+| Ordering | Arms alternate within each repetition, deterministically and fixed in advance, so provider drift over a multi-hour run cannot align with an arm |
+| Isolation | Every trial gets a fresh temporary tree, fresh Git state, fresh run root. No session, conversation, run tree, report or grader output is ever reused, across arms or within one |
+| Primary outcome | **Obligations detected over gradeable opportunities**, chosen because it yields 45 observations per arm rather than 15 and states completeness directly |
+| Secondary | Per obligation, per scenario, complete-trial rate, and end-to-end effectiveness against conditional completeness |
+| Stopping | Run the full matrix. Stop early only for provider unavailability, a harness defect that invalidates trials, grader calibration failure, or discovered treatment leakage — **never** because a difference has appeared, and never extend N because one has not |
+
+Both arms receive identical worker timeouts, grader timeouts, tool permissions and budgets. If the
+rationale-exposed arm times out or misuses paths more often, that is a result of the treatment and is
+reported as such, not quietly reclassified as infrastructure.
+
+### E21.11 What each outcome would mean
+
+**Fresh higher.** Under this frozen configuration, withholding the author's report produced higher
+observed semantic completeness than supplying it. That supports the current operational choice. It
+does **not** establish anchoring as a mechanism, that independence improves reasoning generally, that
+context is harmful, or that all author rationale is harmful.
+
+**No difference.** No observed benefit from withholding, under this configuration. `P12`'s
+informational limb would then be an untested convention rather than a demonstrated one — worth
+saying plainly.
+
+**Rationale-exposed higher.** Genuine counter-evidence, to be reported as such. Author reasoning can
+legitimately carry intent, rejected alternatives and constraints that help a reviewer. The
+architecture may eventually need a sharper principle — *independent judgement need not mean
+information deprivation* — distinguishing author reasoning **as authority**, which stays dangerous,
+from author reasoning **as non-authoritative evidence**. A third arm supplying the rationale with an
+explicit instruction to challenge it would separate those, and is deliberately **not** part of this
+experiment because it would change the reflector's prompt and thus the system under test.
+
+No result rewrites `P12`, and none changes a runtime default. Evaluation supplies evidence; an
+accepted architectural decision is what would change the product.
