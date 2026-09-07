@@ -96,3 +96,91 @@ session lookup (`opencode session list --format json`) returned no output, so `s
 all twenty attempts and DSD recorded a `session_lookup_error`. Every attempt still exited 0 with
 `status: completed`, and Eval V1 never resumes a session, so no trial was affected. It does mean the
 inherited `--resume-session` continuation path is untested against this OpenCode generation.
+
+## E18. Calibration screening — the scenarios got harder, the suite did not separate
+
+The calibration milestone asked one question: *can a small set of semantically valid scenarios
+demonstrate non-ceiling behaviour under legitimate configurations?* The answer under this pair of
+configurations is **no**, and the useful part of the answer is *why*.
+
+**Configuration.** Both arms identical except the model. Proofbound `b036aa4`; harness `opencode-cli`
+`1.18.29`; grader `opencode/big-pickle`; role `spec-reflector`; Python 3.14; three trials per scenario.
+
+| Arm | Model | Chosen because |
+|---|---|---|
+| Reference | `opencode/nemotron-3-ultra-free` | The model baseline zero used, so continuity is preserved |
+| Probe | `opencode/nemotron-3.5-lightning-free` | Same provider and family, plausibly weaker, and verified tool-capable before use rather than assumed |
+
+| Scenario | Reference | Probe | Probe invalid | Signal |
+|---|---|---|---|---|
+| `crowded-availability-review` | 3/3 | 1/1 | 2 setup | no-data |
+| `freshness-batching-conflict` | 3/3 | 3/3 | — | ceiling |
+| `pattern-versus-authority` | 3/3 | 3/3 | — | ceiling |
+| `retention-transitive-conflict` | 3/3 | 2/2 | 1 setup | ceiling |
+
+**21 of 21 valid trials detected the planted property, on both arms.** No ordering between the models is
+observable, and none is claimed.
+
+### E18.1 What did land: the pipeline is now on the causal path
+
+The V1 diagnosis (E16.1) was that nineteen of twenty trials ran an identical six-call trajectory and the
+twentieth found nothing to explore. That is fixed, and the trajectories prove it:
+
+| Scenario | Tool calls | Artifact reads | What the reflector did |
+|---|---|---|---|
+| `crowded-availability-review` | 7 | 2 | Two-document comparison, as designed — its difficulty is prioritisation, not retrieval |
+| `freshness-batching-conflict` | 7 | 2 | Likewise: the work is inference, not discovery |
+| `retention-transitive-conflict` | 8 | 3 | Followed the design's reference and read `specs/POL-002/data-retention.md` — **never named by the contract** |
+| `pattern-versus-authority` | 11–17 | 5 | Ran `Glob services/**/*`, matched three files, and **read all three client modules** the contract never mentions |
+
+E16.2's corollary — *the information must not be fully contained in documents the contract names* — is
+satisfied for the two dependency-distance scenarios, empirically rather than by assertion. Median
+deliberation rose from 45–106s in baseline zero to 330–650s here, on the same reference model. That is
+resource evidence, not difficulty evidence, and it is not used to rank anything.
+
+### E18.2 What did not land, and the honest reason
+
+Detection is binary and both models clear the bar. **The probe was not weak enough** — not that the
+scenarios are easy. A model good enough to run the pipeline at all appears to be good enough to find one
+planted contradiction, once it is looking in the right place.
+
+Three explanations were checked and rejected before accepting that:
+
+- **A lenient grader.** Eight negative controls, two per scenario, were graded `NOT_DETECTED`. The
+  decisive one: for `crowded-availability-review`, a report raising *all four* of the scenario's declared
+  distractors as genuine findings was refused with "never mentions the single-zone dependency". A report
+  can be sophisticated, correct and still not a detection.
+- **Leakage.** The property reaches neither the launch prompt nor any fixture file; checked at load and
+  again against captured prompts.
+- **Invalid trials inflating a rate.** They cannot: the taxonomy separates them, and the retention rule
+  compares detection rates over *valid* trials.
+
+### E18.3 The probe's setup failures are operational evidence
+
+Three of twelve probe trials produced no report. The cause is specific and worth recording: the probe
+**mis-transcribed the long absolute paths** the launch prompt supplies — `pb-ebok-…` for `pb-eval-…`,
+and truncations — so OpenCode auto-rejected the read as an external directory and the worker continued
+without its protocol file and never wrote a report. The reference model, reading the same prompt, used
+relative paths throughout.
+
+Proofbound classified these correctly as setup failures via its own `report_state: launcher-skeleton`,
+so none became a semantic miss. **Not fixed here**: changing how the prompt names files would modify the
+system under test in the middle of calibrating the instrument. It is a real fragility of the pointer-list
+prompt under weaker models, exaggerated by the evaluation's deep temporary directories, and it belongs to
+a later task.
+
+### E18.4 Retention, and the bias the null result avoids
+
+Applying the pre-registered rule (E16.6), **no scenario was retained on the discrimination limb**: three
+ceilinged and one had too few valid probe trials to judge. All four stay in the tree under the rule's
+second limb — valid, unambiguous, non-leaking, and exercising reasoning structures the original four
+cannot — as **coverage, not as demonstrated discriminators**, and must not be described as such.
+
+One good consequence: because nothing was selected on outcome, the suite carries **none** of the
+selection fingerprint E17.5 warns about. It is not tuned toward this configuration pair, and a future
+comparison on it does not inherit that bias.
+
+**The repeated retained-suite measurement was not run.** With 21/21 across a validated grader, five
+trials per scenario per arm — roughly forty trials and several hours of provider time — would add
+precision to a null result rather than change it. E16 already says a ceiling tie is a valid outcome to
+stop and report on.

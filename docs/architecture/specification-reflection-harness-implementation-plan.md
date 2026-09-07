@@ -1155,7 +1155,7 @@ per-scenario metric vector, no composite score, no CI gate.
 consistency scenarios, holdouts, scenario mutation, pairwise grading, cost dashboards, scheduled runs,
 any evaluation result influencing engineering authority.
 
-## 7E. Eval V2 — scenario calibration  *(IMPLEMENTED; see the run record for outcomes)*
+## 7E. Eval V2 — scenario calibration  *(IMPLEMENTED; discrimination NOT established)*
 
 Design authority: [`evaluation.md` §E16](proofbound/evaluation.md#e16-discrimination--why-baseline-zero-cannot-compare-systems).
 
@@ -1193,9 +1193,18 @@ model failed it.
 `freshness-batching-conflict`, `pattern-versus-authority` — declaring difficulty dimensions the loader
 checks rather than labels it accepts (§E16.5). `system.harness_version` is recorded additively with no
 format bump, and `pb_eval compare` reports what differs between two runs without computing an ordering
-(§E17). The four V1 scenarios are byte-frozen with their identities pinned in tests. Screening
-configuration, retention decisions and measured outcomes are recorded in
-[`evidence/evaluation-runs.md`](proofbound/evidence/evaluation-runs.md).
+(§E17). The four V1 scenarios are byte-frozen with their identities pinned in tests.
+
+**Outcome: half the milestone succeeded.** The scenarios put the pipeline on the causal path —
+reflectors now glob for source files and follow a design's reference to a policy the contract never
+names, where every V1 trial read exactly the two documents it was handed. But **detection did not
+separate**: 21 of 21 valid trials found the planted property on both a reference and a deliberately
+weaker model, so no scenario was retained on the discrimination limb of the eligibility rule and no
+model ordering is observable. The grader was checked rather than trusted — eight negative controls, all
+`NOT_DETECTED` — so the tie is real. Diagnosis: the probe was not weak enough, and one-planted-property
+detection may simply saturate for any model capable of running the pipeline. Configuration, trajectories,
+retention decisions and the probe's setup failures are recorded in
+[§E18](proofbound/evidence/evaluation-runs.md#e18-calibration-screening--the-scenarios-got-harder-the-suite-did-not-separate).
 
 ## 7B. Threat mitigation status
 

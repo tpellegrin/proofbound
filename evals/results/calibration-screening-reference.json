@@ -1,0 +1,177 @@
+{
+  "format": "proofbound-eval-summary-v1",
+  "recorded_at": "2026-09-07T15:04:31.426449+00:00",
+  "scenarios": [
+    {
+      "counts": {
+        "attempted": 3,
+        "grading_unavailable": 0,
+        "harness_failures": 0,
+        "mechanical_ok": 3,
+        "semantic_detected": 3,
+        "semantic_not_detected": 0,
+        "setup_failures": 0,
+        "valid": 3
+      },
+      "id": "crowded-availability-review",
+      "identity": "b42d5b2d36c02b3df445ab015a7c304f7127fa0d0c0a3f2403443a805b821770",
+      "kind": "capability",
+      "resources": {
+        "median_elapsed_seconds": 468.554,
+        "median_prompt_bytes": 1211,
+        "median_supplied_bytes": 17477
+      },
+      "review_purpose": "design-reflection",
+      "trials": [
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        }
+      ]
+    },
+    {
+      "counts": {
+        "attempted": 3,
+        "grading_unavailable": 0,
+        "harness_failures": 0,
+        "mechanical_ok": 3,
+        "semantic_detected": 3,
+        "semantic_not_detected": 0,
+        "setup_failures": 0,
+        "valid": 3
+      },
+      "id": "freshness-batching-conflict",
+      "identity": "c0531a094d3e731f8b6128c0d8fb19c89d1aea1591d3bd8f3f3841b20ac3e9ad",
+      "kind": "capability",
+      "resources": {
+        "median_elapsed_seconds": 330.257,
+        "median_prompt_bytes": 1211,
+        "median_supplied_bytes": 17477
+      },
+      "review_purpose": "design-reflection",
+      "trials": [
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        }
+      ]
+    },
+    {
+      "counts": {
+        "attempted": 3,
+        "grading_unavailable": 0,
+        "harness_failures": 0,
+        "mechanical_ok": 3,
+        "semantic_detected": 3,
+        "semantic_not_detected": 0,
+        "setup_failures": 0,
+        "valid": 3
+      },
+      "id": "pattern-versus-authority",
+      "identity": "d135eaf0c0c2adb9869011006e0d5a0e220ca30cd574906c5434dae71e0a820a",
+      "kind": "capability",
+      "resources": {
+        "median_elapsed_seconds": 650.344,
+        "median_prompt_bytes": 1211,
+        "median_supplied_bytes": 17477
+      },
+      "review_purpose": "design-reflection",
+      "trials": [
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        }
+      ]
+    },
+    {
+      "counts": {
+        "attempted": 3,
+        "grading_unavailable": 0,
+        "harness_failures": 0,
+        "mechanical_ok": 3,
+        "semantic_detected": 3,
+        "semantic_not_detected": 0,
+        "setup_failures": 0,
+        "valid": 3
+      },
+      "id": "retention-transitive-conflict",
+      "identity": "47cb1feefde356cb983d0405456223701934a8d73bdeb49929e3c362689b4773",
+      "kind": "capability",
+      "resources": {
+        "median_elapsed_seconds": 424.448,
+        "median_prompt_bytes": 1211,
+        "median_supplied_bytes": 17492
+      },
+      "review_purpose": "specification-reflection",
+      "trials": [
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        }
+      ]
+    }
+  ],
+  "system": {
+    "grader_model": "opencode/big-pickle",
+    "harness": "opencode-cli",
+    "harness_version": "1.18.29",
+    "model": "opencode/nemotron-3-ultra-free",
+    "proofbound_sha": "b036aa45d37ae1b609d24902bf5fbdead81f3aa1",
+    "python": "3.14",
+    "role": "spec-reflector"
+  },
+  "totals": {
+    "attempted": 12,
+    "grading_unavailable": 0,
+    "harness_failures": 0,
+    "mechanical_ok": 12,
+    "semantic_detected": 12,
+    "semantic_not_detected": 0,
+    "setup_failures": 0,
+    "valid": 12
+  }
+}
