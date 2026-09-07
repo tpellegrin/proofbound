@@ -1157,7 +1157,7 @@ any evaluation result influencing engineering authority.
 
 ## 7E. Eval V2 — scenario calibration  *(IMPLEMENTED; discrimination NOT established)*
 
-Design authority: [`evaluation.md` §E16](proofbound/evaluation.md#e16-discrimination--why-baseline-zero-cannot-compare-systems).
+Design authority: [`evaluation-comparison.md` §E16](proofbound/evaluation-comparison.md#e16-discrimination--why-baseline-zero-cannot-compare-systems).
 
 **Why this milestone exists.** Baseline zero scored 20/20 and cannot compare systems. The retained
 evidence says why: nineteen of twenty trials ran an identical six-call trajectory, the one trial that
@@ -1205,6 +1205,35 @@ model ordering is observable. The grader was checked rather than trusted — eig
 detection may simply saturate for any model capable of running the pipeline. Configuration, trajectories,
 retention decisions and the probe's setup failures are recorded in
 [§E18](proofbound/evidence/evaluation-runs.md#e18-calibration-screening--the-scenarios-got-harder-the-suite-did-not-separate).
+
+## 7F. Eval V3 — multi-property discrimination  *(designed; not implemented)*
+
+Design authority: [`evaluation.md` §E19](proofbound/evaluation.md#e19-multi-property-scenarios--more-resolution-still-not-a-score);
+comparison rules in [`evaluation-comparison.md`](proofbound/evaluation-comparison.md).
+
+**Why.** The observable, not the scenarios, is now the limit. Difficulty rose measurably across two
+milestones and detection stayed at 20/20 then 21/21, because one planted property yields one bit per
+trial and every capable configuration sets it. Raising resolution beats hunting for a weaker model.
+
+**Question.** Do scenarios carrying several *independent* accepted obligations produce a graded signal
+that separates legitimate capable configurations where binary detection cannot?
+
+**Scope.**
+
+| Area | Content |
+|---|---|
+| Scenarios | 3 new directories, 3 independent planted properties each, ≥1 `dependency-distance` property, distractors ≥ properties, ≥2 difficulty dimensions (§E19.2–E19.3) |
+| Schema | `properties` list with scenario-local ids; legacy `property` retained unchanged; **identity computed from the form the manifest uses**, so the existing eight keep their hashes (§E19.7) |
+| Grading | One independent grader call per property, same grader and rubric; per-property `grading-unavailable` (§E19.4) |
+| Metrics | Property-level counts added; trial-level vocabulary generalised so `K = 1` records keep their exact meaning; both effectiveness views reported (§E19.5, §E19.8) |
+| Comparison | Reference `opencode/nemotron-3-ultra-free` vs one capable alternative, low N first; **requires explicit authorization before any paid provider spend** |
+
+**Non-goals:** the P12 control arm; precision/false-positive scoring; a third model; `--variant`
+plumbing; prompt or protocol changes; holdouts; editing any existing scenario or recorded summary.
+
+**Success is any of three outcomes**, and none of them is "the new model wins": separation on some
+properties; equal completeness with *different* failure profiles, which is still useful; or a third
+ceiling, which would mean the observable needs rethinking rather than more scenarios.
 
 ## 7B. Threat mitigation status
 

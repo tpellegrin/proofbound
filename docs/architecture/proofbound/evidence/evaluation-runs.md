@@ -97,6 +97,48 @@ all twenty attempts and DSD recorded a `session_lookup_error`. Every attempt sti
 `status: completed`, and Eval V1 never resumes a session, so no trial was affected. It does mean the
 inherited `--resume-session` continuation path is untested against this OpenCode generation.
 
+### E16.1 The diagnosis, from trial evidence rather than from the score
+
+Nineteen of the twenty trials executed an **identical six-call trajectory**: read the four files the
+launch prompt names (worker rules, common protocol, reflector role, contract), read the two engineering
+artifacts, write the report. The twentieth tried to do more — it globbed for `**/*.py`, `**/*.ts` and
+`**/*.go`, matched **nothing**, listed the project root, read `PLAN.md`, enumerated `specs/`, found the
+two files it had already read, and wrote its report.
+
+That trial is the finding. A reflector that went looking discovered there was nothing to find.
+
+The supply confirms it. Each trial received ~17.5 KB, of which the **engineering problem is 1,101 bytes**
+— a 526-byte design and a 575-byte proposal — plus a 408-byte contract that names both of them by path.
+The remaining ~16 KB is Proofbound protocol, including role protocols for eleven roles the worker will
+never play.
+
+So every scenario reduces to: *compare two short documents you have been handed, in which one states
+constraints in imperative form and the other states a mechanism.* Detection needs no retrieval, no
+traversal, no prioritisation and no synthesis. Reports were substantive — ~3 KB, half of them raising
+several findings — so the reflector is doing real work. The work simply has no room to vary.
+
+**Both explanations are true and the suite cannot separate them.** The model is competent, *and* the
+scenarios are near-trivial. That is precisely the property that makes the suite non-discriminative:
+under these fixtures every candidate configuration receives the same effective input, so no
+configuration can score differently. A raw model handed the same two documents has everything the
+Proofbound reflector had.
+
+### E16.5 Candidate scenario families
+
+Four were built, each in a different ordinary engineering domain and none in Proofbound's own
+vocabulary — a benchmark about Proofbound would measure familiarity with Proofbound.
+
+| Scenario | Dimension | Shape |
+|---|---|---|
+| `retention-transitive-conflict` | dependency distance | The reviewed specification is consistent with the design the contract names; the limit it breaks lives in a retention policy that design depends on and the contract never mentions. |
+| `crowded-availability-review` | competing concerns | Four defensible weaknesses and one actual breach of an accepted single-zone-loss requirement. Detection means prioritising the breach over the merely imperfect. |
+| `freshness-batching-conflict` | indirect implication | A thirty-second batching interval and a two-second visibility commitment: individually reasonable, jointly impossible, and stated by no sentence in either document. |
+| `pattern-versus-authority` | dependency distance | The design chooses its credential handling only *by reference* to the estate's existing clients, so whether it satisfies the accepted rotation requirement can be decided only by reading their code. Tests `P11` — repository patterns are evidence, never authority. |
+
+A fifth family, a **plausible repair trap** (the artifact applies a textbook workaround that breaks an
+accepted guarantee), was designed and not built: `adversarial-weaken-upstream` already occupies that
+shape, and four candidates is enough to screen.
+
 ## E18. Calibration screening — the scenarios got harder, the suite did not separate
 
 The calibration milestone asked one question: *can a small set of semantically valid scenarios

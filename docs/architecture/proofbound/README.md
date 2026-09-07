@@ -49,7 +49,8 @@ point. Byte figures are the authoritative-architecture cost of each route.
 | **B2.** Implementing freeze / contract identity (M2C) | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [freeze-and-binding](freeze-and-binding.md) + plan | autonomy, research, history | ~64 KB + plan |
 | **C.** Implementing decision provenance | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [long-running-autonomy](long-running-autonomy.md) | research, history | ~68 KB |
 | **D.** Implementing context telemetry | README + [core-model](core-model.md) + [context-economy](context-economy.md) | artifacts, autonomy, history | ~34 KB |
-| **D2.** Working on evaluation / regression | README + [evaluation](evaluation.md) | the whole contract-binding chain, and run history unless you need it | ~42 KB |
+| **D2.** Authoring scenarios or grading a run | README + [evaluation](evaluation.md) | the contract-binding chain, comparison rules, run history | ~36 KB |
+| **D3.** Calibrating a suite or comparing runs | README + [evaluation-comparison](evaluation-comparison.md) | scenario authoring, the contract-binding chain | ~26 KB |
 | **E.** Fixing a bug in inherited DSD mechanics | README + [execution-and-review](execution-and-review.md) | everything else | ~12 KB |
 | **F.** Asking "why is this rule like this?" | [evidence/implementation-findings](evidence/implementation-findings.md) | — | ~41 KB |
 | **G.** Archaeology on the original design | [evidence/original-rfc](evidence/original-rfc.md) | — | ~83 KB |
@@ -70,7 +71,8 @@ split.
 | [artifacts-and-provenance.md](artifacts-and-provenance.md) | **Normative** | Canonical text identity; ledger v1; derived validity and closure; trust boundary; dependency ≠ applicability; the M2B change graph |
 | [freeze-and-binding.md](freeze-and-binding.md) | **Normative** | Accepted engineering binding; freeze v1 schema and identity; validation layers; what a freeze does *not* authorize |
 | [long-running-autonomy.md](long-running-autonomy.md) | **Normative + rationale** | Promotion ladder; escalation; decision provenance direction; baseline supersession; erosion vs drift; coherence audit; **canonical `T1`–`T10`** |
-| [evaluation.md](evaluation.md) | **Design track** | How the agent pipeline is measured: scenarios, trials, mechanical vs semantic grading, baselines. Observes Proofbound; never part of its authority chain. |
+| [evaluation.md](evaluation.md) | **Design track** | How one run is measured: scenarios, trials, mechanical vs semantic grading, multi-property completeness. Observes Proofbound; never part of its authority chain. |
+| [evaluation-comparison.md](evaluation-comparison.md) | **Design track** | Whether a suite can tell two systems apart, and what comparing two runs may claim. Model comparison is never a leaderboard. |
 | [context-economy.md](context-economy.md) | **Research** | External evidence and hypotheses. Not production behavior. Supports `P13`, which is defined in core-model. |
 | [evidence/implementation-findings.md](evidence/implementation-findings.md) | **Historical evidence** | What M0–M2A proved and where it corrected the design. Why we trust the rules. |
 | [evidence/evaluation-runs.md](evidence/evaluation-runs.md) | **Historical evidence** | What individual evaluation runs established: the V1 implementation outcome, baseline zero, calibration outcomes. Never protocol. |
@@ -119,8 +121,10 @@ One line each. **The canonical definitions, with their falsifiers, are in
 | M0 — trustworthy baseline | **Implemented** |
 | M1 — reflection vertical slice | **Implemented** |
 | M2A — durable artifact provenance | **Implemented** |
-| M2B — artifact graph | **Next.** Not designed. Constraints in [artifacts-and-provenance.md](artifacts-and-provenance.md) |
-| M2C — freeze and binding | Deferred; open questions recorded |
+| M2B — artifact graph | **Implemented** |
+| M2C — freeze and binding | **Implemented** (A: freeze identity; B: aggregate consistency; C: execution binding) |
+| Eval V1 — semantic reflection reliability | **Implemented**; first live baseline recorded |
+| Eval V2 — scenario calibration | **Implemented**; discrimination not established |
 | Decision provenance, coherence audit, context telemetry | Direction only; see the plan's dependency graph |
 
 Canonical test command: `python3 -m unittest discover -s tests -t .` (Python ≥3.10).
