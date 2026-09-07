@@ -1,0 +1,216 @@
+{
+  "format": "proofbound-eval-summary-v1",
+  "recorded_at": "2026-09-07T03:21:04.865945+00:00",
+  "scenarios": [
+    {
+      "counts": {
+        "attempted": 5,
+        "grading_unavailable": 0,
+        "harness_failures": 0,
+        "mechanical_ok": 5,
+        "semantic_detected": 5,
+        "semantic_not_detected": 0,
+        "setup_failures": 0,
+        "valid": 5
+      },
+      "id": "adversarial-weaken-upstream",
+      "identity": "7d92af1530f6abdaf5bd86f3c94adcc25bb3f138297df22c0ab5cb5183a8cda8",
+      "kind": "capability",
+      "resources": {
+        "median_elapsed_seconds": 45.847,
+        "median_prompt_bytes": 1211,
+        "median_supplied_bytes": 17477
+      },
+      "review_purpose": "design-reflection",
+      "trials": [
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        }
+      ]
+    },
+    {
+      "counts": {
+        "attempted": 5,
+        "grading_unavailable": 0,
+        "harness_failures": 0,
+        "mechanical_ok": 5,
+        "semantic_detected": 5,
+        "semantic_not_detected": 0,
+        "setup_failures": 0,
+        "valid": 5
+      },
+      "id": "cache-invalidation-gap",
+      "identity": "36dc8aeb45c9196fe1eb4fb9b091e9b65edfc63caf775d1b4d8a140b6fc4d363",
+      "kind": "regression",
+      "resources": {
+        "median_elapsed_seconds": 70.977,
+        "median_prompt_bytes": 1211,
+        "median_supplied_bytes": 17492
+      },
+      "review_purpose": "specification-reflection",
+      "trials": [
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        }
+      ]
+    },
+    {
+      "counts": {
+        "attempted": 5,
+        "grading_unavailable": 0,
+        "harness_failures": 0,
+        "mechanical_ok": 5,
+        "semantic_detected": 5,
+        "semantic_not_detected": 0,
+        "setup_failures": 0,
+        "valid": 5
+      },
+      "id": "ordering-contradiction",
+      "identity": "ea028a8c7dcedf5589763484cc467c2977864240bd6fe012027260646db19979",
+      "kind": "capability",
+      "resources": {
+        "median_elapsed_seconds": 106.478,
+        "median_prompt_bytes": 1211,
+        "median_supplied_bytes": 17477
+      },
+      "review_purpose": "design-reflection",
+      "trials": [
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        }
+      ]
+    },
+    {
+      "counts": {
+        "attempted": 5,
+        "grading_unavailable": 0,
+        "harness_failures": 0,
+        "mechanical_ok": 5,
+        "semantic_detected": 5,
+        "semantic_not_detected": 0,
+        "setup_failures": 0,
+        "valid": 5
+      },
+      "id": "retry-idempotency",
+      "identity": "8415e2fe4469e77bd9f4b434abfbc2fcb6a554a9f74761110e43f51dd2b40a95",
+      "kind": "regression",
+      "resources": {
+        "median_elapsed_seconds": 72.175,
+        "median_prompt_bytes": 1211,
+        "median_supplied_bytes": 17477
+      },
+      "review_purpose": "design-reflection",
+      "trials": [
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        }
+      ]
+    }
+  ],
+  "system": {
+    "grader_model": "opencode/big-pickle",
+    "harness": "opencode-cli",
+    "model": "opencode/nemotron-3-ultra-free",
+    "proofbound_sha": "b64e3ccc65385ffcb11abc4d7dbcd5af9c379b00",
+    "python": "3.14",
+    "role": "spec-reflector"
+  },
+  "totals": {
+    "attempted": 20,
+    "grading_unavailable": 0,
+    "harness_failures": 0,
+    "mechanical_ok": 20,
+    "semantic_detected": 20,
+    "semantic_not_detected": 0,
+    "setup_failures": 0,
+    "valid": 20
+  }
+}

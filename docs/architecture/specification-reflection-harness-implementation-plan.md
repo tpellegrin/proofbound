@@ -1109,7 +1109,7 @@ it can show regressions and reliability, and humans still decide what becomes ac
 deterministic product tests stay separate from model-driven pipeline evaluation. The 340-test suite is
 not the harness.
 
-## 7D. Eval V1 — semantic reflection reliability  *(IMPLEMENTED; no live baseline yet)*
+## 7D. Eval V1 — semantic reflection reliability  *(IMPLEMENTED; baseline zero recorded)*
 
 Design authority: [`evaluation.md`](proofbound/evaluation.md).
 
@@ -1132,12 +1132,18 @@ prompt bytes, timing, output and effects.
 | `evals/results/` | Committed summaries; transcripts stay local and uncommitted |
 
 **Outcome.** Implemented in `evals/` (scenario model with identity and a leak check, trial runner over
-the real pipeline, mechanical + semantic grading, versioned summary, CLI) with 25 deterministic harness
-tests. **365 tests green** on 3.10 and 3.14 — 340 inherited unchanged. Four scenarios ship. Two design
+the real pipeline, mechanical + semantic grading, versioned summary, CLI) with 26 deterministic harness
+tests. **366 tests green** on 3.10 and 3.14 — 340 inherited unchanged. Four scenarios ship. Two design
 corrections are recorded in [`evaluation.md` §E14](proofbound/evaluation.md#e14-eval-v1-implementation-outcome):
 the mechanical half of the thesis was overstated, and prompt bytes are not context supplied.
-**No live baseline was collected** — no worker executable or provider configuration exists in this
-environment, and none was fabricated.
+
+**Baseline zero is recorded** in [`evaluation.md` §E15](proofbound/evaluation.md#e15-eval-v1-baseline-zero)
+and committed as `evals/results/eval-v1.json`: 20 attempted trials, 20 valid, 20 mechanically clean and
+20 detected, against Proofbound `b64e3cc` with stable OpenCode 1.18.29. Collecting it exposed one harness
+defect — a trial ran an ambient default model rather than the requested one, so a summary could name a
+configuration it had not run — fixed with a regression test before the baseline was collected. The
+result establishes that semantic detection happens at all, which is the stated trigger for designing
+the control arm; it does not establish reliability, and it does not attribute detection to Proofbound.
 
 **Scope:** 3–5 planted-contradiction scenarios in the M1 shape, 5 independent trials each, one harness,
 mechanical grading through existing domain APIs, one model-grader path plus a human calibration sample,
