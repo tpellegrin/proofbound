@@ -1,0 +1,97 @@
+{
+  "format": "proofbound-eval-summary-v1",
+  "recorded_at": "2026-09-07T22:40:02.812276+00:00",
+  "scenarios": [
+    {
+      "author_report_sha256": "d3cbb67e4e4e0f6407bdcfe43532b782794cecc0097f4333689c8c5cda802a01",
+      "counts": {
+        "attempted": 5,
+        "grading_unavailable": 0,
+        "harness_failures": 0,
+        "mechanical_ok": 5,
+        "semantic_detected": 3,
+        "semantic_not_detected": 2,
+        "setup_failures": 0,
+        "valid": 5
+      },
+      "id": "checkout-obligations",
+      "identity": "63c9f42f0c9b0fd903d723c9309637cb170d00ab0977e4630c928ec7d355b91d",
+      "kind": "capability",
+      "properties": {
+        "diagnostic-copies-outlive-policy": {
+          "detected": 5,
+          "dimension": "dependency-distance",
+          "gradeable": 5,
+          "grading_unavailable": 0,
+          "not_detected": 0
+        },
+        "ledger-pinned-to-one-region": {
+          "detected": 4,
+          "dimension": "indirect-implication",
+          "gradeable": 5,
+          "grading_unavailable": 0,
+          "not_detected": 1
+        },
+        "retry-moves-money-twice": {
+          "detected": 4,
+          "dimension": "direct",
+          "gradeable": 5,
+          "grading_unavailable": 0,
+          "not_detected": 1
+        }
+      },
+      "resources": {
+        "median_elapsed_seconds": 118.638,
+        "median_prompt_bytes": 1459,
+        "median_supplied_bytes": 17477
+      },
+      "review_purpose": "design-reflection",
+      "trials": [
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "not-detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "not-detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        }
+      ]
+    }
+  ],
+  "system": {
+    "grader_model": "opencode/big-pickle",
+    "harness": "opencode-cli",
+    "harness_version": "1.18.29",
+    "model": "opencode/nemotron-3-ultra-free",
+    "proofbound_sha": "5b440517de60e7076866de248f55e92876f830cf",
+    "python": "3.14",
+    "role": "spec-reflector"
+  },
+  "totals": {
+    "attempted": 5,
+    "grading_unavailable": 0,
+    "harness_failures": 0,
+    "mechanical_ok": 5,
+    "semantic_detected": 3,
+    "semantic_not_detected": 2,
+    "setup_failures": 0,
+    "valid": 5
+  }
+}

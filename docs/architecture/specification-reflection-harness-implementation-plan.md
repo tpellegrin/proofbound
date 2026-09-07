@@ -1247,7 +1247,7 @@ failure-profile separation either. Full record, including the provider confound 
 reasoning variant, in
 [§E20](proofbound/evidence/evaluation-runs.md#e20-multi-property-screening--the-observable-finally-moved).
 
-## 7G. Eval V4 — the P12 fresh-independence control  *(designed; not implemented)*
+## 7G. Eval V4 — the P12 fresh-independence control  *(IMPLEMENTED; lower completeness under treatment)*
 
 Design authority: [`evaluation-comparison.md` §E21](proofbound/evaluation-comparison.md#e21-the-p12-control--does-withholding-the-authors-reasoning-help).
 
@@ -1281,6 +1281,18 @@ new scenarios or obligations; any prompt, protocol or rubric change; session reu
 **Anti-goal.** The experiment must be able to falsify `P12`'s informational limb. Author reasoning
 carrying intent and rejected alternatives could legitimately *help* a reviewer, and that outcome is
 to be reported as counter-evidence, not explained away.
+
+**Outcome: supplying the author's report lowered observed completeness.** 42/45 obligations and
+12/15 complete trials untreated, against 38/45 and 8/15 treated, over 30 valid trials with no setup
+or harness failures and `compare` confirming that only `treatment` differed. The difference is not a
+general decline: six of nine obligations are identical, one improved under treatment, and the whole
+gap is `migration/all-at-once-rollout` — 4/5 untreated, **0/5** treated — the one obligation whose
+mechanism the author report explicitly argues for. Treated reports cite the report and do reach the
+relevant sentence, but along the compatibility path the narrative lays out, never drawing the second
+consequence. That matches the pre-registered reasoning-path shape rather than diffuse context load,
+and is **not proof of anchoring**: two arms cannot separate it from added context, so the supported
+claim stays operational. Full record in
+[§E21.A](proofbound/evidence/evaluation-runs.md#e21a-the-p12-control--result).
 
 ## 7B. Threat mitigation status
 

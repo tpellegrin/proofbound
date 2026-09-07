@@ -1,0 +1,97 @@
+{
+  "format": "proofbound-eval-summary-v1",
+  "recorded_at": "2026-09-07T23:01:35.903168+00:00",
+  "scenarios": [
+    {
+      "author_report_sha256": "none",
+      "counts": {
+        "attempted": 5,
+        "grading_unavailable": 0,
+        "harness_failures": 0,
+        "mechanical_ok": 5,
+        "semantic_detected": 4,
+        "semantic_not_detected": 1,
+        "setup_failures": 0,
+        "valid": 5
+      },
+      "id": "session-lifecycle-obligations",
+      "identity": "c303abc9399fd2ab54a6e26acea424ebf75d8b0f487a6a557623270277373715",
+      "kind": "capability",
+      "properties": {
+        "credential-in-analytics-tier": {
+          "detected": 5,
+          "dimension": "dependency-distance",
+          "gradeable": 5,
+          "grading_unavailable": 0,
+          "not_detected": 0
+        },
+        "header-drop-breaks-old-clients": {
+          "detected": 5,
+          "dimension": "direct",
+          "gradeable": 5,
+          "grading_unavailable": 0,
+          "not_detected": 0
+        },
+        "refresh-outlives-revocation": {
+          "detected": 4,
+          "dimension": "indirect-implication",
+          "gradeable": 5,
+          "grading_unavailable": 0,
+          "not_detected": 1
+        }
+      },
+      "resources": {
+        "median_elapsed_seconds": 85.323,
+        "median_prompt_bytes": 1211,
+        "median_supplied_bytes": 17477
+      },
+      "review_purpose": "design-reflection",
+      "trials": [
+        {
+          "mechanical_ok": true,
+          "semantic": "not-detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        }
+      ]
+    }
+  ],
+  "system": {
+    "grader_model": "opencode/big-pickle",
+    "harness": "opencode-cli",
+    "harness_version": "1.18.29",
+    "model": "opencode/nemotron-3-ultra-free",
+    "proofbound_sha": "5b440517de60e7076866de248f55e92876f830cf",
+    "python": "3.14",
+    "role": "spec-reflector"
+  },
+  "totals": {
+    "attempted": 5,
+    "grading_unavailable": 0,
+    "harness_failures": 0,
+    "mechanical_ok": 5,
+    "semantic_detected": 4,
+    "semantic_not_detected": 1,
+    "setup_failures": 0,
+    "valid": 5
+  }
+}

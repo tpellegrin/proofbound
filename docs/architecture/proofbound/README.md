@@ -126,6 +126,7 @@ One line each. **The canonical definitions, with their falsifiers, are in
 | Eval V1 — semantic reflection reliability | **Implemented**; first live baseline recorded |
 | Eval V2 — scenario calibration | **Implemented**; discrimination not established |
 | Eval V3 — multi-property discrimination | **Implemented**; dynamic range demonstrated, no model ordering |
+| Eval V4 — P12 informational-independence control | **Implemented**; supplying the author's report lowered observed completeness |
 | Decision provenance, coherence audit, context telemetry | Direction only; see the plan's dependency graph |
 
 Canonical test command: `python3 -m unittest discover -s tests -t .` (Python ≥3.10).

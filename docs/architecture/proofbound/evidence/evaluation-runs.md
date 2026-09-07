@@ -308,3 +308,87 @@ Not that the suite separates capable models — it did not, here. Not that three
 right number. Not that `all-at-once-rollout` is hard for models in general rather than hard in this
 scenario. And nothing about any role other than `spec-reflector`, any harness other than this one,
 or any workload beyond these three synthetic reviews.
+
+## E21.A The P12 control — result
+
+The first causal test of `P12`'s informational limb. Both arms are fresh executions; the treated
+arm additionally receives a frozen spec-author attempt report through `--input`. Everything else
+is identical, and `pb_eval compare` confirms it: **only `treatment` differs**.
+
+**Frozen configuration**, pre-registered before the first official trial. Proofbound
+`5b440517de60e7076866de248f55e92876f830cf`; `opencode/nemotron-3-ultra-free` on `opencode-cli`
+`1.18.29`; grader `opencode/big-pickle`, one blind call per obligation; role `spec-reflector`;
+Python 3.14; three scenarios × two arms × **5 trials** = 30 trials, 90 property classifications;
+arm blocks counterbalanced (untreated at positions 1, 4, 5; treated at 2, 3, 6). Primary outcome
+fixed in advance: obligations detected over gradeable opportunities.
+
+| | Untreated | Treated |
+|---|---|---|
+| **Obligations detected** | **42/45** | **38/45** |
+| **Complete trials** | **12/15** | **8/15** |
+| Attempted / valid | 15 / 15 | 15 / 15 |
+| Setup, harness failures, ungraded | 0, 0, 0 | 0, 0, 0 |
+
+| Scenario | Obligation | Dimension | Untreated | Treated |
+|---|---|---|---|---|
+| checkout | `retry-moves-money-twice` | direct | 5/5 | **4/5** |
+| checkout | `ledger-pinned-to-one-region` | indirect | 4/5 | 4/5 |
+| checkout | `diagnostic-copies-outlive-policy` | dependency-distance | 5/5 | 5/5 |
+| session | `refresh-outlives-revocation` | indirect | 4/5 | **5/5** |
+| session | `credential-in-analytics-tier` | dependency-distance | 5/5 | 5/5 |
+| session | `header-drop-breaks-old-clients` | direct | 5/5 | 5/5 |
+| migration | **`all-at-once-rollout`** | indirect | **4/5** | **0/5** |
+| migration | `column-removed-too-early` | direct | 5/5 | 5/5 |
+| migration | `runbook-makes-reversal-impossible` | pattern-vs-authority | 5/5 | 5/5 |
+
+### E21.A.1 The difference is one obligation, not a general decline
+
+Six of nine obligations are identical across arms, and one moved *up* under treatment. The whole
+aggregate gap is `migration/all-at-once-rollout`, which the untreated arm found four times in five
+and the treated arm **never** found.
+
+That obligation is the one the author report argues for directly: *"Rolling the new version out
+gradually means some instances writing one representation while others write the other… Doing it
+in one step keeps the window where behaviour is ambiguous as small as the deploy itself."* The
+report never mentions availability, never claims downtime is acceptable, and never states the
+obligation — the leak check enforces that. It simply supplies a reason for the mechanism.
+
+All five treated migration reports cite the author report (four to eleven references each), and
+they *do* engage the rollout sentence — through the reader-compatibility obligation the same
+sentence also breaks. The grader's refusals say so directly: *"flags reader compatibility and
+write-lock blocking, but never identifies that the simultaneous all-instance replacement leaves an
+interval with nothing serving."* The untreated arm reached the same sentence and drew both
+consequences.
+
+**Pre-registered shape check.** Degradation from generic context load would be expected to spread
+across obligations; degradation concentrated on the obligation whose mechanism the narrative
+rationalises is what was recorded. The observed pattern matches the second. That is consistent
+with reasoning-path contamination and **is not proof of it** — it is one obligation, in one
+scenario, at five trials.
+
+### E21.A.2 Resources, and a measurement limit
+
+Treatment adds ~2.7–2.8 KB against the ~17.5 KB already supplied — roughly 16% more named
+material. `prompt_bytes` moved 1211 → 1459, the pointer line for the input. **`supplied_bytes`
+did not move at all**, because it counts the worker-rules snapshot, role protocol and contract and
+does not include `--input` files: the treatment's bytes are real added context that this metric
+does not see. Recorded, not fixed.
+
+Median wall-clock did not degrade systematically (checkout 138s → 119s, migration 87s → 114s,
+session 85s → 105s), and there were no operational failures in either arm, so the effect is not
+the treated arm failing to operate the role.
+
+### E21.A.3 What this supports, and what it does not
+
+**Supported.** Under this frozen configuration, supplying the authoring attempt's report to an
+otherwise fresh spec-reflector produced **lower observed semantic completeness** — 38/45 against
+42/45 obligations, 8/15 against 12/15 complete trials. That is evidence for the current
+operational choice of not routing the author's execution narrative to a fresh reflector.
+
+**Not supported.** That anchoring is the mechanism — two arms cannot separate it from added
+context, which is why the claim stays operational (E21.7). That independence improves reasoning
+generally, that context is harmful, or that all author rationale is harmful: one obligation
+carries the entire difference, and one obligation improved under treatment. That any of this
+generalises beyond `spec-reflector`, this model, this harness, or these three scenarios. And
+nothing here rewrites `P12` or changes a runtime default — evaluation supplies evidence; an
+accepted architectural decision is what would change the product.
