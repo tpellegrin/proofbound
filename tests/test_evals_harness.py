@@ -232,6 +232,14 @@ class TrialTest(unittest.TestCase):
             self.assertEqual(
                 got["state"]["worker_runtime"]["model"], "probe/model-under-test")
 
+    def test_a_worker_that_never_finishes_is_invalid_not_a_missed_contradiction(self):
+        """One stuck worker must not abort the suite running around it."""
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(fake_worker(stack))
+            got = _trial.run_trial(self.scenario(), model="fake/model", timeout=0)
+            self.assertEqual(got["validity"], _trial.HARNESS_FAILURE)
+            self.assertIn("did not finish", got["reason"])
+
     def test_a_missing_executable_refuses_before_any_trial(self):
         ok, detail = _trial.provider_available("definitely-not-a-real-binary-xyz")
         self.assertFalse(ok)

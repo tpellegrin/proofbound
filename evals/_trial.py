@@ -41,6 +41,11 @@ HARNESS_FAILURE = "harness-failure"      # our own machinery malfunctioned
 TASK_ID = "EVAL-artifact"
 PHASE_ID = "spec"
 
+# A worker that deliberates for a quarter of an hour is slow, not broken: calibration saw
+# single trials run past fourteen minutes, and richer scenarios ask for more. The ceiling
+# exists so one stuck worker cannot hold a suite open forever, not to cut off thinking.
+TRIAL_TIMEOUT_SECONDS = 1800
+
 
 class TrialError(RuntimeError):
     """The harness itself could not run a trial."""
@@ -161,7 +166,7 @@ def _supplied_bytes(run: Path, event_dir: Path) -> int | None:
 
 
 def run_trial(scenario: dict[str, Any], *, model: str, keep: Path | None = None,
-              timeout: int = 900) -> dict[str, Any]:
+              timeout: int = TRIAL_TIMEOUT_SECONDS) -> dict[str, Any]:
     """Execute one trial and return its raw evidence, ungraded.
 
     Grading is a separate concern; this function only reports what happened.
@@ -180,10 +185,17 @@ def run_trial(scenario: dict[str, Any], *, model: str, keep: Path | None = None,
             result["reason"] = str(exc)
             return result
 
-        launch = _sh([sys.executable, str(SCRIPTS / "dsd_attempt.py"), "launch",
-                      "--run-root", str(run.resolve()), "--phase-id", PHASE_ID,
-                      "--task-id", TASK_ID, "--role", "spec-reflector", "--auto-flag="],
-                     timeout=timeout)
+        try:
+            launch = _sh([sys.executable, str(SCRIPTS / "dsd_attempt.py"), "launch",
+                          "--run-root", str(run.resolve()), "--phase-id", PHASE_ID,
+                          "--task-id", TASK_ID, "--role", "spec-reflector", "--auto-flag="],
+                         timeout=timeout)
+        except subprocess.TimeoutExpired:
+            # One slow worker must not abort the suite around it. An unfinished trial is an
+            # invalid trial, never a missed contradiction.
+            result["validity"] = HARNESS_FAILURE
+            result["reason"] = f"worker did not finish within {timeout}s"
+            return result
         if launch.returncode != 0:
             # A launch failure is the harness or the provider, never the reflector's judgement.
             blob = (launch.stdout + launch.stderr).lower()
@@ -196,9 +208,14 @@ def run_trial(scenario: dict[str, Any], *, model: str, keep: Path | None = None,
 
         # Run the real gate, then read the artifact it writes. The CLI returns a deliberately
         # reduced surface for parent context economy; `evidence-gate.json` is authoritative.
-        gate_cli = _sh([sys.executable, str(SCRIPTS / "dsd_attempt.py"), "gate",
-                        "--run-root", str(run.resolve()), "--phase-id", PHASE_ID,
-                        "--task-id", TASK_ID], timeout=timeout)
+        try:
+            gate_cli = _sh([sys.executable, str(SCRIPTS / "dsd_attempt.py"), "gate",
+                            "--run-root", str(run.resolve()), "--phase-id", PHASE_ID,
+                            "--task-id", TASK_ID], timeout=timeout)
+        except subprocess.TimeoutExpired:
+            result["validity"] = HARNESS_FAILURE
+            result["reason"] = f"gate did not finish within {timeout}s"
+            return result
         gate_path = event_dir / "evidence-gate.json"
         gate = json.loads(gate_path.read_text(encoding="utf-8")) if gate_path.is_file() else None
         result.update({
