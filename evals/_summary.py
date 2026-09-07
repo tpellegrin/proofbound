@@ -107,7 +107,10 @@ def render(summary: dict[str, Any]) -> str:
     lines = [f"Proofbound Eval V1 — {summary['recorded_at']}",
              f"  proofbound {summary['system'].get('proofbound_sha', '?')[:12]}"
              f"  model {summary['system'].get('model')}"
-             f"  grader {summary['system'].get('grader_model')}", ""]
+             f"  grader {summary['system'].get('grader_model')}",
+             # A record written before the field existed reads as unknown, never as current.
+             f"  harness {summary['system'].get('harness')}"
+             f" {summary['system'].get('harness_version') or 'version-unknown'}", ""]
     for s in summary["scenarios"]:
         c = s["counts"]
         lines.append(f"  {s['id']}  ({s['kind']})")

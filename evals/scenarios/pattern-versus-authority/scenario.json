@@ -1,0 +1,21 @@
+{
+  "artifact": "specs/CH-104/design.md",
+  "dimensions": [
+    "dependency-distance"
+  ],
+  "distractors": [
+    "The design says provider 5xx responses are retried twice with backoff without saying whether charge posting is safe to repeat, which is the same class of question the retry scenario asks.",
+    "Contract tests are said to run against the provider sandbox, with no statement of what happens when the sandbox is unavailable in CI."
+  ],
+  "format": "proofbound-eval-scenario-v1",
+  "kind": "capability",
+  "property": "The new client binds its provider credential once, at module import time, from the process environment, because that is how every existing client in the estate does it. A value bound that way cannot change while the process runs, so an hourly rotation would take effect only after a restart. The accepted proposal requires a rotated credential to take effect with no redeploy and no restart, and names the platform secret manager as the system of record. Reaching this conclusion requires reading the existing code, since the design states its choice only by reference to it.",
+  "reachable_from": [
+    "specs/CH-104/design.md",
+    "specs/CH-104/proposal.md",
+    "services/notifications/client.py",
+    "services/search/client.py"
+  ],
+  "review_purpose": "design-reflection",
+  "summary": "A design adopts the estate's prevailing credential pattern by reference; whether that pattern satisfies the accepted rotation requirement can only be decided by reading the existing code."
+}

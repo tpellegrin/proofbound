@@ -10,6 +10,7 @@ evaluation must never be able to report an infrastructure failure as a semantic 
 from __future__ import annotations
 
 import contextlib
+import inspect
 import json
 import os
 import shutil
@@ -17,12 +18,14 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "evals"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
+import _compare  # noqa: E402
 import _grade  # noqa: E402
 import _scenario  # noqa: E402
 import _summary  # noqa: E402
@@ -79,9 +82,15 @@ class ScenarioTest(unittest.TestCase):
     maxDiff = None
 
     def test_the_shipped_suite_loads_and_is_inspectable(self):
+        """Small enough that a human can read every scenario, which is the actual constraint.
+
+        Two populations live here — the anchors the first baseline measured and the
+        calibration candidates that came after — so the bound is on inspectability, not on
+        either group's size.
+        """
         found = _scenario.discover(SCENARIOS)
-        self.assertGreaterEqual(len(found), 3, "V1 expects 3-5 scenarios")
-        self.assertLessEqual(len(found), 5)
+        self.assertGreaterEqual(len(found), 3)
+        self.assertLessEqual(len(found), 12, "a suite nobody can read stops being calibrated")
         self.assertTrue(any(s["kind"] == "regression" for s in found))
         self.assertTrue(any(s["kind"] == "capability" for s in found))
         for s in found:
@@ -375,6 +384,296 @@ class BoundaryTest(unittest.TestCase):
             text = path.read_text(encoding="utf-8")
             for name in ("_scenario", "_trial", "_grade", "_summary", "pb_eval"):
                 self.assertNotIn(f"import {name}", text, f"{path.name} imports eval module {name}")
+
+
+class HarnessVersionTest(unittest.TestCase):
+    """`opencode-cli` names a protocol, not a release."""
+
+    maxDiff = None
+
+    def _fake_harness(self, stack, body):
+        root = Path(stack.enter_context(tempfile.TemporaryDirectory()))
+        binary = root / "pb-fake-harness"
+        binary.write_text(body)
+        binary.chmod(0o755)
+        return str(binary.name), root
+
+    def test_version_comes_from_the_executable_that_would_run_trials(self):
+        with contextlib.ExitStack() as stack:
+            name, root = self._fake_harness(
+                stack, "#!/bin/sh\necho '9.9.9-test'\n")
+            old = os.environ["PATH"]
+            os.environ["PATH"] = str(root) + os.pathsep + old
+            try:
+                self.assertEqual(_trial.harness_version(name), "9.9.9-test")
+            finally:
+                os.environ["PATH"] = old
+
+    def test_a_harness_that_cannot_report_a_version_is_unknown_not_assumed(self):
+        with contextlib.ExitStack() as stack:
+            name, root = self._fake_harness(stack, "#!/bin/sh\nexit 3\n")
+            old = os.environ["PATH"]
+            os.environ["PATH"] = str(root) + os.pathsep + old
+            try:
+                self.assertIsNone(_trial.harness_version(name))
+            finally:
+                os.environ["PATH"] = old
+
+    def test_a_missing_harness_is_unknown(self):
+        self.assertIsNone(_trial.harness_version("definitely-not-a-real-binary-xyz"))
+
+    def test_the_historical_baseline_still_loads_and_is_not_reinterpreted(self):
+        """A record written before the field existed reads as unknown, never as current."""
+        recorded = ROOT / "evals" / "results" / "eval-v1.json"
+        if not recorded.is_file():
+            self.skipTest("no committed baseline")
+        summary = _summary.load(recorded)
+        self.assertNotIn("harness_version", summary["system"],
+                         "the historical baseline must not be backfilled")
+        self.assertIn("version-unknown", _summary.render(summary))
+
+
+class CalibrationScenarioTest(unittest.TestCase):
+    """Declared difficulty is checked, not merely asserted."""
+
+    maxDiff = None
+
+    # The identities recorded by the first live baseline. If any of these move, the original
+    # measurement stops being comparable with anything, so they are pinned here explicitly.
+    V1_IDENTITIES = {
+        "adversarial-weaken-upstream": "7d92af1530f6abdaf5bd86f3c94adcc25bb3f138297df22c0ab5cb5183a8cda8",
+        "cache-invalidation-gap": "36dc8aeb45c9196fe1eb4fb9b091e9b65edfc63caf775d1b4d8a140b6fc4d363",
+        "ordering-contradiction": "ea028a8c7dcedf5589763484cc467c2977864240bd6fe012027260646db19979",
+        "retry-idempotency": "8415e2fe4469e77bd9f4b434abfbc2fcb6a554a9f74761110e43f51dd2b40a95",
+    }
+
+    def test_the_first_baselines_scenarios_are_byte_for_byte_unchanged(self):
+        for name, expected in self.V1_IDENTITIES.items():
+            with self.subTest(scenario=name):
+                self.assertEqual(_scenario.load(SCENARIOS / name)["identity"], expected)
+
+    def test_calibration_metadata_is_not_part_of_scenario_identity(self):
+        """It changes nothing the system under test receives, exactly like the rubric."""
+        with contextlib.ExitStack() as stack:
+            root = Path(stack.enter_context(tempfile.TemporaryDirectory()))
+            src = SCENARIOS / "freshness-batching-conflict"
+            copy = root / "copy"
+            shutil.copytree(src, copy)
+            manifest = json.loads((copy / "scenario.json").read_text())
+            before = _scenario.load(copy)["identity"]
+            manifest["distractors"] = manifest["distractors"] + [
+                "An additional defensible concern recorded for grading purposes only."]
+            manifest["notes"] = "Calibration bookkeeping, invisible to the worker."
+            (copy / "scenario.json").write_text(json.dumps(manifest), encoding="utf-8")
+            self.assertEqual(_scenario.load(copy)["identity"], before)
+
+    def _mutated(self, stack, name, mutate):
+        root = Path(stack.enter_context(tempfile.TemporaryDirectory()))
+        copy = root / "copy"
+        shutil.copytree(SCENARIOS / name, copy)
+        manifest = json.loads((copy / "scenario.json").read_text())
+        mutate(manifest)
+        (copy / "scenario.json").write_text(json.dumps(manifest), encoding="utf-8")
+        return copy
+
+    def test_the_difficulty_vocabulary_is_closed(self):
+        with contextlib.ExitStack() as stack:
+            copy = self._mutated(stack, "freshness-batching-conflict",
+                                 lambda m: m.update(dimensions=["extremely-hard"]))
+            with self.assertRaises(_scenario.ScenarioError):
+                _scenario.load(copy)
+
+    def test_dependency_distance_requires_something_the_contract_does_not_name(self):
+        """The dimension's whole point: if everything is handed over, nothing is discovered."""
+        with contextlib.ExitStack() as stack:
+            copy = self._mutated(
+                stack, "retention-transitive-conflict",
+                lambda m: m.update(reachable_from=["specs/CH-101/specification.md",
+                                                   "specs/CH-101/design.md"]))
+            with self.assertRaises(_scenario.ScenarioError) as caught:
+                _scenario.load(copy)
+            self.assertIn("nothing has to be discovered", str(caught.exception))
+
+    def test_competing_concerns_requires_actual_competing_concerns(self):
+        with contextlib.ExitStack() as stack:
+            copy = self._mutated(
+                stack, "crowded-availability-review",
+                lambda m: m.update(distractors=m["distractors"][:1]))
+            with self.assertRaises(_scenario.ScenarioError):
+                _scenario.load(copy)
+
+    def test_a_distractor_that_restates_the_property_is_rejected(self):
+        """Otherwise a negative control built from it would grade as a detection."""
+        with contextlib.ExitStack() as stack:
+            copy = self._mutated(
+                stack, "crowded-availability-review",
+                lambda m: m.update(distractors=[m["property"], m["distractors"][0]]))
+            with self.assertRaises(_scenario.ScenarioError) as caught:
+                _scenario.load(copy)
+            self.assertIn("restates the planted property", str(caught.exception))
+
+    def test_reachable_material_must_actually_be_in_the_fixture(self):
+        with contextlib.ExitStack() as stack:
+            copy = self._mutated(stack, "freshness-batching-conflict",
+                                 lambda m: m.update(reachable_from=["specs/nope.md"]))
+            with self.assertRaises(_scenario.ScenarioError):
+                _scenario.load(copy)
+
+    def test_every_calibration_candidate_declares_a_checked_dimension(self):
+        for scenario in _scenario.discover(SCENARIOS):
+            if scenario["id"] in self.V1_IDENTITIES:
+                continue
+            with self.subTest(scenario=scenario["id"]):
+                self.assertTrue(scenario["dimensions"],
+                                "a calibration candidate must declare what makes it hard")
+                self.assertLessEqual(set(scenario["dimensions"]),
+                                     _scenario.DIFFICULTY_DIMENSIONS)
+
+    def test_the_suite_exercises_more_than_one_reasoning_structure(self):
+        declared = {d for s in _scenario.discover(SCENARIOS) for d in s["dimensions"]}
+        self.assertGreaterEqual(len(declared), 2, "one dimension is not a calibration suite")
+
+    def test_dependency_distance_scenarios_put_material_outside_the_contract(self):
+        """The mechanical expression of 'Proofbound is on the causal path'."""
+        for scenario in _scenario.discover(SCENARIOS):
+            if _scenario.DEPENDENCY_DISTANCE not in scenario["dimensions"]:
+                continue
+            with self.subTest(scenario=scenario["id"]):
+                contract = Path(scenario["contract"]).read_text(encoding="utf-8")
+                unnamed = [r for r in scenario["reachable_from"] if r not in contract]
+                self.assertTrue(unnamed, "nothing has to be discovered")
+
+
+class ComparisonTest(unittest.TestCase):
+    """Comparison reports what differs. It never decides who won."""
+
+    maxDiff = None
+
+    def summary(self, *, model="m/a", detected=5, valid=5, sha="deadbeef", ident="i1",
+                kind="capability", scenario_id="s1", harness_version="1.0.0"):
+        return {
+            "format": _summary.SUMMARY_FORMAT, "recorded_at": "2026-01-01T00:00:00+00:00",
+            "system": {"proofbound_sha": sha, "harness": "opencode-cli",
+                       "harness_version": harness_version, "model": model,
+                       "grader_model": "g/x", "role": "spec-reflector", "python": "3.14"},
+            "scenarios": [{"id": scenario_id, "identity": ident, "kind": kind,
+                           "counts": {"attempted": valid, "valid": valid,
+                                      "setup_failures": 0, "harness_failures": 0,
+                                      "mechanical_ok": valid,
+                                      "semantic_detected": detected,
+                                      "semantic_not_detected": valid - detected,
+                                      "grading_unavailable": 0},
+                           "resources": {"median_elapsed_seconds": 10.0}}],
+            "totals": {},
+        }
+
+    def test_changing_only_the_model_is_a_controlled_comparison(self):
+        got = _compare.compare(self.summary(model="m/a"), self.summary(model="m/b"))
+        self.assertEqual(got["differing_fields"], ["model"])
+        self.assertTrue(got["controlled"])
+
+    def test_changing_more_than_the_model_is_not_controlled(self):
+        got = _compare.compare(self.summary(model="m/a"),
+                               self.summary(model="m/b", sha="cafe"))
+        self.assertFalse(got["controlled"])
+        self.assertIn("proofbound_sha", got["differing_fields"])
+        self.assertIn("more than the model differs", _compare.render(got))
+
+    def test_a_different_harness_version_breaks_the_comparison(self):
+        got = _compare.compare(self.summary(model="m/a"),
+                               self.summary(model="m/b", harness_version="2.0.0"))
+        self.assertFalse(got["controlled"])
+        self.assertIn("harness_version", got["differing_fields"])
+
+    def test_a_field_neither_run_recorded_is_unverified_not_agreement(self):
+        a, b = self.summary(model="m/a"), self.summary(model="m/b")
+        del a["system"]["harness_version"], b["system"]["harness_version"]
+        got = _compare.compare(a, b)
+        self.assertIn("harness_version", got["unverified_fields"])
+        self.assertNotIn("harness_version", got["differing_fields"])
+        self.assertIn("unverified", _compare.render(got))
+
+    def test_scenarios_are_matched_by_identity_not_by_name(self):
+        """Same id, different content, is not the same measurement."""
+        got = _compare.compare(self.summary(model="m/a", ident="i1"),
+                               self.summary(model="m/b", ident="i1", scenario_id="renamed"))
+        self.assertEqual(len(got["scenarios"]), 1)
+        with self.assertRaises(_compare.ComparisonError):
+            _compare.compare(self.summary(ident="i1"), self.summary(ident="i2"))
+
+    def test_a_differing_scenario_population_is_surfaced_and_not_controlled(self):
+        a = self.summary(model="m/a", ident="i1")
+        b = self.summary(model="m/b", ident="i1")
+        b["scenarios"].append({**a["scenarios"][0], "id": "extra", "identity": "i2"})
+        got = _compare.compare(a, b)
+        self.assertFalse(got["populations_match"])
+        self.assertFalse(got["controlled"])
+        self.assertEqual(got["only_in_b"], ["extra"])
+        self.assertIn("did not evaluate the same scenario set", _compare.render(got))
+
+    def test_a_provider_change_riding_along_with_the_model_is_named(self):
+        got = _compare.compare(self.summary(model="alpha/x"), self.summary(model="beta/y"))
+        self.assertFalse(got["provider"]["same"])
+        self.assertIn("provider", _compare.render(got))
+
+    def test_results_are_stratified_so_easy_anchors_cannot_dominate(self):
+        a = self.summary(model="m/a", ident="i1", kind="capability", detected=1)
+        b = self.summary(model="m/b", ident="i1", kind="capability", detected=5)
+        for summary, det in ((a, 5), (b, 5)):
+            summary["scenarios"].append({**summary["scenarios"][0], "id": "anchor",
+                                         "identity": "i2", "kind": "regression",
+                                         "counts": {**summary["scenarios"][0]["counts"],
+                                                    "semantic_detected": det,
+                                                    "semantic_not_detected": 5 - det}})
+        got = _compare.compare(a, b)
+        self.assertEqual(got["strata"]["capability"]["a"]["semantic_detected"], 1)
+        self.assertEqual(got["strata"]["capability"]["b"]["semantic_detected"], 5)
+        self.assertEqual(got["strata"]["regression"]["a"]["semantic_detected"], 5)
+        self.assertIn("stratum", _compare.render(got))
+
+    def test_comparison_never_names_a_winner(self):
+        got = _compare.compare(self.summary(model="m/a", detected=0),
+                               self.summary(model="m/b", detected=5))
+        blob = json.dumps(got).lower() + _compare.render(got).lower()
+        for forbidden in ("winner", "best_model", "recommended", "promote", "rank",
+                          "score", "wins", "better"):
+            self.assertNotIn(forbidden, blob, f"{forbidden!r} must not be protocol")
+        self.assertIn("human judgement", _compare.render(got))
+
+    def test_comparison_is_derived_and_writes_nothing(self):
+        """The state test: everything here recomputes from the two named summaries."""
+        source = inspect.getsource(_compare)
+        for forbidden in ("write_text", "open(", "mkdir", "json.dump"):
+            self.assertNotIn(forbidden, source, "a comparison must not persist anything")
+
+
+class GraderBlindnessTest(unittest.TestCase):
+    """A grader that knew which model wrote a report could rank rather than judge."""
+
+    maxDiff = None
+
+    def test_the_grading_prompt_carries_only_the_property_and_the_report(self):
+        filled = _grade.GRADER_PROMPT.format(property="PROPERTY-TOKEN", report="REPORT-TOKEN")
+        self.assertIn("PROPERTY-TOKEN", filled)
+        self.assertIn("REPORT-TOKEN", filled)
+        for leak in ("model", "provider", "proofbound", "baseline", "previous", "version"):
+            self.assertNotIn(leak, filled.lower().replace("reviewer's report", ""),
+                             f"grading prompt mentions {leak!r}")
+
+    def test_the_grader_is_never_told_the_worker_model(self):
+        seen = {}
+
+        def fake_run(cmd, **kwargs):
+            seen["cmd"] = cmd
+            return subprocess.CompletedProcess(cmd, 0, "DETECTED\n", "")
+
+        scenario = _scenario.load(SCENARIOS / "retry-idempotency")
+        trial = {"report": "The retry conflicts with the proposal.", "model": "secret/worker-model"}
+        with unittest.mock.patch.object(_grade.subprocess, "run", fake_run), \
+             unittest.mock.patch.object(_grade.shutil, "which", lambda x: "/bin/true"):
+            got = _grade.semantic(trial, scenario, grader_model="grader/model")
+        self.assertEqual(got["result"], _grade.DETECTED)
+        self.assertNotIn("secret/worker-model", " ".join(seen["cmd"]))
 
 
 if __name__ == "__main__":

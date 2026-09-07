@@ -280,94 +280,12 @@ dashboards; scheduled or CI-gated runs; token accounting normalized across provi
 Live-model evaluation is **not** part of normal CI. Contributors must never need paid credentials to run
 the deterministic suite.
 
-## E14. Eval V1 implementation outcome
+## Run history
 
-Implemented in `evals/`, with 25 deterministic harness tests in `tests/test_evals_harness.py`.
-The deterministic suite never invokes a model and needs no credentials.
-
-**Two corrections the implementation forced.**
-
-1. **The mechanical half of the thesis was overstated.** The thesis says the pipeline routes a
-   contradiction *"as findings rather than acceptance"*. Python cannot grade that: DSD has no
-   machine-readable verdict, acceptance is a parent decision, and a clean gate means *safe to
-   interpret*, never *the engineering passed*. So the mechanical grade is what the substrate can
-   actually establish — a valid, fresh, independent, read-only reflection was delivered for
-   interpretation — and whether its content warrants findings is the semantic grade. The thesis is
-   otherwise unchanged.
-
-2. **Prompt bytes are not context supplied.** The launch prompt is a *pointer list*: Proofbound hands
-   the worker paths, not content. The envelope is therefore small and says almost nothing about context
-   cost. V1 records `prompt_bytes` (the envelope) and `supplied_bytes` (the worker-rules snapshot, role
-   protocol and task contract the launcher names) separately. Neither is a token count and neither may
-   be described as one; what the worker chooses to open afterwards is not measured.
-
-**Two things the substrate already did better than expected.** A worker that produces nothing is
-classified by Proofbound itself — the gate reports `report_state: launcher-skeleton` and
-`needs_report_recovery`, so the harness asks rather than applying its own emptiness heuristic. And the
-`gate` CLI returns a deliberately reduced surface for parent context economy, so the harness reads the
-authoritative `evidence-gate.json` for role, scope and readiness.
-
-**Calibration** is a `calibration.json` written beside retained evidence, pairing the planted property
-with the report and the grader's call — enough for a human to check a sample, with no annotation tooling.
-
-**No live baseline was collected at implementation time.** No worker executable and no provider
-configuration existed in the environment where V1 was implemented, so `run` refused with an explicit
-setup failure and **no baseline was fabricated**. The first real run is recorded in E15 below.
-
-## E15. Eval V1 baseline zero
-
-The first live measurement. It is a *comparison point*, not a verdict: there is nothing empirical
-before it, so no claim of improvement or regression can be derived from it.
-
-**System under test.** Proofbound `b64e3cc`, role `spec-reflector`, harness `opencode-cli` on stable
-OpenCode `1.18.29`, model `opencode/nemotron-3-ultra-free` (OpenCode Zen free tier), Python 3.14, five
-independent trials per scenario. Every trial drove the real launcher, reservation, prompt rendering,
-integrity gate and scope check; the worker executable was the real binary, not a fake.
-
-| Scenario | Kind | Attempted | Valid | Mechanical | Detected | Missed | Ungraded | Median s |
-|---|---|---|---|---|---|---|---|---|
-| `adversarial-weaken-upstream` | capability | 5 | 5 | 5/5 | 5/5 | 0 | 0 | 45.8 |
-| `cache-invalidation-gap` | regression | 5 | 5 | 5/5 | 5/5 | 0 | 0 | 71.0 |
-| `ordering-contradiction` | capability | 5 | 5 | 5/5 | 5/5 | 0 | 0 | 106.5 |
-| `retry-idempotency` | regression | 5 | 5 | 5/5 | 5/5 | 0 | 0 | 72.2 |
-
-No setup failures and no harness failures. Median `prompt_bytes` 1211 and median `supplied_bytes`
-~17.5 KB across every scenario — the envelope and the named material are effectively constant here
-because the scenarios are the same shape, and neither is a token count.
-
-**What this establishes.** Under this exact configuration, semantic detection *happens*, and it
-happened in every attempted trial. That is what baseline zero was for: the deferred control arm asks
-whether independence *causes* detection, and that question is only worth asking once detection is
-observed at all (E10). The trigger it was waiting on has now fired.
-
-**What it does not establish.** Not that detection is reliable — 20/20 is *observed* 20/20 at N=5 per
-scenario, with no significance testing and none warranted. Not that Proofbound caused it: no control
-arm ran, and a model given two short contradictory documents may well detect the conflict without any
-of this machinery. Not anything about other models, other harnesses, longer artifacts, or real
-repositories.
-
-**Grader independence was model-independent, not provider-independent.** The grader
-(`opencode/big-pickle`) is a different model from the system under test, invoked separately and blind
-to the Proofbound version, the baseline and prior scores — but it comes from the same provider, so a
-provider-level failure would correlate across both halves of the measurement.
-
-**Grader calibration.** Every one of the twenty calls was inspected, and the classifications are
-substantive: most cite the specific finding in the report that matches the planted property. Six
-synthetic negative controls — style-only, unrelated-but-real, and generic-clarification reports of the
-kind E9 predicts as misses — were graded `NOT_DETECTED`, including one that mentions retry behaviour
-without addressing the idempotency conflict. The grader discriminates rather than rubber-stamping, so
-the 20/20 is a result and not an artifact of the instrument.
-
-**The most likely explanation to rule out next is scenario difficulty.** The fixtures are two short
-documents with one planted conflict, and the capability scenarios were not measurably harder than the
-regression ones — the adversarial scenario was in fact the *fastest*. A suite where everything passes
-discriminates nothing, so the next measurement must be able to produce a miss.
-
-**One environment incompatibility, recorded and not fixed.** Under OpenCode 1.18.29 the inherited
-session lookup (`opencode session list --format json`) returned no output, so `session_id` was null in
-all twenty attempts and DSD recorded a `session_lookup_error`. Every attempt still exited 0 with
-`status: completed`, and Eval V1 never resumes a session, so no trial was affected. It does mean the
-inherited `--resume-session` continuation path is untested against this OpenCode generation.
+What individual runs established — the V1 implementation outcome (`E14`) and the first live baseline
+(`E15`) — is historical evidence, read on demand, in
+[`evidence/evaluation-runs.md`](evidence/evaluation-runs.md). Outcomes are recorded there rather than
+here so that this document stays the protocol and does not grow by one section per run.
 
 ## E16. Discrimination — why baseline zero cannot compare systems
 
@@ -444,22 +362,21 @@ quantitative bounds. Those are subject-matter flavours worth having for diversit
 themselves put the pipeline on the causal path — a quantitative conflict between two named documents is
 still a two-document comparison.
 
-### E16.5 Candidate scenario families — design only
+### E16.5 Candidate scenario families
 
-Five candidates, spanning the three dimensions across distinct domains. None is implemented here, and
-the final set may be smaller.
+Four were built, each in a different ordinary engineering domain and none in Proofbound's own
+vocabulary — a benchmark about Proofbound would measure familiarity with Proofbound.
 
-| Candidate | Dimension | Shape |
+| Scenario | Dimension | Shape |
 |---|---|---|
-| **Transitive constraint** | dependency distance | The contract names a specification and its accepted design. The specification is consistent with that design; the violated constraint lives in a retention policy the design depends on and the contract never mentions. |
-| **Crowded review** | competing concerns | The reviewed artifact has three defensible weaknesses and one actual breach of an accepted availability guarantee. Detection requires prioritising the contract breach over the merely imperfect. |
-| **Unsatisfiable together** | indirect implication | Two independently reasonable bounds — a freshness guarantee upstream and a batching interval downstream — that cannot both hold. No sentence contradicts another. |
-| **Plausible repair trap** | competing + indirect | The artifact correctly identifies a real problem and applies the textbook workaround, which violates an accepted compatibility guarantee. The tempting response is to endorse the fix. |
-| **Pattern versus authority** | dependency distance | The fixture contains actual source code establishing a prevailing pattern; accepted intent explicitly requires another. Tests `P11` — repository patterns are evidence, never authority — and is the only family requiring the fixture to contain code, which today's fixtures do not. |
+| `retention-transitive-conflict` | dependency distance | The reviewed specification is consistent with the design the contract names; the limit it breaks lives in a retention policy that design depends on and the contract never mentions. |
+| `crowded-availability-review` | competing concerns | Four defensible weaknesses and one actual breach of an accepted single-zone-loss requirement. Detection means prioritising the breach over the merely imperfect. |
+| `freshness-batching-conflict` | indirect implication | A thirty-second batching interval and a two-second visibility commitment: individually reasonable, jointly impossible, and stated by no sentence in either document. |
+| `pattern-versus-authority` | dependency distance | The design chooses its credential handling only *by reference* to the estate's existing clients, so whether it satisfies the accepted rotation requirement can be decided only by reading their code. Tests `P11` — repository patterns are evidence, never authority. |
 
-Domains stay ordinary engineering (retention, auth, billing, replication, migration, provisioning) and
-away from Proofbound's own vocabulary: a benchmark about Proofbound would measure familiarity with
-Proofbound.
+A fifth family, a **plausible repair trap** (the artifact applies a textbook workaround that breaks an
+accepted guarantee), was designed and not built: `adversarial-weaken-upstream` already occupies that
+shape, and four candidates is enough to screen.
 
 ### E16.6 Eligibility is decided before outcomes are seen
 
@@ -576,3 +493,75 @@ its own violation in prose (*"restated here as best-effort… a reasonable relax
 fastest of the four, so it behaves as a regression anchor. No directory split into `regression/` and
 `capability/`: the `kind` field already carries the distinction, and at this size separate trees would
 buy nothing but churn.
+
+## E17. Comparing models without building a leaderboard
+
+Calibration produced Proofbound's first comparison of two models. That capability is useful and easy to
+misuse, so its limits are protocol rather than etiquette.
+
+### E17.1 A ranking is a sentence with conditions in it
+
+The claim an evaluation may support has a fixed shape:
+
+> On suite `S`, under configuration `E`, model `A` showed higher observed semantic reliability than
+> model `B`.
+
+Never *model A is better than model B*. The same model may rank differently for a spec-author, an
+implementation reviewer or a fixer; on another scenario distribution; under another harness, provider,
+budget or grader. Model choice is role- and workload-dependent, and a sentence that drops the conditions
+has dropped the evidence.
+
+### E17.2 A comparison is derived, never stored
+
+Two ordinary run summaries already hold every fact, so `pb_eval compare` computes and prints; it writes
+nothing. There is no comparison identity, no ranking record and no leaderboard: by the state test,
+nothing in a comparison fails to recompute from the two summaries it names, and a persisted copy would
+be a second place for the same facts to live and eventually to disagree.
+
+### E17.3 What must be equal before a difference means anything
+
+Configuration is reported before counts, because a reader can only attribute a difference to the model
+if nothing else moved. A comparison is **controlled** only when both runs evaluated the same scenario
+*identities* and exactly one recorded field differs. Everything else is still evidence, and says of
+itself that it is not a single-variable comparison.
+
+- **Scenario population is matched by identity, not by name.** Two runs over different scenarios are
+  two measurements of different things, however similar their names.
+- **A field neither run recorded is unverified, not agreement.** Two summaries that both predate
+  `harness_version` are not thereby known to have used the same harness release.
+- **Provider is derived from the model identifier, not stored.** When the provider changes along with
+  the model, model capability and provider behaviour are no longer separable, and the comparison says
+  so.
+
+### E17.4 Counts, stratified; no composite, no winner
+
+Results are reported per scenario and grouped by `kind`, so easy regression anchors cannot dominate a
+headline number and hide the capability scenarios carrying the signal. There is no weighted score, no
+`winner`, and no automatic promotion — a model that scores better does not become a default, because
+**evaluation evidence is not architecture authority** (E10). Choosing a model is an accepted decision
+made by a human with the vector in front of them.
+
+Resource dimensions — duration, prompt bytes, supplied bytes — are reported beside semantic outcomes and
+never combined with them. A cheaper model that misses more is not "worse by 12%"; it is a different
+tradeoff, and which side of it a deployment wants is not the evaluation's call.
+
+**No ordering is computed in code.** At calibration trial counts a one-trial gap is not an ordering, and
+software that turned it into one would manufacture confidence the evidence does not contain. No
+significance testing either: it would dress up N=5 rather than inform it. For a review role the property
+that matters is **repeated reliability**, not best-of-k — a reflector that finds the contradiction once
+in five attempts has not found it.
+
+### E17.5 Screening is not a ranking, and selection leaves a fingerprint
+
+Low-N screening exists to choose scenarios. Its model ordering is never published as a model comparison:
+it has small N, candidate scenarios, and selection effects by construction.
+
+More important, and easy to forget later: **a suite selected because one configuration passed and
+another failed is, by construction, discriminative between those two configurations.** That is exactly
+what calibration is for, and it also means the resulting suite is not a neutral benchmark for unrelated
+models. The configurations used during selection are therefore recorded with the suite, and any later
+ranking on it inherits that provenance.
+
+**Holdout trigger, documented and not built:** when Proofbound begins repeatedly selecting or tuning
+models or prompts against known calibration scenarios, held-out scenarios become justified. Until then
+they would guard against a practice that does not exist.

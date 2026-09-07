@@ -54,6 +54,33 @@ def provider_available(executable: str = "opencode") -> tuple[bool, str]:
     return True, found
 
 
+def harness_version(executable: str = "opencode") -> str | None:
+    """The version reported by the exact executable that will run trials.
+
+    Read from the resolved binary, never inferred from the harness name: `opencode-cli`
+    identifies a protocol, not a release, so without this two materially different execution
+    environments produce identical system-under-test metadata and stop being comparable.
+
+    `None` means **unknown**, and specifically not "whatever is installed now". A record
+    written by a harness that could not report a version must stay unknown forever; repairing
+    it later with the currently installed binary would turn a guess into evidence.
+    """
+    found = shutil.which(executable)
+    if not found:
+        return None
+    try:
+        cp = subprocess.run([found, "--version"], text=True, capture_output=True,
+                            check=False, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if cp.returncode != 0:
+        return None
+    for line in (cp.stdout or "").splitlines():
+        if line.strip():
+            return line.strip()
+    return None
+
+
 def _sh(cmd: list[str], **kw: Any) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, text=True, capture_output=True, check=False, **kw)
 

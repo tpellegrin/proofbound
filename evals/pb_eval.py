@@ -14,6 +14,7 @@ measure something Proofbound does not ship.
     list      show the scenarios and their identities
     run       execute the suite and write a summary
     show      render a recorded summary
+    compare   read two recorded runs and report what differs between them
 """
 from __future__ import annotations
 
@@ -28,10 +29,12 @@ ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT / "scripts"))
 
+from _compare import ComparisonError, compare  # noqa: E402
+from _compare import render as render_comparison  # noqa: E402
 from _grade import mechanical, semantic  # noqa: E402
 from _scenario import ScenarioError, discover  # noqa: E402
 from _summary import SummaryError, load, render, summarize  # noqa: E402
-from _trial import provider_available, run_trial  # noqa: E402
+from _trial import harness_version, provider_available, run_trial  # noqa: E402
 
 DEFAULT_MODEL = "opencode-go/deepseek-v4-flash"
 # Inherited DSD's default worker model, so `run` with no flags measures the shipped
@@ -48,7 +51,10 @@ DEFAULT_GRADER = DEFAULT_MODEL
 def _system(model: str, grader_model: str) -> dict:
     sha = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"],
                          capture_output=True, text=True, check=False).stdout.strip()
-    return {"proofbound_sha": sha or None, "harness": "opencode-cli", "model": model,
+    return {"proofbound_sha": sha or None, "harness": "opencode-cli",
+            # Identity says which harness; version says which release of it. Absent means
+            # unknown, in this record and in every older one.
+            "harness_version": harness_version(), "model": model,
             "grader_model": grader_model, "role": "spec-reflector",
             "python": f"{sys.version_info.major}.{sys.version_info.minor}"}
 
@@ -113,6 +119,18 @@ def cmd_show(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_compare(args: argparse.Namespace) -> int:
+    """Report what differs between two recorded runs. Nothing is written.
+
+    A comparison is derived from the summaries it names, so it is printed rather than stored:
+    a persisted copy would be a second place for the same facts to live, and eventually to
+    disagree.
+    """
+    print(render_comparison(compare(load(args.a), load(args.b),
+                                    label_a=args.a.stem, label_b=args.b.stem)))
+    return 0
+
+
 def parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--scenarios", type=Path, default=HERE / "scenarios")
@@ -133,6 +151,11 @@ def parser() -> argparse.ArgumentParser:
     s = sub.add_parser("show", help="render a recorded summary")
     s.add_argument("summary", type=Path)
     s.set_defaults(handler=cmd_show)
+
+    c = sub.add_parser("compare", help="report what differs between two recorded runs")
+    c.add_argument("a", type=Path)
+    c.add_argument("b", type=Path)
+    c.set_defaults(handler=cmd_compare)
     return ap
 
 
@@ -140,7 +163,7 @@ def main() -> int:
     args = parser().parse_args()
     try:
         return args.handler(args)
-    except (ScenarioError, SummaryError, ValueError) as exc:
+    except (ComparisonError, ScenarioError, SummaryError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
 

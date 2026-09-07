@@ -36,8 +36,17 @@ SCENARIO_FORMAT = "proofbound-eval-scenario-v1"
 SUPPORTED_SCENARIO_FORMATS = (SCENARIO_FORMAT,)
 
 REQUIRED = frozenset({"format", "kind", "summary", "property", "artifact", "review_purpose"})
-OPTIONAL = frozenset({"notes"})
+OPTIONAL = frozenset({"notes", "dimensions", "reachable_from", "distractors"})
 KINDS = frozenset({"regression", "capability"})
+
+# The difficulty dimensions a calibration scenario may declare. Closed, because the point of
+# declaring one is to check it: a free-text label would assert difficulty without evidence.
+# Chosen in evaluation.md E16.4 by one filter — could a change in Proofbound plausibly change
+# the outcome? — which is what the first four scenarios could not satisfy.
+DEPENDENCY_DISTANCE = "dependency-distance"
+COMPETING_CONCERNS = "competing-concerns"
+INDIRECT_IMPLICATION = "indirect-implication"
+DIFFICULTY_DIMENSIONS = frozenset({DEPENDENCY_DISTANCE, COMPETING_CONCERNS, INDIRECT_IMPLICATION})
 
 # V1 evaluates one role. Widening this is a new evaluation thesis, not a config change.
 REFLECTOR_ROLE = "spec-reflector"
@@ -104,6 +113,13 @@ def load(directory: Path) -> dict[str, Any]:
     if not files:
         raise ScenarioError(f"scenario fixture is empty: {fixture}")
 
+    dimensions = _dimensions(raw)
+    reachable = [_relative(x, "reachable_from entry") for x in raw.get("reachable_from", [])]
+    for rel in reachable:
+        if not (fixture / rel).is_file():
+            raise ScenarioError(f"reachable_from names a file not in the fixture: {rel}")
+    distractors = _distractors(raw)
+
     scenario = {
         "id": directory.name,
         "path": str(directory),
@@ -116,10 +132,81 @@ def load(directory: Path) -> dict[str, Any]:
         "contract": str(contract),
         "fixture": str(fixture),
         "files": [p.relative_to(fixture).as_posix() for p in files],
+        # Declared calibration metadata. Deliberately absent from `identity` below: none of it
+        # changes a single byte the system under test receives, and E3 already puts the rubric
+        # on the configuration side of that line for the same reason.
+        "dimensions": dimensions,
+        "reachable_from": reachable,
+        "distractors": distractors,
     }
     scenario["identity"] = identity(scenario)
     _assert_property_not_leaked(scenario)
+    _assert_declared_difficulty_is_real(scenario, contract.read_text(encoding="utf-8"))
     return scenario
+
+
+def _dimensions(raw: dict[str, Any]) -> list[str]:
+    values = raw.get("dimensions", [])
+    if not isinstance(values, list) or any(not isinstance(v, str) for v in values):
+        raise ScenarioError("dimensions must be a list of strings")
+    unknown = sorted(set(values) - DIFFICULTY_DIMENSIONS)
+    if unknown:
+        raise ScenarioError(f"unknown difficulty dimension(s): {', '.join(unknown)}")
+    if len(set(values)) != len(values):
+        raise ScenarioError("dimensions must not repeat")
+    return list(values)
+
+
+def _distractors(raw: dict[str, Any]) -> list[str]:
+    """Defensible concerns the artifact genuinely contains that are *not* the planted property.
+
+    Evaluator-side, like the rubric: they never reach the system under test. They exist so a
+    crowded scenario can state, in advance, what a report may legitimately raise while still
+    having missed the breach — which is exactly the negative control such a scenario needs.
+    """
+    values = raw.get("distractors", [])
+    if not isinstance(values, list) or any(not isinstance(v, str) for v in values):
+        raise ScenarioError("distractors must be a list of strings")
+    for value in values:
+        if len(value.strip()) < 20:
+            raise ScenarioError(f"distractor must be a substantive description: {value!r}")
+    return [v.strip() for v in values]
+
+
+def _assert_declared_difficulty_is_real(scenario: dict[str, Any], contract_text: str) -> None:
+    """Check the claims a scenario makes about its own difficulty, where checking is possible.
+
+    A declared dimension that nothing verifies is a label, and a suite of labels would let
+    difficulty be asserted rather than built. Two of the three dimensions have a mechanical
+    consequence; the third is recorded as a human judgement and says so.
+    """
+    dimensions = scenario["dimensions"]
+    if DEPENDENCY_DISTANCE in dimensions:
+        if not scenario["reachable_from"]:
+            raise ScenarioError(f"scenario {scenario['id']} declares {DEPENDENCY_DISTANCE} "
+                                "but lists no reachable_from material")
+        # The point of the dimension: at least one artifact carrying the conflict must not be
+        # handed to the worker by the contract. If every source is named there, the reflector
+        # is comparing documents it was given and the pipeline is not on the causal path.
+        unnamed = [rel for rel in scenario["reachable_from"] if rel not in contract_text]
+        if not unnamed:
+            raise ScenarioError(
+                f"scenario {scenario['id']} declares {DEPENDENCY_DISTANCE} but the contract "
+                "names every artifact the property depends on; nothing has to be discovered")
+    if COMPETING_CONCERNS in dimensions and len(scenario["distractors"]) < 2:
+        raise ScenarioError(f"scenario {scenario['id']} declares {COMPETING_CONCERNS} but "
+                            "lists fewer than two competing defensible concerns")
+    # INDIRECT_IMPLICATION has no mechanical test: "the conflict is not stated by any adjacent
+    # sentence pair" is a reading, and inventing a proxy metric for it would measure the proxy.
+    # It is a human judgement, recorded in the manifest and checked in review.
+    words = re.findall(r"[a-z]{4,}", scenario["property"].lower())
+    needles = {" ".join(words[i:i + 6]) for i in range(len(words) - 5)} if len(words) >= 6 else set()
+    for distractor in scenario["distractors"]:
+        flat = " ".join(re.findall(r"[a-z]{4,}", distractor.lower()))
+        if any(needle in flat for needle in needles):
+            raise ScenarioError(
+                f"scenario {scenario['id']} lists a distractor that restates the planted "
+                "property; a negative control built from it would grade as a detection")
 
 
 def identity(scenario: dict[str, Any]) -> str:

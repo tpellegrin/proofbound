@@ -1,0 +1,14 @@
+{
+  "artifact": "specs/CH-103/design.md",
+  "dimensions": ["indirect-implication"],
+  "distractors": [
+    "The read cache holds entries for five seconds, which adds its own staleness window on top of whatever the write path costs.",
+    "Queue depth and pass duration are exported but no alert threshold or target is stated for either."
+  ],
+  "format": "proofbound-eval-scenario-v1",
+  "kind": "capability",
+  "property": "The projector applies queued charges on a fixed thirty-second schedule, so a charge posted just after a pass waits for the next one and can be absent from a ledger read for close to half a minute. The accepted proposal commits to the charge being readable within two seconds of posting. Neither document says this; it follows from combining the schedule with the commitment.",
+  "reachable_from": ["specs/CH-103/design.md", "specs/CH-103/proposal.md"],
+  "review_purpose": "design-reflection",
+  "summary": "A batching interval and an accepted freshness commitment are individually reasonable and cannot both hold; no sentence in either document contradicts the other."
+}

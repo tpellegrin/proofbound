@@ -1,0 +1,14 @@
+{
+  "artifact": "specs/CH-101/specification.md",
+  "dimensions": ["dependency-distance"],
+  "distractors": [
+    "The reader API caps results at 500 records with a continuation token but never states an ordering guarantee across pages, so pagination can skip or repeat records.",
+    "Compression after seven days is specified without saying whether it is transparent to the reader API or requires a decompression step in the query path."
+  ],
+  "format": "proofbound-eval-scenario-v1",
+  "kind": "capability",
+  "property": "The specification keeps every captured inbound call body forever, because it says partitions are never dropped. The accepted design declares itself bound by policy POL-002, which classifies an inbound call body as identifying data and allows it to be kept for at most thirty days. A downstream specification cannot grant itself a longer limit.",
+  "reachable_from": ["specs/CH-101/specification.md", "specs/CH-101/design.md", "specs/POL-002/data-retention.md"],
+  "review_purpose": "specification-reflection",
+  "summary": "A specification stores request bodies indefinitely; the retention limit that forbids it lives in a policy the accepted design depends on and the contract never names."
+}

@@ -50,11 +50,27 @@ python3 evals/pb_eval.py list
 python3 evals/pb_eval.py run --trials 5 --evidence /tmp/pb-eval-evidence \
   --model <provider/model> --grader-model <provider/other-model>
 python3 evals/pb_eval.py show evals/results/eval-v1.json
+python3 evals/pb_eval.py compare RUN_A.json RUN_B.json
 ```
+
+`compare` prints and writes nothing: two run summaries already hold every fact, so a stored
+comparison would be a second place for them to live. It reports what differs *before* what
+scored, matches scenarios by identity rather than by name, and computes no ordering — at
+these trial counts that is a human judgement, not a calculation.
 
 `--evidence` retains raw local material — prompts, reports, grader output, and a
 `calibration.json` per trial pairing the planted property with the report and the grader's
 call. **Do not commit it.** Only the small summary under `results/` is committed.
+
+## The two populations
+
+`scenarios/` holds both, distinguished by `kind` rather than by directory:
+
+- **Regression anchors** — the four scenarios the first live baseline measured at 5/5. They
+  are byte-frozen; their identities are pinned in `tests/test_evals_harness.py` because the
+  original measurement stops being comparable with anything if they move.
+- **Calibration candidates** — scenarios built to have dynamic range, each declaring a
+  difficulty dimension the loader actually checks.
 
 ## Adding a scenario
 
@@ -62,3 +78,18 @@ A directory under `scenarios/` with `scenario.json`, `contract.md`, and a `fixtu
 The planted `property` lives in the manifest and is **never copied into the fixture** — a
 scenario that hands the system under test its own answer measures nothing, and loading one
 that does is refused.
+
+A calibration candidate also declares what makes it hard, and the claim is checked:
+
+| Field | Meaning | What is enforced |
+|---|---|---|
+| `dimensions` | `dependency-distance`, `competing-concerns` or `indirect-implication` | Closed vocabulary |
+| `reachable_from` | Fixture material the property genuinely depends on | Each file exists; for `dependency-distance`, at least one is **not named by the contract**, so something has to be discovered |
+| `distractors` | Defensible concerns the artifact really contains that are *not* the property | At least two for `competing-concerns`; none may restate the property |
+
+`indirect-implication` has no mechanical test — *no adjacent sentence pair states the
+conflict* is a reading, and a proxy metric would measure the proxy. It is a human judgement
+recorded in the manifest.
+
+None of these fields is part of scenario identity: none changes a byte the system under test
+receives, which is the same line the rubric sits on.

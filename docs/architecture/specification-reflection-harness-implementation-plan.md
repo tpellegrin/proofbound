@@ -1134,10 +1134,10 @@ prompt bytes, timing, output and effects.
 **Outcome.** Implemented in `evals/` (scenario model with identity and a leak check, trial runner over
 the real pipeline, mechanical + semantic grading, versioned summary, CLI) with 26 deterministic harness
 tests. **366 tests green** on 3.10 and 3.14 — 340 inherited unchanged. Four scenarios ship. Two design
-corrections are recorded in [`evaluation.md` §E14](proofbound/evaluation.md#e14-eval-v1-implementation-outcome):
+corrections are recorded in [§E14](proofbound/evidence/evaluation-runs.md#e14-eval-v1-implementation-outcome):
 the mechanical half of the thesis was overstated, and prompt bytes are not context supplied.
 
-**Baseline zero is recorded** in [`evaluation.md` §E15](proofbound/evaluation.md#e15-eval-v1-baseline-zero)
+**Baseline zero is recorded** in [§E15](proofbound/evidence/evaluation-runs.md#e15-eval-v1-baseline-zero)
 and committed as `evals/results/eval-v1.json`: 20 attempted trials, 20 valid, 20 mechanically clean and
 20 detected, against Proofbound `b64e3cc` with stable OpenCode 1.18.29. Collecting it exposed one harness
 defect — a trial ran an ambient default model rather than the requested one, so a summary could name a
@@ -1155,7 +1155,7 @@ per-scenario metric vector, no composite score, no CI gate.
 consistency scenarios, holdouts, scenario mutation, pairwise grading, cost dashboards, scheduled runs,
 any evaluation result influencing engineering authority.
 
-## 7E. Eval V2 — scenario calibration  *(designed; not implemented)*
+## 7E. Eval V2 — scenario calibration  *(IMPLEMENTED; see the run record for outcomes)*
 
 Design authority: [`evaluation.md` §E16](proofbound/evaluation.md#e16-discrimination--why-baseline-zero-cannot-compare-systems).
 
@@ -1188,6 +1188,14 @@ into `regression/` and `capability/`; backfilling historical summaries.
 **Anti-goal, stated because it is the obvious way to get this wrong:** the target is informative variance
 on meaningful engineering problems, not a lower score. A scenario is never retained because the current
 model failed it.
+
+**Built.** Four candidates — `retention-transitive-conflict`, `crowded-availability-review`,
+`freshness-batching-conflict`, `pattern-versus-authority` — declaring difficulty dimensions the loader
+checks rather than labels it accepts (§E16.5). `system.harness_version` is recorded additively with no
+format bump, and `pb_eval compare` reports what differs between two runs without computing an ordering
+(§E17). The four V1 scenarios are byte-frozen with their identities pinned in tests. Screening
+configuration, retention decisions and measured outcomes are recorded in
+[`evidence/evaluation-runs.md`](proofbound/evidence/evaluation-runs.md).
 
 ## 7B. Threat mitigation status
 
@@ -1304,13 +1312,12 @@ convention before freeze work begins.
     §7C.
 15. **Authoritative implementation decomposition** — the real prerequisite for any completion theorem
     and for durable implementation provenance. Not scheduled; not designed.
-17. **`evaluation.md` split pressure** — recording the E16 design took the document to ~38.5 KB against
-    the same 40 KB cap. The next evaluation outcome breaches it. The natural split is by authority class,
-    which the corpus already uses: the design track (E1–E13, how measurement works) stays normative-ish
-    under `proofbound/`, while what individual runs established (E14–E16) moves to
-    [`evidence/`](proofbound/evidence/implementation-findings.md) where historical evidence is exempt from
-    the cap and read on demand. Not done now: splitting mid-design-check would churn references for no
-    reader benefit.
+17. ~~**`evaluation.md` split pressure**~~ — **done.** Recording run outcomes in the protocol document
+    pushed it to ~38.5 KB against the 40 KB cap. Split by authority class, the way the corpus already
+    works: protocol stays in [`evaluation.md`](proofbound/evaluation.md); what individual runs established
+    moved verbatim to [`evidence/evaluation-runs.md`](proofbound/evidence/evaluation-runs.md), which is
+    read on demand and exempt from the cap. Section identifiers were preserved, so `E14`/`E15` still name
+    the same content. The protocol document no longer grows by one section per evaluation run.
 13. **Architecture document split pressure** — `artifacts-and-provenance.md` is now ~38.5 KB against the
     40 KB cap enforced by `tests/test_docs_architecture_refs.py`. The next substantive addition breaches
     it. That cap exists to force this decision rather than let a document drift out of selective-reading

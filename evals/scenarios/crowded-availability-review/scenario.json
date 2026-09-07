@@ -1,0 +1,16 @@
+{
+  "artifact": "specs/CH-102/design.md",
+  "dimensions": ["competing-concerns"],
+  "distractors": [
+    "The health check expects a 200 from /healthz but the design never says what the endpoint actually verifies, so an instance with a broken store connection can stay in the load balancer.",
+    "Timeout values of 250ms and 750ms are given with no derivation from any latency budget, and the retry bound of two is equally unexplained.",
+    "The error contract collapses every non-client failure into 5xx and tells clients to retry all of them, which makes a permanent server-side fault indistinguishable from a transient one.",
+    "Rollout is described as a canary in one zone followed by the rest, with no stated criteria for promoting or aborting the canary."
+  ],
+  "format": "proofbound-eval-scenario-v1",
+  "kind": "capability",
+  "property": "Issuance depends on a counter service that exists only in az-a, so losing that one zone stops sessions being issued everywhere. The accepted proposal requires the service to keep issuing sessions when any single zone becomes unreachable, and states explicitly that degrading to validation alone is not sufficient.",
+  "reachable_from": ["specs/CH-102/design.md", "specs/CH-102/proposal.md"],
+  "review_purpose": "design-reflection",
+  "summary": "A design carries four defensible weaknesses and one actual breach of the accepted single-zone-loss requirement; only the breach is the planted property."
+}
