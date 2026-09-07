@@ -1206,7 +1206,7 @@ detection may simply saturate for any model capable of running the pipeline. Con
 retention decisions and the probe's setup failures are recorded in
 [§E18](proofbound/evidence/evaluation-runs.md#e18-calibration-screening--the-scenarios-got-harder-the-suite-did-not-separate).
 
-## 7F. Eval V3 — multi-property discrimination  *(designed; not implemented)*
+## 7F. Eval V3 — multi-property discrimination  *(IMPLEMENTED; dynamic range demonstrated)*
 
 Design authority: [`evaluation.md` §E19](proofbound/evaluation.md#e19-multi-property-scenarios--more-resolution-still-not-a-score);
 comparison rules in [`evaluation-comparison.md`](proofbound/evaluation-comparison.md).
@@ -1234,6 +1234,18 @@ plumbing; prompt or protocol changes; holdouts; editing any existing scenario or
 **Success is any of three outcomes**, and none of them is "the new model wins": separation on some
 properties; equal completeness with *different* failure profiles, which is still useful; or a third
 ceiling, which would mean the observable needs rethinking rather than more scenarios.
+
+**Outcome: the observable moved, the configurations did not separate.** Obligations landed at 25/27
+and 26/27 with complete trials at 7/9 and 8/9 — the first non-ceiling evaluation result in three
+milestones. Every one of those eighteen trials would have scored *detected* under the single-property
+observable, so the previous suites would have reported 18/18 and learned nothing. The decisive case is
+a scenario planting two obligations reachable through the same sentence: reports argued that sentence
+for the compatibility reason and never for the availability one, and the grader credited the first
+while refusing the second — a distinction a single-property suite cannot express. The two
+configurations converge on the *same* weak obligation, so there is **no observed ordering** and no
+failure-profile separation either. Full record, including the provider confound and the unpinned
+reasoning variant, in
+[§E20](proofbound/evidence/evaluation-runs.md#e20-multi-property-screening--the-observable-finally-moved).
 
 ## 7B. Threat mitigation status
 

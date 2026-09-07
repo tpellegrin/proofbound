@@ -1,0 +1,208 @@
+{
+  "format": "proofbound-eval-summary-v1",
+  "recorded_at": "2026-09-07T19:55:48.149236+00:00",
+  "scenarios": [
+    {
+      "counts": {
+        "attempted": 3,
+        "grading_unavailable": 0,
+        "harness_failures": 0,
+        "mechanical_ok": 3,
+        "semantic_detected": 3,
+        "semantic_not_detected": 0,
+        "setup_failures": 0,
+        "valid": 3
+      },
+      "id": "checkout-obligations",
+      "identity": "63c9f42f0c9b0fd903d723c9309637cb170d00ab0977e4630c928ec7d355b91d",
+      "kind": "capability",
+      "properties": {
+        "diagnostic-copies-outlive-policy": {
+          "detected": 3,
+          "dimension": "dependency-distance",
+          "gradeable": 3,
+          "grading_unavailable": 0,
+          "not_detected": 0
+        },
+        "ledger-pinned-to-one-region": {
+          "detected": 3,
+          "dimension": "indirect-implication",
+          "gradeable": 3,
+          "grading_unavailable": 0,
+          "not_detected": 0
+        },
+        "retry-moves-money-twice": {
+          "detected": 3,
+          "dimension": "direct",
+          "gradeable": 3,
+          "grading_unavailable": 0,
+          "not_detected": 0
+        }
+      },
+      "resources": {
+        "median_elapsed_seconds": 64.169,
+        "median_prompt_bytes": 1211,
+        "median_supplied_bytes": 17477
+      },
+      "review_purpose": "design-reflection",
+      "trials": [
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        }
+      ]
+    },
+    {
+      "counts": {
+        "attempted": 3,
+        "grading_unavailable": 0,
+        "harness_failures": 0,
+        "mechanical_ok": 3,
+        "semantic_detected": 2,
+        "semantic_not_detected": 1,
+        "setup_failures": 0,
+        "valid": 3
+      },
+      "id": "migration-obligations",
+      "identity": "33e10c52d19504b8302a7aa196953a4ce361f0f09067fb953157a5b52aa2be74",
+      "kind": "capability",
+      "properties": {
+        "all-at-once-rollout": {
+          "detected": 2,
+          "dimension": "indirect-implication",
+          "gradeable": 3,
+          "grading_unavailable": 0,
+          "not_detected": 1
+        },
+        "column-removed-too-early": {
+          "detected": 3,
+          "dimension": "direct",
+          "gradeable": 3,
+          "grading_unavailable": 0,
+          "not_detected": 0
+        },
+        "runbook-makes-reversal-impossible": {
+          "detected": 3,
+          "dimension": "pattern-versus-authority",
+          "gradeable": 3,
+          "grading_unavailable": 0,
+          "not_detected": 0
+        }
+      },
+      "resources": {
+        "median_elapsed_seconds": 59.939,
+        "median_prompt_bytes": 1211,
+        "median_supplied_bytes": 17477
+      },
+      "review_purpose": "design-reflection",
+      "trials": [
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "not-detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        }
+      ]
+    },
+    {
+      "counts": {
+        "attempted": 3,
+        "grading_unavailable": 0,
+        "harness_failures": 0,
+        "mechanical_ok": 3,
+        "semantic_detected": 3,
+        "semantic_not_detected": 0,
+        "setup_failures": 0,
+        "valid": 3
+      },
+      "id": "session-lifecycle-obligations",
+      "identity": "c303abc9399fd2ab54a6e26acea424ebf75d8b0f487a6a557623270277373715",
+      "kind": "capability",
+      "properties": {
+        "credential-in-analytics-tier": {
+          "detected": 3,
+          "dimension": "dependency-distance",
+          "gradeable": 3,
+          "grading_unavailable": 0,
+          "not_detected": 0
+        },
+        "header-drop-breaks-old-clients": {
+          "detected": 3,
+          "dimension": "direct",
+          "gradeable": 3,
+          "grading_unavailable": 0,
+          "not_detected": 0
+        },
+        "refresh-outlives-revocation": {
+          "detected": 3,
+          "dimension": "indirect-implication",
+          "gradeable": 3,
+          "grading_unavailable": 0,
+          "not_detected": 0
+        }
+      },
+      "resources": {
+        "median_elapsed_seconds": 52.893,
+        "median_prompt_bytes": 1211,
+        "median_supplied_bytes": 17477
+      },
+      "review_purpose": "design-reflection",
+      "trials": [
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        },
+        {
+          "mechanical_ok": true,
+          "semantic": "detected",
+          "validity": "valid"
+        }
+      ]
+    }
+  ],
+  "system": {
+    "grader_model": "opencode/big-pickle",
+    "harness": "opencode-cli",
+    "harness_version": "1.18.29",
+    "model": "deepseek/deepseek-v4-flash",
+    "proofbound_sha": "45ebac410e36804832ee5a4b4be70fa9468afad5",
+    "python": "3.14",
+    "role": "spec-reflector"
+  },
+  "totals": {
+    "attempted": 9,
+    "grading_unavailable": 0,
+    "harness_failures": 0,
+    "mechanical_ok": 9,
+    "semantic_detected": 8,
+    "semantic_not_detected": 1,
+    "setup_failures": 0,
+    "valid": 9
+  }
+}

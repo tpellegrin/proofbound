@@ -226,3 +226,85 @@ comparison on it does not inherit that bias.
 trials per scenario per arm — roughly forty trials and several hours of provider time — would add
 precision to a null result rather than change it. E16 already says a ceiling tie is a valid outcome to
 stop and report on.
+
+## E20. Multi-property screening — the observable finally moved
+
+The first evaluation run in three milestones that is not at ceiling. Adding independent
+obligations changed what the measurement can see; it did not separate the two configurations.
+
+**Configuration.** Identical but for the model. Proofbound `45ebac4`; harness `opencode-cli`
+`1.18.29`; grader `opencode/big-pickle` for both arms; role `spec-reflector`; Python 3.14; three
+scenarios, three planted obligations each, three trials per scenario per arm.
+
+| Arm | Model | Provider |
+|---|---|---|
+| Reference | `opencode/nemotron-3-ultra-free` | `opencode` (OpenCode Zen) |
+| Alternative | `deepseek/deepseek-v4-flash` | `deepseek` (api.deepseek.com, paid, user-authorised) |
+
+| Obligation | Dimension | Reference | Alternative |
+|---|---|---|---|
+| `checkout-obligations` / `retry-moves-money-twice` | direct | 3/3 | 3/3 |
+| `checkout-obligations` / `ledger-pinned-to-one-region` | indirect-implication | 3/3 | 3/3 |
+| `checkout-obligations` / `diagnostic-copies-outlive-policy` | dependency-distance | 3/3 | 3/3 |
+| `session-lifecycle-obligations` / `refresh-outlives-revocation` | indirect-implication | 3/3 | 3/3 |
+| `session-lifecycle-obligations` / `credential-in-analytics-tier` | dependency-distance | 3/3 | 3/3 |
+| `session-lifecycle-obligations` / `header-drop-breaks-old-clients` | direct | 3/3 | 3/3 |
+| `migration-obligations` / `column-removed-too-early` | direct | 3/3 | 3/3 |
+| `migration-obligations` / `runbook-makes-reversal-impossible` | pattern-versus-authority | 3/3 | 3/3 |
+| **`migration-obligations` / `all-at-once-rollout`** | **indirect-implication** | **1/3** | **2/3** |
+
+Obligations: **25/27** and **26/27**. Complete trials: **7/9** and **8/9**. No setup failures, no
+harness failures, no ungraded properties, mechanically valid throughout.
+
+### E20.1 What the extra resolution actually bought
+
+Every trial here would have scored *detected* under the single-property observable, because every
+trial found at least one planted contradiction and most found all three. The suite would have
+reported 18/18 for a third time and learned nothing.
+
+The decisive case is one obligation deep inside a scenario the reflectors otherwise handled
+perfectly. `migration-obligations` plants two obligations that a reader could reach through the
+same sentence — the design deploys every instance at once, which both breaks readers still on the
+old release *and* leaves an interval with nothing serving. Reports repeatedly reasoned about that
+sentence for the compatibility reason and never for the availability one, and the grader credited
+the first obligation while refusing the second. One report's finding F1 quotes the rollout
+directive, argues it correctly, and is still `NOT_DETECTED` for the downtime obligation, because
+that is not the argument it made.
+
+**A single-property suite cannot express that distinction at all.** It sees a report that
+discussed the right sentence and scores a detection. Property vectors separate *which* obligation
+a reviewer reasoned about from *which text* it happened to quote, and that is the resolution the
+previous two milestones were missing.
+
+### E20.2 Configurations: no observed ordering
+
+25/27 against 26/27, and 7/9 against 8/9, at three trials per scenario, is not an ordering. Both
+arms converge on **the same** weak obligation rather than failing different ones, so there is no
+failure-profile separation either — which is itself informative: the difficulty appears to be a
+property of the obligation, not of the model.
+
+The comparison is otherwise controlled — same Proofbound commit, harness, harness version, grader,
+role, runtime and scenario identities — with one honest exception: **the provider changed with the
+model**, from OpenCode Zen to DeepSeek's own API, so model capability and provider behaviour are
+not separable here. `pb_eval compare` derives and prints that rather than letting it pass.
+
+Two further limits on the record. Proofbound's worker invocation passes no reasoning-effort
+variant, and `deepseek-v4-flash` exposes `low`/`high`/`max`, so the alternative arm ran at an
+unpinned provider default — the same class of residual uncertainty as a model alias (E16.10).
+And the alternative was roughly six times faster (medians 53–64s against 306–408s), which is
+resource evidence reported beside the semantic outcome and never combined with it.
+
+### E20.3 The grader was checked, not trusted
+
+Completeness only measures completeness if a sophisticated report cannot collect credit it did not
+earn. The control that matters for a multi-property suite was run against the live grader on two
+scenarios: a report stating two obligations correctly *and* raising all four declared distractors
+as genuine findings was credited for the two and **refused on the third**, both times. The live
+trials show the same discrimination unprompted, in the migration case above.
+
+### E20.4 What was not established
+
+Not that the suite separates capable models — it did not, here. Not that three obligations is the
+right number. Not that `all-at-once-rollout` is hard for models in general rather than hard in this
+scenario. And nothing about any role other than `spec-reflector`, any harness other than this one,
+or any workload beyond these three synthetic reviews.
