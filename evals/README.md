@@ -27,11 +27,28 @@ aggregate consistency reflection works; that context use is optimal. It answers 
 under the tested scenarios and configuration, and its results are evidence for humans — never
 architecture authority.
 
+## Prerequisites
+
+Two things this repository does not provide, because neither belongs in it:
+
+- **The stable `opencode` executable on `PATH`.** That is the worker seam `run_worker.py` already
+  uses; `run` refuses with a setup failure without it. Not the separate OpenCode 2 beta binary —
+  a baseline has to measure the harness generation the product was built against.
+- **A provider/model that actually exists in your environment.** `--model` defaults to inherited
+  DSD's `opencode-go/deepseek-v4-flash`, which is a statement about the shipped configuration and
+  not a promise that it is resolvable where you are. `opencode models` lists what is. Pass
+  `--model` and `--grader-model` explicitly: a run should record what it tested rather than
+  inherit it.
+
+Provider credentials live in OpenCode's own configuration, outside this repository. Nothing here
+reads, stores or prints them.
+
 ## Usage
 
 ```bash
 python3 evals/pb_eval.py list
-python3 evals/pb_eval.py run --trials 5 --evidence /tmp/pb-eval-evidence
+python3 evals/pb_eval.py run --trials 5 --evidence /tmp/pb-eval-evidence \
+  --model <provider/model> --grader-model <provider/other-model>
 python3 evals/pb_eval.py show evals/results/eval-v1.json
 ```
 
