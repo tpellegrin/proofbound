@@ -1,3 +1,5 @@
-# Raw trial evidence and uncommitted results stay local.
+# Raw trial evidence stays local; the small summary record is the committed artifact.
+# `--evidence` never points here, but an accidental copy must not become a commit.
 *
 !.gitignore
+!*.json
