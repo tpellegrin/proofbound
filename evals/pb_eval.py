@@ -98,7 +98,12 @@ def cmd_run(args: argparse.Namespace) -> int:
             # property and the full report.
             if args.evidence and trial.get("evidence"):
                 (Path(trial["evidence"]) / "calibration.json").write_text(json.dumps({
-                    "scenario": scenario["id"], "property": scenario["property"],
+                    "scenario": scenario["id"],
+                    # Every planted obligation, so a human can check each grader call against
+                    # the statement it was actually judging.
+                    "properties": [{"id": p["id"], "dimension": p.get("dimension"),
+                                    "statement": p["statement"]}
+                                   for p in scenario["properties"]],
                     "report": trial.get("report", ""),
                     "grader": entry["semantic"]}, indent=2, sort_keys=True) + "\n",
                     encoding="utf-8")

@@ -1,0 +1,33 @@
+{
+  "artifact": "specs/CH-202/design.md",
+  "distractors": [
+    "Rotation invalidates the presented token but the design never says what happens when two clients race a refresh with the same token, so a legitimate client can be logged out by a retry.",
+    "Refresh failure rate is exported without distinguishing an expired token from a rejected one, so the metric cannot tell a normal expiry from an attack.",
+    "The fifteen-minute access token lifetime is asserted with no reasoning, and nothing connects it to the refresh lifetime.",
+    "Nothing is said about clock skew between the issuer and the validator, although every lifetime in the document is expressed as an absolute expiry."
+  ],
+  "format": "proofbound-eval-scenario-v1",
+  "kind": "capability",
+  "properties": [
+    {
+      "id": "refresh-outlives-revocation",
+      "dimension": "indirect-implication",
+      "statement": "Exchanging refresh material for new access is described as checking only a signature and an expiry, with nothing consulted that could know an operator has withdrawn the session. Because that material stays usable for a day, a withdrawn session keeps obtaining access until it lapses. The accepted proposal requires withdrawal to bite on the very next request rather than at the next lapse. Neither document states the gap; it follows from combining the cheap exchange path with the immediacy requirement.",
+      "reachable_from": ["specs/CH-202/design.md", "specs/CH-202/proposal.md"]
+    },
+    {
+      "id": "credential-in-analytics-tier",
+      "dimension": "dependency-distance",
+      "statement": "Issued refresh material is written into the warehouse that analysts query and bulk-export. The accepted tiering policy that the proposal binds itself to permits anything usable on presentation to be written only in the secrets tier, names refresh material as exactly that, and allows no local exception. The contract does not name that policy, so the rule has to be found through the proposal.",
+      "reachable_from": ["specs/CH-202/design.md", "specs/CH-202/proposal.md", "specs/POL-014/data-tiers.md"]
+    },
+    {
+      "id": "header-drop-breaks-old-clients",
+      "dimension": "direct",
+      "statement": "The design stops reading the header that currently deployed clients send, moving the field to the request body in the same change. The accepted proposal requires clients on the previous major version to keep working for two further releases, because they cannot be upgraded on our schedule.",
+      "reachable_from": ["specs/CH-202/design.md", "specs/CH-202/proposal.md"]
+    }
+  ],
+  "review_purpose": "design-reflection",
+  "summary": "A session-refresh design breaks three separate accepted obligations — revocation immediacy, credential storage tiering held in an unnamed policy, and old-client compatibility."
+}

@@ -127,7 +127,7 @@ class ScenarioTest(unittest.TestCase):
             art.write_text(art.read_text() + "\n" + manifest["property"] + "\n", encoding="utf-8")
             with self.assertRaises(_scenario.ScenarioError) as e:
                 _scenario.load(copy)
-            self.assertIn("leaks its planted property", str(e.exception))
+            self.assertIn("leaks planted property", str(e.exception))
 
     def test_malformed_scenarios_fail_closed(self):
         base = json.loads((SCENARIOS / "retry-idempotency" / "scenario.json").read_text())
@@ -510,7 +510,7 @@ class CalibrationScenarioTest(unittest.TestCase):
                 lambda m: m.update(distractors=[m["property"], m["distractors"][0]]))
             with self.assertRaises(_scenario.ScenarioError) as caught:
                 _scenario.load(copy)
-            self.assertIn("restates the planted property", str(caught.exception))
+            self.assertIn("restates planted property", str(caught.exception))
 
     def test_reachable_material_must_actually_be_in_the_fixture(self):
         with contextlib.ExitStack() as stack:
@@ -526,8 +526,10 @@ class CalibrationScenarioTest(unittest.TestCase):
             with self.subTest(scenario=scenario["id"]):
                 self.assertTrue(scenario["dimensions"],
                                 "a calibration candidate must declare what makes it hard")
-                self.assertLessEqual(set(scenario["dimensions"]),
-                                     _scenario.DIFFICULTY_DIMENSIONS)
+                vocabulary = (_scenario.DIFFICULTY_DIMENSIONS
+                              if scenario["shape"] == _scenario.SINGLE
+                              else _scenario.PROPERTY_DIMENSIONS)
+                self.assertLessEqual(set(scenario["dimensions"]), vocabulary)
 
     def test_the_suite_exercises_more_than_one_reasoning_structure(self):
         declared = {d for s in _scenario.discover(SCENARIOS) for d in s["dimensions"]}
@@ -674,6 +676,385 @@ class GraderBlindnessTest(unittest.TestCase):
             got = _grade.semantic(trial, scenario, grader_model="grader/model")
         self.assertEqual(got["result"], _grade.DETECTED)
         self.assertNotIn("secret/worker-model", " ".join(seen["cmd"]))
+
+
+MULTI = ["checkout-obligations", "session-lifecycle-obligations", "migration-obligations"]
+
+
+class MultiPropertySchemaTest(unittest.TestCase):
+    """A scenario declares one shape, and the shape it declares is the one that is checked."""
+
+    maxDiff = None
+
+    def scenario_copy(self, stack, name="checkout-obligations", mutate=None):
+        root = Path(stack.enter_context(tempfile.TemporaryDirectory()))
+        copy = root / "copy"
+        shutil.copytree(SCENARIOS / name, copy)
+        manifest = json.loads((copy / "scenario.json").read_text())
+        if mutate:
+            mutate(manifest)
+        (copy / "scenario.json").write_text(json.dumps(manifest), encoding="utf-8")
+        return copy
+
+    def test_the_shipped_multi_property_scenarios_load(self):
+        for name in MULTI:
+            with self.subTest(scenario=name):
+                sc = _scenario.load(SCENARIOS / name)
+                self.assertEqual(sc["shape"], _scenario.MULTI)
+                self.assertEqual(len(sc["properties"]), 3)
+                self.assertGreaterEqual(len(sc["distractors"]), len(sc["properties"]))
+                self.assertGreaterEqual(len({p["dimension"] for p in sc["properties"]}), 2)
+
+    # Distinct obligations, so the pool itself satisfies the shape rules under test: varied
+    # dimensions, no textual restatement, and one that depends on unnamed material.
+    POOL = [
+        ("charged-twice", "direct",
+         "Money leaves the shopper account a second time when a settled request repeats."),
+        ("kept-past-the-limit", "dependency-distance",
+         "Sensitive submissions linger far beyond the interval an accepted rule permits."),
+        ("region-loss-stops-sales", "indirect-implication",
+         "Nobody can complete a purchase while one datacentre is unreachable."),
+        ("stale-price-served", "direct",
+         "Shoppers see an amount that no longer matches what billing will take."),
+        ("audit-trail-gap", "indirect-implication",
+         "Reconstructing who approved a refund becomes impossible after compaction."),
+    ]
+
+    def test_property_count_is_bounded_on_both_sides(self):
+        for count, ok in ((1, False), (2, True), (3, True), (4, True), (5, False)):
+            with self.subTest(count=count), contextlib.ExitStack() as stack:
+                def mutate(m, n=count):
+                    policy = m["properties"][2]["reachable_from"]
+                    named = m["properties"][0]["reachable_from"]
+                    m["properties"] = [
+                        {"id": pid, "dimension": dim, "statement": text,
+                         "reachable_from": policy if dim == "dependency-distance" else named}
+                        for pid, dim, text in self.POOL[:n]]
+                    m["distractors"] = m["distractors"] * 3
+                copy = self.scenario_copy(stack, mutate=mutate)
+                if ok:
+                    self.assertEqual(len(_scenario.load(copy)["properties"]), count)
+                else:
+                    with self.assertRaises(_scenario.ScenarioError):
+                        _scenario.load(copy)
+
+    def test_a_scenario_declares_one_shape_not_both(self):
+        with contextlib.ExitStack() as stack:
+            copy = self.scenario_copy(stack, mutate=lambda m: m.update(property="x" * 40))
+            with self.assertRaises(_scenario.ScenarioError) as caught:
+                _scenario.load(copy)
+            self.assertIn("never both", str(caught.exception))
+
+    def test_malformed_properties_fail_closed(self):
+        cases = {
+            "duplicate ids": lambda m: m["properties"].__setitem__(
+                1, {**m["properties"][1], "id": m["properties"][0]["id"]}),
+            "bad id": lambda m: m["properties"][0].update(id="Not Kebab"),
+            "unknown dimension": lambda m: m["properties"][0].update(dimension="very-hard"),
+            "missing statement": lambda m: m["properties"][0].pop("statement"),
+            "unknown field": lambda m: m["properties"][0].update(weight=3),
+            "thin statement": lambda m: m["properties"][0].update(statement="too short"),
+            "not a list": lambda m: m.update(properties={"id": "x"}),
+        }
+        for label, mutate in cases.items():
+            with self.subTest(case=label), contextlib.ExitStack() as stack:
+                copy = self.scenario_copy(stack, mutate=mutate)
+                with self.assertRaises(_scenario.ScenarioError):
+                    _scenario.load(copy)
+
+    def test_scenario_shape_constraints_are_enforced(self):
+        cases = {
+            "too few distractors": lambda m: m.update(distractors=m["distractors"][:2]),
+            "one dimension only": lambda m: [p.update(dimension="direct")
+                                             for p in m["properties"]],
+            "nothing to discover": lambda m: [p.update(reachable_from=[])
+                                              for p in m["properties"]],
+        }
+        for label, mutate in cases.items():
+            with self.subTest(case=label), contextlib.ExitStack() as stack:
+                copy = self.scenario_copy(stack, mutate=mutate)
+                with self.assertRaises(_scenario.ScenarioError):
+                    _scenario.load(copy)
+
+    def test_properties_that_restate_each_other_are_rejected(self):
+        """Three views of one reasoning chain measure one thing three times."""
+        with contextlib.ExitStack() as stack:
+            copy = self.scenario_copy(stack, mutate=lambda m: m["properties"][1].update(
+                statement=m["properties"][0]["statement"]))
+            with self.assertRaises(_scenario.ScenarioError) as caught:
+                _scenario.load(copy)
+            self.assertIn("restate", str(caught.exception))
+
+    def test_every_property_is_leak_checked_not_just_the_first(self):
+        with contextlib.ExitStack() as stack:
+            root = Path(stack.enter_context(tempfile.TemporaryDirectory()))
+            copy = root / "copy"
+            shutil.copytree(SCENARIOS / "checkout-obligations", copy)
+            manifest = json.loads((copy / "scenario.json").read_text())
+            leaked = manifest["properties"][2]["statement"]
+            artifact = copy / "fixture" / manifest["artifact"]
+            artifact.write_text(artifact.read_text() + "\n" + leaked + "\n", encoding="utf-8")
+            with self.assertRaises(_scenario.ScenarioError) as caught:
+                _scenario.load(copy)
+            self.assertIn(manifest["properties"][2]["id"], str(caught.exception))
+
+
+class MultiPropertyIdentityTest(unittest.TestCase):
+    """Identity covers what defines the problem, in the shape the manifest declared."""
+
+    maxDiff = None
+
+    def mutated_identity(self, stack, mutate):
+        root = Path(stack.enter_context(tempfile.TemporaryDirectory()))
+        copy = root / "copy"
+        shutil.copytree(SCENARIOS / "checkout-obligations", copy)
+        manifest = json.loads((copy / "scenario.json").read_text())
+        mutate(manifest)
+        (copy / "scenario.json").write_text(json.dumps(manifest), encoding="utf-8")
+        return _scenario.load(copy)["identity"]
+
+    def setUp(self):
+        self.base = _scenario.load(SCENARIOS / "checkout-obligations")["identity"]
+
+    def test_an_unchanged_copy_keeps_its_identity(self):
+        with contextlib.ExitStack() as stack:
+            self.assertEqual(self.mutated_identity(stack, lambda m: None), self.base)
+
+    def test_the_property_set_is_part_of_identity(self):
+        cases = {
+            "statement": lambda m: m["properties"][0].update(
+                statement=m["properties"][0]["statement"] + " And one more consequence."),
+            "id": lambda m: m["properties"][0].update(id="renamed-obligation"),
+            "dimension": lambda m: m["properties"][1].update(dimension="direct"),
+            "reachable_from": lambda m: m["properties"][0].update(reachable_from=[]),
+            "removed": lambda m: m.update(
+                properties=[m["properties"][0], m["properties"][2]]),
+            "reordered": lambda m: m.update(properties=list(reversed(m["properties"]))),
+        }
+        for label, mutate in cases.items():
+            with self.subTest(change=label), contextlib.ExitStack() as stack:
+                self.assertNotEqual(self.mutated_identity(stack, mutate), self.base,
+                                    f"changing {label} must change identity")
+
+    def test_evaluation_configuration_is_not_part_of_identity(self):
+        for label, mutate in {
+            "distractors": lambda m: m.update(distractors=m["distractors"] + [
+                "An extra defensible concern recorded for grading purposes only."]),
+            "notes": lambda m: m.update(notes="Calibration bookkeeping, invisible to the worker."),
+        }.items():
+            with self.subTest(change=label), contextlib.ExitStack() as stack:
+                self.assertEqual(self.mutated_identity(stack, mutate), self.base)
+
+    def test_fixture_bytes_still_change_identity(self):
+        with contextlib.ExitStack() as stack:
+            root = Path(stack.enter_context(tempfile.TemporaryDirectory()))
+            copy = root / "copy"
+            shutil.copytree(SCENARIOS / "checkout-obligations", copy)
+            art = copy / "fixture" / "specs" / "CH-201" / "design.md"
+            art.write_text(art.read_text() + "\n## Notes\nAn extra section.\n", encoding="utf-8")
+            self.assertNotEqual(_scenario.load(copy)["identity"], self.base)
+
+
+class PerPropertyGradingTest(unittest.TestCase):
+    """One call per property, and each call sees only its own property."""
+
+    maxDiff = None
+
+    @contextlib.contextmanager
+    def fake_grader(self, verdicts):
+        """Answer each grader call by matching the property statement it was handed."""
+        seen = []
+
+        def fake_run(cmd, **kwargs):
+            prompt = cmd[-1]
+            seen.append(prompt)
+            for statement, verdict in verdicts.items():
+                if statement in prompt:
+                    return subprocess.CompletedProcess(cmd, 0, verdict + "\n", "")
+            return subprocess.CompletedProcess(cmd, 1, "", "no matching property")
+
+        with unittest.mock.patch.object(_grade.subprocess, "run", fake_run), \
+             unittest.mock.patch.object(_grade.shutil, "which", lambda x: "/bin/true"):
+            yield seen
+
+    def test_one_independent_call_per_property(self):
+        scenario = _scenario.load(SCENARIOS / "checkout-obligations")
+        verdicts = {p["statement"]: "DETECTED" for p in scenario["properties"]}
+        with self.fake_grader(verdicts) as seen:
+            got = _grade.semantic({"report": "A reflection.", "model": "secret/worker"},
+                                  scenario, grader_model="g/x")
+        self.assertEqual(len(seen), 3, "one call per planted obligation")
+        self.assertEqual(got["result"], _grade.DETECTED)
+        self.assertEqual(sorted(got["properties"]), sorted(p["id"] for p in scenario["properties"]))
+
+    def test_each_call_is_blind_to_the_other_properties_and_to_the_worker(self):
+        scenario = _scenario.load(SCENARIOS / "checkout-obligations")
+        statements = [p["statement"] for p in scenario["properties"]]
+        verdicts = {st: "DETECTED" for st in statements}
+        with self.fake_grader(verdicts) as seen:
+            _grade.semantic({"report": "A reflection.", "model": "secret/worker-model"},
+                            scenario, grader_model="g/x")
+        for prompt in seen:
+            present = [st for st in statements if st in prompt]
+            self.assertEqual(len(present), 1, "a grader call saw more than one property")
+            self.assertNotIn("secret/worker-model", prompt)
+            self.assertNotIn("DETECTED\n", prompt.replace(_grade.GRADER_PROMPT[:40], ""))
+
+    def test_a_report_can_find_two_obligations_and_still_miss_the_third(self):
+        """The case a multi-property suite exists to observe."""
+        scenario = _scenario.load(SCENARIOS / "checkout-obligations")
+        props = scenario["properties"]
+        verdicts = {props[0]["statement"]: "DETECTED",
+                    props[1]["statement"]: "DETECTED",
+                    props[2]["statement"]: "NOT_DETECTED"}
+        with self.fake_grader(verdicts):
+            got = _grade.semantic({"report": "Two findings."}, scenario, grader_model="g/x")
+        self.assertEqual(got["result"], _grade.NOT_DETECTED)
+        self.assertEqual(got["properties"][props[0]["id"]]["result"], _grade.DETECTED)
+        self.assertEqual(got["properties"][props[2]["id"]]["result"], _grade.NOT_DETECTED)
+
+    def test_one_ungradeable_property_makes_the_trial_ungraded_not_incomplete(self):
+        scenario = _scenario.load(SCENARIOS / "checkout-obligations")
+        props = scenario["properties"]
+        verdicts = {props[0]["statement"]: "DETECTED", props[1]["statement"]: "DETECTED"}
+        with self.fake_grader(verdicts):
+            got = _grade.semantic({"report": "x"}, scenario, grader_model="g/x")
+        self.assertEqual(got["result"], _grade.UNAVAILABLE)
+
+    def test_trial_verdict_is_arithmetic_and_matches_k1_history_exactly(self):
+        d, n, u = _grade.DETECTED, _grade.NOT_DETECTED, _grade.UNAVAILABLE
+        self.assertEqual(_grade.trial_verdict([d]), d)
+        self.assertEqual(_grade.trial_verdict([n]), n)
+        self.assertEqual(_grade.trial_verdict([u]), u)
+        self.assertEqual(_grade.trial_verdict([d, d, d]), d)
+        self.assertEqual(_grade.trial_verdict([d, n, d]), n)
+        self.assertEqual(_grade.trial_verdict([d, d, u]), u)
+        self.assertEqual(_grade.trial_verdict([]), u)
+
+    def test_a_single_property_scenario_grades_exactly_as_it_used_to(self):
+        scenario = _scenario.load(SCENARIOS / "retry-idempotency")
+        with self.fake_grader({scenario["properties"][0]["statement"]: "DETECTED"}) as seen:
+            got = _grade.semantic({"report": "x"}, scenario, grader_model="g/x")
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(got["result"], _grade.DETECTED)
+        self.assertIn("reason", got)
+
+
+class PropertyMetricsTest(unittest.TestCase):
+    """Per-obligation counts sit under the trial counts; neither replaces the other."""
+
+    maxDiff = None
+
+    def scenario(self):
+        return _scenario.load(SCENARIOS / "checkout-obligations")
+
+    def graded(self, scenario, vectors, validity=_trial.VALID):
+        out = []
+        for vector in vectors:
+            props = {p["id"]: {"result": r} for p, r in zip(scenario["properties"], vector)}
+            out.append({
+                "trial": {"validity": validity, "prompt_bytes": 1, "context_bytes": 1,
+                          "elapsed_seconds": 1.0},
+                "mechanical": {"ok": True},
+                "semantic": {"result": _grade.trial_verdict(list(vector)), "properties": props},
+            })
+        return out
+
+    def test_per_property_counts_expose_where_the_reflector_is_weak(self):
+        scenario = self.scenario()
+        d, n = _grade.DETECTED, _grade.NOT_DETECTED
+        graded = self.graded(scenario, [(d, d, n), (d, d, n), (d, d, d)])
+        summary = _summary.summarize([{"scenario": scenario, "graded": graded}],
+                                     system={"model": "m"})
+        props = summary["scenarios"][0]["properties"]
+        ids = [p["id"] for p in scenario["properties"]]
+        self.assertEqual(props[ids[0]]["detected"], 3)
+        self.assertEqual(props[ids[2]]["detected"], 1)
+        self.assertEqual(props[ids[2]]["gradeable"], 3)
+        # Complete-trial reliability is a different question from per-property completeness.
+        self.assertEqual(summary["scenarios"][0]["counts"]["semantic_detected"], 1)
+        rendered = _summary.render(summary)
+        self.assertIn(ids[2], rendered, "the breakdown must be rendered, not just the total")
+        self.assertIn("obligations", rendered)
+
+    def test_an_invalid_trial_is_not_three_property_misses(self):
+        scenario = self.scenario()
+        graded = self.graded(scenario, [(_grade.DETECTED,) * 3], validity=_trial.SETUP_FAILURE)
+        summary = _summary.summarize([{"scenario": scenario, "graded": graded}],
+                                     system={"model": "m"})
+        entry = summary["scenarios"][0]
+        self.assertEqual(entry["counts"]["setup_failures"], 1)
+        for counts in entry["properties"].values():
+            self.assertEqual(counts["gradeable"], 0)
+            self.assertEqual(counts["not_detected"], 0)
+
+    def test_a_single_property_scenario_reports_one_obligation(self):
+        scenario = _scenario.load(SCENARIOS / "retry-idempotency")
+        graded = self.graded(scenario, [(_grade.DETECTED,), (_grade.NOT_DETECTED,)])
+        summary = _summary.summarize([{"scenario": scenario, "graded": graded}],
+                                     system={"model": "m"})
+        entry = summary["scenarios"][0]
+        self.assertEqual(list(entry["properties"]), ["primary"])
+        self.assertEqual(entry["counts"]["semantic_detected"], 1)
+        self.assertEqual(entry["counts"]["semantic_not_detected"], 1)
+
+    def test_historical_summaries_still_load_and_render(self):
+        for name in ("eval-v1.json", "calibration-screening-reference.json"):
+            path = ROOT / "evals" / "results" / name
+            if not path.is_file():
+                continue
+            with self.subTest(summary=name):
+                summary = _summary.load(path)
+                self.assertNotIn("properties", summary["scenarios"][0],
+                                 "history must not be rewritten with synthesised properties")
+                self.assertIn("complete", _summary.render(summary))
+
+
+class PropertyComparisonTest(unittest.TestCase):
+    """Comparison gains a per-obligation view and two effectiveness denominators."""
+
+    maxDiff = None
+
+    def summary(self, *, model, vectors):
+        scenario = _scenario.load(SCENARIOS / "checkout-obligations")
+        graded = PropertyMetricsTest().graded(scenario, vectors)
+        return _summary.summarize([{"scenario": scenario, "graded": graded}],
+                                  system={"proofbound_sha": "abc", "harness": "opencode-cli",
+                                          "harness_version": "1.0.0", "model": model,
+                                          "grader_model": "g/x", "role": "spec-reflector",
+                                          "python": "3.14"})
+
+    def test_the_per_property_breakdown_is_compared_and_rendered(self):
+        d, n = _grade.DETECTED, _grade.NOT_DETECTED
+        a = self.summary(model="p/a", vectors=[(d, d, n), (d, d, n), (d, d, n)])
+        b = self.summary(model="p/b", vectors=[(d, d, d), (d, d, d), (d, d, d)])
+        got = _compare.compare(a, b)
+        self.assertTrue(got["controlled"])
+        props = got["scenarios"][0]["properties"]
+        self.assertEqual(len(props), 3)
+        third = props[2]
+        self.assertEqual(third["a"]["detected"], 0)
+        self.assertEqual(third["b"]["detected"], 3)
+        rendered = _compare.render(got)
+        self.assertIn(third["id"], rendered)
+
+    def test_both_effectiveness_views_are_reported(self):
+        d = _grade.DETECTED
+        a = self.summary(model="p/a", vectors=[(d, d, d)])
+        b = self.summary(model="p/b", vectors=[(d, d, d)])
+        rendered = _compare.render(_compare.compare(a, b))
+        self.assertIn("end-to-end", rendered)
+        self.assertIn("conditional", rendered)
+        self.assertIn("attempted", rendered)
+
+    def test_no_winner_appears_even_with_a_large_gap(self):
+        d, n = _grade.DETECTED, _grade.NOT_DETECTED
+        a = self.summary(model="p/a", vectors=[(n, n, n)])
+        b = self.summary(model="p/b", vectors=[(d, d, d)])
+        got = _compare.compare(a, b)
+        blob = json.dumps(got).lower() + _compare.render(got).lower()
+        for forbidden in ("winner", "best_model", "recommended", "promote", "score", "wins"):
+            self.assertNotIn(forbidden, blob)
 
 
 if __name__ == "__main__":

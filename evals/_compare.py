@@ -92,10 +92,17 @@ def compare(a: dict[str, Any], b: dict[str, Any], *,
     scenarios = []
     for ident in shared:
         sa, sb = left[ident], right[ident]
+        # Per obligation, in the manifest's order, keyed by the scenario-local id both runs
+        # recorded. A property present in only one run is a population mismatch, not a score.
+        pa, pb = sa.get("properties") or {}, sb.get("properties") or {}
+        properties = [{"id": pid, "dimension": (pa[pid] or {}).get("dimension"),
+                       "a": pa[pid], "b": pb.get(pid)}
+                      for pid in pa if pid in pb]
         scenarios.append({
             "id": sa["id"], "identity": ident, "kind": sa.get("kind"),
             "a": {k: sa["counts"].get(k, 0) for k in COUNTS},
             "b": {k: sb["counts"].get(k, 0) for k in COUNTS},
+            "properties": properties,
             "resources": {"a": sa.get("resources", {}), "b": sb.get("resources", {})},
         })
 
@@ -158,27 +165,48 @@ def render(comparison: dict[str, Any]) -> str:
     if comparison["unverified_fields"]:
         out.append("  unverified (recorded by neither run, so equality is assumed and not "
                    "shown): " + ", ".join(comparison["unverified_fields"]))
-    out += ["", f"  detected / valid (attempted)          {la:>14}  {lb:>14}"]
+    out += ["", f"  complete trials / valid (attempted)   {la:>14}  {lb:>14}"]
     for entry in comparison["scenarios"]:
         a, b = entry["a"], entry["b"]
         out.append(f"    {entry['id']:<34} "
                    f"{a['semantic_detected']:>3}/{a['valid']:<3}({a['attempted']:>2})  "
                    f"{b['semantic_detected']:>3}/{b['valid']:<3}({b['attempted']:>2})   "
                    f"[{entry['kind']}]")
+        # The breakdown is the finding; a scenario total can hide which obligation is weak.
+        for prop in entry["properties"]:
+            pa, pb2 = prop["a"], prop["b"]
+            out.append(f"      {prop['id']:<32} "
+                       f"{pa['detected']:>3}/{pa['gradeable']:<3}     "
+                       f"{pb2['detected']:>3}/{pb2['gradeable']:<3}      "
+                       f"[{prop['dimension']}]")
     out.append("")
     for kind in sorted(comparison["strata"]):
         a, b = comparison["strata"][kind]["a"], comparison["strata"][kind]["b"]
         out.append(f"    {kind:<34} "
                    f"{a['semantic_detected']:>3}/{a['valid']:<3}({a['attempted']:>2})  "
                    f"{b['semantic_detected']:>3}/{b['valid']:<3}({b['attempted']:>2})   stratum")
-    invalid = []
+    invalid, views = [], []
     for side, label in (("a", la), ("b", lb)):
         totals = {k: sum(s[side][k] for s in comparison["scenarios"]) for k in COUNTS}
         invalid.append(f"    {label}: setup-fail {totals['setup_failures']}"
                        f"  harness-fail {totals['harness_failures']}"
                        f"  ungraded {totals['grading_unavailable']}"
                        f"  mechanical {totals['mechanical_ok']}/{totals['valid']}")
-    out += ["", "  validity and mechanics", *invalid]
+        det = sum(p[side]["detected"] for s in comparison["scenarios"] for p in s["properties"])
+        grd = sum(p[side]["gradeable"] for s in comparison["scenarios"] for p in s["properties"])
+        # Two questions, two denominators. End-to-end asks whether the configuration operated
+        # the role at all; conditional asks how complete it was when it did. Reporting only the
+        # second would let a configuration that barely ran look excellent.
+        # A run recorded before per-property counts existed has no obligations to show; that
+        # is absent, not zero detections.
+        obligations = f"{det}/{grd}" if grd else "not recorded"
+        views.append(f"    {label}: end-to-end complete {totals['semantic_detected']}"
+                     f"/{totals['attempted']} attempted"
+                     f"   |   conditional complete {totals['semantic_detected']}"
+                     f"/{totals['valid']} valid"
+                     f"   obligations {obligations}")
+    out += ["", "  validity and mechanics", *invalid,
+            "", "  end-to-end role effectiveness vs conditional semantic completeness", *views]
     out += ["", "  resources (separate from semantic outcome, never combined with it)"]
     for entry in comparison["scenarios"]:
         ra, rb = entry["resources"]["a"], entry["resources"]["b"]

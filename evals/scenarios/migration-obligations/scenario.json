@@ -1,0 +1,33 @@
+{
+  "artifact": "specs/CH-203/design.md",
+  "distractors": [
+    "Verification compares a sample of rows against the finance ledger without stating the sample size, the selection method, or what result would abort the change.",
+    "Migration duration is recorded but no expected duration or timeout is given, so operators cannot tell a slow run from a stuck one.",
+    "The new column is added without saying whether it is nullable during population, which decides whether writers need to handle a missing value.",
+    "Nothing states which of the six reading services are exercised before the change ships."
+  ],
+  "format": "proofbound-eval-scenario-v1",
+  "kind": "capability",
+  "properties": [
+    {
+      "id": "column-removed-too-early",
+      "dimension": "direct",
+      "statement": "The old floating point column is removed in the very same release that introduces the integer one. The accepted proposal requires services reading the catalogue on the current release to keep working while the change rolls out, and notes that those six services do not deploy together, so a reader still expecting the old column fails the moment it is gone.",
+      "reachable_from": ["specs/CH-203/design.md", "specs/CH-203/proposal.md"]
+    },
+    {
+      "id": "all-at-once-rollout",
+      "dimension": "indirect-implication",
+      "statement": "Every instance is replaced together rather than in stages, and the design argues for this on consistency grounds. Replacing all instances at once means there is an interval with no instance serving, which contradicts the accepted requirement that reads and writes continue throughout and the catalogue never goes offline. Neither document draws that conclusion; it follows from what a simultaneous replacement implies.",
+      "reachable_from": ["specs/CH-203/design.md", "specs/CH-203/proposal.md"]
+    },
+    {
+      "id": "runbook-makes-reversal-impossible",
+      "dimension": "pattern-versus-authority",
+      "statement": "Migration is delegated wholesale to the team's established operational procedure. That procedure overwrites the affected column where it stands and deliberately keeps no copy of the previous values, so its only recovery route is restoring last night's snapshot and losing everything since. The accepted proposal requires a migration that can be undone on its own without a restore. Deciding this needs the procedure itself to be read, because the design describes its choice only by pointing at it.",
+      "reachable_from": ["specs/CH-203/design.md", "specs/CH-203/proposal.md", "ops/runbooks/schema-changes.md"]
+    }
+  ],
+  "review_purpose": "design-reflection",
+  "summary": "A migration design breaks three separate accepted obligations — reader compatibility during rollout, staying online, and reversibility, the last decidable only by reading the operational runbook it defers to."
+}

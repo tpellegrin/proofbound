@@ -84,18 +84,19 @@ def mechanical(trial: dict[str, Any]) -> dict[str, Any]:
     return {"ok": not findings, "findings": findings}
 
 
-def semantic(trial: dict[str, Any], scenario: dict[str, Any], *, grader_model: str,
-             executable: str = "opencode", timeout: int = 300) -> dict[str, Any]:
-    """Did the report identify the planted property?
+def grade_property(report: str, statement: str, *, grader_model: str,
+                   executable: str = "opencode", timeout: int = 300) -> dict[str, Any]:
+    """Grade one planted obligation against one report. The atomic semantic judgement.
 
-    The grader receives only the property and the report — not the Proofbound version, not a
-    baseline, not previous scores, not the transcript. Context economy applies to graders,
-    and blindness removes the obvious ways a grade could be anchored.
+    The grader receives only this property and the report — not the Proofbound version, not a
+    baseline, not previous scores, not the transcript, not the worker model, and not the other
+    properties or their verdicts. Context economy applies to graders, and blindness removes
+    the obvious ways a grade could be anchored.
     """
     if not shutil.which(executable):
         return {"result": UNAVAILABLE, "reason": f"grader executable {executable!r} unavailable",
                 "grader_model": grader_model}
-    prompt = GRADER_PROMPT.format(property=scenario["property"], report=trial.get("report", ""))
+    prompt = GRADER_PROMPT.format(property=statement, report=report)
     try:
         cp = subprocess.run([executable, "run", "--model", grader_model, prompt],
                             text=True, capture_output=True, check=False, timeout=timeout)
@@ -106,6 +107,53 @@ def semantic(trial: dict[str, Any], scenario: dict[str, Any], *, grader_model: s
         return {"result": UNAVAILABLE, "reason": f"grader exited {cp.returncode}",
                 "grader_model": grader_model}
     return {**classify(cp.stdout), "grader_model": grader_model}
+
+
+def trial_verdict(results: list[str]) -> str:
+    """Derive one trial outcome from its property vector — arithmetic, never judgement.
+
+    At `K = 1` this reproduces the original semantics exactly, so every historical record
+    keeps both its numbers and its meaning:
+
+        every property graded and detected      -> detected
+        every property graded, at least one not -> not-detected
+        any property could not be graded        -> grading-unavailable
+
+    A trial with an ungradeable property is not "incomplete": we do not know what it was, and
+    guessing would invent a measurement.
+    """
+    if not results:
+        return UNAVAILABLE
+    if any(r == UNAVAILABLE for r in results):
+        return UNAVAILABLE
+    return DETECTED if all(r == DETECTED for r in results) else NOT_DETECTED
+
+
+def semantic(trial: dict[str, Any], scenario: dict[str, Any], *, grader_model: str,
+             executable: str = "opencode", timeout: int = 300) -> dict[str, Any]:
+    """Grade every planted obligation independently, then derive the trial's outcome.
+
+    **One grader invocation per property, never one call returning a vector.** Batching would
+    be cheaper — the worker dominates wall-clock by an order of magnitude — but a grader shown
+    three properties at once can see how many there are and how many it has already credited,
+    and a grader that has just credited two is being invited to infer something about the
+    third. Independent calls give that blindness by construction rather than by promise.
+    """
+    properties = scenario.get("properties") or [
+        {"id": "primary", "statement": scenario["property"]}]
+    report = trial.get("report", "")
+    graded = {}
+    for prop in properties:
+        graded[prop["id"]] = grade_property(report, prop["statement"],
+                                            grader_model=grader_model,
+                                            executable=executable, timeout=timeout)
+    verdict = trial_verdict([g["result"] for g in graded.values()])
+    out: dict[str, Any] = {"result": verdict, "grader_model": grader_model,
+                           "properties": graded}
+    if len(properties) == 1:
+        # Keep the single-property record shaped as it always was for readers of older runs.
+        out["reason"] = graded[properties[0]["id"]].get("reason")
+    return out
 
 
 def classify(output: str) -> dict[str, Any]:

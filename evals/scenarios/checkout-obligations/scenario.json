@@ -1,0 +1,33 @@
+{
+  "artifact": "specs/CH-201/design.md",
+  "distractors": [
+    "Processor and ledger timeouts are given as bare numbers with no derivation from any latency budget, so nobody can tell whether 900ms is generous or tight.",
+    "Metrics are exported but no alert threshold, target or owner is stated for any of them.",
+    "Contract tests run only against the processor sandbox, with nothing said about what happens when that sandbox is unavailable in CI.",
+    "The diagnostics topic is described as compacted weekly without saying what the compaction key is, so it is unclear which records survive."
+  ],
+  "format": "proofbound-eval-scenario-v1",
+  "kind": "capability",
+  "properties": [
+    {
+      "id": "retry-moves-money-twice",
+      "dimension": "direct",
+      "statement": "The resilience wrapper applies the same automatic retry to the capture call as to the read-only lookup. The accepted proposal states that a capture which has reached the card processor has already moved money and must not be sent again, and that recovery goes through the repeatable status lookup instead. A retried capture can therefore charge a shopper twice.",
+      "reachable_from": ["specs/CH-201/design.md", "specs/CH-201/proposal.md"]
+    },
+    {
+      "id": "ledger-pinned-to-one-region",
+      "dimension": "indirect-implication",
+      "statement": "Captures are recorded synchronously before a response is returned, and the component that records them exists in exactly one region. Losing that region therefore stops shoppers completing payment everywhere, which the accepted proposal forbids: it requires the path to keep serving when any single region becomes unavailable. Neither document states this consequence; it follows from combining the placement decision with the availability requirement.",
+      "reachable_from": ["specs/CH-201/design.md", "specs/CH-201/proposal.md"]
+    },
+    {
+      "id": "diagnostic-copies-outlive-policy",
+      "dimension": "dependency-distance",
+      "statement": "Mirrored diagnostic records carry the submitted body and are kept for ninety days. The accepted policy that the proposal declares itself bound by puts a firm upper limit of one day on holding shopper payment detail, explicitly includes diagnostic copies, and refuses downstream exceptions. The contract does not name that policy, so the limit has to be discovered through the proposal.",
+      "reachable_from": ["specs/CH-201/design.md", "specs/CH-201/proposal.md", "specs/POL-011/card-data.md"]
+    }
+  ],
+  "review_purpose": "design-reflection",
+  "summary": "A checkout design breaks three separate accepted obligations — capture idempotency, single-region survival, and the cardholder-data retention limit that lives in a policy the contract never names."
+}

@@ -50,6 +50,36 @@ def _counts(graded: list[dict[str, Any]]) -> dict[str, int]:
     }
 
 
+def _property_counts(graded: list[dict[str, Any]], scenario: dict[str, Any]) -> dict[str, Any]:
+    """Per-obligation detection over the trials in which that obligation could be graded.
+
+    Reported alongside the trial-level counts, never instead of them. `P1 5/5, P2 5/5, P3 2/5`
+    and `12/15` are the same arithmetic and not the same information: only the first says
+    where the reflector is weak, which is the entire reason for measuring several obligations.
+
+    The denominator is per property. A property that could not be graded in some trial simply
+    has a smaller denominator there; spreading one trial's failure across the others would
+    invent measurements that were never made.
+    """
+    valid = [g for g in graded if g["trial"]["validity"] == VALID]
+    out: dict[str, Any] = {}
+    for prop in scenario.get("properties") or []:
+        detected = not_detected = unavailable = 0
+        for entry in valid:
+            result = ((entry["semantic"].get("properties") or {})
+                      .get(prop["id"], {})).get("result")
+            if result == DETECTED:
+                detected += 1
+            elif result == NOT_DETECTED:
+                not_detected += 1
+            else:
+                unavailable += 1
+        out[prop["id"]] = {"dimension": prop.get("dimension"), "detected": detected,
+                           "not_detected": not_detected, "grading_unavailable": unavailable,
+                           "gradeable": detected + not_detected}
+    return out
+
+
 def _resources(graded: list[dict[str, Any]]) -> dict[str, Any]:
     """Only facts the harness reliably observes. Prompt bytes are bytes, not tokens."""
     def median(values: list[float]) -> float | None:
@@ -74,6 +104,9 @@ def summarize(scenario_results: list[dict[str, Any]], *, system: dict[str, Any])
             "kind": scenario["kind"],
             "review_purpose": scenario["review_purpose"],
             "counts": _counts(graded),
+            # Present for every scenario, one entry for a single-property one. Trial-level
+            # counts above keep their exact original meaning at K=1 (see `_grade.trial_verdict`).
+            "properties": _property_counts(graded, scenario),
             "resources": _resources(graded),
             # Per-trial semantic outcomes, so a reader can see reliability rather than a rate.
             "trials": [{"validity": g["trial"]["validity"],
@@ -117,9 +150,20 @@ def render(summary: dict[str, Any]) -> str:
         lines.append(f"    attempted {c['attempted']}  valid {c['valid']}"
                      f"  setup-fail {c['setup_failures']}  harness-fail {c['harness_failures']}")
         lines.append(f"    mechanical {c['mechanical_ok']}/{c['valid']}"
-                     f"   detected {c['semantic_detected']}/{c['valid']}"
-                     f"   missed {c['semantic_not_detected']}"
+                     f"   complete {c['semantic_detected']}/{c['valid']}"
+                     f"   incomplete {c['semantic_not_detected']}"
                      f"   ungraded {c['grading_unavailable']}")
+        props = s.get("properties") or {}
+        if len(props) > 1:
+            # Never the scenario total alone: the breakdown is the finding.
+            for pid, pc in props.items():
+                lines.append(f"      {pid:<30} {pc['detected']}/{pc['gradeable']}"
+                             f"   [{pc['dimension']}]"
+                             + (f"   ungraded {pc['grading_unavailable']}"
+                                if pc["grading_unavailable"] else ""))
+            detected = sum(pc["detected"] for pc in props.values())
+            gradeable = sum(pc["gradeable"] for pc in props.values())
+            lines.append(f"      {'obligations':<30} {detected}/{gradeable}")
         r = s["resources"]
         lines.append(f"    median prompt bytes {r['median_prompt_bytes']}"
                      f"   median seconds {r['median_elapsed_seconds']}")
