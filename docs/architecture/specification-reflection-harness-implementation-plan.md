@@ -1144,6 +1144,8 @@ defect — a trial ran an ambient default model rather than the requested one, s
 configuration it had not run — fixed with a regression test before the baseline was collected. The
 result establishes that semantic detection happens at all, which is the stated trigger for designing
 the control arm; it does not establish reliability, and it does not attribute detection to Proofbound.
+A second condition surfaced afterwards from the same evidence — the suite cannot show a difference
+between systems — so the control arm waits on §7E rather than following directly from this baseline.
 
 **Scope:** 3–5 planted-contradiction scenarios in the M1 shape, 5 independent trials each, one harness,
 mechanical grading through existing domain APIs, one model-grader path plus a human calibration sample,
@@ -1152,6 +1154,40 @@ per-scenario metric vector, no composite score, no CI gate.
 **Non-goals:** control arm (deferred to V2 with a stated trigger — see `evaluation.md` E10), aggregate
 consistency scenarios, holdouts, scenario mutation, pairwise grading, cost dashboards, scheduled runs,
 any evaluation result influencing engineering authority.
+
+## 7E. Eval V2 — scenario calibration  *(designed; not implemented)*
+
+Design authority: [`evaluation.md` §E16](proofbound/evaluation.md#e16-discrimination--why-baseline-zero-cannot-compare-systems).
+
+**Why this milestone exists.** Baseline zero scored 20/20 and cannot compare systems. The retained
+evidence says why: nineteen of twenty trials ran an identical six-call trajectory, the one trial that
+went looking for more found the fixture contains no source files at all, and the engineering problem is
+1,101 bytes of a 17.5 KB supply. Every candidate configuration receives the same input, so no
+intervention in Proofbound could change the result. **Scenario range must be established before any
+causal comparison is worth running** — otherwise a tie at ceiling reads as evidence against the
+architecture when it is only evidence about the suite.
+
+**Question.** Can a small set of semantically valid scenarios demonstrate non-ceiling behaviour under
+legitimate system-under-test configurations?
+
+**Scope.**
+
+| Area | Content |
+|---|---|
+| Candidate scenarios | 3–5 new directories beside the existing four, exercising dependency distance, competing valid concerns and indirect implication (§E16.4–E16.5) |
+| Human validation | A structured manifest review against the §E16.6 criteria before any live call. No annotation tooling |
+| Screening | Low trial count per candidate against the shipped configuration and one legitimate weaker probe configuration, changing only `state.worker_runtime.model` |
+| Retention | Scenarios meeting the pre-registered criteria receive a full repeated-trial measurement; the rest are recorded as rejected, with the reason |
+| Metadata | `system.harness_version`, additive and optional, no format bump (§E16.9) |
+
+**Non-goals:** the control arm (§E16.8 states its readiness criteria and its hypothesis); editing the
+four V1 scenarios or their baseline; any change to the spec-reflector prompt, role protocols or grader
+rubric; tool-call instrumentation; a scenario taxonomy; a model leaderboard; directory reorganisation
+into `regression/` and `capability/`; backfilling historical summaries.
+
+**Anti-goal, stated because it is the obvious way to get this wrong:** the target is informative variance
+on meaningful engineering problems, not a lower score. A scenario is never retained because the current
+model failed it.
 
 ## 7B. Threat mitigation status
 
@@ -1268,6 +1304,13 @@ convention before freeze work begins.
     §7C.
 15. **Authoritative implementation decomposition** — the real prerequisite for any completion theorem
     and for durable implementation provenance. Not scheduled; not designed.
+17. **`evaluation.md` split pressure** — recording the E16 design took the document to ~38.5 KB against
+    the same 40 KB cap. The next evaluation outcome breaches it. The natural split is by authority class,
+    which the corpus already uses: the design track (E1–E13, how measurement works) stays normative-ish
+    under `proofbound/`, while what individual runs established (E14–E16) moves to
+    [`evidence/`](proofbound/evidence/implementation-findings.md) where historical evidence is exempt from
+    the cap and read on demand. Not done now: splitting mid-design-check would churn references for no
+    reader benefit.
 13. **Architecture document split pressure** — `artifacts-and-provenance.md` is now ~38.5 KB against the
     40 KB cap enforced by `tests/test_docs_architecture_refs.py`. The next substantive addition breaches
     it. That cap exists to force this decision rather than let a document drift out of selective-reading
