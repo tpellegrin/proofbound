@@ -34,7 +34,7 @@ from _compare import render as render_comparison  # noqa: E402
 from _grade import mechanical, semantic  # noqa: E402
 from _scenario import ScenarioError, discover  # noqa: E402
 from _summary import SummaryError, load, render, summarize  # noqa: E402
-from _trial import harness_version, provider_available, run_trial  # noqa: E402
+from _trial import NO_TREATMENT, harness_version, provider_available, run_trial  # noqa: E402
 
 DEFAULT_MODEL = "opencode-go/deepseek-v4-flash"
 # Inherited DSD's default worker model, so `run` with no flags measures the shipped
@@ -46,6 +46,12 @@ DEFAULT_MODEL = "opencode-go/deepseek-v4-flash"
 # separate invocation, blind to version and prior scores — and a run must record which
 # kind of independence it actually had.
 DEFAULT_GRADER = DEFAULT_MODEL
+
+# The P12 control's one variable. `none` is current production behaviour, stated explicitly
+# rather than left absent, because a record that says nothing is a different fact from a record
+# that says "no author report was supplied".
+NO_TREATMENT_ARM = NO_TREATMENT
+AUTHOR_REPORT_TREATMENT = "author-report"
 
 
 def _system(model: str, grader_model: str) -> dict:
@@ -80,13 +86,24 @@ def cmd_run(args: argparse.Namespace) -> int:
         return 2
     print(f"worker executable: {detail}\n"
           f"about to run {len(scenarios)} scenario(s) x {args.trials} trial(s) "
-          f"against {args.model}; this spends provider resources.\n")
+          f"against {args.model} with treatment {args.treatment!r}; "
+          "this spends provider resources.\n")
+
+    treated = args.treatment == AUTHOR_REPORT_TREATMENT
+    if treated:
+        missing = [s["id"] for s in scenarios if not s.get("author_report")]
+        if missing:
+            # Silently running an untreated trial in the treated arm would destroy the
+            # experiment while looking like it worked.
+            print(f"ERROR: no author report for: {', '.join(missing)}", file=sys.stderr)
+            return 2
 
     results = []
     for scenario in scenarios:
         graded = []
         for n in range(args.trials):
-            trial = run_trial(scenario, model=args.model, keep=args.evidence)
+            trial = run_trial(scenario, model=args.model, keep=args.evidence,
+                              treatment=scenario["author_report"] if treated else None)
             entry = {"trial": trial, "mechanical": {"ok": False, "findings": ["not evaluated"]},
                      "semantic": {"result": "grading-unavailable", "reason": "trial not valid"}}
             if trial["validity"] == "valid":
@@ -105,6 +122,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                                     "statement": p["statement"]}
                                    for p in scenario["properties"]],
                     "report": trial.get("report", ""),
+                    "author_report_sha256": trial.get("author_report_sha256"),
                     "grader": entry["semantic"]}, indent=2, sort_keys=True) + "\n",
                     encoding="utf-8")
             print(f"  {scenario['id']} trial {n + 1}/{args.trials}: "
@@ -147,6 +165,9 @@ def parser() -> argparse.ArgumentParser:
     r.add_argument("--model", default=DEFAULT_MODEL)
     r.add_argument("--grader-model", default=DEFAULT_GRADER)
     r.add_argument("--trials", type=int, default=5)
+    r.add_argument("--treatment", choices=[NO_TREATMENT_ARM, AUTHOR_REPORT_TREATMENT],
+                   default=NO_TREATMENT_ARM,
+                   help="supply each scenario's author report to the reflector (P12 control)")
     r.add_argument("--only", action="append", help="restrict to named scenarios; repeatable")
     r.add_argument("--out", type=Path, default=HERE / "results" / "eval-v1.json")
     r.add_argument("--evidence", type=Path, default=None,

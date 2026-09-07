@@ -10,6 +10,7 @@ evaluation must never be able to report an infrastructure failure as a semantic 
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import inspect
 import json
 import os
@@ -587,7 +588,7 @@ class ComparisonTest(unittest.TestCase):
                                self.summary(model="m/b", sha="cafe"))
         self.assertFalse(got["controlled"])
         self.assertIn("proofbound_sha", got["differing_fields"])
-        self.assertIn("more than the model differs", _compare.render(got))
+        self.assertIn("more than one field differs", _compare.render(got))
 
     def test_a_different_harness_version_breaks_the_comparison(self):
         got = _compare.compare(self.summary(model="m/a"),
@@ -1063,6 +1064,204 @@ class PropertyComparisonTest(unittest.TestCase):
         blob = json.dumps(got).lower() + _compare.render(got).lower()
         for forbidden in ("winner", "best_model", "recommended", "promote", "score", "wins"):
             self.assertNotIn(forbidden, blob)
+
+
+TREATED = ["checkout-obligations", "session-lifecycle-obligations", "migration-obligations"]
+
+
+class TreatmentTest(unittest.TestCase):
+    """The P12 control's one variable: what the reflector knows, never how it runs."""
+
+    maxDiff = None
+
+    def scenario(self, name="checkout-obligations"):
+        return _scenario.load(SCENARIOS / name)
+
+    def test_every_control_scenario_carries_a_frozen_author_report(self):
+        for name in TREATED:
+            with self.subTest(scenario=name):
+                sc = self.scenario(name)
+                self.assertTrue(sc["author_report"], "no treatment artifact")
+                self.assertTrue(Path(sc["author_report"]).is_file())
+
+    def test_treatment_does_not_change_scenario_identity(self):
+        """The engineering problem is the same problem in both arms."""
+        for name in TREATED:
+            with self.subTest(scenario=name), contextlib.ExitStack() as stack:
+                root = Path(stack.enter_context(tempfile.TemporaryDirectory()))
+                copy = root / "copy"
+                shutil.copytree(SCENARIOS / name, copy)
+                before = _scenario.load(copy)["identity"]
+                report = copy / _scenario.AUTHOR_REPORT
+                report.write_text(report.read_text() + "\n## Addendum\nMore reasoning.\n",
+                                  encoding="utf-8")
+                self.assertEqual(_scenario.load(copy)["identity"], before)
+                report.unlink()
+                self.assertEqual(_scenario.load(copy)["identity"], before)
+
+    def test_the_same_report_inside_the_fixture_would_change_identity(self):
+        """Placement is load-bearing, not incidental."""
+        with contextlib.ExitStack() as stack:
+            root = Path(stack.enter_context(tempfile.TemporaryDirectory()))
+            copy = root / "copy"
+            shutil.copytree(SCENARIOS / "checkout-obligations", copy)
+            before = _scenario.load(copy)["identity"]
+            shutil.copyfile(copy / _scenario.AUTHOR_REPORT,
+                            copy / "fixture" / _scenario.AUTHOR_REPORT)
+            self.assertNotEqual(_scenario.load(copy)["identity"], before)
+
+    def test_an_author_report_that_states_a_planted_property_is_rejected(self):
+        with contextlib.ExitStack() as stack:
+            root = Path(stack.enter_context(tempfile.TemporaryDirectory()))
+            copy = root / "copy"
+            shutil.copytree(SCENARIOS / "checkout-obligations", copy)
+            leaked = json.loads((copy / "scenario.json").read_text())["properties"][1]["statement"]
+            report = copy / _scenario.AUTHOR_REPORT
+            report.write_text(report.read_text() + "\n" + leaked + "\n", encoding="utf-8")
+            with self.assertRaises(_scenario.ScenarioError) as caught:
+                _scenario.load(copy)
+            self.assertIn(_scenario.AUTHOR_REPORT, str(caught.exception))
+
+    def test_the_untreated_arm_records_an_explicit_no_report_and_supplies_nothing(self):
+        scenario = self.scenario()
+        with contextlib.ExitStack() as stack:
+            prompt_copy = stack.enter_context(fake_worker(stack))
+            got = _trial.run_trial(scenario, model="fake/model")
+            self.assertEqual(got["validity"], _trial.VALID, got.get("reason"))
+            self.assertEqual(got["author_report_sha256"], _trial.NO_TREATMENT)
+            prompt = prompt_copy.read_text()
+            self.assertNotIn("author-report.md", prompt)
+            self.assertNotIn("Additional exact inputs", prompt)
+
+    def test_the_treated_arm_supplies_the_report_and_binds_its_exact_bytes(self):
+        scenario = self.scenario()
+        expected = hashlib.sha256(Path(scenario["author_report"]).read_bytes()).hexdigest()
+        with contextlib.ExitStack() as stack:
+            prompt_copy = stack.enter_context(fake_worker(stack))
+            got = _trial.run_trial(scenario, model="fake/model",
+                                   treatment=scenario["author_report"])
+            self.assertEqual(got["validity"], _trial.VALID, got.get("reason"))
+            self.assertEqual(got["author_report_sha256"], expected)
+            prompt = prompt_copy.read_text()
+            # The launcher names it and binds its digest into the immutable prompt.
+            self.assertIn("author-report.md", prompt)
+            self.assertIn(expected, prompt)
+
+    def test_changing_the_report_bytes_changes_the_binding(self):
+        scenario = self.scenario()
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(fake_worker(stack))
+            root = Path(stack.enter_context(tempfile.TemporaryDirectory()))
+            altered = root / "author-report.md"
+            altered.write_bytes(Path(scenario["author_report"]).read_bytes()
+                                + b"\nOne more consideration.\n")
+            first = _trial.run_trial(scenario, model="fake/model",
+                                     treatment=scenario["author_report"])
+            second = _trial.run_trial(scenario, model="fake/model", treatment=altered)
+            self.assertNotEqual(first["author_report_sha256"], second["author_report_sha256"])
+            self.assertEqual(first["scenario_identity"], second["scenario_identity"])
+
+    def test_both_arms_are_fresh_isolated_executions(self):
+        """Freshness is held constant; only what the reflector knows differs."""
+        scenario = self.scenario()
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(fake_worker(stack))
+            fresh = _trial.run_trial(scenario, model="fake/model")
+            treated = _trial.run_trial(scenario, model="fake/model",
+                                       treatment=scenario["author_report"])
+            for got in (fresh, treated):
+                self.assertEqual(got["validity"], _trial.VALID, got.get("reason"))
+                self.assertFalse(got["gate"]["writes_project"])
+            self.assertNotEqual(fresh["event_dir"], treated["event_dir"])
+            self.assertFalse(Path(fresh["event_dir"]).exists())
+            self.assertFalse(Path(treated["event_dir"]).exists())
+
+    def test_the_grader_is_never_told_the_treatment(self):
+        scenario = self.scenario()
+        seen = []
+
+        def fake_run(cmd, **kwargs):
+            seen.append(cmd[-1])
+            return subprocess.CompletedProcess(cmd, 0, "DETECTED\n", "")
+
+        trial = {"report": "A reflection.", "author_report_sha256": "deadbeef" * 8}
+        with unittest.mock.patch.object(_grade.subprocess, "run", fake_run), \
+             unittest.mock.patch.object(_grade.shutil, "which", lambda x: "/bin/true"):
+            _grade.semantic(trial, scenario, grader_model="g/x")
+        for prompt in seen:
+            self.assertNotIn("deadbeef", prompt)
+            self.assertNotIn("author-report", prompt)
+            self.assertNotIn("author report", prompt.lower())
+
+
+class TreatmentComparisonTest(unittest.TestCase):
+    """Comparison proves which single field moved, rather than assuming it was the model."""
+
+    maxDiff = None
+
+    def summary(self, *, model="p/a", treatment=_trial.NO_TREATMENT, sha="abc",
+                harness_version="1.0.0", drop_treatment=False):
+        scenario = {"id": "s1", "identity": "i1", "kind": "capability",
+                    "counts": dict.fromkeys(
+                        ("attempted", "valid", "setup_failures", "harness_failures",
+                         "mechanical_ok", "semantic_detected", "semantic_not_detected",
+                         "grading_unavailable"), 0),
+                    "properties": {}, "resources": {}}
+        if not drop_treatment:
+            scenario["author_report_sha256"] = treatment
+        return {"format": _summary.SUMMARY_FORMAT, "recorded_at": "2026-01-01T00:00:00+00:00",
+                "system": {"proofbound_sha": sha, "harness": "opencode-cli",
+                           "harness_version": harness_version, "model": model,
+                           "grader_model": "g/x", "role": "spec-reflector", "python": "3.14"},
+                "scenarios": [scenario], "totals": {}}
+
+    def test_a_treatment_only_difference_is_a_controlled_comparison(self):
+        got = _compare.compare(self.summary(treatment=_trial.NO_TREATMENT),
+                               self.summary(treatment="f" * 64))
+        self.assertEqual(got["differing_fields"], ["treatment"])
+        self.assertTrue(got["controlled"])
+        self.assertIn("`treatment` differs", _compare.render(got))
+
+    def test_a_model_only_difference_is_still_controlled(self):
+        got = _compare.compare(self.summary(model="p/a"), self.summary(model="p/b"))
+        self.assertEqual(got["differing_fields"], ["model"])
+        self.assertTrue(got["controlled"])
+
+    def test_treatment_plus_another_field_is_not_controlled(self):
+        for label, kwargs in (("model", {"model": "p/b"}),
+                              ("harness_version", {"harness_version": "2.0.0"}),
+                              ("proofbound_sha", {"sha": "cafe"})):
+            with self.subTest(also=label):
+                got = _compare.compare(self.summary(treatment=_trial.NO_TREATMENT),
+                                       self.summary(treatment="f" * 64, **kwargs))
+                self.assertFalse(got["controlled"])
+                self.assertIn("treatment", got["differing_fields"])
+                self.assertIn(label, got["differing_fields"])
+
+    def test_a_historical_record_is_unknown_not_untreated(self):
+        """The machine never recorded it; believing we know is exactly what P6 forbids."""
+        got = _compare.compare(self.summary(drop_treatment=True),
+                               self.summary(treatment=_trial.NO_TREATMENT))
+        self.assertIn("treatment", got["differing_fields"])
+        row = next(r for r in got["configuration"] if r["field"] == "treatment")
+        self.assertIsNone(row["a"])
+        self.assertEqual(row["b"], _trial.NO_TREATMENT)
+
+    def test_two_treated_runs_with_different_reports_differ(self):
+        got = _compare.compare(self.summary(treatment="a" * 64),
+                               self.summary(treatment="b" * 64))
+        self.assertIn("treatment", got["differing_fields"])
+
+    def test_committed_historical_summaries_carry_no_treatment(self):
+        for name in ("eval-v1.json", "multi-property-screening-reference.json"):
+            path = ROOT / "evals" / "results" / name
+            if not path.is_file():
+                continue
+            with self.subTest(summary=name):
+                summary = _summary.load(path)
+                for scenario in summary["scenarios"]:
+                    self.assertNotIn("author_report_sha256", scenario,
+                                     "history must not be backfilled with a treatment")
 
 
 if __name__ == "__main__":

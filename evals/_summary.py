@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from _grade import DETECTED, NOT_DETECTED, UNAVAILABLE
-from _trial import HARNESS_FAILURE, SETUP_FAILURE, VALID
+from _trial import HARNESS_FAILURE, NO_TREATMENT, SETUP_FAILURE, VALID
 
 SUMMARY_FORMAT = "proofbound-eval-summary-v1"
 SUPPORTED_SUMMARY_FORMATS = (SUMMARY_FORMAT,)
@@ -80,6 +80,19 @@ def _property_counts(graded: list[dict[str, Any]], scenario: dict[str, Any]) -> 
     return out
 
 
+def _treatment(graded: list[dict[str, Any]]) -> str:
+    """The treatment every trial in this scenario ran under.
+
+    One value, because a scenario's trials all run in one arm. Disagreement means the runner
+    mixed arms inside a scenario, which would make the scenario's counts uninterpretable, so it
+    is refused rather than summarised away.
+    """
+    values = {g["trial"].get("author_report_sha256", NO_TREATMENT) for g in graded}
+    if len(values) > 1:
+        raise SummaryError(f"trials disagree about treatment: {sorted(values)}")
+    return values.pop() if values else NO_TREATMENT
+
+
 def _resources(graded: list[dict[str, Any]]) -> dict[str, Any]:
     """Only facts the harness reliably observes. Prompt bytes are bytes, not tokens."""
     def median(values: list[float]) -> float | None:
@@ -102,6 +115,11 @@ def summarize(scenario_results: list[dict[str, Any]], *, system: dict[str, Any])
             "id": scenario["id"],
             "identity": scenario["identity"],
             "kind": scenario["kind"],
+            # The P12 control's one variable, recorded where it actually varies: each scenario
+            # supplies its own author report. `"none"` is an explicit declaration of current
+            # production behaviour; a record with no key at all predates the experiment and says
+            # nothing, which is a different fact and must stay different.
+            "author_report_sha256": _treatment(graded),
             "review_purpose": scenario["review_purpose"],
             "counts": _counts(graded),
             # Present for every scenario, one entry for a single-property one. Trial-level

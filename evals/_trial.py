@@ -46,6 +46,14 @@ PHASE_ID = "spec"
 # exists so one stuck worker cannot hold a suite open forever, not to cut off thinking.
 TRIAL_TIMEOUT_SECONDS = 1800
 
+# Treatment vocabulary for the P12 control. Three states, deliberately distinguishable:
+#   absent       the record predates the experiment and says nothing about treatment
+#   NO_TREATMENT the run explicitly declares current production behaviour: no author report
+#   <sha256 hex> the run supplied exactly this author report
+# Absence must never be read as "fresh": the machine did not record it, and inferring it from
+# what we believe historical behaviour was would be exactly the reinterpretation P6 forbids.
+NO_TREATMENT = "none"
+
 
 class TrialError(RuntimeError):
     """The harness itself could not run a trial."""
@@ -165,11 +173,19 @@ def _supplied_bytes(run: Path, event_dir: Path) -> int | None:
     return total or None
 
 
-def run_trial(scenario: dict[str, Any], *, model: str, keep: Path | None = None,
+def run_trial(scenario: dict[str, Any], *, model: str, treatment: Path | str | None = None,
+              keep: Path | None = None,
               timeout: int = TRIAL_TIMEOUT_SECONDS) -> dict[str, Any]:
     """Execute one trial and return its raw evidence, ungraded.
 
     Grading is a separate concern; this function only reports what happened.
+
+    `treatment` is the P12 control's one variable: a spec-author attempt report standing for the
+    execution narrative that produced the reviewed artifact. Supplying it changes what the
+    reflector *knows*, never how it runs — the attempt is a fresh execution either way, with the
+    same model, contract, tools, timeout and isolation. It travels through `--input`, the
+    mechanism production already uses to hand a worker exact run artifacts, so the file is
+    copied inside the run root and its SHA-256 is bound into the immutable launch prompt.
     """
     started = time.time()
     holder = tempfile.mkdtemp(prefix="pb-eval-")
@@ -177,6 +193,7 @@ def run_trial(scenario: dict[str, Any], *, model: str, keep: Path | None = None,
     result: dict[str, Any] = {"scenario": scenario["id"],
                               "scenario_identity": scenario["identity"],
                               "model": model, "harness": "opencode-cli",
+                              "author_report_sha256": NO_TREATMENT,
                               "validity": HARNESS_FAILURE, "reason": None}
     try:
         try:
@@ -186,10 +203,18 @@ def run_trial(scenario: dict[str, Any], *, model: str, keep: Path | None = None,
             return result
 
         try:
-            launch = _sh([sys.executable, str(SCRIPTS / "dsd_attempt.py"), "launch",
+            launch_cmd = [sys.executable, str(SCRIPTS / "dsd_attempt.py"), "launch",
                           "--run-root", str(run.resolve()), "--phase-id", PHASE_ID,
-                          "--task-id", TASK_ID, "--role", "spec-reflector", "--auto-flag="],
-                         timeout=timeout)
+                          "--task-id", TASK_ID, "--role", "spec-reflector", "--auto-flag="]
+            if treatment is not None:
+                # Inside the run root, which the launcher excludes from the scope baseline, so
+                # the reflector stays project-read-only exactly as in the untreated arm.
+                supplied = run / "author-report.md"
+                supplied.write_bytes(Path(treatment).read_bytes())
+                result["author_report_sha256"] = hashlib.sha256(
+                    supplied.read_bytes()).hexdigest()
+                launch_cmd += ["--input", str(supplied.resolve())]
+            launch = _sh(launch_cmd, timeout=timeout)
         except subprocess.TimeoutExpired:
             # One slow worker must not abort the suite around it. An unfinished trial is an
             # invalid trial, never a missed contradiction.

@@ -48,6 +48,12 @@ MULTI_ONLY = frozenset({"properties"})
 OPTIONAL = frozenset({"notes", "distractors"})
 KINDS = frozenset({"regression", "capability"})
 
+# The treatment artifact for the P12 control: a synthetic spec-author attempt report standing
+# for the execution narrative that produced the reviewed artifact. It lives *beside* the fixture,
+# never inside it, so it changes no byte the fixture contributes and therefore cannot move a
+# scenario's identity — the placement is load-bearing and is tested.
+AUTHOR_REPORT = "author-report.md"
+
 PROPERTY_FIELDS = frozenset({"id", "statement", "dimension", "reachable_from"})
 PROPERTY_ID = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 MIN_PROPERTIES = 2
@@ -162,6 +168,10 @@ def load(directory: Path) -> dict[str, Any]:
         "fixture": str(fixture),
         "files": [p.relative_to(fixture).as_posix() for p in files],
         "shape": shape,
+        # Evaluation configuration, not scenario definition. Absent unless the scenario carries
+        # a treatment artifact; never part of `identity` below.
+        "author_report": str(directory / AUTHOR_REPORT)
+                         if (directory / AUTHOR_REPORT).is_file() else None,
         # Normalised for every consumer: a single-property scenario is a one-element vector, so
         # nothing downstream needs to know which shape it came from.
         "properties": properties,
@@ -418,6 +428,12 @@ def _assert_property_not_leaked(scenario: dict[str, Any]) -> None:
                  for rel in scenario["files"]]
     haystacks.append(("contract.md",
                       Path(scenario["contract"]).read_text(encoding="utf-8").lower()))
+    if scenario.get("author_report"):
+        # Worker-visible in the treated arm, so it is held to the same standard as the fixture:
+        # it may restate engineering facts the reflector could already read, never the planted
+        # conclusion, which would hand the treated arm the answer the control is measuring.
+        haystacks.append((AUTHOR_REPORT,
+                          Path(scenario["author_report"]).read_text(encoding="utf-8").lower()))
     flattened = [(name, " ".join(re.findall(r"[a-z]{4,}", text))) for name, text in haystacks]
     for prop in scenario["properties"]:
         for needle in _ngrams(prop["statement"]):

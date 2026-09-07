@@ -21,6 +21,7 @@ that turned it into one would manufacture confidence that the evidence does not 
 """
 from __future__ import annotations
 
+import hashlib
 from typing import Any
 
 # The system-under-test fields whose equality decides whether a comparison isolates anything.
@@ -65,6 +66,25 @@ def _provider(model: Any) -> str | None:
     return model.split("/", 1)[0] if isinstance(model, str) and "/" in model else None
 
 
+def _treatment(summary: dict[str, Any]) -> str | None:
+    """One descriptor for what a whole run supplied to its reflectors.
+
+    Derived rather than stored, like `provider`: the durable fact is each scenario's own
+    author-report hash, and a run-level copy would be a second place for it to live. `None`
+    means the record predates the experiment — not that it ran untreated.
+    """
+    values = [s.get("author_report_sha256") for s in summary.get("scenarios", [])]
+    if not values or any(v is None for v in values):
+        return None
+    if all(v == "none" for v in values):
+        return "none"
+    h = hashlib.sha256()
+    for scenario, value in sorted(zip((s["id"] for s in summary["scenarios"]), values)):
+        h.update(scenario.encode("utf-8")); h.update(b"\0")
+        h.update(str(value).encode("utf-8")); h.update(b"\0")
+    return "author-report:" + h.hexdigest()[:16]
+
+
 def _by_identity(summary: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {s["identity"]: s for s in summary.get("scenarios", [])}
 
@@ -84,10 +104,23 @@ def compare(a: dict[str, Any], b: dict[str, Any], *,
     unverified = [row["field"] for row in diff if row["unverified"]]
     sys_a, sys_b = a.get("system") or {}, b.get("system") or {}
     provider_a, provider_b = _provider(sys_a.get("model")), _provider(sys_b.get("model"))
+    treatment_a, treatment_b = _treatment(a), _treatment(b)
+    if treatment_a is not None or treatment_b is not None:
+        known = treatment_a is not None and treatment_b is not None
+        diff.append({"field": "treatment", "a": treatment_a, "b": treatment_b,
+                     "same": known and treatment_a == treatment_b, "known": known,
+                     # A run that recorded no treatment and one that recorded `"none"` are not
+                     # the same fact, so this is a difference rather than an unverified match.
+                     "unverified": False})
+        if not (known and treatment_a == treatment_b):
+            differing.append("treatment")
     populations_match = set(left) == set(right)
     # "Controlled" is a narrow claim: exactly one field moved and both runs saw the same
     # scenarios. Anything else is still evidence, but it is not a single-variable comparison.
-    controlled = populations_match and differing == ["model"]
+    # Controlled means exactly one comparison-relevant field moved — whichever field that is.
+    # Hardcoding the model would have made a treatment-only comparison look uncontrolled, which
+    # is precisely the experiment this substrate now has to support.
+    controlled = populations_match and len(differing) == 1
 
     scenarios = []
     for ident in shared:
@@ -144,8 +177,9 @@ def render(comparison: dict[str, Any]) -> str:
                    "   (derived from the model identifier)")
     out.append("")
     if comparison["controlled"]:
-        out.append("  only the model differs and both runs saw the same scenarios:")
-        out.append("  readable as a model comparison under this configuration.")
+        varied = comparison["differing_fields"][0]
+        out.append(f"  only `{varied}` differs and both runs saw the same scenarios:")
+        out.append(f"  readable as a controlled {varied} comparison under this configuration.")
         if not comparison["provider"]["same"]:
             out.append("  the provider changed with it, so model capability and provider "
                        "behaviour are not separable here.")
@@ -153,12 +187,12 @@ def render(comparison: dict[str, Any]) -> str:
         reasons = []
         if not comparison["populations_match"]:
             reasons.append("the runs did not evaluate the same scenario set")
-        others = [f for f in comparison["differing_fields"] if f != "model"]
-        if others:
-            reasons.append("more than the model differs: " + ", ".join(others))
+        if len(comparison["differing_fields"]) > 1:
+            reasons.append("more than one field differs: "
+                           + ", ".join(comparison["differing_fields"]))
         if not comparison["differing_fields"]:
             reasons.append("nothing material differs, so this compares a run with itself")
-        out.append("  NOT a controlled model comparison — " + "; ".join(reasons) + ".")
+        out.append("  NOT a controlled comparison — " + "; ".join(reasons) + ".")
         if comparison["only_in_a"] or comparison["only_in_b"]:
             out.append(f"    only in {la}: {', '.join(comparison['only_in_a']) or '-'}")
             out.append(f"    only in {lb}: {', '.join(comparison['only_in_b']) or '-'}")
