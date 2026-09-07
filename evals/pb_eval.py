@@ -34,8 +34,15 @@ from _summary import SummaryError, load, render, summarize  # noqa: E402
 from _trial import provider_available, run_trial  # noqa: E402
 
 DEFAULT_MODEL = "opencode-go/deepseek-v4-flash"
-# A different model grades, so the system under test does not judge itself.
-DEFAULT_GRADER = "opencode-go/deepseek-v4-flash"
+# Inherited DSD's default worker model, so `run` with no flags measures the shipped
+# configuration. It is deliberately NOT a claim that the model exists in any given
+# environment: `--model` is how a run states what it actually tested.
+#
+# The default grader is the same model, which means the system under test judges itself
+# unless `--grader-model` names a different one. That is procedural independence only —
+# separate invocation, blind to version and prior scores — and a run must record which
+# kind of independence it actually had.
+DEFAULT_GRADER = DEFAULT_MODEL
 
 
 def _system(model: str, grader_model: str) -> dict:

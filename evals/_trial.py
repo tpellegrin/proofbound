@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import shutil
 import subprocess
 import sys
@@ -59,7 +58,7 @@ def _sh(cmd: list[str], **kw: Any) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, text=True, capture_output=True, check=False, **kw)
 
 
-def _build_project(scenario: dict[str, Any], root: Path) -> tuple[Path, Path]:
+def _build_project(scenario: dict[str, Any], root: Path, *, model: str) -> tuple[Path, Path]:
     """A pristine project and run tree for exactly one trial.
 
     Copied fresh every time: a previous trial's accepted artifacts would change what the next
@@ -93,8 +92,11 @@ def _build_project(scenario: dict[str, Any], root: Path) -> tuple[Path, Path]:
         "execution_status": "active",
         "next_action": "launch spec-reflector",
         "worker_rules": json.loads(prep.stdout),
-        "worker_runtime": {"harness": "opencode-cli", "model": os.environ.get(
-            "PROOFBOUND_EVAL_MODEL", "opencode-go/deepseek-v4-flash"),
+        # The model under test is written where production keeps it, so the launcher
+        # resolves it through `state.worker_runtime.model` exactly as it does in a real run.
+        # It is a parameter and never an ambient default: a trial that silently ran a
+        # different model than the summary records would be a falsified measurement.
+        "worker_runtime": {"harness": "opencode-cli", "model": model,
             "opencode": {"run_db": str((root / "worker.db").resolve())}},
         "phases": {PHASE_ID: {"status": "in-progress", "tasks": {TASK_ID: {
             "status": "prepared",
@@ -146,17 +148,15 @@ def run_trial(scenario: dict[str, Any], *, model: str, keep: Path | None = None,
                               "validity": HARNESS_FAILURE, "reason": None}
     try:
         try:
-            project, run = _build_project(scenario, root)
+            project, run = _build_project(scenario, root, model=model)
         except TrialError as exc:
             result["reason"] = str(exc)
             return result
 
-        env = dict(os.environ)
-        env["PROOFBOUND_EVAL_MODEL"] = model
         launch = _sh([sys.executable, str(SCRIPTS / "dsd_attempt.py"), "launch",
                       "--run-root", str(run.resolve()), "--phase-id", PHASE_ID,
                       "--task-id", TASK_ID, "--role", "spec-reflector", "--auto-flag="],
-                     env=env, timeout=timeout)
+                     timeout=timeout)
         if launch.returncode != 0:
             # A launch failure is the harness or the provider, never the reflector's judgement.
             blob = (launch.stdout + launch.stderr).lower()

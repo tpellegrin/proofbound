@@ -33,7 +33,7 @@ SCENARIOS = ROOT / "evals" / "scenarios"
 # A fake worker that plays the reflector. Its report is chosen per test, so the harness can
 # be driven through detection, non-detection and failure without a provider.
 FAKE_WORKER = r'''#!/usr/bin/env python3
-import os, pathlib, re, sys
+import json, os, pathlib, re, sys
 a = sys.argv[1:]
 if a[:2] == ['session', 'list']:
     print('[]'); raise SystemExit(0)
@@ -43,6 +43,7 @@ mode = os.environ.get('EVAL_FAKE_MODE', 'report')
 if mode == 'crash':
     sys.stderr.write('opencode: provider unavailable\n'); raise SystemExit(3)
 prompt = a[-1]
+pathlib.Path(os.environ['EVAL_PROMPT_COPY']).with_name('argv.json').write_text(json.dumps(a))
 m = re.search(r'^Report: (.+)$', prompt, re.M)
 if not m:
     raise SystemExit(2)
@@ -202,6 +203,25 @@ class TrialTest(unittest.TestCase):
             # Neither trial's temporary tree survives, so nothing can carry over.
             self.assertFalse(Path(first["event_dir"]).exists())
             self.assertFalse(Path(second["event_dir"]).exists())
+
+    def test_the_requested_model_is_the_model_the_worker_actually_runs(self):
+        """A summary naming one model while the pipeline ran another is a false record.
+
+        This is a regression guard: the first live smoke trial ran the inherited default
+        instead of the requested model, because the model reached the run state through an
+        environment variable that was set after the state was written.
+        """
+        with contextlib.ExitStack() as stack:
+            prompt_copy = stack.enter_context(fake_worker(stack))
+            got = _trial.run_trial(self.scenario(), model="probe/model-under-test")
+            self.assertEqual(got["validity"], _trial.VALID, got.get("reason"))
+            argv = json.loads((prompt_copy.parent / "argv.json").read_text())
+            self.assertIn("--model", argv)
+            self.assertEqual(argv[argv.index("--model") + 1], "probe/model-under-test")
+            # And the same model is what the trial reports for the record.
+            self.assertEqual(got["model"], "probe/model-under-test")
+            self.assertEqual(
+                got["state"]["worker_runtime"]["model"], "probe/model-under-test")
 
     def test_a_missing_executable_refuses_before_any_trial(self):
         ok, detail = _trial.provider_available("definitely-not-a-real-binary-xyz")
