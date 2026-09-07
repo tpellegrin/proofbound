@@ -84,8 +84,15 @@ def mechanical(trial: dict[str, Any]) -> dict[str, Any]:
     return {"ok": not findings, "findings": findings}
 
 
+# Generous, because a grader timeout is recorded as `grading-unavailable` and an evaluation
+# should not lose measurements to impatience. Calibration lost two negative controls to the
+# previous 300s ceiling, and a multi-property trial makes several of these calls.
+GRADER_TIMEOUT_SECONDS = 900
+
+
 def grade_property(report: str, statement: str, *, grader_model: str,
-                   executable: str = "opencode", timeout: int = 300) -> dict[str, Any]:
+                   executable: str = "opencode",
+                   timeout: int = GRADER_TIMEOUT_SECONDS) -> dict[str, Any]:
     """Grade one planted obligation against one report. The atomic semantic judgement.
 
     The grader receives only this property and the report — not the Proofbound version, not a
@@ -130,7 +137,8 @@ def trial_verdict(results: list[str]) -> str:
 
 
 def semantic(trial: dict[str, Any], scenario: dict[str, Any], *, grader_model: str,
-             executable: str = "opencode", timeout: int = 300) -> dict[str, Any]:
+             executable: str = "opencode",
+             timeout: int = GRADER_TIMEOUT_SECONDS) -> dict[str, Any]:
     """Grade every planted obligation independently, then derive the trial's outcome.
 
     **One grader invocation per property, never one call returning a vector.** Batching would
