@@ -6,10 +6,12 @@
 
     validate   check behavioural equivalence and blindness without any model call
     run        execute the calibration matrix and write a summary
+    reflect    re-reflect on retained implementations under two context arms
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
@@ -159,6 +161,102 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def _retained_trials(evidence: Path, case: dict) -> list[dict]:
+    """Every retained implementation whose change can still be reconstructed.
+
+    Pairing on the same implementation is what makes the routing question answerable: the
+    architecture, the model's actual code and the resulting change are held exactly constant, so
+    the only thing that differs between the two arms is what the reflector was asked.
+    """
+    by_id = {s["id"]: s for s in case["states"]}
+    out = []
+    for tree in sorted(Path(evidence).iterdir()):
+        if not tree.is_dir():
+            continue
+        sid = tree.name.rsplit("-", 1)[0]
+        if sid not in by_id:
+            continue
+        project = tree / "project"
+        diff = subprocess.run(["git", "-C", str(project), "diff", "HEAD"],
+                              capture_output=True, text=True, check=False).stdout
+        if not diff.strip():
+            continue  # no reconstructable change: the trial never implemented anything
+        out.append({"instance": tree.name, "state": sid, "diff": diff,
+                    "identity": by_id[sid]["identity"]})
+    return out
+
+
+def cmd_reflect(args: argparse.Namespace) -> int:
+    """Paired untreated/question-routed reflection over retained implementations."""
+    case = _craft.load(args.case)
+    ok, detail = provider_available()
+    if not ok:
+        print(f"ERROR: cannot reflect: {detail}", file=sys.stderr)
+        return 2
+    treatment = Path(args.treatment).read_text(encoding="utf-8")
+    intent = Path(case["intent"]).read_text(encoding="utf-8")
+    contract = Path(case["contract"]).read_text(encoding="utf-8")
+    by_id = {s["id"]: s for s in case["states"]}
+    trials = _retained_trials(args.evidence, case)
+    print(f"{len(trials)} retained implementations; two arms each\n")
+
+    results = []
+    for n, trial in enumerate(trials, 1):
+        state = by_id[trial["state"]]
+        before = "\n".join(
+            f"--- {p.relative_to(state['fixture'])}\n"
+            f"{p.read_text(encoding='utf-8', errors='ignore')}"
+            for p in sorted(_craft._fixture_files(Path(state["fixture"]))))
+        # Counterbalanced: the arm that runs first alternates, and neither inherits anything
+        # from the other — every reflection is a separate fresh invocation.
+        arms = [_craft.UNTREATED, _craft.QUESTION_ROUTED]
+        if n % 2 == 0:
+            arms.reverse()
+        entry = {"instance": trial["instance"], "state": trial["state"],
+                 "state_identity": trial["identity"], "arm_order": list(arms), "arms": {}}
+        for arm in arms:
+            got = _craft.reflect(intent=intent, contract=contract, before=before,
+                                 diff=trial["diff"][:20000], model=args.reflector_model,
+                                 treatment=treatment if arm == _craft.QUESTION_ROUTED else None)
+            record = {"report": got.get("report"), "reason": got.get("reason")}
+            if got.get("report"):
+                claim = _craft.classify_claim(got["report"], case["property"]["scenario"],
+                                              model=args.grader_model)
+                record["claim"] = claim["claim"]
+                record["claim_reason"] = claim.get("reason", "")[:300]
+                record["outcome"] = _craft.outcome(
+                    case["ground_truth"][trial["state"]]["status"], claim["claim"])
+            entry["arms"][arm] = record
+        results.append(entry)
+        print(f"  {n}/{len(trials)} {trial['state']}: "
+              f"U={entry['arms'][_craft.UNTREATED].get('outcome')} "
+              f"Q={entry['arms'][_craft.QUESTION_ROUTED].get('outcome')}", flush=True)
+
+    summary = {
+        "format": "proofbound-craft-routing-v1",
+        "case": case["id"], "property": case["property"],
+        "treatment": {"path": str(args.treatment),
+                      "sha256": hashlib.sha256(
+                          Path(args.treatment).read_bytes()).hexdigest(),
+                      "bytes": len(Path(args.treatment).read_bytes())},
+        "system": {"proofbound_sha": subprocess.run(
+                       ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+                       capture_output=True, text=True, check=False).stdout.strip() or None,
+                   "harness": "opencode-cli", "harness_version": harness_version(),
+                   "reflector_model": args.reflector_model,
+                   "grader_model": args.grader_model,
+                   "python": f"{sys.version_info.major}.{sys.version_info.minor}"},
+        "states": {s["id"]: {"identity": s["identity"],
+                             "status": case["ground_truth"][s["id"]]["status"]}
+                   for s in case["states"]},
+        "pairs": results,
+    }
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(f"\nsummary written: {args.out}")
+    return 0
+
+
 def parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="command", required=True)
@@ -175,6 +273,15 @@ def parser() -> argparse.ArgumentParser:
     r.add_argument("--evidence", type=Path, required=True)
     r.add_argument("--out", type=Path, required=True)
     r.set_defaults(handler=cmd_run)
+
+    f = sub.add_parser("reflect", help="paired U/Q re-reflection over retained implementations")
+    f.add_argument("case", type=Path)
+    f.add_argument("--evidence", type=Path, required=True)
+    f.add_argument("--treatment", type=Path, required=True)
+    f.add_argument("--reflector-model", required=True)
+    f.add_argument("--grader-model", required=True)
+    f.add_argument("--out", type=Path, required=True)
+    f.set_defaults(handler=cmd_reflect)
     return ap
 
 

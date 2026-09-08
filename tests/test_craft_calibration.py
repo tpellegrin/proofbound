@@ -16,6 +16,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -268,6 +269,115 @@ class HistoricalCompatibilityTest(unittest.TestCase):
             self.assertNotIn(forbidden, blob)
         # Raw reflections stay local; the durable record carries counts and configuration.
         self.assertNotIn("composability", blob)
+
+
+class QuestionRoutingTreatmentTest(unittest.TestCase):
+    """The routing control's only variable: what the reflector is asked, never what to answer."""
+
+    maxDiff = None
+
+    def setUp(self):
+        self.case = _craft.load(CASE)
+        self.treatment = (CASE / "question-treatment.md").read_text(encoding="utf-8")
+        self.intent = (CASE / "intent.md").read_text(encoding="utf-8")
+
+    def test_the_treatment_exists_and_is_small(self):
+        self.assertTrue(self.treatment.strip())
+        self.assertLess(len(self.treatment.encode()), 2000,
+                        "a routing treatment is a few questions, not a briefing")
+
+    def test_the_treatment_names_no_status_label_or_property(self):
+        low = self.treatment.lower()
+        for token in _craft.FORBIDDEN_IN_PROMPTS:
+            with self.subTest(token=token):
+                self.assertNotIn(token, low)
+        words = re.findall(r"[a-z]{4,}", self.case["property"]["scenario"].lower())
+        needles = {" ".join(words[i:i + 6]) for i in range(len(words) - 5)}
+        flat = " ".join(re.findall(r"[a-z]{4,}", low))
+        self.assertFalse([n for n in needles if n in flat],
+                         "the treatment restates the declared property")
+
+    def test_the_treatment_names_no_architectural_form(self):
+        """A question that presupposes a pattern is an answer wearing a question mark."""
+        low = self.treatment.lower()
+        for pattern in ("interface", "adapter", "registry", "dispatcher", "port ",
+                        "composition root", "abstraction", "decoupl", "encapsulat",
+                        "app.py", "notifications/", "should live", "belongs in"):
+            with self.subTest(pattern=pattern):
+                self.assertNotIn(pattern, low)
+
+    def test_every_quoted_span_comes_from_the_accepted_intent(self):
+        """Nothing the treatment quotes may originate in the hidden manifest."""
+        quoted = re.findall(r"says ([a-z][^.?]{20,})", self.treatment.lower())
+        self.assertTrue(quoted, "expected the treatment to cite the intent")
+        intent = " ".join(self.intent.lower().split())
+        for span in quoted:
+            words = " ".join(span.split()).split()
+            runs = [" ".join(words[i:i + 5]) for i in range(max(1, len(words) - 4))]
+            with self.subTest(span=" ".join(words)[:40]):
+                self.assertTrue(any(r in intent for r in runs),
+                                "the treatment cites text absent from the accepted intent")
+
+    def test_the_treatment_is_presented_as_questions_not_requirements(self):
+        low = self.treatment.lower()
+        self.assertIn("questions, not requirements", low)
+        for imperative in ("ensure ", "compliance", "grading criteria",
+                           "evaluate compliance", "these properties hold"):
+            self.assertNotIn(imperative, low)
+
+    def test_the_untreated_arm_receives_exactly_the_v1_prompt(self):
+        base = _craft.CRAFT_PROMPT.format(intent="I", contract="C", before="B", diff="D")
+        captured = {}
+
+        def fake(prompt, *, model, **kw):
+            captured["prompt"] = prompt
+            return {"result": "ok", "text": "report"}
+
+        with unittest.mock.patch.object(_craft, "_model_call", fake):
+            _craft.reflect(intent="I", contract="C", before="B", diff="D", model="m")
+        self.assertEqual(captured["prompt"], base)
+
+    def test_the_routed_arm_appends_the_treatment_verbatim_and_nothing_else(self):
+        base = _craft.CRAFT_PROMPT.format(intent="I", contract="C", before="B", diff="D")
+        captured = {}
+
+        def fake(prompt, *, model, **kw):
+            captured["prompt"] = prompt
+            return {"result": "ok", "text": "report"}
+
+        with unittest.mock.patch.object(_craft, "_model_call", fake):
+            _craft.reflect(intent="I", contract="C", before="B", diff="D", model="m",
+                           treatment=self.treatment)
+        self.assertTrue(captured["prompt"].startswith(base.rstrip()))
+        self.assertIn(self.treatment.strip(), captured["prompt"])
+        added = len(captured["prompt"]) - len(base.rstrip())
+        self.assertLess(added, len(self.treatment) + 10, "the arm added more than the treatment")
+
+    def test_the_treatment_is_identical_for_every_state(self):
+        """Architecture stays the state variable; the question does not vary with it."""
+        prompts = {}
+
+        def fake(prompt, *, model, **kw):
+            prompts[kw.get("tag", len(prompts))] = prompt
+            return {"result": "ok", "text": "r"}
+
+        with unittest.mock.patch.object(_craft, "_model_call", fake):
+            for state in self.case["states"]:
+                _craft.reflect(intent="I", contract="C", before=state["id"], diff="D",
+                               model="m", treatment=self.treatment)
+        tails = {p.split("Additional questions", 1)[-1] for p in prompts.values()}
+        self.assertEqual(len(tails), 1, "the routed questions differed between states")
+
+    def test_the_implementer_never_receives_the_treatment(self):
+        """Treatment begins at reflection; the change itself must be identical in both arms."""
+        source = (ROOT / "evals" / "pb_craft.py").read_text(encoding="utf-8")
+        run_body = source.split("def cmd_run", 1)[1].split("def _retained_trials", 1)[0]
+        self.assertNotIn("treatment", run_body)
+
+    def test_the_grader_is_never_told_which_arm_produced_a_report(self):
+        filled = _craft.GRADER_PROMPT.format(scenario="S", report="R")
+        for token in ("untreated", "question-routed", "arm", "treatment", "routing"):
+            self.assertNotIn(token, filled.lower())
 
 
 if __name__ == "__main__":

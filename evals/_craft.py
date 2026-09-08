@@ -294,10 +294,23 @@ def _model_call(prompt: str, *, model: str, executable: str = "opencode",
     return {"result": "ok", "text": cp.stdout}
 
 
+UNTREATED = "untreated"
+QUESTION_ROUTED = "question-routed"
+
+
 def reflect(*, intent: str, contract: str, before: str, diff: str, model: str,
-            **kw: Any) -> dict[str, Any]:
-    """One fresh, state-blind craft reflection."""
+            treatment: str | None = None, **kw: Any) -> dict[str, Any]:
+    """One fresh, state-blind craft reflection.
+
+    `treatment` is the P-routing control's only variable: a frozen block of questions naming the
+    decision the accepted intent says is expected to vary. It is appended verbatim after the
+    unchanged task, and it is identical for every state — architecture stays the state variable.
+    It names what to think about and never what the answer should be, so a reflector remains free
+    to conclude that concentrating that knowledge is appropriate.
+    """
     prompt = CRAFT_PROMPT.format(intent=intent, contract=contract, before=before, diff=diff)
+    if treatment:
+        prompt = prompt.rstrip() + "\n\n" + treatment.strip() + "\n"
     got = _model_call(prompt, model=model, **kw)
     if got["result"] != "ok":
         return {"report": None, "reason": got["reason"], "model": model}
