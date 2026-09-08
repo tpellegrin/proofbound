@@ -51,7 +51,7 @@ point. Byte figures are the authoritative-architecture cost of each route.
 | **D.** Implementing context telemetry | README + [core-model](core-model.md) + [context-economy](context-economy.md) | artifacts, autonomy, history | ~34 KB |
 | **D2.** Authoring scenarios or grading a run | README + [evaluation](evaluation.md) | the contract-binding chain, comparison rules, run history | ~36 KB |
 | **D3.** Calibrating a suite, comparing runs, or designing a control arm | README + [evaluation-comparison](evaluation-comparison.md) | scenario authoring, the contract-binding chain | ~40 KB |
-| **D4.** Measuring what many changes do to a system | README + [system-craft](system-craft.md) | the contract-binding chain, scenario authoring | ~27 KB |
+| **D4.** Measuring what many changes do to a system, or calibrating that measurement | README + [system-craft](system-craft.md) | the contract-binding chain, scenario authoring | ~39 KB |
 | **E.** Fixing a bug in inherited DSD mechanics | README + [execution-and-review](execution-and-review.md) | everything else | ~12 KB |
 | **F.** Asking "why is this rule like this?" | [evidence/implementation-findings](evidence/implementation-findings.md) | — | ~41 KB |
 | **G.** Archaeology on the original design | [evidence/original-rfc](evidence/original-rfc.md) | — | ~83 KB |

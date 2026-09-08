@@ -1294,35 +1294,43 @@ and is **not proof of anchoring**: two arms cannot separate it from added contex
 claim stays operational. Full record in
 [§E21.A](proofbound/evidence/evaluation-runs.md#e21a-the-p12-control--result).
 
-## 7H. Eval V5 — the two-state change-cost experiment  *(designed; not implemented)*
+## 7H. Eval V5 — the three-state craft calibration  *(designed; not implemented)*
 
-Design authority: [`system-craft.md` §49](proofbound/system-craft.md#49-the-smallest-next-milestone).
+Design authority: [`system-craft.md` §50](proofbound/system-craft.md#50-calibrating-the-instrument--and-why-there-is-no-reference-architecture).
+**Amends the earlier two-state form**, which is superseded and must not be implemented: a
+good-versus-degraded experiment can be passed by an instrument that merely prefers whatever its designer
+built as the good state, so it can demonstrate sensitivity and never specificity.
 
-**Why.** `P10` asserts that valid changes can compose into an incoherent system, `P13` names the surface
-that damages — repository discovery context — and §28.2 records that Proofbound does not observe it.
-The evaluation track can now measure it: four milestones built scenarios, isolated trials, per-property
-blind grading, and a comparison that proves only one field differed.
+**Why.** `P10` says valid changes can compose into an incoherent system, `P13` names the surface that
+damages, and §28.2 records that Proofbound does not observe it. The evaluation track can now measure it —
+but only if the instrument is first shown to recognise quality rather than resemblance.
 
-**Question.** Does a fixed agent configuration need materially different context to make the same change
-against two repository states that are behaviourally equivalent but architecturally different?
+**Question.** Replaying one contract against three behaviourally equivalent repository states under one
+frozen configuration, does the craft instrument identify the planted degradation in `D` *and* leave the
+structurally different good state `E` alone?
 
-**Scope.** `CE2`'s structure with a craft lens: two architecturally-differing states satisfying the same
-accepted intent; one fixed contract replayed against each under one fixed configuration; mechanical
-telemetry (`CE1`: files read, bytes read, tool calls, changed paths, context traversed but not changed);
-bounded semantic observations under three lenses — composability, domain alignment, change locality —
-each graded independently and relative to the other state.
+**Scope.**
 
-**One prerequisite dissolves.** `CE2` was ordered behind worktree concurrency (M5) so benchmark mutation
-could never leak into a real branch. The evaluation harness copies each scenario into a temporary tree
-and deletes it, and touches no branch, so the dependency does not bind the evaluation form. It still
-binds any future production replay.
+| Area | Content |
+|---|---|
+| Calibration case | One accepted intent; properties stated as scenarios with a response measure, never as adjectives (§50.5) |
+| States | `R` good; `E` good, structurally different, independently vetted; `D` degraded on exactly one named property. All behaviourally equivalent, all passing the same tests (§50.4) |
+| Replay | One future-change contract, one worker configuration, one harness/version, one grader, one timeout, fixed trial count and arm order — `CE2`'s structure, three states instead of two |
+| Mechanical | `CE1` telemetry derived from evidence already retained: files read, bytes read, tool calls, changed paths, context traversed but not changed |
+| Semantic | One fresh **state-blind** craft reflection per state under three lenses — composability, domain alignment, change locality. No state ever sees another (§50.2) |
+| Grading | An independent grader holds declared status and decides whether the planted degradation was identified in `D`, and whether `E` was reported as degraded — a false positive |
 
-**Non-goals:** a craft role or review purpose — no production routing justifies one under `P2`; CUPID
-scoring; longitudinal trajectories; holdouts; a dependency database or static-analysis layer;
-architecture policy files; automatic refactoring; production integration; any craft finding that blocks.
+**Success** is sensitivity and specificity together. **Failure** — `E` marked down for differing from
+`R`, or `D` passing unnoticed — means the instrument measures resemblance, and more scenarios or trials
+would not fix it. Both outcomes are informative.
 
-**Anti-goal.** Craft has no accepted referent, so it can never gate a change. A milestone that ends with
-a threshold has built the wrong thing.
+**Non-goals:** any reference architecture used as a yardstick (§50.1); agent-generated candidates;
+multiple cases or multiple degraded properties; longitudinal trajectories; comparison of Proofbound
+against a bare model; a craft role or review purpose; CUPID scoring; architecture policy files; a
+dependency database; production routing.
+
+**Anti-goal.** Craft has no accepted referent, so nothing here may block, rank good architectures, or
+produce a score. A milestone that ends with an architecture number has built the wrong instrument.
 
 ## 7B. Threat mitigation status
 

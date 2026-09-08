@@ -229,3 +229,189 @@ CUPID scoring; holdout trajectories; automatic refactoring; production integrati
 experiment shows the observable discriminates. Holdout trajectories become justified when agents are
 tuned against known future tasks — the overfitting rule already learned in calibration. A craft review
 purpose becomes justified when craft reflection moves into production routing, and not before.
+
+## 50. Calibrating the instrument — and why there is no reference architecture
+
+§49 proposed comparing two repository states and asking which the evaluator finds worse. That design has
+a hole, and naming it is the point of this section: **a two-state good-versus-degraded experiment can be
+passed by an instrument that merely prefers whatever its designer built as the good one.** Detecting the
+planted degradation proves the instrument is sensitive. It proves nothing about whether the instrument
+recognises quality or recognises resemblance.
+
+The proposed fix was a vetted reference architecture to calibrate against. That instinct is right about
+the problem — evaluator ground truth is missing — and wrong about the remedy.
+
+### 50.1 Reject the yardstick
+
+A reference architecture used as a yardstick asks *how close is this to the good one*, and three
+independent lines of evidence say that measures the wrong thing.
+
+**Precedent from agent benchmarks.** SWE-bench carries a gold patch, but the gold patch is not what
+grades: hidden `FAIL_TO_PASS` and `PASS_TO_PASS` tests are. The reference exists to prove the problem is
+solvable; *behaviour* is the yardstick. And an OpenAI audit found frontier models reproducing gold
+patches verbatim — a reference that leaks into a model becomes worthless as ground truth, which is a
+structural warning about any design where ground truth is a repository somebody could recognise.
+
+**Proofbound's own P12 result.** Supplying an evaluator with the reasoning that produced an artifact
+*lowered* its completeness, concentrated on the obligation that reasoning argued for. An evaluator shown
+"the good architecture" before judging a candidate is the same hazard with a different artifact.
+
+**Architecture has no unique realisation.** A modular monolith with explicit internal boundaries and an
+event-driven decomposition may both be excellent for the same accepted intent. An instrument that ranks
+by proximity to one of them is measuring style, and `P11` already refuses to let prevailing patterns
+become authority.
+
+### 50.2 What replaces it: a calibration case with declared property status
+
+The thing actually needed is not something to resemble. It is **cases whose architectural property
+status is known**, which is precisely the shape Proofbound already validated for semantic evaluation:
+planted ground truth, blind grading, positive and negative controls.
+
+> A **calibration case** is one accepted engineering intent, a set of **behaviourally equivalent**
+> repository states, and a declared, independently vetted status for each state against a small set of
+> named architectural properties.
+
+No state is privileged, and none is "the reference". Two states are good; one is degraded on exactly one
+declared property. The evaluator is never told which is which, and — decisively — **is never shown
+another state at all**. It judges one state against the accepted intent, exactly as a spec-reflector
+judges one artifact. Reference blindness is not a rule bolted on; there is no reference to be blind to.
+
+Only the grader holds declared status, and its question keeps the shape already validated: *did this
+craft report identify the degradation that was planted?*
+
+### 50.3 Sensitivity and specificity
+
+Two requirements, and the second is the one §49 could not test.
+
+| | Question | Control |
+|---|---|---|
+| **Sensitivity** | Does the instrument detect a real architectural degradation? | `D` — behaviourally identical, degraded on one declared property |
+| **Specificity** | Does it refrain from calling a structurally different but genuinely good architecture degraded? | `E` — behaviourally identical, structurally different, no degradation planted |
+
+`E` is the positive control, and it is what makes "the instrument prefers its designer's architecture"
+a falsifiable hypothesis rather than an unexamined assumption. A craft report that finds degradation in
+`E` is a **false positive**, and the calibration must be able to say so — the same discipline as the
+grader negative controls, where a report raising four genuine distractor findings still had to be
+refused credit for the obligation it never identified.
+
+### 50.4 Behavioural equivalence is what isolates architecture
+
+All states satisfy the same contract and pass the same tests. Without that, a craft evaluator would
+simply rediscover correctness failures and the experiment would measure nothing new.
+
+Two shapes the degraded state must be allowed to take, because both are real and one is
+counter-intuitive:
+
+- **Under-structured.** A single service, shared mutable state, provider logic embedded in domain logic.
+  Fewer files, fewer boundaries, worse craft.
+- **Over-structured.** Interfaces nobody needs, eventing without a reason, fragmented modules, layers of
+  indirection. Mechanically it looks maximally decoupled; the change-context cost is worse.
+
+An instrument that used size or coupling counts would score the first as good and the second as
+excellent. Both must be detectable as degradations, which is exactly why `P13` refuses size metrics and
+why **proportionality**, not minimisation, is the property under test.
+
+### 50.5 Properties are bound to scenarios, not asserted
+
+ATAM's contribution here is a discipline, not a vocabulary: a quality attribute is meaningless until it
+is expressed as a scenario with a **response measure**, and the method's outputs are risks, sensitivity
+points and tradeoff points — never a score. Independent corroboration, from a tradition unrelated to
+CUPID, of the position this document already took.
+
+So a case property is stated as a scenario rather than an adjective. Not *"provider isolation is good"*
+but *"replacing the payment provider does not require changes in the order domain."* That has a response
+measure, it can be probed by an actual change, and it cannot be satisfied by naming an interface
+`PaymentPort`.
+
+**Two layers, kept apart.** CUPID supplies the *general lenses* a craft reflector reasons with —
+composability, domain alignment, change locality. A calibration case supplies *case-specific properties*
+tied to its own scenarios. The lenses are how the evaluator thinks; the case properties are the ground
+truth it is graded against. Neither is a global registry.
+
+### 50.6 Case properties are not engineering invariants
+
+A named case property such as *provider replacement stays local* is **benchmark ground truth**. An
+accepted engineering invariant such as *payments must not depend on presentation* is a projection of an
+accepted decision and may block ([§37.4](long-running-autonomy.md#374-executable-invariants--accepted-decisions-made-operative)).
+
+They must not merge. A case property carries no production authority whatever, and a production
+repository is never continuously compared against some exemplar. Where an organisation genuinely
+maintains a template service, `P11` governs: it is evidence, and it becomes authority only if the
+project accepts a decision that says so.
+
+### 50.7 Vetting, and the reference that can itself be wrong
+
+A state is not good because a strong engineer wrote it, because tests pass, or because it looks clean.
+Architecture is tradeoff-sensitive, and an exemplar can be wrong for its own accepted intent.
+
+The minimum credible vetting: intent and constraints stated; each property expressed as a scenario with
+a response measure; the good states independently challenged against those scenarios by someone who did
+not build them; the degraded state's planted property named and its behavioural equivalence
+demonstrated; human acceptance as the stopping authority. Proofbound-shaped, but it terminates at a
+person rather than recursing.
+
+### 50.8 Tradeoffs mean there may be no ranking
+
+`R` and `E` may differ in tradeoff profile — one better on change locality, the other on operational
+simplicity — with neither dominating. The instrument must be able to report **different defensible
+tradeoff** rather than being forced to order them. Demanding a total ordering over good architectures
+would manufacture a ranking the evidence does not contain, which is the same error as a composite score
+wearing different clothes.
+
+### 50.9 Triangulation is the long-term answer to "bullet-proof"
+
+No evaluator can prove architectural optimality; tradeoffs make that incoherent. The realistic standard
+is different and achievable:
+
+> Architectural degradation becomes **hard to hide**, because correctness, declared invariants,
+> mechanical structure, independent semantic reflection, calibrated controls, future-change behaviour,
+> context economy and longitudinal evidence each provide an independent way for the process to falsify
+> its own assumptions.
+
+One property, corroborated across channels — mechanical traversal, semantic observation, and the cost of
+an actual future change — is far stronger than any single verdict. V1 exercises two of those channels
+against declared truth; the rest is the ladder, not the first rung.
+
+### 50.10 The amended minimal experiment
+
+§49's structure is kept — one accepted intent, one contract replayed, one frozen configuration, CE1
+telemetry, three lenses, no score — with one change: **three states, not two.**
+
+| State | Declared status |
+|---|---|
+| `R` | Good. Vetted against the case's property scenarios |
+| `E` | Good. Structurally different from `R`, independently vetted against the same scenarios |
+| `D` | Behaviourally identical, degraded on exactly **one** named property |
+
+Freeze one future-change contract, one worker configuration, one harness and version, one grader, one
+timeout, one trial count and one arm order. Replay the identical contract against each state. Record
+mechanical traversal from evidence already retained, and one fresh, state-blind craft reflection per
+state under the three lenses. An independent grader holding declared status decides whether the planted
+degradation was identified in `D` and whether `E` was left alone.
+
+**Success** is sensitivity and specificity together: the degradation in `D` identified, and `E` not
+reported as degraded merely for differing from `R`. **Failure** — `E` marked down for being different,
+or `D` passing unnoticed — means the instrument recognises resemblance rather than quality, and no
+amount of extra scenarios or trials would fix that. Either result is worth having, and neither produces
+a score, a ranking, a blocking finding or production routing.
+
+Deliberately excluded from V1: agent-generated candidates, which would add generation variance before
+the instrument is validated; multiple cases; multiple degraded properties; longitudinal trajectories;
+and any comparison of Proofbound against a bare model, which these cases would eventually make possible
+and which is worth nothing until the instrument is known to work.
+
+### 50.11 The ladder, and the bar for production
+
+Each rung validates a claim the next one depends on: three-state calibration → several independent
+properties per case → future-change probes as the primary evidence → agent-generated candidates →
+ordered trajectories → comparison of whole engineering configurations, including Proofbound against a
+bare model. Fairness constraints on future probes apply from the moment they carry weight: a probe must
+be a plausible extension of the domain, never an evaluator-only fact, and diverse enough that no single
+speculative abstraction wins — otherwise the benchmark rewards **speculative generality**, which is the
+opposite of proportionality.
+
+**Craft reflection reaches production routing only when** it detects controlled degradation, accepts
+equivalent-good alternatives, demonstrably does not reduce to size or coupling heuristics, has a
+calibrated grader, holds across more than one domain, repeats under a frozen configuration, and has its
+limitations written down. Until then it is an evaluation experiment, exactly as every measurement in
+this project has been before the architecture was allowed to depend on it.
