@@ -186,6 +186,29 @@ def _retained_trials(evidence: Path, case: dict) -> list[dict]:
     return out
 
 
+def _routing_summary(case: dict, args: argparse.Namespace, results: list[dict]) -> dict:
+    """The durable shape of a routing run: what was asked, of what, under which configuration."""
+    treatment = Path(args.treatment)
+    return {
+        "format": "proofbound-craft-routing-v1",
+        "case": case["id"], "property": case["property"],
+        "treatment": {"path": str(args.treatment),
+                      "sha256": hashlib.sha256(treatment.read_bytes()).hexdigest(),
+                      "bytes": len(treatment.read_bytes())},
+        "system": {"proofbound_sha": subprocess.run(
+                       ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+                       capture_output=True, text=True, check=False).stdout.strip() or None,
+                   "harness": "opencode-cli", "harness_version": harness_version(),
+                   "reflector_model": args.reflector_model,
+                   "grader_model": args.grader_model,
+                   "python": f"{sys.version_info.major}.{sys.version_info.minor}"},
+        "states": {s["id"]: {"identity": s["identity"],
+                             "status": case["ground_truth"][s["id"]]["status"]}
+                   for s in case["states"]},
+        "pairs": results,
+    }
+
+
 def cmd_reflect(args: argparse.Namespace) -> int:
     """Paired untreated/question-routed reflection over retained implementations."""
     case = _craft.load(args.case)
@@ -200,7 +223,22 @@ def cmd_reflect(args: argparse.Namespace) -> int:
     trials = _retained_trials(args.evidence, case)
     print(f"{len(trials)} retained implementations; two arms each\n")
 
-    results = []
+    results: list[dict] = []
+
+    def write_summary() -> None:
+        """Persist after every pair.
+
+        A paired matrix is hours of provider calls, and an interruption partway through should
+        cost the remaining pairs, never the ones already paid for. Written to a temporary file
+        and renamed, so a reader never catches a half-serialised record, and rewritten whole
+        each time, so the file is always an honest description of the pairs that finished.
+        """
+        tmp = args.out.with_suffix(args.out.suffix + ".partial")
+        tmp.write_text(json.dumps(_routing_summary(case, args, results),
+                                  indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        tmp.replace(args.out)
+
+    args.out.parent.mkdir(parents=True, exist_ok=True)
     for n, trial in enumerate(trials, 1):
         state = by_id[trial["state"]]
         before = "\n".join(
@@ -228,31 +266,12 @@ def cmd_reflect(args: argparse.Namespace) -> int:
                     case["ground_truth"][trial["state"]]["status"], claim["claim"])
             entry["arms"][arm] = record
         results.append(entry)
+        write_summary()
         print(f"  {n}/{len(trials)} {trial['state']}: "
               f"U={entry['arms'][_craft.UNTREATED].get('outcome')} "
               f"Q={entry['arms'][_craft.QUESTION_ROUTED].get('outcome')}", flush=True)
 
-    summary = {
-        "format": "proofbound-craft-routing-v1",
-        "case": case["id"], "property": case["property"],
-        "treatment": {"path": str(args.treatment),
-                      "sha256": hashlib.sha256(
-                          Path(args.treatment).read_bytes()).hexdigest(),
-                      "bytes": len(Path(args.treatment).read_bytes())},
-        "system": {"proofbound_sha": subprocess.run(
-                       ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
-                       capture_output=True, text=True, check=False).stdout.strip() or None,
-                   "harness": "opencode-cli", "harness_version": harness_version(),
-                   "reflector_model": args.reflector_model,
-                   "grader_model": args.grader_model,
-                   "python": f"{sys.version_info.major}.{sys.version_info.minor}"},
-        "states": {s["id"]: {"identity": s["identity"],
-                             "status": case["ground_truth"][s["id"]]["status"]}
-                   for s in case["states"]},
-        "pairs": results,
-    }
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_summary()
     print(f"\nsummary written: {args.out}")
     return 0
 

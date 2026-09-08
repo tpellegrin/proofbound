@@ -9,6 +9,8 @@ Nothing here invokes a model.
 """
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import re
 import shutil
@@ -24,6 +26,7 @@ sys.path.insert(0, str(ROOT / "evals"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import _craft  # noqa: E402
+import pb_craft  # noqa: E402
 
 CASE = ROOT / "evals" / "craft" / "notification-provider-boundary"
 
@@ -270,6 +273,26 @@ class HistoricalCompatibilityTest(unittest.TestCase):
         # Raw reflections stay local; the durable record carries counts and configuration.
         self.assertNotIn("composability", blob)
 
+    def test_the_routing_record_is_a_separate_format_carrying_no_score(self):
+        path = ROOT / "evals" / "results" / "craft-routing-v1.json"
+        if not path.is_file():
+            self.skipTest("no committed routing record")
+        record = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(record["format"], "proofbound-craft-routing-v1")
+        # The treatment is identified by hash, so a later reader can prove what was asked.
+        self.assertEqual(len(record["treatment"]["sha256"]), 64)
+        blob = json.dumps(record).lower()
+        for forbidden in ("score", "rank", "winner", "reference_state", "gold", "better arm"):
+            self.assertNotIn(forbidden, blob)
+        # Both arms are named on every pair; neither is recorded as the expected one.
+        for pair in record["pairs"]:
+            self.assertEqual(set(pair["arms"]), {_craft.UNTREATED, _craft.QUESTION_ROUTED})
+            self.assertEqual(sorted(pair["arm_order"]),
+                             sorted([_craft.UNTREATED, _craft.QUESTION_ROUTED]))
+            for arm in pair["arms"].values():
+                # Raw reflection text stays local, exactly as it does for the V1 record.
+                self.assertNotIn("report", arm)
+
 
 class QuestionRoutingTreatmentTest(unittest.TestCase):
     """The routing control's only variable: what the reflector is asked, never what to answer."""
@@ -378,6 +401,50 @@ class QuestionRoutingTreatmentTest(unittest.TestCase):
         filled = _craft.GRADER_PROMPT.format(scenario="S", report="R")
         for token in ("untreated", "question-routed", "arm", "treatment", "routing"):
             self.assertNotIn(token, filled.lower())
+
+    def test_an_interrupted_matrix_keeps_the_pairs_it_already_paid_for(self):
+        """Hours of provider calls must not depend on the run reaching its last pair.
+
+        The first official matrix was killed at seven of fourteen pairs and left nothing behind.
+        The repair is a checkpoint after each pair; this pins it, including that the file left on
+        disk is complete JSON describing exactly the pairs that finished — never a partial one.
+        """
+        import argparse
+
+        case = _craft.load(CASE)
+        calls = {"n": 0}
+
+        def fake_reflect(**kw):
+            calls["n"] += 1
+            if calls["n"] > 4:  # two arms of two pairs, then the run dies
+                raise KeyboardInterrupt
+            return {"report": "a report"}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "routing.json"
+            args = argparse.Namespace(
+                case=CASE, evidence=Path(tmp), treatment=CASE / "question-treatment.md",
+                reflector_model="m", grader_model="g", out=out)
+            trials = [{"instance": f"state-a-{i}", "state": "state-a", "diff": "d",
+                       "identity": case["states"][0]["identity"]} for i in range(4)]
+            with unittest.mock.patch.object(pb_craft, "_retained_trials", lambda *a: trials), \
+                 unittest.mock.patch.object(pb_craft, "provider_available", lambda: (True, "")), \
+                 unittest.mock.patch.object(_craft, "reflect", fake_reflect), \
+                 unittest.mock.patch.object(_craft, "classify_claim",
+                                            lambda *a, **k: {"claim": "claims-upheld"}):
+                # Silenced: a progress line here would read like a live run in test output.
+                with contextlib.redirect_stdout(io.StringIO()), \
+                        self.assertRaises(KeyboardInterrupt):
+                    pb_craft.cmd_reflect(args)
+
+            self.assertTrue(out.is_file(), "an interrupted matrix left no record at all")
+            record = json.loads(out.read_text(encoding="utf-8"))
+            self.assertEqual(record["format"], "proofbound-craft-routing-v1")
+            self.assertEqual(len(record["pairs"]), 2, "the finished pairs were not all kept")
+            for pair in record["pairs"]:
+                self.assertEqual(set(pair["arms"]), {_craft.UNTREATED, _craft.QUESTION_ROUTED})
+            self.assertFalse(list(out.parent.glob("*.partial")),
+                             "a temporary write was left behind")
 
 
 if __name__ == "__main__":
