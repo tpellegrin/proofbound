@@ -1479,9 +1479,50 @@ which change the measuring system rather than repeat it; adjudication and debate
 semantic procedures; structured reflector output, which would trade this problem for benchmark leakage
 and is deferred to the discovery design.
 
-**Next.** Finding consolidation is the open problem: grouping semantically equivalent concerns across
-samples is itself a semantic step, and both the discovery-shaped craft observable and any future
-production use depend on it.
+**Next — superseded by [§7L](#7l-semantic-discovery-finding-identity-and-coverage--design-check--design-only-no-live-calls).** This
+milestone named finding consolidation as the blocker. The following design check found that wrong: it
+conflated open-world discovery with closed-world measurement, and only the former needs cross-sample
+semantic identity.
+
+## 7L. Semantic discovery, finding identity and coverage — design check  *(design only; no live calls)*
+
+Design authority: [`evaluation.md` §E20](proofbound/evaluation.md#e20-two-measurement-problems-wrongly-sequenced-as-one).
+
+**Question.** Must Proofbound solve open-world semantic finding identity before it can resume valid
+closed-world System Craft calibration?
+
+**Answer: no, and the previous sequencing was wrong.** A closed-world run declares its pressures before
+execution, grades each sample against them independently, and never places two samples side by side.
+There is no step in that path requiring cross-sample semantic identity. Doing consolidation first would
+also contaminate V3, which exists to introduce a pre-registered criterion while holding measurement
+mechanics fixed — grouping, or a reflector output contract designed to make grouping easier, would change
+the criterion and the instrument in one run.
+
+**Reused, not built.** The incidence a multi-sample run needs is the per-property vector `semantic()` has
+produced since `E19.1`, with one index added: `trial x property` becomes `sample x pressure`. No new
+artifact, no protocol noun, no state. One trap is recorded: `trial_verdict` collapses a property vector
+with a logical AND, which is correct for its original purpose and would silently reintroduce a
+whole-report verdict here.
+
+**The real prerequisite is small.** V3 needs the *discovery* grader — *does this report identify this
+specific problem?* — not the craft *verdict* grader whose 16.9% was measured, and which answers "upheld"
+both when a report says the property holds and when it never mentions it. The discovery grader's contract
+is already canonical; only its dispersion is unmeasured, and characterising it against a frozen anchor
+corpus is a run on existing machinery rather than a redesign.
+
+**Rejected.** Canonical finding identity, which fails the Field Test and would destroy the
+observation-stable / judgement-split structure the reliability run measured; capture–recapture estimation,
+whose independence and homogeneity assumptions are violated here far more severely than in the human
+inspections where it is already contested, and whose documented failure direction is underestimating what
+remains; heterogeneous panels as a way to raise N, since nine judges across seven model families were
+measured as carrying about two votes of independent information.
+
+**Deferred.** Open-world consolidation, justified later as presentation economy rather than measurement;
+finding verification, which for craft would recreate the unstable normative judgement; perspective
+diversity as a deliberate treatment; marginal-discovery yield as a `P13` observable.
+
+**Next.** The closed-world multi-sample substrate, with the discovery grader characterised as its first
+run.
 
 ## 7B. Threat mitigation status
 

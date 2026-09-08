@@ -431,3 +431,122 @@ views answer two different questions, and both are already computable from `atte
 
 Report both. The conditional view alone would let a configuration that barely ran look excellent; the
 end-to-end view alone would conflate a provider outage with a weak reviewer.
+
+## E20. Two measurement problems, wrongly sequenced as one
+
+[§E23](evaluation-comparison.md#e23-what-one-semantic-measurement-should-be) concluded that the craft
+measurement unit should become per-pressure discovery frequency, and named finding consolidation as the
+next blocker. That sequencing was wrong. It treats two problems as one.
+
+**Closed-world measurement.** The semantic column is declared before the run. *"Does the code deciding
+what to notify a user about need to know how a delivery provider is called?"* is fixed in the case
+manifest, and each sample is asked, independently, whether its report surfaced it. The column's identity
+is supplied by pre-registration.
+
+**Open-world discovery.** No column list exists beforehand. N reports raise overlapping, broader,
+narrower, causally related and contradictory concerns, and something must decide what counts as one
+distinct finding before anything can be counted at all.
+
+Only the second needs cross-sample semantic identity. The first never compares one sample with another.
+
+### E20.1 The relation already exists
+
+The incidence a multi-sample evaluation needs — *sample × obligation → detected / not-detected /
+grading-unavailable* — is the per-property vector `semantic()` has produced since
+[§E19.1](#e19-multi-property-scenarios--more-resolution-still-not-a-score), with one index added.
+`trial × property` becomes `sample × pressure`. No new artifact, no new protocol noun, no new state:
+the Field Test asks which invariant becomes impossible without one, and the answer is none.
+
+It preserves what matters by construction. A pressure surfaced by one sample of ten is a cell with
+`k = 1`, recorded with its provenance, not a loser of an election. Recurrence becomes *observable*
+without becoming authority, because nothing downstream consumes it — `P5` and
+[§53](system-craft.md#53-craft-coherence-and-the-loop-between-them) already place disposition with
+the parent.
+
+**One trap, in existing code.** `trial_verdict` collapses a property vector with a logical AND: every
+property detected, or the trial is not-detected. That is correct for its original purpose and would be
+silently wrong here, reintroducing the whole-report verdict this design rejects. **In a multi-sample
+matrix the per-pressure vector is the result**; no collapse across pressures, and none across samples.
+
+### E20.2 Calibration V3 is not blocked
+
+Every step of a closed-world run is available without cross-sample identity: pressures frozen in the
+manifest; one report per sample; one grading per (sample, pressure) cell, the report never shown
+alongside another sample's; counts and shares computed mechanically; missing measurements recorded as
+missing. There is no point in that path at which two samples meet.
+
+Most of it is not even new code. `semantic()` already reads a `properties` list and falls back to a
+single `property`, so a craft case gaining pre-registered pressures is additive fixture work that the
+grading path handles unchanged; the repeated-sampling machinery — preallocated `(item, repeat)` slots, a
+hash over the whole frozen configuration, atomic checkpointing and a resume that refuses to splice
+across configurations — was built for `§E51` and applies without modification.
+
+Doing consolidation first would also **contaminate the experiment**. V3's purpose is to introduce a
+pre-registered architectural criterion while holding measurement mechanics fixed. Adding semantic
+grouping, or changing the reflector's output contract to make grouping easier, would change the criterion
+and the instrument in the same run — the mistake
+[§E22](evaluation-comparison.md#e22-reliability-before-validity) was written to prevent.
+
+### E20.3 What V3 does need first, and it is small
+
+**A different grader, whose repeatability is unmeasured.** The 16.9% figure belongs to the craft *verdict*
+grader, which asks whether a report says the property fails and answers "upheld" both when the report
+says it is fine **and when it never addresses it**. A closed-world run uses the *discovery* grader
+instead — *does this report identify this specific problem?* — which has run since Eval V1, is already
+canonical, and does not conflate silence with endorsement. Its contract needs no design work. Its
+dispersion has simply never been measured, and one grade per sample is defensible only once it has been,
+against a frozen anchor corpus, exactly as `§E51` did for the other grader. That is a run, not a redesign.
+
+### E20.4 Open-world finding identity may be the wrong goal
+
+Six cases decide it. Wording variation and broad-versus-narrow are arguably mergeable. Common cause with
+distinct consequences is not obviously one finding or two. Partial overlap loses information when merged
+and inflates support when split. **Same observation with opposite interpretation** is the decisive one:
+the reliability run found precisely this shape — the observation stable, the judgement split — and any
+merge that produces a single canonical finding destroys the structure that was the most valuable thing
+measured. And a legitimate concern raised by one reviewer of ten must survive any scheme that records
+support at all.
+
+So the question "when are two concerns the same finding?" should be answered by not asking it. Reports
+retain their provenance and are read together; the parent reasons across them, which is the authority
+boundary that already exists. Canonical finding identity would add a semantic stage whose own reliability
+would then need measuring — a regress `P13` cannot fund and `P1` should not license, since deciding that
+two novel concerns mean the same thing is exactly a semantic judgement.
+
+Consolidation may still earn its place later as a **presentation** economy for a human reading ten
+reports. That is a different justification from measurement, and it must not be smuggled in as one.
+
+### E20.5 Three independences, kept apart
+
+| | What it means | Status |
+|---|---|---|
+| **Provenance independence** | No prior report, session or semantic result contaminates a sample | Enforced today (`P12`) |
+| **Statistical independence** | Errors are independent draws | **Not known, never claimed** |
+| **Perspective diversity** | Evaluators bring materially different search strategies | Not part of the protocol |
+
+External evidence makes the middle row load-bearing rather than pedantic: a panel of nine frontier judges
+across seven model families was measured as carrying roughly two votes' worth of independent information,
+with neither more judges nor better aggregation closing the gap. Proofbound's repeats share one model,
+one prompt and one provider, so their effective independence can only be worse. **Nominal N is not
+evidence strength**, and a heterogeneous panel is a different measuring system rather than a cheaper way
+to raise N.
+
+### E20.6 Coverage, and what it may not claim
+
+Software-inspection research offers one useful reframing and one clear warning. The reframing: under
+perspective-based reading, reviewers who find *different* defects are complementary rather than
+disagreeing, so low overlap in a discovery task is not automatically instrument noise. It does not rescue
+the reliability result, which measured contradictory judgements about an identical observation — that is
+not complementarity.
+
+The warning is capture–recapture, which estimates undiscovered defects from reviewer overlap and depends
+on inspector independence and homogeneous detection probability. Both assumptions are violated here, far
+more severely than in the human inspections where the technique is already contested, and the documented
+failure direction is **underestimation of what remains**. It is rejected for Proofbound as anything but a
+cautionary analogy.
+
+What may be recorded is **marginal discovery**: what an additional sample adds. It is a better `P13`
+observable than N, because it says what the spend bought. What it may never support is a stopping claim —
+correlated evaluators fall silent together, so *"no new pressure surfaced in the last two samples under
+this measuring system"* is an observation about the measuring system, and never a statement that coverage
+is complete.
