@@ -1294,6 +1294,36 @@ and is **not proof of anchoring**: two arms cannot separate it from added contex
 claim stays operational. Full record in
 [§E21.A](proofbound/evidence/evaluation-runs.md#e21a-the-p12-control--result).
 
+## 7H. Eval V5 — the two-state change-cost experiment  *(designed; not implemented)*
+
+Design authority: [`system-craft.md` §49](proofbound/system-craft.md#49-the-smallest-next-milestone).
+
+**Why.** `P10` asserts that valid changes can compose into an incoherent system, `P13` names the surface
+that damages — repository discovery context — and §28.2 records that Proofbound does not observe it.
+The evaluation track can now measure it: four milestones built scenarios, isolated trials, per-property
+blind grading, and a comparison that proves only one field differed.
+
+**Question.** Does a fixed agent configuration need materially different context to make the same change
+against two repository states that are behaviourally equivalent but architecturally different?
+
+**Scope.** `CE2`'s structure with a craft lens: two architecturally-differing states satisfying the same
+accepted intent; one fixed contract replayed against each under one fixed configuration; mechanical
+telemetry (`CE1`: files read, bytes read, tool calls, changed paths, context traversed but not changed);
+bounded semantic observations under three lenses — composability, domain alignment, change locality —
+each graded independently and relative to the other state.
+
+**One prerequisite dissolves.** `CE2` was ordered behind worktree concurrency (M5) so benchmark mutation
+could never leak into a real branch. The evaluation harness copies each scenario into a temporary tree
+and deletes it, and touches no branch, so the dependency does not bind the evaluation form. It still
+binds any future production replay.
+
+**Non-goals:** a craft role or review purpose — no production routing justifies one under `P2`; CUPID
+scoring; longitudinal trajectories; holdouts; a dependency database or static-analysis layer;
+architecture policy files; automatic refactoring; production integration; any craft finding that blocks.
+
+**Anti-goal.** Craft has no accepted referent, so it can never gate a change. A milestone that ends with
+a threshold has built the wrong thing.
+
 ## 7B. Threat mitigation status
 
 RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC

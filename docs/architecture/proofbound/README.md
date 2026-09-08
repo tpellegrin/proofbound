@@ -51,6 +51,7 @@ point. Byte figures are the authoritative-architecture cost of each route.
 | **D.** Implementing context telemetry | README + [core-model](core-model.md) + [context-economy](context-economy.md) | artifacts, autonomy, history | ~34 KB |
 | **D2.** Authoring scenarios or grading a run | README + [evaluation](evaluation.md) | the contract-binding chain, comparison rules, run history | ~36 KB |
 | **D3.** Calibrating a suite, comparing runs, or designing a control arm | README + [evaluation-comparison](evaluation-comparison.md) | scenario authoring, the contract-binding chain | ~40 KB |
+| **D4.** Measuring what many changes do to a system | README + [system-craft](system-craft.md) | the contract-binding chain, scenario authoring | ~27 KB |
 | **E.** Fixing a bug in inherited DSD mechanics | README + [execution-and-review](execution-and-review.md) | everything else | ~12 KB |
 | **F.** Asking "why is this rule like this?" | [evidence/implementation-findings](evidence/implementation-findings.md) | — | ~41 KB |
 | **G.** Archaeology on the original design | [evidence/original-rfc](evidence/original-rfc.md) | — | ~83 KB |
@@ -73,6 +74,7 @@ split.
 | [long-running-autonomy.md](long-running-autonomy.md) | **Normative + rationale** | Promotion ladder; escalation; decision provenance direction; baseline supersession; erosion vs drift; coherence audit; **canonical `T1`–`T10`** |
 | [evaluation.md](evaluation.md) | **Design track** | How one run is measured: scenarios, trials, mechanical vs semantic grading, multi-property completeness. Observes Proofbound; never part of its authority chain. |
 | [evaluation-comparison.md](evaluation-comparison.md) | **Design track** | Whether a suite can tell two systems apart, and what comparing two runs may claim. Model comparison is never a leaderboard. |
+| [system-craft.md](system-craft.md) | **Design track** | Whether a system stays understandable and changeable across many valid changes. Craft findings never gate a change. |
 | [context-economy.md](context-economy.md) | **Research** | External evidence and hypotheses. Not production behavior. Supports `P13`, which is defined in core-model. |
 | [evidence/implementation-findings.md](evidence/implementation-findings.md) | **Historical evidence** | What M0–M2A proved and where it corrected the design. Why we trust the rules. |
 | [evidence/evaluation-runs.md](evidence/evaluation-runs.md) | **Historical evidence** | What individual evaluation runs established: the V1 implementation outcome, baseline zero, calibration outcomes. Never protocol. |
