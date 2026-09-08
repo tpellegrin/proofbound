@@ -149,6 +149,26 @@ def _state_identity(fixture: Path, contract: Path, intent: Path, behaviour: Path
     return h.hexdigest()
 
 
+def _attempt_dir(trial: dict[str, Any]) -> Path | None:
+    """Where this trial's evidence actually lives now.
+
+    `event_dir` names the temporary tree the trial ran in, which is deleted when the trial ends.
+    When evidence was retained it was copied elsewhere, and that copy is the only place the
+    worker log and scope diff still exist — reading the original path silently yields nothing,
+    which is exactly how the first run reported no files read and no files changed for trials
+    that had demonstrably changed files.
+    """
+    retained = trial.get("evidence")
+    if retained:
+        attempts = sorted(Path(retained).rglob("attempts/*/worker.log"))
+        if attempts:
+            return attempts[0].parent
+    event_dir = trial.get("event_dir")
+    if event_dir and Path(event_dir).is_dir():
+        return Path(event_dir)
+    return None
+
+
 def ce1_facts(trial: dict[str, Any]) -> dict[str, Any]:
     """Discovery-context facts derived from evidence the run already produced.
 
@@ -158,10 +178,9 @@ def ce1_facts(trial: dict[str, Any]) -> dict[str, Any]:
     fixed configuration**, never an absolute measure of architectural complexity. A cautious
     worker reads more; that is why only the contrast between states means anything.
     """
-    event_dir = trial.get("event_dir")
-    if not event_dir:
+    event = _attempt_dir(trial)
+    if event is None:
         return {}
-    event = Path(event_dir)
     log = event / "worker.log"
     read: set[str] = set()
     tool_calls = 0
@@ -173,8 +192,13 @@ def ce1_facts(trial: dict[str, Any]) -> dict[str, Any]:
             match = re.search(r"(?:Read|Edit|Write)\s+(\S+)", line)
             if match:
                 path = match.group(1)
-                if not path.startswith("DeepSeekAndDestroy") and "/" in path or path.endswith(".py"):
-                    read.add(path.lstrip("./"))
+                # Repository material only. A worker may open its own scratch files elsewhere
+                # on the machine; those are not part of the system being measured.
+                if path.startswith("/") or path.startswith("DeepSeekAndDestroy"):
+                    continue
+                if "." not in Path(path).name:
+                    continue  # a bare word in log prose is not a path
+                read.add(path.lstrip("./"))
     changed: set[str] = set()
     diff_path = event / "scope-diff.json"
     if diff_path.is_file():
@@ -183,8 +207,13 @@ def ce1_facts(trial: dict[str, Any]) -> dict[str, Any]:
         except (OSError, json.JSONDecodeError):
             diff = {}
         for key in ("added", "changed", "modified", "removed"):
-            changed.update(diff.get(key) or [])
-    read = {p for p in read if not p.startswith("DeepSeekAndDestroy")}
+            for entry in diff.get(key) or []:
+                # The scope diff carries some lists as plain paths and others as objects
+                # describing before/after; both name the same thing.
+                path = entry.get("path") if isinstance(entry, dict) else entry
+                if isinstance(path, str):
+                    changed.add(path)
+    read = {p for p in read if not p.startswith(("DeepSeekAndDestroy", "var/folders", "tmp/"))}
     return {"files_read": sorted(read), "files_changed": sorted(changed),
             "read_not_changed": sorted(read - changed), "tool_calls": tool_calls,
             "prompt_bytes": trial.get("prompt_bytes"),

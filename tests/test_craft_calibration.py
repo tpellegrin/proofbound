@@ -209,6 +209,29 @@ class Ce1Test(unittest.TestCase):
     def test_missing_evidence_yields_no_facts_rather_than_zeroes(self):
         self.assertEqual(_craft.ce1_facts({}), {})
 
+    def test_facts_come_from_the_retained_copy_not_the_deleted_run_tree(self):
+        """A trial's own run tree is gone by the time anything reads it.
+
+        Regression: the first calibration run reported no files read and no files changed for
+        trials that had demonstrably changed files, because it looked in the temporary tree the
+        trial had already deleted.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            retained = Path(td) / "kept"
+            attempt = retained / "project" / "DeepSeekAndDestroy" / "attempts" / "implementer-1"
+            attempt.mkdir(parents=True)
+            (attempt / "worker.log").write_text("→ Read app.py\n← Write delivery/beacon.py\n",
+                                                encoding="utf-8")
+            # The real diff mixes shapes: `changed` carries objects, `modified` plain paths.
+            (attempt / "scope-diff.json").write_text(json.dumps(
+                {"added": [{"path": "delivery/beacon.py", "after": {"size": 1}}],
+                 "changed": [], "modified": [], "removed": []}), encoding="utf-8")
+            facts = _craft.ce1_facts({"evidence": str(retained),
+                                      "event_dir": "/nonexistent/deleted/tree"})
+        self.assertEqual(facts["files_changed"], ["delivery/beacon.py"])
+        self.assertIn("app.py", facts["files_read"])
+        self.assertEqual(facts["read_not_changed"], ["app.py"])
+
 
 class HistoricalCompatibilityTest(unittest.TestCase):
     maxDiff = None
