@@ -174,7 +174,7 @@ def _supplied_bytes(run: Path, event_dir: Path) -> int | None:
 
 
 def run_trial(scenario: dict[str, Any], *, model: str, treatment: Path | str | None = None,
-              keep: Path | None = None,
+              keep: Path | None = None, role: str = "spec-reflector",
               timeout: int = TRIAL_TIMEOUT_SECONDS) -> dict[str, Any]:
     """Execute one trial and return its raw evidence, ungraded.
 
@@ -192,7 +192,7 @@ def run_trial(scenario: dict[str, Any], *, model: str, treatment: Path | str | N
     root = Path(holder)
     result: dict[str, Any] = {"scenario": scenario["id"],
                               "scenario_identity": scenario["identity"],
-                              "model": model, "harness": "opencode-cli",
+                              "model": model, "harness": "opencode-cli", "role": role,
                               "author_report_sha256": NO_TREATMENT,
                               "validity": HARNESS_FAILURE, "reason": None}
     try:
@@ -205,7 +205,7 @@ def run_trial(scenario: dict[str, Any], *, model: str, treatment: Path | str | N
         try:
             launch_cmd = [sys.executable, str(SCRIPTS / "dsd_attempt.py"), "launch",
                           "--run-root", str(run.resolve()), "--phase-id", PHASE_ID,
-                          "--task-id", TASK_ID, "--role", "spec-reflector", "--auto-flag="]
+                          "--task-id", TASK_ID, "--role", role, "--auto-flag="]
             if treatment is not None:
                 # Inside the run root, which the launcher excludes from the scope baseline, so
                 # the reflector stays project-read-only exactly as in the untreated arm.

@@ -1,0 +1,27 @@
+{
+  "format": "proofbound-craft-case-v1",
+  "id": "notification-provider-boundary",
+  "summary": "Three behaviourally identical notification services whose delivery-provider boundary differs.",
+  "property": {
+    "id": "provider-change-stays-in-delivery",
+    "scenario": "Adding a second delivery provider, selected per notification, requires changes only inside the delivery boundary and the explicit contract the notification domain depends on. The code that decides what to notify a user about does not change, and does not acquire knowledge of any provider's endpoint, authentication scheme, payload field names or error codes.",
+    "response_measure": "Which modules must change, and whether provider-specific detail appears outside the delivery boundary, when a second provider is added."
+  },
+  "states": [
+    {
+      "id": "state-a",
+      "status": "preserved",
+      "rationale": "Provider detail is confined to one adapter behind an explicit Sender contract. Adding a provider means adding an adapter; the notification domain and the application entry point are untouched."
+    },
+    {
+      "id": "state-b",
+      "status": "preserved",
+      "rationale": "Structurally different from state-a: no protocol class and no injection, but a registration-and-dispatch boundary. Provider detail is confined to a provider module that registers a capability. Adding a provider means adding and registering a module; the notification domain and the entry point are untouched."
+    },
+    {
+      "id": "state-c",
+      "status": "degraded",
+      "rationale": "There is no delivery boundary. The endpoint, credential, header format and payload field names sit in the application entry point, and the retry and outcome policy sits in the notification package. Adding a provider requires editing both, and the notification domain acquires provider-specific knowledge."
+    }
+  ]
+}
