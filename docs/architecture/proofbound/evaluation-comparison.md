@@ -439,3 +439,84 @@ experiment because it would change the reflector's prompt and thus the system un
 
 No result rewrites `P12`, and none changes a runtime default. Evaluation supplies evidence; an
 accepted architectural decision is what would change the product.
+
+## E22. Reliability before validity
+
+Every evaluation this repository has run asked whether an instrument was *right*. None had asked
+whether it says the same thing twice. Calibration V2 forced the question by accident: re-measuring
+thirteen implementations with byte-identical inputs, the craft instrument agreed with its earlier
+judgement nine times and **disagreed four**. That is larger than the treatment effect the
+experiment existed to detect, which makes the treatment result — and every comparison of that size
+— unreadable.
+
+The two questions are independent, and conflating them is the standard failure:
+
+| | Question | Failure it hides |
+|---|---|---|
+| **Reliability** | Does repeated measurement of the same input produce the same result? | An instrument whose answer is partly a coin flip, so small differences are noise |
+| **Validity** | Is the instrument measuring the property we intend? | An instrument that is consistently, repeatably wrong |
+
+Neither implies the other, and the asymmetry matters in one direction: **improved repeatability is
+never evidence of validity**, while poor repeatability makes validity claims of small magnitude
+unmeasurable. The external literature reaches the same place from the other side — judges have been
+observed with test–retest reliability above 0.99 while carrying severe position bias, so
+"consistent" and "correct" are separate axes and reporting only the first misleads.
+
+### E22.1 What a repeatability claim may say here
+
+**Test-retest under frozen Proofbound configuration**, not laboratory repeatability. VIM's
+*repeatability condition* requires the same procedure, operators, measuring system, operating
+conditions and location, replicated over a short period. Proofbound can hold every one of those it
+touches — identical prompt bytes, one machine, one harness version, one short window — and cannot
+hold the one it does not own: `opencode run` exposes neither temperature nor seed, and providers
+serve models behind aliases. A run therefore reports repeatability under the configuration it can
+actually freeze, and says so.
+
+A comparison across days, as V1↔V2 was, is weaker again: same laboratory, longer period, conditions
+possibly changed. That is **intermediate precision**, and pooling it with a same-window series
+would overstate both.
+
+### E22.2 Measure the layers, never one number
+
+A semantic evaluation has more than one stochastic stage, and a single end-to-end repeatability
+figure cannot say which one moved. Proofbound separates them:
+
+| Layer | Held fixed | Repeated | Reads |
+|---|---|---|---|
+| **G** | report bytes | the grader | how stable the judge is on text that does not change |
+| **R** | architectural evidence | the reflector | how stable the reasoning is on evidence that does not change |
+| **E** | architectural evidence | reflector, then one grade | what a user of the instrument actually experiences |
+
+Layer R needs a reading of report *meaning*, and the tempting solution — a second model comparing
+reports — would add a third stochastic measurement rather than resolve one. Textual similarity,
+lexical overlap and embeddings are all worse: they measure prose, not architectural claim. The
+resolution is bounded human coding against a rubric declared before the reports are read,
+explicitly analysis-only — it never overrides a grader output, never becomes ground truth, and
+never enters the benchmark.
+
+E is not the sum of G and R. A grader that requires an explicit claim will read a hedged criticism
+as "upheld", so it **compresses** reflector variation: an end-to-end figure can look calmer than
+the reasoning underneath it. That is a reason to report all three, not to prefer the flattering one.
+
+### E22.3 The rule this produces
+
+> **Do not interpret a difference smaller than the instrument's own measured variation under
+> identical conditions.**
+
+Not a significance test and not a power calculation — at these sample sizes both would import
+precision the evidence does not have. It is a floor: before an arm-to-arm difference means
+anything, the same measurement must be repeated on unchanged input often enough to know how much
+it moves on its own. An evaluation that has never done that cannot claim an improvement, because
+it cannot distinguish one from a redraw.
+
+Two disciplines follow, and both are cheap:
+
+- **Missing measurements are missing.** A failed call and an unparseable answer are infrastructure
+  facts. Counting either as a semantic outcome manufactures disagreement, so execution reliability
+  is reported separately from semantic dispersion.
+- **Report the distribution, not the majority.** "Ten of fifteen upheld" is the result; "upheld" is
+  the result with the finding deleted. Whether repeated judging should later be *aggregated* is a
+  design question, and aggregating during measurement would destroy the evidence needed to answer
+  it.
+
+Evidence: [§E51](evidence/evaluation-runs.md#e51-craft-instrument-repeatability--both-layers-move).

@@ -539,3 +539,111 @@ Record: [`evals/results/craft-routing-v1.json`](../../../../evals/results/craft-
 Analysis: [§55](../system-craft.md#55-calibration-v2--the-result),
 [§56](../system-craft.md#56-why-routing-could-not-have-worked-here),
 [§57](../system-craft.md#57-the-instrument-does-not-repeat-itself).
+
+## E51. Craft instrument repeatability — both layers move
+
+The first measurement Proofbound has made of its own measuring system. Not whether the craft
+instrument is right: whether it says the same thing twice.
+
+**Frozen configuration**, pre-registered in
+[`reliability-preregistration.md`](../../../../evals/craft/notification-provider-boundary/reliability-preregistration.md)
+before any repeated call. Proofbound `2f81440`; case `notification-provider-boundary`, fixtures
+byte-identical to V1; reflector `opencode/nemotron-3-ultra-free`; grader `opencode/big-pickle`;
+both **unchanged and unrepaired**; `opencode-cli 1.18.29`; Python 3.14; timeout 900s. Anchors,
+repetition counts, coding rubric, interpretation categories and the mapping from result to next
+milestone were all fixed in advance. `opencode run` exposes no temperature and no seed and the
+provider serves models behind aliases, so this is repeatability under the configuration Proofbound
+can freeze, not the laboratory kind.
+
+### Layer G — the grader on report bytes that do not change
+
+Six frozen reports from V1 and the V2 untreated arm, covering all four outcome classes and
+including both sides of two instances whose judgement reversed. 15 independent grades each.
+
+| Anchor | State | Prior grade | Outcome counts | Modal share |
+|---|---|---|---|---|
+| `g1` | a | recognised-upheld | upheld 10, **false-degradation 5** | 0.67 |
+| `g2` | a | false-degradation | false-degradation 12, upheld 3 | 0.80 |
+| `g3` | b | recognised-upheld | upheld 14 | **1.00** |
+| `g4` | b | false-degradation | **upheld 10**, false-degradation 5 | 0.67 |
+| `g5` | c | missed-degradation | missed 14, recognised 1 | 0.93 |
+| `g6` | c | recognised-degraded | recognised 14, missed 1 | 0.93 |
+
+**One anchor of six is unanimous.** On identical bytes the grader contradicts its own modal answer
+on 17% of calls, and on `g1` and `g4` it does so a third of the time. `g4` is sharper still: its
+modal answer is the *opposite* of the single grade V1 recorded for that report, so V1's verdict
+there was a minority draw. 90 calls, 90 successful, one unparseable answer recorded as missing.
+
+### Layer R — the reflector on architecture that does not change
+
+Six retained V1 implementations, two per state, pairing an instance whose judgement reversed
+between V1 and the V2 rerun with one that did not. 10 fresh reflections each, untreated V1 prompt
+verbatim, no routing. Conclusions coded by hand against the pre-declared rubric, from report text
+alone, with the grader not involved.
+
+| Instance | State | asserts-sound | asserts-breach | ambiguous | Modal share |
+|---|---|---|---|---|---|
+| `state-a-…4346` | a | 4 | 5 | 1 | **0.50** |
+| `state-a-…2112` | a | 7 | 2 | 1 | 0.70 |
+| `state-b-…7264` | b | 6 | 3 | 1 | 0.60 |
+| `state-b-…3405` | b | 4 | 4 | 2 | **0.40** |
+| `state-c-…0624` | c | 5 | 4 | 1 | **0.50** |
+| `state-c-…4286` | c | 7 | 3 | 0 | 0.70 |
+
+**Every instance splits**, and 43% of repeats differ from their own instance's modal conclusion.
+Two are coin flips. Nothing about the system being judged changed between any two of these.
+
+**The observation is stable; the judgement is not.** On the `app.py` instance, all ten reports
+name exactly what moved and where — that `app.py` now holds both providers' endpoints, header
+formats and payload field mappings, which it did not hold before. Five call that placement correct
+("appropriate for the composition root", "correctly lives in `app.py`"); four call it misplaced
+("belongs in a provider adapter layer"); one declines to resolve. The reflector reliably sees the
+fact and unreliably decides whether the fact is a problem — which is
+[§56](../system-craft.md#56-why-routing-could-not-have-worked-here)'s missing criterion, now
+measured rather than inferred.
+
+### Layer E — what a user of the instrument experiences
+
+Each of the 60 reflections graded once. **Zero of six instances unanimous**; modal shares 0.50,
+0.80, 0.80, 0.70, 0.70, 0.80; 28% of repeats differ from their modal outcome. 60 calls, 60
+successful, no parse failures.
+
+### Where the variance lives
+
+| Layer | Repeats differing from modal |
+|---|---|
+| Reflector conclusion (R) | **43%** |
+| Grader on fixed bytes (G) | 17% |
+| End to end (E) | 28% |
+
+Reflector variance is roughly two and a half times the grader's, and both are material. E sits
+*below* R because the grader requires an explicit claim about the property and reads hedged
+criticism as "upheld" — it **compresses** reflector disagreement, so the end-to-end figure is
+calmer than the reasoning beneath it. An unstable reflector can therefore be partly hidden by its
+own measuring device, which is the argument for reporting all three layers rather than the one that
+looks best.
+
+### What this retires
+
+At 28% end-to-end instability with five trials per state, an arm's outcome count carries roughly
+one full count of noise on its own. V2's arms differed by **zero** on sensitivity and **one** on
+specificity; V1 and V2 differed by one and one. None of those differences clears the floor. The
+comparison between V1's 3/5 and 7/9 and V2's 2/5 and 6/7 is not a finding, and neither is anything
+else this instrument has produced at this sample size.
+
+Stability is also not correctness: `state-c-…4286` is a degraded architecture called sound in seven
+of ten repeats, and `g5` is a degraded architecture called sound in fourteen of fifteen gradings.
+Both are among the more repeatable measurements here, and both are wrong.
+
+### Cost
+
+150 model calls: 90 grader repeats plus 60 reflections and 60 grades. Median grade 8–9 seconds,
+median reflection 58 seconds; Layer G took 17 minutes, Layer R just under two hours. Reaching a
+single defensible craft judgement at this stability would cost roughly an order of magnitude more
+than one call, which is a fact the eventual harness design has to carry
+([`P13`](../core-model.md#33-consolidated-principles)).
+
+Records: [`craft-grader-repeat-v1.json`](../../../../evals/results/craft-grader-repeat-v1.json),
+[`craft-reflector-repeat-v1.json`](../../../../evals/results/craft-reflector-repeat-v1.json),
+[`craft-reflector-coding-v1.json`](../../../../evals/results/craft-reflector-coding-v1.json).
+Method: [§E22](../evaluation-comparison.md#e22-reliability-before-validity).

@@ -90,6 +90,12 @@ and it stops "done" from being a claim the author gets to make alone.
 The loop is deliberately boring: **mutation → fresh independent review → acceptance**. What Proofbound
 adds is that the same loop now applies *before* implementation, to the specification itself.
 
+**There are no artifact kinds.** "Proposal", "design" and "specification" are words for what a document
+is *for*, not types the system knows about. An artifact is content, its dependencies, and the declared
+purpose it was reviewed under; a kind field was tried and rejected, because a taxonomy attracts behaviour
+that then depends on it. What is enforced is narrower and more useful: the declared review purpose must
+match a role authorised for that purpose, and nothing more is claimed.
+
 ---
 
 ## The core idea
@@ -217,8 +223,11 @@ Proofbound is under active development. This table reflects the current checkout
 | Provenance status (`verified` / `unavailable` / `contradicted`), orthogonal to validity | **Implemented** |
 | Declared exact change graph and mechanical graph satisfaction | **Implemented** |
 | Freeze: one canonical engineering-contract identity | **Implemented** (M2C-A) |
-| Aggregate consistency reflection over a whole contract candidate | **Planned** (M2C-B) |
-| Binding implementation tasks to an exact frozen contract | **Planned** (M2C-C) |
+| Aggregate consistency reflection over a whole contract candidate | **Implemented** (M2C-B) |
+| Binding implementation tasks to an exact frozen contract | **Implemented** (M2C-C) |
+| Evaluation of the harness itself — scenarios, trials, blind semantic grading | **Implemented** (Eval V1–V3) |
+| Controlled evaluation arms (independence, context treatments) | **Implemented** (Eval V4, V6) |
+| System-craft measurement — does architecture stay changeable? | **Research track**, instrument not yet reliable |
 | Architectural decision provenance and applicability | **Planned** |
 | Cumulative coherence auditing | **Planned** |
 | Per-role provider/model routing | **Planned** |
@@ -231,10 +240,54 @@ deliberately excludes which reviewer role ran, which gate produced it, and which
 equivalent fresh re-review does not invent a new contract, while a changed dependency set does change it
 even when the bytes are identical.
 
-A freeze is a **durable engineering-contract candidate**. It is not yet an authorization to execute:
-aggregate coherence review and task-to-freeze binding are subsequent milestones. Proofbound is building
-toward binding downstream execution to an exact frozen contract; today the identity layer exists and the
-binding layer does not.
+A freeze is a **durable engineering-contract candidate**, and it becomes an authorization to execute
+only after two further steps that now exist: an aggregate consistency challenge over the whole candidate,
+and binding an implementation task to one exact frozen identity. A task bound this way names the contract
+it may satisfy, and the binding is checked mechanically rather than asserted.
+
+---
+
+## Evaluating the harness itself
+
+A harness that claims to improve engineering rigour should be able to show it, so Proofbound evaluates
+itself the same way it asks anything else to be evaluated: with a planted, known answer, a fresh
+evaluator that never saw the work, and a blind grader that is never told the expected result.
+
+That programme has produced results in both directions, and the negative ones are the load-bearing ones:
+
+- Detection of a planted contradiction is reliable enough to measure, and a first suite hit its ceiling
+  immediately — every trial passed, which measured nothing. Making scenarios carry several independent
+  obligations restored the resolution.
+- Withholding the author's reasoning from the reviewer produced *higher* observed completeness than
+  supplying it, which is the independence rule (`P12`) surviving a test that could have refuted it.
+
+### System Craft — the current frontier, and unresolved
+
+**System craft** asks a question ordinary review cannot: after many individually valid changes, does the
+repository stay understandable and changeable, or does the cost of the next change quietly climb? The
+working definition is that *the repository context needed to make a change should stay proportional to the
+conceptual size of that change*.
+
+This is **research, not a feature**. Craft findings are advisory, gate nothing, and produce no score.
+And the honest status is that the instrument is not ready:
+
+- Calibrating it against known-good and deliberately degraded architectures found it neither reliably
+  catching the degradation nor reliably sparing a sound-but-different design.
+- Explicitly asking the evaluator the architectural question it seemed to be missing changed **nothing** —
+  it answered the question correctly and still reached the opposite conclusion, because the criterion it
+  was being graded against was not derivable from anything it had been shown.
+- Measuring the instrument against itself then found the deeper problem: given byte-identical input, the
+  evaluator's conclusion changes on roughly two repeats in five, and the grader reading it changes on one
+  in six. Both move more than the effects the experiments were trying to detect.
+
+The rule that came out of it is now general to all Proofbound evaluation: **do not interpret a difference
+smaller than the instrument's own measured variation under identical conditions.** Reliability comes
+before validity, and consistency is never evidence of correctness — a system can repeat the same wrong
+answer all day.
+
+Details: [system-craft.md](docs/architecture/proofbound/system-craft.md),
+[evaluation.md](docs/architecture/proofbound/evaluation.md),
+[evaluation-comparison.md](docs/architecture/proofbound/evaluation-comparison.md).
 
 ---
 
@@ -281,6 +334,15 @@ python3 scripts/pb_graph.py  validate …   # check a declared graph against acc
 python3 scripts/pb_freeze.py create   …   # derive a contract identity from a satisfied graph
 python3 scripts/pb_freeze.py validate …   # interpret a freeze from the file alone
 python3 scripts/pb_freeze.py compare  …   # does the project still produce this freeze?
+python3 scripts/pb_consistency.py …       # challenge a whole contract candidate, and record acceptance
+python3 scripts/pb_execution.py   …       # bind an implementation task to one exact frozen contract
+```
+
+Evaluation of the harness itself lives beside it and is never part of it:
+
+```bash
+python3 evals/pb_eval.py   …   # run a scenario suite against a model, and grade it blind
+python3 evals/pb_craft.py  …   # system-craft calibration and repeatability experiments
 ```
 
 > The public project is **Proofbound**. Some inherited paths and commands keep the `dsd_` prefix and the
@@ -433,6 +495,9 @@ The architecture is a routed corpus, not one document. Start at the entry point 
 | [artifacts-and-provenance.md](docs/architecture/proofbound/artifacts-and-provenance.md) | Artifact identity, the ledger, derived validity, the change graph |
 | [freeze-and-binding.md](docs/architecture/proofbound/freeze-and-binding.md) | Accepted engineering bindings, freeze schema and identity, validation layers |
 | [long-running-autonomy.md](docs/architecture/proofbound/long-running-autonomy.md) | Drift, decision provenance, coherence auditing, the threat model |
+| [evaluation.md](docs/architecture/proofbound/evaluation.md) | How one run is measured: scenarios, trials, mechanical vs semantic grading |
+| [evaluation-comparison.md](docs/architecture/proofbound/evaluation-comparison.md) | Whether a suite can tell two systems apart; reliability before validity |
+| [system-craft.md](docs/architecture/proofbound/system-craft.md) | Research: whether a system stays changeable across many valid changes |
 | [context-economy.md](docs/architecture/proofbound/context-economy.md) | Research: how much repository context a bounded change costs |
 | [implementation plan](docs/architecture/specification-reflection-harness-implementation-plan.md) | Milestone status, acceptance criteria, deferrals |
 

@@ -1403,6 +1403,42 @@ is legitimate in principle — it is a product constraint that passes the Field 
 architecture. Adopting it now, after seeing these outcomes, would fit the benchmark to its own results.
 It must be pre-registered and its answer-blindness argued before any run that uses it.
 
+## 7J. Eval V7 — measure the measuring system  *(run; both layers material)*
+
+Design authority: [`evaluation-comparison.md` §E22](proofbound/evaluation-comparison.md#e22-reliability-before-validity).
+
+**Question.** When the same craft evidence is measured repeatedly under one frozen configuration, how
+much variation comes from the reflector, how much from the grader, and is the result stable enough to
+support controlled calibration at all?
+
+**Scope.** Three layers, never one number: the grader repeated over frozen report bytes; the reflector
+repeated over frozen implementations; and the two together, which is what a user experiences. Anchors,
+repetition counts, coding rubric and interpretation categories pre-registered before the first call.
+Nothing optimised — no criterion, no routing, no decomposition, no prompt or sampling change, no
+ensembling, no model comparison.
+
+**Result: both layers move, and the reflector moves more.** On identical bytes the grader contradicts
+its own modal answer 17% of the time and only one of six anchors is unanimous. On identical
+architecture the reflector's conclusion differs from its own modal conclusion 43% of the time and
+*every* instance splits, two of them evenly. End to end, 28%, and zero of six instances unanimous.
+Evidence: [§E51](proofbound/evidence/evaluation-runs.md#e51-craft-instrument-repeatability--both-layers-move).
+
+**What it retires.** At this noise floor a five-trial arm carries about one full count of noise, so V2's
+zero-count sensitivity difference and one-count specificity difference, and the V1↔V2 movement, are all
+inside it. No comparison this instrument has produced at this sample size is a finding.
+
+**Where the deficit is, precisely.** All ten repeats on the `app.py` instance name the same fact — which
+provider knowledge moved and where — and split five to four on whether that placement is acceptable. The
+observation is stable and the judgement is not, which is the missing criterion of
+[§56](proofbound/system-craft.md#56-why-routing-could-not-have-worked-here) measured directly.
+
+**Non-goals honoured:** no missing criterion added; no question routing; no property decomposition; no
+reflector or grader change; no temperature or sampling change; no ensembling or majority voting; no
+model comparison; no production routing; no reliability state persisted.
+
+**Next.** Reliability design for the semantic evaluation stack, before any Calibration V3. Fixing
+validity first would tune a criterion against a measurement that redraws itself 28% of the time.
+
 ## 7B. Threat mitigation status
 
 RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC

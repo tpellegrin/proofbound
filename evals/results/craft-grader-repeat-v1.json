@@ -1,0 +1,895 @@
+{
+  "anchor_selection": "One report per outcome class, plus both sides of each instance whose judgement changed between V1 and the byte-identical V2 untreated rerun. Chosen for semantic shape and known prior grade, never for observed instability under repetition \u2014 no repeated grading had been run.",
+  "anchors": [
+    {
+      "bytes": 2062,
+      "id": "g1",
+      "instance": "state-a-1788834064346",
+      "prior_outcome": "recognised-upheld",
+      "sha256": "c5728cebcb46e70dc8074915ea1fc6bb5a7cdacf8407cf58f47bdc1c9cf35223",
+      "source": "v1",
+      "state": "state-a",
+      "why": "Sound architecture, upheld. The most historically stable instance: upheld in V1 and again in the V2 untreated rerun."
+    },
+    {
+      "bytes": 1611,
+      "id": "g2",
+      "instance": "state-a-1788835442112",
+      "prior_outcome": "false-degradation",
+      "sha256": "592690cf6d37dd348017a03e8f229f3b39b610223414d40105df1e48c5974962",
+      "source": "v2-untreated",
+      "state": "state-a",
+      "why": "Sound architecture, called degraded. The V2 side of an instance V1 upheld five-for-five and the untreated rerun marked down."
+    },
+    {
+      "bytes": 1714,
+      "id": "g3",
+      "instance": "state-b-1788836383405",
+      "prior_outcome": "recognised-upheld",
+      "sha256": "50da19dc4742103b77cc0520562cb107198f46b4dac8cfe9d4390386fb0b5b29",
+      "source": "v2-untreated",
+      "state": "state-b",
+      "why": "Alternative-good architecture, upheld. The upheld side of the instance whose judgement reversed between V1 and V2."
+    },
+    {
+      "bytes": 1577,
+      "id": "g4",
+      "instance": "state-b-1788836383405",
+      "prior_outcome": "false-degradation",
+      "sha256": "ae9b283a74acb9d3b76a7d641f723e39fb15903bb6d64850c84f72a2b1636121",
+      "source": "v1",
+      "state": "state-b",
+      "why": "The same instance's other side: V1 called this architecture degraded. g3 and g4 are the two semantic shapes of one reversal."
+    },
+    {
+      "bytes": 1665,
+      "id": "g5",
+      "instance": "state-c-1788834970624",
+      "prior_outcome": "missed-degradation",
+      "sha256": "a9013784462d5eb770d909cb0d26f79d1ac24117984234293518e6aec55835c8",
+      "source": "v2-untreated",
+      "state": "state-c",
+      "why": "Degraded architecture, called upheld \u2014 the `app.py`-is-the-composition-root reading, missed in V1 and in both V2 arms. Stable, and stably wrong."
+    },
+    {
+      "bytes": 1753,
+      "id": "g6",
+      "instance": "state-c-1788835274286",
+      "prior_outcome": "recognised-degraded",
+      "sha256": "d653a11af063a5a2d759638b5e86bffb55ea687992a418e1cd85fc87d47b16b2",
+      "source": "v1",
+      "state": "state-c",
+      "why": "Degraded architecture, correctly recognised \u2014 the V1 side of the instance the V2 untreated rerun missed."
+    }
+  ],
+  "case": "notification-provider-boundary",
+  "format": "proofbound-craft-grader-repeat-v1",
+  "frozen_identity": "c3cfe9cfd9607fd61bae24c1a7c4a0b177728d13484e010afb478918763b873c",
+  "layer": "G",
+  "measurements": [
+    {
+      "claim": "claims-degraded",
+      "item": "g1",
+      "outcome": "false-degradation",
+      "reason": "**DETECTED**\n\nThe report notes that `app.py` \u2014 outside the delivery boundary \u2014 gained a `provider` parameter that couples callers to the delivery mechanism's plurality, and that the default `\"acme\"` string is \"a delivery-infrastructure default that properly belongs to the delivery boundary.\" This is",
+      "repeat": 1,
+      "seconds": 31.774,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g1",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report notes `app.py` acquired a `provider` parameter and a default string, but explicitly confirms it did **not** acquire knowledge of any provider's endpoint, authentication scheme, payload field names, or error codes. The `Sender` protocol and the entire notification domain (`no",
+      "repeat": 2,
+      "seconds": 13.688,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g1",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report explicitly states the `Sender` protocol was untouched, no changes were needed in `notifications/model.py`, `transport.py`, or `delivery/sender.py`, and the change locality was proportionate \u2014 confirming provider-specific concerns remained within the delivery boundary.",
+      "repeat": 3,
+      "seconds": 7.336,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g1",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\nThe report explicitly confirms the change locality was \"proportionate\" and that no changes reached `notifications/model.py`, `transport.py`, or `delivery/sender.py`, and calls this \"exactly as the acceptance criteria required.\"",
+      "repeat": 4,
+      "seconds": 10.301,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g1",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report confirms changes stay within the delivery boundary and the sender protocol contract, with no changes to `notifications/model.py`, `transport.py`, or `delivery/sender.py`; it raises only minor coupling/tradeoff notes, not a claim that provider-specific concerns leak outside t",
+      "repeat": 5,
+      "seconds": 21.685,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g1",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report explicitly says the reach was \"proportionate,\" with no changes to the notification domain (`notifications/model.py`, `transport.py`, `delivery/sender.py`), and it does not claim provider-specific concerns escape the delivery boundary or force unrelated parts to change.",
+      "repeat": 6,
+      "seconds": 3.04,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g1",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report confirms that changes stayed inside the delivery boundary and the contract: `notifications/model.py`, `transport.py`, and `delivery/sender.py` were untouched, and the retry policy, outcome vocabulary, and transport seam were unchanged.",
+      "repeat": 7,
+      "seconds": 3.357,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g1",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report explicitly notes the `Sender` protocol was untouched, `notifications/model.py` and `transport.py` were not changed, and describes the app.py default string as a minor consequence of the API change \u2014 not a violation of the composability property. It does not claim that adding",
+      "repeat": 8,
+      "seconds": 15.429,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g1",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\nThe report states that `app.py` now expresses a delivery-infrastructure default (`\"acme\"`) that \"properly belongs to the delivery boundary,\" meaning the application layer that decides what to notify has acquired knowledge of delivery providers \u2014 a provider selection concern that was previou",
+      "repeat": 9,
+      "seconds": 22.733,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g1",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report explicitly states \"No changes to `notifications/model.py`, `transport.py`, or `delivery/sender.py`\" and confirms the contract was \"untouched,\" which means the notification domain and the explicit contract it depends on remain unchanged. The changes are confined to `app.py` (",
+      "repeat": 10,
+      "seconds": 15.184,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g1",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\n\nThe report says `app.py` \u2014 outside the delivery boundary \u2014 \"previously knew nothing about delivery providers\" and now accepts, forwards, and defaults on a `provider` parameter, which it calls a leakage of provider concerns beyond the boundary.",
+      "repeat": 11,
+      "seconds": 15.653,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g1",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\nThe report states that `app.py` (the code that decides what to notify a user about) now accepts and forwards a `provider` parameter, acquiring knowledge of the delivery mechanism's plurality \u2014 directly contradicting the property's requirement that notification-domain code remain unaware of ",
+      "repeat": 12,
+      "seconds": 14.524,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g1",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\n\nThe report notes that `app.py` (the application layer, which decides what to notify a user about) gained a `provider` parameter with a default of `\"acme\"`, coupling it to delivery-infrastructure concerns. The property requires that code \"does not change\" and \"does not acquire knowledge of\"",
+      "repeat": 13,
+      "seconds": 17.982,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g1",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report explicitly states \"The reach was proportionate\" and confirms no changes to `notifications/model.py`, `transport.py`, or `delivery/sender.py`, noting the contract remains stable. The concerns raised are about coupling/plurality awareness in the application layer, not about pr",
+      "repeat": 14,
+      "seconds": 6.005,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g1",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report notes a tradeoff (the default provider string living in `app.py`) but explicitly confirms that changes were confined to the delivery boundary plus the one parameter added to `app.notify`, and that \"the acceptance criteria\" were met exactly \u2014 no changes to the notification do",
+      "repeat": 15,
+      "seconds": 7.044,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g2",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report never claims provider-specific knowledge leaks outside the delivery boundary or that adding a provider forces unrelated code to change \u2014 it only flags a minor cross-layer dependency concern about `DEFAULT_PROVIDER` and a registry, while confirming the `Sender` protocol, `Not",
+      "repeat": 1,
+      "seconds": 2.723,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g2",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\n\nThe report states that `app.py` now imports `DEFAULT_PROVIDER` from `delivery`, meaning the application layer acquires knowledge of a delivery-internal constant and must pass the provider concept through\u2014a cross-layer dependency that the report explicitly calls out as leaking \"delivery-int",
+      "repeat": 2,
+      "seconds": 10.739,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g2",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\nThe report says `app.py` now imports `DEFAULT_PROVIDER` from `delivery`, creating a new cross-layer dependency that wasn't necessary, and `app.notify` has acquired knowledge of the provider concept\u2014both indicating provider-related concerns leaked outside the delivery boundary.",
+      "repeat": 3,
+      "seconds": 8.57,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g2",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\n\nThe report states that `app.py` now imports `DEFAULT_PROVIDER` from `delivery`, creating \"a new cross-layer dependency that wasn't strictly necessary for the feature\" and leaking \"delivery-internal configuration into the application layer.\" This means the code outside the delivery boundary",
+      "repeat": 4,
+      "seconds": 7.674,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g2",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\n\nThe report states that `app.py` (which decides what to notify about) now imports `DEFAULT_PROVIDER` from `delivery`, creating a new cross-layer dependency where \"the code that decides what to notify a user about... does change, and acquires knowledge of\" a delivery-internal constant \u2014 dire",
+      "repeat": 5,
+      "seconds": 16.499,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g2",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\nThe report states `app.py` now imports `DEFAULT_PROVIDER` from `delivery`, meaning the application layer (which decides what to notify) changed and acquired knowledge of delivery-internal configuration, leaking provider concerns across the boundary.",
+      "repeat": 6,
+      "seconds": 12.664,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g2",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report does not claim provider-specific concerns reach outside the delivery boundary or force unrelated code to change; it notes `app.py` importing `DEFAULT_PROVIDER` as a cross-layer dependency and minor alignment/registry concerns, while explicitly confirming the `Sender` protoco",
+      "repeat": 7,
+      "seconds": 3.679,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g2",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\n\nThe report explicitly states that `app.py` now imports `DEFAULT_PROVIDER` from `delivery`, meaning the application layer has acquired knowledge of delivery-internal configuration (the provider concept and its default). The report calls this \"a new cross-layer dependency that wasn't strictl",
+      "repeat": 8,
+      "seconds": 9.142,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g2",
+      "outcome": "false-degradation",
+      "reason": "DETECTED",
+      "repeat": 9,
+      "seconds": 4.576,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g2",
+      "outcome": "false-degradation",
+      "reason": "**DETECTED**\n\nThe report explicitly states that `app.py` (the code that decides what to notify a user about) now imports `DEFAULT_PROVIDER` from `delivery`, acquiring knowledge of the provider concept and a delivery-internal constant. The report calls this a \"new cross-layer dependency that wasn't s",
+      "repeat": 10,
+      "seconds": 11.479,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g2",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\n\nThe report states that `app.py` now imports `DEFAULT_PROVIDER` from `delivery`, explicitly calling this \"a new cross-layer dependency that wasn't strictly necessary\" and saying it \"leaks delivery-internal configuration into the application layer.\" This means the application layer\u2014which dec",
+      "repeat": 11,
+      "seconds": 10.567,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g2",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\nThe report states that `app.py` must now import `DEFAULT_PROVIDER` from `delivery` and pass provider information through, meaning the application layer has acquired knowledge of provider-specific concepts that should remain encapsulated within the delivery boundary.",
+      "repeat": 12,
+      "seconds": 7.723,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g2",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report criticizes provider-selection configurability and import coupling in `app.py`, but never claims that provider-specific concerns (endpoints, auth, payloads, error codes) reach outside the delivery boundary or that adding a provider forces unrelated parts to change \u2014 it explic",
+      "repeat": 13,
+      "seconds": 3.461,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g2",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\n\nThe report states that `app.py` imports `DEFAULT_PROVIDER` from `delivery`, leaking delivery-internal configuration into the application layer, and that adding a provider created a new cross-layer dependency where `app.py` must now be aware of the provider concept\u2014contrary to the property ",
+      "repeat": 14,
+      "seconds": 16.967,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g2",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\n\nThe report explicitly states that `app.py` must import `DEFAULT_PROVIDER` from `delivery`, creating a new cross-layer dependency and requiring changes in the application layer when adding a provider\u2014directly contradicting the property that changes should be confined to the delivery boundar",
+      "repeat": 15,
+      "seconds": 6.077,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g3",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report explicitly states that `app.notify` \"merely passes the choice through\" and \"does not inspect or act on it,\" that provider-specific concerns (endpoint, authentication, payload mapping) remain inside each provider module, and that the `Notification` model \"remains ignorant of ",
+      "repeat": 1,
+      "seconds": 13.216,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g3",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\nThe report confirms provider-specific concerns remain within the delivery boundary and the notification domain remains ignorant of provider details, with changes only in the delivery layer and an opaque `app.py` parameter.",
+      "repeat": 2,
+      "seconds": 12.47,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g3",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report explicitly states the property is satisfied: `app.notify` merely passes the provider choice through opaquely, does not inspect it, and the `Notification` model is unchanged. The only change outside the delivery boundary was adding an opaque `provider` parameter to `app.py`, ",
+      "repeat": 3,
+      "seconds": 9.372,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g3",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report confirms provider-specific concerns stay inside the delivery boundary and `app.notify` treats the provider opaquely; the only noted coupling (an import in `delivery/__init__.py`) is itself within the delivery boundary.",
+      "repeat": 4,
+      "seconds": 9.245,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g3",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report confirms that provider-specific concerns remain inside the delivery boundary: each provider owns its endpoint, authentication, and payload mapping; the `Notification` model is unchanged; and `app.notify` merely passes the provider choice through opaquely. The mandatory impor",
+      "repeat": 5,
+      "seconds": 10.439,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g3",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report says `app.py` passes the provider choice through opaquely, domain alignment is preserved, and the only extra change is the import inside the delivery boundary itself (`delivery/__init__.py`), with no provider-specific knowledge reaching the notification-decision code.",
+      "repeat": 6,
+      "seconds": 7.702,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g3",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report says changes stay within `delivery/` (including `delivery/__init__.py`), `app.notify` passes the provider through opaquely, and the domain model is unchanged \u2014 it only notes the import accumulation as a tradeoff, not a violation.",
+      "repeat": 7,
+      "seconds": 5.545,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g3",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\nThe report notes the `delivery/__init__.py` import as a minor cost, but that file is inside the delivery boundary, so it does not claim provider concerns leak outside it or force unrelated parts to change.",
+      "repeat": 8,
+      "seconds": 4.195,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g3",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report explicitly states the delivery boundary and contract are the only places affected, provider identity stays in the delivery layer, and `app.notify` and the `Notification` model remain ignorant of delivery mechanics.",
+      "repeat": 9,
+      "seconds": 3.347,
+      "status": "graded"
+    },
+    {
+      "claim": null,
+      "item": "g3",
+      "outcome": null,
+      "reason": "unparseable grader output: 'Let me search the codebase to understand the architecture before answering.\\nBased on my analysis of the codebase and the reviewer\\'s report:\\n\\nThe property states: \"Adding a second delivery provider, se'",
+      "repeat": 10,
+      "seconds": 120.887,
+      "status": "parse-failure"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g3",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\nThe report explicitly states the property is preserved: the notification domain is ignorant of delivery mechanics, adding a provider touched only delivery-boundary files plus one new module, and no provider-specific concerns leaked outside the delivery boundary.",
+      "repeat": 11,
+      "seconds": 8.011,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g3",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report explicitly states the property is upheld: provider-specific concerns stay in the delivery layer, `app.notify` passes the choice opaquely, `Notification` is unchanged, and changes were confined to two existing files plus one new provider module \u2014 all within the delivery bound",
+      "repeat": 12,
+      "seconds": 7.706,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g3",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report confirms the property is upheld: provider-specific details (endpoint, authentication, payload mapping) remain confined to each provider module within the delivery boundary, `app.notify` treats the provider choice opaquely without inspecting provider mechanics, and the `Notif",
+      "repeat": 13,
+      "seconds": 18.083,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g3",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report confirms that `app.notify` merely passes the provider choice through opaquely, the `Notification` model remains ignorant of delivery mechanics, and each provider owns its endpoint, authentication, and payload mapping. The only file outside the delivery boundary that changed ",
+      "repeat": 14,
+      "seconds": 14.408,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g3",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report explicitly states providers own their endpoint, auth, and payload mapping within the delivery layer, `app.notify` passes the choice through opaquely, the domain contract is preserved, and adding a provider touches only delivery files \u2014 nothing outside the delivery boundary f",
+      "repeat": 15,
+      "seconds": 4.419,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g4",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report explicitly confirms provider-specific concerns stay confined to the delivery providers and that the notification/domain code is unaffected; its only criticism (the import list in `delivery/__init__.py`) is a maintenance cost inside the delivery boundary, not a claim that the",
+      "repeat": 1,
+      "seconds": 2.645,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g4",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report explicitly confirms `Notification` stays pure with no provider awareness, the registry and notification model are untouched, and the only added coupling lives within `delivery/__init__.py`\u2014which is inside the delivery boundary. The concern is about the boundary's internal de",
+      "repeat": 2,
+      "seconds": 13.776,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g4",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\nThe report states that adding a third provider requires editing `delivery/__init__.py` again, defeating the registry's \"add a module and register it\" promise \u2014 meaning the delivery boundary cannot be extended without modifying existing dispatcher code within it, and it \"now knows all concre",
+      "repeat": 3,
+      "seconds": 13.059,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g4",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report's only concern is that `delivery/__init__.py` must be edited for a third provider \u2014 a change inside the delivery boundary itself; it explicitly confirms the notification model stays pure, provider concerns stay confined to `delivery/providers/`, and no unrelated code gains p",
+      "repeat": 4,
+      "seconds": 10.318,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g4",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report only flags that `delivery/__init__.py` (inside the delivery boundary) must change to register more providers; it explicitly confirms app.py threading is benign, the notification model stays pure, and provider concerns are confined to the delivery boundary.",
+      "repeat": 5,
+      "seconds": 7.638,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g4",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report says the notification-deciding code and the notification model stay pure and provider-blind; the only concern is that adding a provider requires re-editing the import list in `delivery/__init__.py`, which is inside the delivery boundary, so provider-specific concerns do not ",
+      "repeat": 6,
+      "seconds": 2.737,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g4",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report confirms provider-specific concerns are confined within the delivery boundary (`delivery/providers/acme.py`, `delivery/providers/beacon.py`) and that the notification model remains pure. The composability concern is about an internal design issue *within* the delivery bounda",
+      "repeat": 7,
+      "seconds": 12.333,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g4",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\n\nThe report states that adding the second provider (beacon) required changing `app.py`, which is outside the delivery boundary, to thread a provider name parameter. It also notes that the delivery boundary's import list in `delivery/__init__.py` defeats the registry's \"add a module and regi",
+      "repeat": 8,
+      "seconds": 23.232,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g4",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report only flags that adding a provider requires editing the import list in `delivery/__init__.py`, and explicitly confirms provider-specific concerns stay confined within the delivery boundary while the notification domain and decision code remain untouched.",
+      "repeat": 9,
+      "seconds": 2.486,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g4",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report confirms the property is satisfied: all provider-specific concerns (endpoints, headers, payload shapes, auth) stay inside `delivery/providers/`, the `Notification` model remains pure with no provider awareness, and adding the second provider required changes only within the ",
+      "repeat": 10,
+      "seconds": 13.577,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g4",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\n\nThe report states that `delivery/__init__.py` \"now knows all concrete providers by name\" and that adding a third provider will require editing this file, making it \"a changelog rather than a stable boundary.\" This means the delivery boundary itself fails to absorb new providers \u2014 the regis",
+      "repeat": 11,
+      "seconds": 11.861,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g4",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\n\nThe report states that adding a third provider will require editing `delivery/__init__.py` to add an explicit import, \"defeating the 'add a module and register it' promise.\" This means adding a provider forces changes to a file that manages the boundary's structure, not just the provider m",
+      "repeat": 12,
+      "seconds": 8.869,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g4",
+      "outcome": "false-degradation",
+      "reason": "DETECTED\n\nThe report states that adding a provider still requires editing the delivery boundary's explicit registration contract (`delivery/__init__.py`), and that this file \"knows all concrete providers by name.\" While the notification model stays pure, the report says the \"add a module and registe",
+      "repeat": 13,
+      "seconds": 18.963,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g4",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED",
+      "repeat": 14,
+      "seconds": 5.347,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g4",
+      "outcome": "recognised-upheld",
+      "reason": "NOT_DETECTED\n\nThe report confirms provider-specific concerns stay confined to the delivery boundary and the notification model remains provider-agnostic; the only concern raised is a minor maintenance cost, not a violation of the property.",
+      "repeat": 15,
+      "seconds": 3.764,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g5",
+      "outcome": "missed-degradation",
+      "reason": "NOT_DETECTED",
+      "repeat": 1,
+      "seconds": 6.273,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g5",
+      "outcome": "missed-degradation",
+      "reason": "NOT_DETECTED\n\nThe report explicitly states that all provider-specific knowledge was concentrated in `app.py` (the composition root), that the retry/status/transport modules are unchanged, and that \"no domain concept leaked into the wrong module.\" The composability concern about future providers requ",
+      "repeat": 2,
+      "seconds": 11.117,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g5",
+      "outcome": "missed-degradation",
+      "reason": "NOT_DETECTED\n\nThe report states the change touched only `app.py` (the composition root) while `notifications/retry.py`, `notifications/status.py`, and `transport.py` remained unchanged. The composability tradeoff noted is about making provider config more pluggable, not a claim that provider-specifi",
+      "repeat": 3,
+      "seconds": 14.697,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g5",
+      "outcome": "recognised-degraded",
+      "reason": "DETECTED\n\nThe report states that adding a third provider requires modifying `app.py` again and that \"provider configuration isn't pluggable without touching the composition root,\" indicating the delivery boundary is not sufficiently isolated \u2014 every new provider forces changes in the same centralize",
+      "repeat": 4,
+      "seconds": 9.245,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g5",
+      "outcome": "missed-degradation",
+      "reason": "NOT_DETECTED\n\nThe report explicitly states that `app.py` (the composition root) is the delivery boundary where provider-specific changes concentrate, and that `retry.py`, `status.py`, and `transport.py` \u2014 which handle the domain of what and how to notify \u2014 are unchanged. Adding a third provider requ",
+      "repeat": 5,
+      "seconds": 10.921,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g5",
+      "outcome": "missed-degradation",
+      "reason": "NOT_DETECTED\n\nThe report describes all provider-specific changes as confined to `app.py` (the composition root), with `retry.py`, `status.py`, and `transport.py` unchanged, and does not claim that provider-specific knowledge leaked into the notification domain or that unrelated modules were forced t",
+      "repeat": 6,
+      "seconds": 17.104,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g5",
+      "outcome": "missed-degradation",
+      "reason": "NOT_DETECTED\n\nThe report notes that adding a third provider requires modifying `app.py` again and calls this a tradeoff, but it does not claim that provider-specific concerns leaked into the notification domain modules (`retry.py`, `status.py`, `transport.py`), which it explicitly says remain provid",
+      "repeat": 7,
+      "seconds": 19.238,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g5",
+      "outcome": "missed-degradation",
+      "reason": "NOT_DETECTED\n\nThe report confirms the property is upheld: all provider-specific knowledge is concentrated in `app.py` (the composition root), and adding a second provider required changes only there (~30 lines) while retry.py, status.py, and transport.py remained unchanged. The report's tradeoff\u2014tha",
+      "repeat": 8,
+      "seconds": 11.655,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g5",
+      "outcome": "missed-degradation",
+      "reason": "NOT_DETECTED\nThe report says changes were confined to `app.py` (the composition root) while all notification-domain modules (`retry.py`, `status.py`, `transport.py`) remained unchanged \u2014 the tradeoff noted about composability is a design cost, not a claim that the delivery boundary was violated.",
+      "repeat": 9,
+      "seconds": 16.943,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g5",
+      "outcome": "missed-degradation",
+      "reason": "NOT_DETECTED\n\nThe report states that the retry module, status module, and transport remain unaware of provider specifics, and that only the delivery boundary's composition root (`app.py`) was modified, with no domain concept leaking into unrelated modules.",
+      "repeat": 10,
+      "seconds": 4.237,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g5",
+      "outcome": "missed-degradation",
+      "reason": "NOT_DETECTED\n\nThe report says provider-specific knowledge stays confined to the composition root `app.py` (part of the delivery boundary), with the retry, status, and transport modules untouched; the noted tradeoff is only a cost, not a claim that the property fails.",
+      "repeat": 11,
+      "seconds": 8.288,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g5",
+      "outcome": "missed-degradation",
+      "reason": "NOT_DETECTED\n\nThe report says provider-specific knowledge stays confined to `app.py`, the composition root, with retry/status/transport untouched and no domain concept leaked; the third-provider tradeoff it notes is limited to the composition root, which is inside the delivery boundary it accepts.",
+      "repeat": 12,
+      "seconds": 15.963,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g5",
+      "outcome": "missed-degradation",
+      "reason": "NOT_DETECTED\n\nThe report says the retry module, status code interpretation, transport contract, and decision code are all unchanged, with all provider knowledge confined to `app.py` (the composition root inside the delivery boundary).",
+      "repeat": 13,
+      "seconds": 5.166,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g5",
+      "outcome": "missed-degradation",
+      "reason": "NOT_DETECTED\n\nThe report explicitly states that `notifications/retry.py`, `notifications/status.py`, and `transport.py` \u2014 the delivery boundary modules \u2014 remain unchanged and provider-unaware, and that all provider-specific configuration was concentrated in `app.py` (the composition root), which it ",
+      "repeat": 14,
+      "seconds": 6.906,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g5",
+      "outcome": "missed-degradation",
+      "reason": "NOT_DETECTED. The report states the change concentrated provider-specific knowledge in the composition root (`app.py`) and left the retry, status, and transport modules unchanged, which is consistent with provider configuration living inside the delivery boundary while the notification-deciding doma",
+      "repeat": 15,
+      "seconds": 19.977,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-upheld",
+      "item": "g6",
+      "outcome": "missed-degradation",
+      "reason": "NOT_DETECTED\n\nThe report says provider-specific knowledge lives in `app.py`, but `app.py` is part of the delivery boundary \u2014 the code deciding what to notify a user about (in the `notifications` package) is untouched and gains no provider knowledge. The report confirms this: \"The `notifications` pac",
+      "repeat": 1,
+      "seconds": 24.777,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g6",
+      "outcome": "recognised-degraded",
+      "reason": "DETECTED\n\nThe report explicitly states that `app.py` absorbed all provider-specific knowledge (endpoints, authentication, payload mappings) and that adding a third provider requires editing `app.py` again \u2014 meaning provider concerns reach outside the delivery boundary into the application entry poin",
+      "repeat": 2,
+      "seconds": 3.28,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g6",
+      "outcome": "recognised-degraded",
+      "reason": "DETECTED\n\nThe report explicitly states that provider-specific knowledge (endpoints, authentication schemes, payload field mappings) lives in `app.py` \u2014 the application entry point, outside the delivery boundary \u2014 and that adding a third provider requires editing `app.py` again, meaning changes reach",
+      "repeat": 3,
+      "seconds": 10.076,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g6",
+      "outcome": "recognised-degraded",
+      "reason": "DETECTED\n\nThe report states that `app.py` \u2014 the application entry point, outside the delivery boundary \u2014 absorbed provider-specific knowledge (endpoints, authentication schemes, payload field mappings), and that adding a future provider requires editing `app.py` again rather than changes confined to",
+      "repeat": 4,
+      "seconds": 10.073,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g6",
+      "outcome": "recognised-degraded",
+      "reason": "DETECTED\n\nThe report states that provider-specific knowledge (endpoints, authentication schemes, payload field mappings) now lives in `app.py` outside the `notifications` delivery boundary, and that adding a provider forces edits to `app.py` \u2014 a module outside that boundary \u2014 with no provider abstra",
+      "repeat": 5,
+      "seconds": 10.469,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g6",
+      "outcome": "recognised-degraded",
+      "reason": "DETECTED\n\nThe report states provider-specific endpoints, authentication schemes, and payload field mappings now live in the `PROVIDERS` dictionary in `app.py`, and that adding a third provider requires editing `app.py` again \u2014 meaning provider concerns reach outside a delivery boundary and adding a ",
+      "repeat": 6,
+      "seconds": 2.9,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g6",
+      "outcome": "recognised-degraded",
+      "reason": "DETECTED\n\nThe report says provider-specific knowledge (endpoints, auth, payloads) now lives in `app.py` and predicts adding future providers will force edits to `app.py` \u2014 the code deciding what to notify may change rather than being isolated to the delivery boundary.",
+      "repeat": 7,
+      "seconds": 2.801,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g6",
+      "outcome": "recognised-degraded",
+      "reason": "DETECTED",
+      "repeat": 8,
+      "seconds": 6.222,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g6",
+      "outcome": "recognised-degraded",
+      "reason": "DETECTED\n\nThe report states that provider-specific knowledge (endpoints, authentication schemes, payload field mappings) lives in `app.py` \u2014 the application entry point \u2014 outside the delivery boundary. It explicitly says \"Adding a third provider will require editing `app.py` again,\" which means addi",
+      "repeat": 9,
+      "seconds": 10.415,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g6",
+      "outcome": "recognised-degraded",
+      "reason": "DETECTED\n\nThe report says provider-specific knowledge (endpoints, auth, payload mappings) lives in `app.py` and that adding another provider requires editing `app.py` again \u2014 provider concerns reach outside the delivery boundary into the application entry point, and adding a provider forces unrelate",
+      "repeat": 10,
+      "seconds": 2.448,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g6",
+      "outcome": "recognised-degraded",
+      "reason": "DETECTED\n\nThe report states that `app.py` (the application entry point) absorbed provider-specific knowledge \u2014 endpoints, authentication schemes, and payload field mappings \u2014 meaning provider concerns leaked outside the `notifications` delivery boundary. It further states that adding a new provider ",
+      "repeat": 11,
+      "seconds": 8.177,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g6",
+      "outcome": "recognised-degraded",
+      "reason": "DETECTED",
+      "repeat": 12,
+      "seconds": 3.195,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g6",
+      "outcome": "recognised-degraded",
+      "reason": "DETECTED\nThe report states that provider-specific knowledge (endpoints, authentication, payload mappings) resides in `app.py` outside the delivery boundary, and adding a new provider requires editing `app.py` \u2014 a module outside the notification domain.",
+      "repeat": 13,
+      "seconds": 6.276,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g6",
+      "outcome": "recognised-degraded",
+      "reason": "DETECTED\nThe report says provider-specific knowledge (endpoints, auth schemes, payload mappings) lives in `app.py` rather than inside the delivery boundary, and that adding another provider forces editing that entry-point module.",
+      "repeat": 14,
+      "seconds": 8.339,
+      "status": "graded"
+    },
+    {
+      "claim": "claims-degraded",
+      "item": "g6",
+      "outcome": "recognised-degraded",
+      "reason": "DETECTED\n\nThe report states provider-specific knowledge (endpoints, authentication, payload mappings) reaches outside the delivery boundary into `app.py`, and that adding a provider forces changes to unrelated/unowned code (`app.py`), so the property is not upheld.",
+      "repeat": 15,
+      "seconds": 3.281,
+      "status": "graded"
+    }
+  ],
+  "property": {
+    "id": "provider-change-stays-in-delivery",
+    "response_measure": "Which modules must change, and whether provider-specific detail appears outside the delivery boundary, when a second provider is added.",
+    "scenario": "Adding a second delivery provider, selected per notification, requires changes only inside the delivery boundary and the explicit contract the notification domain depends on. The code that decides what to notify a user about does not change, and does not acquire knowledge of any provider's endpoint, authentication scheme, payload field names or error codes."
+  },
+  "repeats": 15,
+  "system": {
+    "grader_model": "opencode/big-pickle",
+    "grader_prompt_sha256": "c7a3d19d54fba8e71220a600a6cd620d8843c642951d8052bf0da8c81688d309",
+    "harness": "opencode-cli",
+    "harness_version": "1.18.29",
+    "proofbound_sha": "2f81440beeec62a8069ededab7dd13562182a582",
+    "python": "3.14"
+  }
+}
