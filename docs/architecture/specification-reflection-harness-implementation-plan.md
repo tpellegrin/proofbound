@@ -1439,6 +1439,50 @@ model comparison; no production routing; no reliability state persisted.
 **Next.** Reliability design for the semantic evaluation stack, before any Calibration V3. Fixing
 validity first would tune a criterion against a measurement that redraws itself 28% of the time.
 
+## 7K. Multi-sample semantic evaluation — design check  *(design only; no live calls)*
+
+Design authority: [`evaluation-comparison.md` §E23](proofbound/evaluation-comparison.md#e23-what-one-semantic-measurement-should-be)
+and [`system-craft.md` §58](proofbound/system-craft.md#58-craft-may-not-need-a-verdict-at-all).
+
+**Question.** If one semantic model invocation is an unstable measurement, what should Proofbound treat
+as semantic evidence, and under what conditions may several independent judgements support a usable
+conclusion?
+
+**Method.** Offline only. Exact combinatorial replay of aggregation policies over the samples already
+recorded in `§E51` — no live reflector or grader call, no new evidence, no fixture change.
+
+**Result: aggregation is layer-specific, and the unit was wrong before the sample count was.** Repeated
+grading of unchanged bytes converges — policy instability falls 0.167 → 0.059 at N=5 and reaches 0.000
+by N=11. Repeated reflection over unchanged architecture does not: 0.433 → 0.325 at N=5, still 0.267 at
+N=9, and on one instance it gets *worse* with N, because a 4/4/2 split has no majority to recover.
+Majority vote is therefore a legitimate noise-reduction operator on a reading task and a truth-recovery
+fiction on a judgement task.
+
+The deeper finding is that the craft measurement unit is a whole-report verdict, which is the wrong
+shape: 57 of 60 reports agree on *where* provider knowledge moved while 43% of their conclusions about
+*whether it matters* disagree, and the grader collapses "did not address it" into "says it is fine".
+Every other review purpose already asks a discovery question, and multi-property grading already grades
+per obligation.
+
+**Decisions.** The future calibration unit is **per-pressure discovery frequency over N paired samples**
+— `k/N` per pre-registered pressure plus the union of unpredicted concerns as a false-pressure rate.
+Minority findings keep their support rather than being outvoted. No `disputed` state, no abstention
+enum, no confidence field, no model reputation: `4/10` already says contested, and a derived status
+would be a second truth (`P3`) with no mechanical consumer. No universal N — budgets belong to an
+experiment, pre-registered against the smallest effect it intends to detect. Grader dispersion is
+characterised **once** against a frozen anchor corpus rather than by `R x G` sampling, which `P13`
+cannot afford.
+
+**Not adopted:** production multi-sampling of any review purpose — the 43% was measured on the one
+instrument with no accepted referent, and `P7` forbids that becoming global policy; heterogeneous panels,
+which change the measuring system rather than repeat it; adjudication and debate, which are different
+semantic procedures; structured reflector output, which would trade this problem for benchmark leakage
+and is deferred to the discovery design.
+
+**Next.** Finding consolidation is the open problem: grouping semantically equivalent concerns across
+samples is itself a semantic step, and both the discovery-shaped craft observable and any future
+production use depend on it.
+
 ## 7B. Threat mitigation status
 
 RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC

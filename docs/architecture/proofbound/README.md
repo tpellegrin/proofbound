@@ -132,6 +132,7 @@ One line each. **The canonical definitions, with their falsifiers, are in
 | Eval V5 — system-craft calibration | **Implemented**; instrument not ready — sensitivity 3/5, specificity 7/9 |
 | Eval V6 — craft question-routing control | **Implemented**; hypothesis rejected — routing changed no degradation verdict, and the instrument disagrees with itself on 4 of 13 repeats |
 | Eval V7 — craft instrument repeatability | **Implemented**; both layers material — reflector conclusion moves on 43% of identical repeats, grader on 17%, end to end 28% |
+| Multi-sample semantic evaluation | **Designed**; aggregation is layer-specific and the craft unit is the wrong shape — future unit is per-pressure discovery frequency |
 | Decision provenance, coherence audit, context telemetry | Direction only; see the plan's dependency graph |
 
 Canonical test command: `python3 -m unittest discover -s tests -t .` (Python ≥3.10).

@@ -108,26 +108,21 @@ and they never become a model leaderboard.
 
 ### E16.8 Calibration must precede the control arm
 
-E10 deferred the control arm until detection was observed at all. That trigger fired. A second condition
-is now visible that E10 could not have known, because it comes from E16.1:
+E10 deferred the control arm until detection was observed at all. That trigger fired, and a second
+condition became visible that E10 could not have known, because it comes from E16.1:
 
 > A control experiment is only informative on scenarios where the intervention could change the outcome.
 
-On the current four, every arm — independent reflector, contaminated reflector, raw review — receives the
-same 1.1 KB of engineering content, so the expected result is a tie at ceiling. A tie would be read as
-*independence does not matter*, when it would only show that the suite cannot see independence. The
-failure mode is asymmetric: the ceiling can falsely acquit the architecture, so scenario range must be
-established first.
+On the original four, every arm receives the same 1.1 KB of engineering content, so the expected result
+is a tie at ceiling — and a tie would read as *independence does not matter* when it would only show that
+the suite cannot see independence. The failure mode is asymmetric: a ceiling can falsely acquit the
+architecture, so scenario range has to be established first.
 
-**Readiness to run the control experiment**, in evidence rather than in scores:
-
-1. at least three retained capability scenarios exercising at least two of the E16.4 dimensions;
-2. at least two of them show non-ceiling behaviour under a probe configuration while the shipped
-   configuration still mostly detects — dynamic range, not induced failure;
-3. grader and human agree on the screening sample, with no unresolved disagreement;
-4. no leakage and no ambiguity in the retained set;
-5. the four V1 scenarios still detect at their anchor rate;
-6. `system.harness_version` is recorded, so the calibration run and the control run are machine-comparable.
+**Readiness was evidence, not scores:** at least three retained capability scenarios across two of the
+E16.4 dimensions; at least two showing non-ceiling behaviour under a probe while the shipped
+configuration still mostly detects — dynamic range, never induced failure; grader and human agreeing on
+the screening sample; no leakage or ambiguity in the retained set; the V1 scenarios still detecting at
+their anchor rate; and `system.harness_version` recorded so the two runs are machine-comparable.
 
 **The causal hypothesis the control will test**, named now so calibration can aim at it: *does a reflector
 carrying the author's rationale detect the planted contradiction less reliably than a fresh independent
@@ -138,24 +133,21 @@ requires it inside the run root; it needs **no session resume**, which matters g
 
 ### E16.9 Harness version is a comparability defect, and the fix is one field
 
-The summary records `harness: "opencode-cli"` and no version. Applying the field test — *without it, can
-two materially different execution environments produce identical system-under-test metadata?* — the
-answer is yes: OpenCode 1.18.29 and a future stable release are indistinguishable in the record, and the
-only trace is prose in E15. That justifies the field.
+The summary recorded `harness: "opencode-cli"` and no version. The field test — *without it, can two
+materially different execution environments produce identical system-under-test metadata?* — answers yes:
+OpenCode 1.18.29 and a future release were indistinguishable in the record. That justifies the field.
 
-- **Source.** The invoked executable's own version output, taken once where the harness is already
-  resolved. Never inferred from `opencode-cli`, and never from whatever binary happens to be installed
-  when a record is later read.
-- **Scope.** Once per run, not per trial. A baseline is one frozen configuration by construction; a
-  per-trial field would imply it may drift mid-run.
-- **Absent means unknown.** Not "assume current". A harness that cannot report a version records null.
-- **Not part of scenario identity.** It is evaluation configuration (E5), not engineering content (E3);
+- **Source.** The invoked executable's own version output, taken where the harness is already resolved —
+  never inferred, and never from whatever binary happens to be installed when a record is later read.
+- **Scope.** Once per run. A baseline is one frozen configuration by construction, and a per-trial field
+  would imply it may drift mid-run.
+- **Absent means unknown**, not "assume current". A harness that cannot report a version records null.
+- **Not part of scenario identity.** It is evaluation configuration (E5), not engineering content (E3):
   it changes run comparability and leaves every scenario identity untouched.
-- **No format bump.** `load` validates only the format string and `render` reads system fields
-  defensively, so an additive optional key is backward compatible. `proofbound-eval-summary-v1` stays.
+- **No format bump.** An additive optional key is backward compatible; `proofbound-eval-summary-v1` stays.
 - **Historical records are not backfilled.** Writing `1.18.29` into the committed V1 summary would
-  disguise a later human annotation as a machine observation — exactly the historical-semantics error
-  `P6` exists to prevent. Baseline zero keeps its record as written; its harness version lives in E15.
+  disguise a later human annotation as a machine observation — the historical-semantics error `P6` exists
+  to prevent. Baseline zero keeps its record as written; its harness version lives in E15.
 
 ### E16.10 Two limits recorded rather than fixed
 
@@ -402,17 +394,21 @@ which is why no `controlled: true` is ever persisted.
 
 ### E21.10 The experiment
 
-| | |
-|---|---|
-| Population | All three frozen multi-property scenarios, all nine obligations. Not the weak obligation alone — selecting on a prior outcome would build the result in |
-| Worker | One configuration: `opencode/nemotron-3-ultra-free`. Continuity with every prior measurement, and — decisively — it exposes no reasoning-effort variants, while the alternative runs at an unpinned provider default. A causal experiment should not carry an uncontrolled variable it can simply avoid |
-| Grader | Unchanged: `opencode/big-pickle`, one blind call per obligation, never told the arm, the hypothesis, the other arm's results, or the worker model. Reports are compared mechanically afterwards, never by the grader |
-| N | **5 trials per scenario per arm** — 30 worker trials, 90 property classifications. Fixed before execution |
-| Ordering | Arms alternate within each repetition, deterministically and fixed in advance, so provider drift over a multi-hour run cannot align with an arm |
-| Isolation | Every trial gets a fresh temporary tree, fresh Git state, fresh run root. No session, conversation, run tree, report or grader output is ever reused, across arms or within one |
-| Primary outcome | **Obligations detected over gradeable opportunities**, chosen because it yields 45 observations per arm rather than 15 and states completeness directly |
-| Secondary | Per obligation, per scenario, complete-trial rate, and end-to-end effectiveness against conditional completeness |
-| Stopping | Run the full matrix. Stop early only for provider unavailability, a harness defect that invalidates trials, grader calibration failure, or discovered treatment leakage — **never** because a difference has appeared, and never extend N because one has not |
+All three frozen multi-property scenarios and all nine obligations — not the weak obligation alone,
+since selecting on a prior outcome would build the result in. One worker configuration,
+`opencode/nemotron-3-ultra-free`, chosen for continuity and because it exposes no reasoning-effort
+variants, so the experiment carries no uncontrolled variable it could simply avoid. Grader unchanged:
+`opencode/big-pickle`, one blind call per obligation, never told the arm, the hypothesis, the other
+arm's results or the worker model; reports are compared mechanically afterwards, never by the grader.
+
+**5 trials per scenario per arm** — 30 worker trials, 90 property classifications — fixed before
+execution. Arms alternate within each repetition, deterministically and fixed in advance, so provider
+drift over a multi-hour run cannot align with an arm. Every trial gets a fresh tree, fresh Git state and
+fresh run root; no session, report or grader output is ever reused. The primary outcome is **obligations
+detected over gradeable opportunities**, which yields 45 observations per arm rather than 15 and states
+completeness directly; per-obligation and per-scenario rates are secondary. The matrix runs in full.
+Stop early only for provider unavailability, a harness defect, grader calibration failure or discovered
+leakage — **never** because a difference has appeared, and never extend N because one has not.
 
 Both arms receive identical worker timeouts, grader timeouts, tool permissions and budgets. If the
 rationale-exposed arm times out or misuses paths more often, that is a result of the treatment and is
@@ -420,25 +416,20 @@ reported as such, not quietly reclassified as infrastructure.
 
 ### E21.11 What each outcome would mean
 
-**Fresh higher.** Under this frozen configuration, withholding the author's report produced higher
-observed semantic completeness than supplying it. That supports the current operational choice. It
-does **not** establish anchoring as a mechanism, that independence improves reasoning generally, that
-context is harmful, or that all author rationale is harmful.
+Fixed before the run, so the result could not choose its own interpretation. **Fresh higher:** under
+this frozen configuration, withholding the author's report produced higher observed completeness —
+supporting the operational choice, and establishing nothing about anchoring as a mechanism, about
+context being harmful in general, or about all author rationale. **No difference:** `P12`'s
+informational limb is an untested convention rather than a demonstrated one, worth saying plainly.
+**Rationale-exposed higher:** genuine counter-evidence, and the architecture would eventually need a
+sharper principle — *independent judgement need not mean information deprivation* — separating author
+reasoning **as authority**, which stays dangerous, from author reasoning **as non-authoritative
+evidence**. A third arm supplying the rationale with an instruction to challenge it would separate
+those, and is deliberately excluded here because it would change the reflector's prompt and so the
+system under test.
 
-**No difference.** No observed benefit from withholding, under this configuration. `P12`'s
-informational limb would then be an untested convention rather than a demonstrated one — worth
-saying plainly.
-
-**Rationale-exposed higher.** Genuine counter-evidence, to be reported as such. Author reasoning can
-legitimately carry intent, rejected alternatives and constraints that help a reviewer. The
-architecture may eventually need a sharper principle — *independent judgement need not mean
-information deprivation* — distinguishing author reasoning **as authority**, which stays dangerous,
-from author reasoning **as non-authoritative evidence**. A third arm supplying the rationale with an
-explicit instruction to challenge it would separate those, and is deliberately **not** part of this
-experiment because it would change the reflector's prompt and thus the system under test.
-
-No result rewrites `P12`, and none changes a runtime default. Evaluation supplies evidence; an
-accepted architectural decision is what would change the product.
+No result rewrites `P12`, and none changes a runtime default. Evaluation supplies evidence; an accepted
+architectural decision is what would change the product.
 
 ## E22. Reliability before validity
 
@@ -520,3 +511,90 @@ Two disciplines follow, and both are cheap:
   it.
 
 Evidence: [§E51](evidence/evaluation-runs.md#e51-craft-instrument-repeatability--both-layers-move).
+
+## E23. What one semantic measurement should be
+
+[§E22](#e22-reliability-before-validity) established that a single semantic judgement is unstable.
+The remedy is not obvious, and replaying aggregation policies over the recorded samples shows why:
+**the same operator is legitimate on one layer and illegitimate on the other.**
+
+| Policy instability (share of applications differing from the policy's own commonest output) | N=1 | N=3 | N=5 | N=9 | N=11 |
+|---|---|---|---|---|---|
+| Grader, on report bytes that do not change | 0.167 | 0.094 | 0.059 | 0.014 | **0.000** |
+| Reflector conclusion, on architecture that does not change | 0.433 | 0.394 | 0.325 | 0.267 | — |
+
+Exact combinatorics over the draws already recorded, not simulation — and an approximation of behaviour
+under *the empirical distribution observed in that window*, since provider aliases cannot be pinned.
+
+The grader's dispersion behaves like random error around a stable answer, and averaging removes it. The
+reflector's does not: aggregation buys little, and on one instance it gets **worse** with more samples,
+because a 4/4/2 split has no majority to recover and larger N merely converts near-ties into ties. More
+samples measure that coin more precisely. They do not make it land.
+
+> **Majority is a noise-reduction operator on a reading task, and a truth-recovery fiction on a
+> judgement task.** It is admissible where repeated measurement converges, and inadmissible where the
+> dispersion *is* the finding.
+
+Never as probability: *"8 of 10 samples reported X under this configuration"* is the claim; *"80% likely
+true"* is not, because samples share weights, prompt and provider and therefore share systematic error.
+Report **sample share** and **dispersion**, never confidence in a conclusion.
+
+### E23.1 The unit was wrong before the sample count was
+
+Two facts, from the same 60 reports. Asked *where provider knowledge now sits*, they agree: 57 of 60
+name both a location and the knowledge it holds, and on the instances read in full the human coding was
+unanimous. Asked *whether that placement is a breach*, they split 43%.
+
+The instability is concentrated entirely in a normative layer the evaluator was given no criterion for —
+and the craft grader is built to extract exactly that layer, explicitly answering "upheld" both when a
+report says the property is fine **and** when it never addresses the property at all. Two different
+events, one label.
+
+Every other review purpose in Proofbound already avoids this.
+[§51](execution-and-review.md#51-what-each-review-purpose-actually-asks) defines all five as
+finding-discovery — each row's finding is a discovered defect, never a verdict — and
+[§E19.1](evaluation.md#e19-multi-property-scenarios--more-resolution-still-not-a-score) already grades
+per obligation with the narrow question *does this report identify this specific problem?* System Craft
+is the only instrument in the repository that asks for a whole-report verdict, and it is the only one
+whose reliability has collapsed.
+
+### E23.2 The measurement unit
+
+**One implementation instance, N fresh independent samples, and per-pressure discovery frequency.**
+
+For each pre-registered architectural pressure — planted or control — ask each sample the `E19`
+question: did this report identify this specific concern? Report `k/N`, the **discovery frequency**,
+alongside the union of distinct concerns raised that no pressure predicted, which is the false-pressure
+rate. A concern raised by one sample of ten is recorded with support 1/10, not voted away: for defect
+discovery a minority finding is still a finding, and union is the correct operator where election is not.
+
+This needs no verdict, no `disputed` enum and no abstention state. `4/10` already says contested, and
+adding a derived status would be a second truth (`P3`) with no mechanical consumer. Abstention survives
+as a *reporting convention* — under a two-thirds rule the replay flags exactly the two contested grader
+anchors and flags the 5/5 instance as unresolved in 100% of applications, which is the honest answer.
+
+**No universal N.** Observed per-item variance ranges from unanimous at N=1 to never resolving at any N,
+so a global sample count is conceptually wrong. The budget belongs to an experiment, is pre-registered
+against the smallest effect that experiment intends to detect, and is never extended after seeing
+outcomes. Six deliberately unrepresentative anchors can falsify a proposal — mode-of-3 plainly does not
+stabilise this configuration — but cannot establish sufficiency for any other.
+
+**Cost follows from the split.** Full `R x G` sampling is unaffordable under `P13`, and unnecessary:
+characterise grader dispersion **once** against a frozen anchor corpus, as `§E51` did, then spend the
+budget on the reflector and grade each report once. That holds only while the grader's question stays a
+reading question — the same condition that makes its aggregation legitimate.
+
+**Python's boundary is unchanged.** It counts, hashes, pairs, and applies a pre-registered human-authored
+policy. It never concludes an architecture is sound because `k/N` was high — and because a collapse rule
+has semantic consequences, that rule is authored and frozen in advance, exactly as a review gate's
+meaning is.
+
+### E23.3 What this does not license
+
+Nothing here reaches production review. The 43% was measured on the one instrument with **no accepted
+referent**, where each evaluator must supply its own criterion; production reflection is bound to
+accepted artifacts and may well be far steadier. That is an untested hypothesis, and `P7` forbids a local
+measurement becoming global policy — a production sampling policy would need per-purpose evidence, a cost
+analysis, and consolidation semantics that do not exist. Repeated samples remain evidence for a parent,
+never authority (`P5`); heterogeneous panels change the measuring system rather than repeat it, which is
+reproducibility and a different experiment.

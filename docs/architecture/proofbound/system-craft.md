@@ -96,19 +96,19 @@ says repository patterns are evidence rather than authority; a vocabulary borrow
 repository has *less* claim than the repository's own patterns, not more. CUPID supplies words for
 asking questions, and nothing else.
 
-| Property | Mechanically observable | Semantic question | Danger if universalized |
-|---|---|---|---|
-| **Composable** | New outgoing dependency edges; public surface additions; new configuration keys | Were these dependencies necessary, coherent, and in the right place — or does this component now know something about another that it should not? | Rewards copy-paste over reuse: duplicating code removes an edge |
-| **Unix philosophy** | Reasons-to-change concentrated in one component; growth of a component already large | Does this component still have one coherent purpose, or did it acquire an unrelated responsibility? | Rewards splitting for its own sake; indiscriminate factoring is not the mechanism of benefit ([§28.5](context-economy.md#285-measurement-is-mechanical-refactoring-is-semantic)) |
-| **Predictable** | Retry, ordering, idempotency, compatibility and failure-visibility surfaces touched | Are the semantics of this change explicit and observable, or did it add an implicit temporal or ordering assumption? | Largely *correctness*, not craft — most of it is already what the planted-obligation scenarios test |
-| **Idiomatic** | Deviation from prevailing local structure | Does this belong here, and where it deviates, is the deviation deliberate? | **The sharpest `P11` hazard.** "Looks like the surrounding code" would make accumulated debt self-enforcing |
-| **Domain-based** | Infrastructure vocabulary appearing inside domain modules; domain concepts split across boundaries | Does the code still name the problem, or has provider/infrastructure language displaced domain language? | DDD is not mandatory; the question must remain meaningful in systems that never adopted it |
+| Property | Semantic question | Danger if universalized |
+|---|---|---|
+| **Composable** | Were the new dependencies necessary and in the right place — or does this component now know something about another that it should not? | Rewards copy-paste over reuse: duplicating code removes an edge |
+| **Unix philosophy** | Does this component still have one coherent purpose, or did it acquire an unrelated responsibility? | Rewards splitting for its own sake ([§28.5](context-economy.md#285-measurement-is-mechanical-refactoring-is-semantic)) |
+| **Predictable** | Are the semantics explicit and observable, or did this add an implicit ordering assumption? | Largely *correctness*, already covered by planted-obligation scenarios |
+| **Idiomatic** | Does this belong here, and where it deviates, is the deviation deliberate? | **The sharpest `P11` hazard.** "Looks like the surrounding code" makes accumulated debt self-enforcing |
+| **Domain-based** | Does the code still name the problem, or has infrastructure language displaced domain language? | DDD is not mandatory; the question must stay meaningful where it was never adopted |
 
-Two notes that keep the vocabulary from becoming taxonomy. **Composable and Unix philosophy overlap and
-should not be split into two evaluator dimensions**: North's own distinction is that Unix philosophy is
-about how code is *used* while single-responsibility is about its *internals*, which is a difference in
-viewpoint, not a second measurement. And **Predictable belongs mostly to correctness** — Proofbound's
-existing scenarios already plant retry, ordering and compatibility obligations and grade them.
+Two notes keep the vocabulary from becoming taxonomy. **Composable and Unix philosophy overlap and must
+not become two evaluator dimensions** — North's distinction is that Unix philosophy concerns how code is
+*used* while single-responsibility concerns its *internals*, a difference in viewpoint rather than a
+second measurement. And **Predictable belongs mostly to correctness**, which existing scenarios already
+plant and grade.
 
 A minimal first vocabulary is therefore **three lenses, not five**: composability (including cohesion),
 domain alignment, and change locality. Idiomatic fit is deferred until the `P11` tension has a
@@ -203,32 +203,21 @@ and could not anticipate.** Gaming a future-change measurement requires predicti
 calibration, multi-property and the `P12` control all validated the instrument before anything depended
 on it, and production craft reflection has no ground truth to validate against.
 
-The minimum is `CE2`'s structure with a craft lens on top, reusing the entire existing substrate —
-scenario loading, fresh isolated trials, per-property blind grading, comparison that proves only one
-field differed:
+The minimum reuses the whole existing substrate — scenario loading, fresh isolated trials, blind
+per-property grading, comparison that proves only one field differed. Two repository states differing
+**architecturally, not behaviourally**, both satisfying the same accepted intent; one fixed task contract
+replayed against each under a fixed configuration; mechanical evidence from files read, bytes read, tool
+calls and files changed; bounded semantic observations under composability, domain alignment and change
+locality. Findings, never a score, and no persistence beyond an ordinary evaluation summary.
 
-- Two repository states that differ **architecturally, not behaviourally**, both satisfying the same
-  accepted intent.
-- One fixed task contract, replayed against each with a fixed agent configuration.
-- Mechanical: files read, bytes read, tool calls, files changed, context traversed but not changed.
-- Semantic: bounded observations under three lenses — composability, domain alignment, change locality —
-  each answered independently, relative to the other state. Findings, never a score.
-- Output: a metric vector plus observations. No verdict, no threshold, no blocking, no persistence
-  beyond an ordinary evaluation summary.
-
-If a fixed agent configuration shows materially different change cost across two states that are
-behaviourally equivalent, the instrument works and longitudinal trajectories become worth building. If
-it does not, the observable is wrong and no amount of sequence length will fix it — the same lesson the
-single-property ceiling taught.
+If a fixed configuration shows materially different change cost across two behaviourally equivalent
+states, the instrument works and longitudinal trajectories become worth building. If it does not, **the
+observable is wrong and no amount of sequence length will fix it** — the lesson the single-property
+ceiling taught, and the one [§58](#58-craft-may-not-need-a-verdict-at-all) eventually collected.
 
 **Explicitly not in that milestone:** a craft role or review purpose (no production routing exists to
-justify one yet under `P2`); a dependency database or static-analysis layer; architecture policy files;
+justify one under `P2`); a dependency database or static-analysis layer; architecture policy files;
 CUPID scoring; holdout trajectories; automatic refactoring; production integration.
-
-**Deferred with a stated trigger.** Longitudinal trajectories become justified once the two-state
-experiment shows the observable discriminates. Holdout trajectories become justified when agents are
-tuned against known future tasks — the overfitting rule already learned in calibration. A craft review
-purpose becomes justified when craft reflection moves into production routing, and not before.
 
 ## 50. Calibrating the instrument — and why there is no reference architecture
 
@@ -318,45 +307,41 @@ is expressed as a scenario with a **response measure**, and the method's outputs
 points and tradeoff points — never a score. Independent corroboration, from a tradition unrelated to
 CUPID, of the position this document already took.
 
-So a case property is stated as a scenario rather than an adjective. Not *"provider isolation is good"*
-but *"replacing the payment provider does not require changes in the order domain."* That has a response
-measure, it can be probed by an actual change, and it cannot be satisfied by naming an interface
-`PaymentPort`.
-
-**Two layers, kept apart.** CUPID supplies the *general lenses* a craft reflector reasons with —
-composability, domain alignment, change locality. A calibration case supplies *case-specific properties*
-tied to its own scenarios. The lenses are how the evaluator thinks; the case properties are the ground
-truth it is graded against. Neither is a global registry.
+So a case property is a scenario rather than an adjective. Not *"provider isolation is good"* but
+*"replacing the payment provider does not require changes in the order domain"* — which has a response
+measure, can be probed by an actual change, and cannot be satisfied by naming an interface
+`PaymentPort`. **Two layers, kept apart:** CUPID supplies the general lenses a reflector reasons with;
+a calibration case supplies case-specific properties tied to its own scenarios. The lenses are how the
+evaluator thinks, the case properties are the ground truth it is graded against, and neither is a global
+registry.
 
 ### 50.6 Case properties are not engineering invariants
 
 A named case property such as *provider replacement stays local* is **benchmark ground truth**. An
 accepted engineering invariant such as *payments must not depend on presentation* is a projection of an
-accepted decision and may block ([§37.4](long-running-autonomy.md#374-executable-invariants--accepted-decisions-made-operative)).
-
-They must not merge. A case property carries no production authority whatever, and a production
-repository is never continuously compared against some exemplar. Where an organisation genuinely
-maintains a template service, `P11` governs: it is evidence, and it becomes authority only if the
-project accepts a decision that says so.
+accepted decision and may block
+([§37.4](long-running-autonomy.md#374-executable-invariants--accepted-decisions-made-operative)). They
+must not merge: a case property carries no production authority whatever, and a production repository is
+never continuously compared against an exemplar. Where an organisation genuinely maintains a template
+service, `P11` governs — it is evidence, and becomes authority only through an accepted decision.
 
 ### 50.7 Vetting, and the reference that can itself be wrong
 
-A state is not good because a strong engineer wrote it, because tests pass, or because it looks clean.
-Architecture is tradeoff-sensitive, and an exemplar can be wrong for its own accepted intent.
-
-The minimum credible vetting: intent and constraints stated; each property expressed as a scenario with
-a response measure; the good states independently challenged against those scenarios by someone who did
-not build them; the degraded state's planted property named and its behavioural equivalence
-demonstrated; human acceptance as the stopping authority. Proofbound-shaped, but it terminates at a
-person rather than recursing.
+A state is not good because a strong engineer wrote it, because tests pass, or because it looks clean;
+architecture is tradeoff-sensitive and an exemplar can be wrong for its own accepted intent. The minimum
+credible vetting: intent and constraints stated; each property expressed as a scenario with a response
+measure; the good states independently challenged against those scenarios by someone who did not build
+them; the degraded state's planted property named and its behavioural equivalence demonstrated; human
+acceptance as the stopping authority. Proofbound-shaped, but terminating at a person rather than
+recursing.
 
 ### 50.8 Tradeoffs mean there may be no ranking
 
-`R` and `E` may differ in tradeoff profile — one better on change locality, the other on operational
-simplicity — with neither dominating. The instrument must be able to report **different defensible
-tradeoff** rather than being forced to order them. Demanding a total ordering over good architectures
-would manufacture a ranking the evidence does not contain, which is the same error as a composite score
-wearing different clothes.
+Two sound states may differ in tradeoff profile — one better on change locality, the other on
+operational simplicity — with neither dominating. The instrument must be able to report **different
+defensible tradeoff** rather than being forced to order them. Demanding a total ordering over good
+architectures manufactures a ranking the evidence does not contain: a composite score in different
+clothes.
 
 ### 50.9 Triangulation is the long-term answer to "bullet-proof"
 
@@ -373,27 +358,21 @@ declared truth; the rest is the ladder, not the first rung.
 
 ### 50.10 The amended minimal experiment
 
-§49's structure is kept — one accepted intent, one contract replayed, one frozen configuration, CE1
-telemetry, three lenses, no score — with one change: **three states, not two.** `R` is good and vetted
-against the case's property scenarios; `E` is good, structurally different from `R`, independently
-vetted against the same scenarios; `D` is behaviourally identical and degraded on exactly **one** named
-property.
+§49's structure is kept — one accepted intent, one contract replayed, one frozen configuration, three
+lenses, no score — with one change: **three states, not two.** `R` is good and vetted against the case's
+property scenarios; `E` is good, structurally different, independently vetted against the same scenarios;
+`D` is behaviourally identical and degraded on exactly **one** named property.
 
-Freeze one future-change contract, one worker configuration, one harness and version, one grader, one
-timeout, one trial count and one arm order. Replay the identical contract against each state. Record
-mechanical traversal from evidence already retained, and one fresh, state-blind craft reflection per
-state under the three lenses. An independent grader holding declared status decides whether the planted
-degradation was identified in `D` and whether `E` was left alone.
+Freeze the contract, configuration, harness version, grader, timeout, trial count and arm order. Replay
+the identical contract against each state and take one fresh state-blind craft reflection per state. An
+independent grader holding declared status decides whether the degradation was identified in `D` and
+whether `E` was left alone. **Success is sensitivity and specificity together**; failure — `E` marked
+down for differing, or `D` passing unnoticed — means the instrument recognises resemblance rather than
+quality. Neither result produces a score, a ranking, a blocking finding or production routing.
 
-**Success** is sensitivity and specificity together. **Failure** — `E` marked down for being different,
-or `D` passing unnoticed — means the instrument recognises resemblance rather than quality, and no
-amount of extra scenarios or trials would fix that. Either result is worth having, and neither produces
-a score, a ranking, a blocking finding or production routing.
-
-Deliberately excluded from V1: agent-generated candidates, which would add generation variance before
-the instrument is validated; multiple cases; multiple degraded properties; longitudinal trajectories;
-and any comparison of Proofbound against a bare model, worth nothing until the instrument is known to
-work.
+Deliberately excluded: agent-generated candidates, which add generation variance before the instrument is
+validated; multiple cases; multiple degraded properties; longitudinal trajectories; and any comparison of
+Proofbound against a bare model.
 
 ### 50.11 The ladder, and the bar for production
 
@@ -430,40 +409,25 @@ stated rule* — conformance against an accepted referent, which is coherence
 ([§38.2](long-running-autonomy.md#38-cumulative-coherence)); craft is defined by having no such
 referent (§41). The calibration would have passed by measuring something else.
 
-### 52.2 The information was already there; the question was not
+### 52.2 The hypothesis V1 produced, and V2 destroyed
 
-The evaluator's own intent material stated, in every arm: *"More than one delivery provider is expected
-over time. Nothing about which providers, or when."* The decision expected to vary was named, visibly,
-in both the sound and the degraded states — and the reflector still reasoned from diff size, concluding
-that provider concerns "remain confined to `app.py` (the composition root)."
+V1's intent material stated, in every arm: *"More than one delivery provider is expected over time."* The
+decision expected to vary was named visibly in both the sound and the degraded states, and the reflector
+still reasoned from diff size, concluding that provider concerns "remain confined to `app.py` (the
+composition root)."
 
-The hypothesis that followed: the deficit is not information the reflector lacked but a **question it
-was never asked** — asked what the change touched, never which changeable decision each part exists to
-hide. V2 tested exactly that and **refuted it**
-([§56](#56-why-routing-could-not-have-worked-here)): asked the question, the reflector answers it
-correctly and upholds the degradation anyway.
+The hypothesis that followed was that the deficit is not information but a **question never asked** —
+the reflector was asked what the change touched, never which changeable decision each part exists to
+hide. Parnas gives that question its foundation: begin with the decisions likely to change, and build
+each module to hide one. Under it, `state-a` hides the provider decision behind an explicit contract,
+`state-b` behind registration and dispatch with no interface type at all, and `state-c` nowhere — its
+endpoint, credential, header format and payload shape sit in the entry point because no module exists to
+conceal them. Two architectures are equivalent when they hide the same decisions, whatever their form,
+which is the anti-imitation rule
+[§51.1](execution-and-review.md#511-bind-consequences-not-resemblance) reaches from another direction.
 
-### 52.3 Parnas gives the missing question a foundation
-
-Parnas's criterion is that one begins with the design decisions likely to change, and each module is
-built to hide such a decision from the others. That reframes the craft question:
-
-> Which decision expected to vary does this part of the system hide, and from what?
-
-`state-a` hides the provider decision behind an explicit contract; `state-b` behind registration and
-dispatch, with no interface type at all; `state-c` hides it nowhere — endpoint, credential, header
-format and payload shape sit in the entry point because no module exists whose purpose is to conceal
-them.
-
-Two architectures are equivalent when they hide the same decisions, whatever their form — the same
-anti-imitation rule [§51.1](execution-and-review.md#511-bind-consequences-not-resemblance) states for
-specifications, reached from another direction. The question is also **answer-blind**: naming the
-decision expected to vary is not naming where it should live.
-
-It also reads V1's false positives without appealing to preference: `notify` gaining a `provider`
-argument, and a dispatch point changing when a provider is registered, are consequences of hiding the
-decision successfully — the boundary used, not breached. V2 found a simpler account
-([§56](#56-why-routing-could-not-have-worked-here)).
+V2 tested the hypothesis directly and **refuted it** ([§56](#56-why-routing-could-not-have-worked-here)):
+asked the question, the reflector answers it correctly and upholds the degradation anyway.
 
 ## 53. Craft, coherence, and the loop between them
 
@@ -515,24 +479,18 @@ the decomposition is not yet the next step either.)
 
 ## 55. Calibration V2 — the result
 
-V2 ran §54's experiment with one design change the evidence forced: **paired re-reflection** rather
-than a fresh implementation matrix. Fourteen of the fifteen V1 implementation trees still yielded a
-reconstructable change, so both arms ran against the same architecture, the same model-written code and
-the same diff — removing implementation variance, the largest noise source at this scale, by
-construction. The treatment is four questions, 667 bytes, each derived from a sentence the untreated
-arm already receives; it names no interface, adapter, registry, port, file or boundary. Full
-configuration and provenance: [§E50.B](evidence/evaluation-runs.md#e50b-system-craft-calibration-v2--routing-is-not-the-deficit-and-the-instrument-does-not-repeat).
+V2 ran §54's experiment with one design change the evidence forced: **paired re-reflection** rather than
+a fresh implementation matrix. Fourteen retained V1 implementations, both arms on each, counterbalanced,
+everything but the appended questions byte-identical — removing implementation variance by construction.
+The treatment is four questions, 667 bytes, each derived from a sentence the untreated arm already
+receives, naming no interface, adapter, registry, port, file or boundary.
 
-| | Sensitivity (state-c) | Specificity (state-a, state-b) |
-|---|---|---|
-| Untreated | 2/5 | 6/7 |
-| Question-routed | 2/5 | 5/7 |
-
-**On the degradation, the treatment changed nothing at all.** Not "no net change" — every one of the
-five state-c pairs returned the *same* outcome in both arms: three missed in both, two recognised in
-both, zero discordant. The three discordant pairs all fall on sound states, one gain and two
-regressions, a difference no run this size distinguishes from noise. The pre-registered falsifier for
-"the reflector is not context-starved" fired cleanly.
+**Sensitivity 2/5 untreated and 2/5 routed. Specificity 6/7 and 5/7.** On the degradation the treatment
+changed nothing at all: every one of the five state-c pairs returned the *same* outcome in both arms,
+zero discordant. The three discordant pairs fall on sound states, one gain and two regressions, which no
+run this size separates from noise. The pre-registered falsifier for "the reflector is not
+context-starved" fired cleanly. Full configuration and per-pair record:
+[§E50.B](evidence/evaluation-runs.md#e50b-system-craft-calibration-v2--routing-is-not-the-deficit-and-the-instrument-does-not-repeat).
 
 ## 56. Why routing could not have worked here
 
@@ -569,23 +527,59 @@ it. No amount of asking fixes that.
 
 ## 57. The instrument does not repeat itself
 
-The untreated arm is a byte-identical rerun of V1's reflection on V1's own implementations, so V2
-also measured something V1 could not: whether the instrument returns the same verdict twice.
+V2's untreated arm was a byte-identical rerun of V1 on V1's own implementations, so it also measured
+something V1 could not: whether the instrument returns the same verdict twice. On thirteen comparable
+implementations it agreed with itself **nine times and disagreed four** — same code, same diff, same
+prompt, same model, same grader.
 
-On thirteen comparable implementations it agreed with itself **nine times and disagreed four**: both of
-V1's state-b false degradations came back upheld, a state-a implementation V1 upheld five-for-five came
-back a false degradation, and a state-c degradation V1 recognised was missed. Same code, same diff,
-same prompt, same model, same grader — different answers.
-
-The retest disagreement is *larger than the treatment effect it was built to detect*. That
-reorders everything: V1's 3/5 and 7/9 were never stable measurements, the difference between them
-and V2's 2/5 and 6/7 is not a finding, and any future comparison at this scale is measuring its
-own variance. Before another treatment is worth running, the instrument needs repeats per
-implementation and a reported spread — n=1 per cell cannot support a claim either way.
+The retest disagreement is larger than the treatment effect it was built to detect. That reorders
+everything: V1's 3/5 and 7/9 were never stable measurements, the drift to V2's 2/5 and 6/7 is not a
+finding, and any comparison at this scale is measuring its own variance. The dedicated repeatability run
+that followed put numbers on it — 43% of reflector conclusions and 17% of grader readings differ from
+their own modal answer on unchanged input
+([§E51](evidence/evaluation-runs.md#e51-craft-instrument-repeatability--both-layers-move)) — and the
+methodology it produced is now general to all Proofbound evaluation
+([§E22](evaluation-comparison.md#e22-reliability-before-validity)).
 
 The obvious repair — state the invariant in the accepted intent — is legitimate in principle and
-forbidden to adopt now, after seeing outcomes; the [implementation
+forbidden to adopt after seeing outcomes; the [implementation
 plan](../specification-reflection-harness-implementation-plan.md) records the conditions under which a
 V3 may use it.
 
-[routing-record]: ../../../evals/results/craft-routing-v1.json
+## 58. Craft may not need a verdict at all
+
+Three milestones have failed at the same joint. V1 found the instrument neither catching the degradation
+nor sparing the sound alternative. V2 asked the missing question and changed nothing, because the
+reflector answered it correctly and still endorsed what it found. The reliability run measured why: on
+identical evidence, **57 of 60 reports named where provider knowledge had moved, and 43% of their
+conclusions about whether that mattered disagreed with their own modal conclusion.**
+
+The observation converges. The judgement does not. The judgement is the only part the instrument records.
+
+That is self-inflicted. Craft is defined here as having **no accepted referent** (§41), which is exactly
+why it cannot ask *is this a breach?* and expect a stable answer: asked to judge against a criterion
+nobody supplied, each evaluator invents one, and the spread across evaluators is the spread of invented
+criteria rather than of architectural quality. Every other review purpose asks a *discovery* question
+([§51](execution-and-review.md#51-what-each-review-purpose-actually-asks)), and multi-property grading
+already asks *does this report identify this specific problem?*
+([§E19.1](evaluation.md#e19-multi-property-scenarios--more-resolution-still-not-a-score)). Craft is the
+one instrument asking for a whole-report verdict, and the one whose reliability collapsed.
+
+**The advisory role points the same way.** Craft gates nothing and holds no authority (§47), and a
+finding that gates nothing needs no verdict — it needs surfacing to someone who can decide. The useful
+output is not "this architecture is degraded" but:
+
+> *Seven of ten independent reflections observed that adding a provider moved endpoint, header and
+> payload knowledge into the module that decides what to notify a user about.*
+
+Stable, checkable against the diff, and leaving the normative question with the parent where `P5`
+already puts it. A concern raised once in ten keeps its support rather than being voted away: for
+discovery, union is the right operator and election is not
+([§E23.2](evaluation-comparison.md#e23-what-one-semantic-measurement-should-be)).
+
+**What this does not resolve.** Recurrence is still not authority: §53 already settles that pressure
+becomes binding only by passing through an accepted decision, and ten reflections converging on adapters
+would change nothing about it. Calibration still needs ground truth; the question changes from *did the
+report classify the architecture correctly* to *how reliably is the planted pressure surfaced, and how
+much unsupported pressure comes with it*. Consolidating semantically equivalent concerns across samples
+is itself a semantic step, and is **not** designed here.
