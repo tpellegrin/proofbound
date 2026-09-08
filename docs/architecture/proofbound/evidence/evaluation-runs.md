@@ -392,3 +392,86 @@ carries the entire difference, and one obligation improved under treatment. That
 generalises beyond `spec-reflector`, this model, this harness, or these three scenarios. And
 nothing here rewrites `P12` or changes a runtime default — evaluation supplies evidence; an
 accepted architectural decision is what would change the product.
+
+## E50.A System-craft calibration V1 — the instrument is not ready
+
+The first test of whether Proofbound's craft instrument recognises architectural quality or
+merely resemblance. It does neither reliably, and the failures say why.
+
+**Frozen configuration**, pre-registered before the first official trial. Proofbound
+`51d049b`; one calibration case, `notification-provider-boundary`; implementer
+`deepseek/deepseek-v4-flash`; craft reflector `opencode/nemotron-3-ultra-free`, state-blind;
+grader `opencode/big-pickle`, blind to declared status; `opencode-cli 1.18.29`; Python 3.14;
+five trials per state in a counterbalanced order fixed in advance.
+
+**The case held up.** All three states passed one identical behaviour suite, none already
+satisfied the future change, and the correctness gate did its job — fourteen of fifteen trials
+implemented the change correctly, so craft observations were never confused with functional
+failures. The one exception was a setup failure on `state-b` from the path mis-transcription
+already recorded in [§E16.10](../evaluation-comparison.md#e1610-two-limits-recorded-rather-than-fixed) and E20, correctly
+classified rather than counted as a semantic result.
+
+| State | Declared | Attempted | Valid | Future change correct | Outcome |
+|---|---|---|---|---|---|
+| `state-a` | upholds property | 5 | 5 | 5 | **5 recognised-upheld** |
+| `state-b` | upholds property | 5 | 4 | 4 | 2 recognised-upheld, **2 false-degradation** |
+| `state-c` | degraded | 5 | 5 | 5 | 3 recognised-degraded, **2 missed-degradation** |
+
+**Sensitivity 3/5. Specificity 7/9**, with every false degradation falling on `state-b` — the
+structurally different sound state, and the only control that can distinguish recognising
+quality from recognising a preferred form. `state-a` was never once misjudged.
+
+### E50.A.1 The mechanical channel would have ranked the degraded state best
+
+Median files changed to add the second provider: **3** for each sound state, **1** for the
+degraded one. The architecture with no delivery boundary concentrates every change in the file
+that already contains everything, so a change-surface heuristic scores it highest. This is the
+concrete form of the warning `P13` makes in the abstract, and it is why craft cannot be counted.
+
+### E50.A.2 Why the degradation was missed
+
+The reflector reasoned from the diff, not the structure. Its reports state that provider
+concerns "remain confined to `app.py` (the composition root)" and that adding a provider
+"required changes only in `app.py`, with zero modifications to retry, status, transport, or the
+notification domain modules."
+
+Both sentences are true about the diff and wrong about the architecture. `app.py` in that state
+is not a composition root; it is where the endpoint, the credential, the header format and the
+payload shape live because there is no boundary to put them behind. The reflector took a small
+change surface as evidence of good locality and reached for a legitimate-sounding name for the
+file that made it small. **Change-surface reasoning in semantic clothing is still change-surface
+reasoning**, and it is exactly the failure mode this calibration existed to detect.
+
+### E50.A.3 The false degradations are partly a grading failure, not only a preference
+
+Both `state-b` false positives came from reports objecting that `delivery/__init__.py` must be
+edited to register a new provider, and that `app.notify` gained a `provider` parameter. The
+grader read "leaks" and classified the property as failing.
+
+Neither observation is about the declared property, which concerns the code that decides *what*
+to notify a user about. `delivery/__init__.py` is inside the delivery boundary; a dispatch point
+changing when a provider is added is the boundary working. And the signature change was
+**required by the contract**, so a reflector penalising it is penalising the requirement.
+
+So the specificity failure is at least partly the grader failing to hold a narrow question
+against report language that merely sounds like the property. That is a different defect from
+"the instrument prefers `state-a`'s shape", and the evidence does not currently separate them —
+`state-a` scoring 5/5 is consistent with either.
+
+### E50.A.4 What this establishes
+
+Under this configuration and this case, the craft instrument **did not demonstrate either
+sensitivity or specificity**. It is not ready to be trusted, and the production bar in
+[§50.11](../system-craft.md#5011-the-ladder-and-the-bar-for-production) is not met — which is
+what that bar is for.
+
+What the milestone did establish is that the *method* works: three behaviourally identical
+states with declared status, a correctness gate, blind reflection and blind grading produced
+failures precise enough to localise. Two independent defects are now named rather than
+suspected — a reflector that substitutes change surface for structure, and a grader whose
+narrow question is not narrow enough — and neither would have been visible without the
+structurally different sound state. A two-state experiment would have reported 3/5 sensitivity
+and called the specificity question unasked.
+
+Not established: anything about other domains, other properties, other models, or whether these
+defects are fixable by context routing rather than by a different instrument.

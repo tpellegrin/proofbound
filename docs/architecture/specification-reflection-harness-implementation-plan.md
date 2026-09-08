@@ -1294,7 +1294,7 @@ and is **not proof of anchoring**: two arms cannot separate it from added contex
 claim stays operational. Full record in
 [§E21.A](proofbound/evidence/evaluation-runs.md#e21a-the-p12-control--result).
 
-## 7H. Eval V5 — the three-state craft calibration  *(designed; not implemented)*
+## 7H. Eval V5 — the three-state craft calibration  *(IMPLEMENTED; instrument not ready)*
 
 Design authority: [`system-craft.md` §50](proofbound/system-craft.md#50-calibrating-the-instrument--and-why-there-is-no-reference-architecture).
 **Amends the earlier two-state form**, which is superseded and must not be implemented: a
@@ -1331,6 +1331,18 @@ dependency database; production routing.
 
 **Anti-goal.** Craft has no accepted referent, so nothing here may block, rank good architectures, or
 produce a score. A milestone that ends with an architecture number has built the wrong instrument.
+
+**Outcome: neither sensitivity nor specificity was demonstrated.** Sensitivity 3/5; specificity 7/9,
+with every false degradation on the structurally different sound state and none on the other. The case
+itself held — one identical behaviour suite across all three states, no state already satisfying the
+probe, and fourteen of fifteen trials implementing the change correctly, so craft was never confused
+with correctness. Two independent defects are now named rather than suspected: a reflector that reads a
+small change surface as good locality and calls a file with no boundary "the composition root", and a
+grader whose narrow question is not narrow enough to separate the declared property from any report
+sentence containing the word "leak". Median files changed was 1 for the degraded state against 3 for
+each sound one, so a change-surface heuristic would have ranked the degradation best — the concrete form
+of what `P13` states in the abstract. Full record in
+[§E50.A](proofbound/evidence/evaluation-runs.md#e50a-system-craft-calibration-v1--the-instrument-is-not-ready).
 
 ## 7B. Threat mitigation status
 

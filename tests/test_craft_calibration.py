@@ -247,12 +247,27 @@ class HistoricalCompatibilityTest(unittest.TestCase):
             _scenario.load(scenarios / "checkout-obligations")["identity"],
             "63c9f42f0c9b0fd903d723c9309637cb170d00ab0977e4630c928ec7d355b91d")
 
-    def test_no_committed_evaluation_summary_gained_craft_fields(self):
+    def test_no_semantic_evaluation_summary_gained_craft_fields(self):
+        """Craft records are their own format; they must not bleed into the eval populations."""
         for path in sorted((ROOT / "evals" / "results").glob("*.json")):
+            if path.name.startswith("craft-"):
+                continue  # the craft record's own format, checked below
             with self.subTest(summary=path.name):
                 blob = path.read_text(encoding="utf-8").lower()
                 for token in ("craft", "architecture", "state-a", "state-c"):
                     self.assertNotIn(token, blob)
+
+    def test_the_craft_record_is_a_separate_format_carrying_no_score(self):
+        path = ROOT / "evals" / "results" / "craft-calibration-v1.json"
+        if not path.is_file():
+            self.skipTest("no committed calibration record")
+        record = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(record["format"], "proofbound-craft-calibration-v1")
+        blob = json.dumps(record).lower()
+        for forbidden in ("score", "rank", "winner", "reference_state", "gold"):
+            self.assertNotIn(forbidden, blob)
+        # Raw reflections stay local; the durable record carries counts and configuration.
+        self.assertNotIn("composability", blob)
 
 
 if __name__ == "__main__":
