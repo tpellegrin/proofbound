@@ -87,3 +87,63 @@ It may not substitute its own accumulated judgment for independent reflection. T
 independent evaluator in the system — it has been present for every decision and is maximally
 contaminated by exactly the execution context [§38.2](long-running-autonomy.md#382-the-cumulative-coherence-audit) excludes. An orchestrator that reviews cumulative
 coherence itself is the clearest possible violation of P12.
+
+## 51. What each review purpose actually asks
+
+The registry guarantees exactly one thing: *the declared purpose was reviewed by a role authorized for
+that declared purpose*. Four of the five purposes name the same role today, and
+[§27.1](#271-decision-resolved--the-review-purpose-vocabulary-is-fine-grained) keeps them separate
+because the recorded reason for a review is not recoverable from the role that performed it.
+
+What was never written down is what distinguishes them **as questions**. A `spec-reflector` handed a
+contract declaring `design-reflection` has, until now, had no canonical statement of what a design
+reflection asks that a specification reflection does not. That is a gap in guidance, not in mechanism:
+nothing here becomes a field, a kind, or a check.
+
+| Purpose | The question it asks | What a finding looks like |
+|---|---|---|
+| `proposal-reflection` | Does this expose the decisions the intent actually forces, including the ones it would be convenient not to raise? | A consequential decision the intent implies is neither resolved nor acknowledged as open |
+| `design-reflection` | Are those decisions resolved, and are the tradeoffs the resolution accepts stated rather than assumed? | A decision left unresolved, resolved two ways in different places, or resolved with a cost nobody named |
+| `specification-reflection` | Is each accepted decision bound to something that could later be shown false? | An accepted decision with no observable consequence, or a consequence that binds a mechanism the decision never required |
+| `consistency-reflection` | Do the accepted artifacts agree as one engineering authority? | Two accepted artifacts that are each defensible and jointly contradictory |
+| `implementation-review` | Did the implementation satisfy the contract it was bound to? | Work that does not meet its accepted contract |
+
+**These are questions, never checklists.** A reflection is not required to canvass scalability,
+security, observability and the rest; `P13` makes generic breadth expensive and generic breadth is what
+produces generic prose. The obligation is to the decisions this change actually forces, which is a
+property of the change and not of a template.
+
+### 51.1 Bind consequences, not resemblance
+
+The distinction that makes `specification-reflection` a different question from `design-reflection` is
+worth stating on its own, because it is the rule that keeps accepted architecture from becoming
+architectural fashion.
+
+A specification binds what must be **true**, not what must be **built**. *"Provider endpoint,
+credential, payload shape and error vocabulary do not reach the code that decides what to notify a user
+about"* is a consequence: it can be shown false, and two quite different architectures can satisfy it —
+one hiding the provider behind an explicit contract and an adapter, another behind registration and
+dispatch with no interface type at all. *"There must be a `Sender` interface with one adapter per
+provider"* binds a mechanism, and rejects the second architecture for its form rather than its effect.
+
+**Mechanism may be bound when the mechanism is itself part of accepted intent** — a wire protocol, a
+regulatory requirement, a platform constraint, or a case where naming the mechanism is the only way to
+make the consequence falsifiable. The rule is not *never bind mechanism*; it is *do not bind mechanism
+that the decision did not require*.
+
+This is `P11` applied to Proofbound's own output. Repository patterns are evidence rather than
+authority, and a specification that freezes the shape of one good solution turns a pattern into
+authority through the acceptance chain instead of through imitation.
+
+### 51.2 Discovery downstream is repair, not a new workflow
+
+Nothing above implies a waterfall. A design will expose decisions the proposal did not see, and a
+specification will occasionally expose that an accepted decision cannot be bound at all. Those are
+ordinary outcomes with an existing mechanism: the artifact is repaired under the same contract, or —
+when the engineering intent itself has changed — the upstream artifact is superseded (`P9`), which
+makes its dependents `needs-revalidation` through the ledger closure that already exists. No new state
+records that a decision was discovered late.
+
+Proportionality applies to process as well as to architecture. A change that forces no consequential
+decision has a short proposal and a short design, and that is the system working rather than the
+system being skipped.

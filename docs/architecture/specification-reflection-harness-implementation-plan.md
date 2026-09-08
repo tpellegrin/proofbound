@@ -1344,6 +1344,39 @@ each sound one, so a change-surface heuristic would have ranked the degradation 
 of what `P13` states in the abstract. Full record in
 [§E50.A](proofbound/evidence/evaluation-runs.md#e50a-system-craft-calibration-v1--the-instrument-is-not-ready).
 
+## 7I. Eval V6 — craft calibration V2, as a context treatment  *(designed; not implemented)*
+
+Design authority: [`system-craft.md` §54](proofbound/system-craft.md#54-calibration-v2--separate-the-explanations).
+
+**Why not an artifact change.** The hypothesis that Calibration V1 failed because Proposal → Design →
+Specification are too weak does not survive the evidence: V1 ran on repositories containing no artifacts
+at all, and supplying the reflector with accepted design decisions would have converted craft into
+conformance review against a referent, which is coherence. The artifact model needs no new artifact, no
+protocol field, no kind — kinds were tested and rejected — and no new principle. What was missing was
+written down instead: what each review purpose asks
+([§51](proofbound/execution-and-review.md#51-what-each-review-purpose-actually-asks)).
+
+**Question.** Does asking the reflector which decisions are expected to vary recover sensitivity without
+costing specificity?
+
+**Scope.** One frozen context treatment against V1's frozen case: same three states, property, models,
+grader, probe and counterbalanced order. The treated arm additionally receives the decisions expected to
+vary, **stated as questions and sourced from the intent** rather than from ground truth. Every
+underlying fact was already visible in V1, which is what makes it a routing experiment rather than a
+leak.
+
+**Falsifiers, fixed in advance:** unchanged sensitivity means the instrument, not its context, is the
+problem; recovered sensitivity at the cost of specificity means the questions are functioning as hints;
+both improving means routing was the deficit.
+
+**Separately and not simultaneously**, the grader's property should be decomposed into independently
+graded obligations, the resolution the multi-property milestone already established. Treating the
+reflector and decomposing the grader in one run would leave V2 as unable to attribute its result as V1
+was.
+
+**Non-goals:** artifact semantics implementation; a craft role or purpose; giving the reflector accepted
+decisions; a second calibration case; production routing; any score.
+
 ## 7B. Threat mitigation status
 
 RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC

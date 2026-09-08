@@ -415,3 +415,111 @@ equivalent-good alternatives, demonstrably does not reduce to size or coupling h
 calibrated grader, holds across more than one domain, repeats under a frozen configuration, and has its
 limitations written down. Until then it is an evaluation experiment, exactly as every measurement in
 this project has been before the architecture was allowed to depend on it.
+
+## 52. What the failed calibration actually showed
+
+Calibration V1 failed on both counts — sensitivity 3/5, specificity 7/9 with every false positive on
+the structurally different sound state. The tempting reading is that Proofbound lacks a transformation
+from intent into bound architectural consequences, and that a craft evaluator handed accepted design
+decisions would have judged correctly. That reading does not survive the evidence.
+
+### 52.1 The failure was not caused by missing artifact semantics
+
+The calibration ran on three repositories that contained **no proposal, design or specification at
+all** — hand-built states and a future-change contract. Whatever is or is not underspecified about
+artifact semantics, it cannot explain a result produced where no artifacts existed.
+
+Worse, the proposed remedy would have destroyed the experiment. Handing the reflector *"delivery owns
+provider-specific knowledge"* converts the question from *is this architecture sound* into *does this
+code match the stated rule*. That is conformance review against an accepted referent, which is
+coherence ([§38.2](long-running-autonomy.md#38-cumulative-coherence)), and craft is defined precisely by
+having no such referent (§41). The calibration would then have passed by measuring something else.
+
+### 52.2 The information was already there; the question was not
+
+The evaluator's own intent material stated, in every arm: *"More than one delivery provider is expected
+over time. Nothing about which providers, or when."* The decision expected to vary was named, visibly,
+in both the sound and the degraded states — and the reflector still reasoned from diff size, concluding
+that provider concerns "remain confined to `app.py` (the composition root)."
+
+So the deficit is not information the reflector lacked. It is a **question the reflector was never
+asked**. It was asked what the change touched. It was not asked which changeable decision each part of
+the system exists to hide.
+
+### 52.3 Parnas gives the missing question a foundation
+
+Parnas's criterion is that one begins with the design decisions likely to change, and each module is
+built to hide such a decision from the others. That reframes the craft question in a way that discriminates
+exactly where V1 could not:
+
+> Which decision expected to vary does this part of the system hide, and from what?
+
+- `state-a` hides the provider decision behind an explicit contract.
+- `state-b` hides the same decision behind registration and dispatch, with no interface type at all.
+- `state-c` hides it nowhere: the endpoint, credential, header format and payload shape sit in the entry
+  point because there is no module whose purpose is to conceal them.
+
+Two architectures are equivalent when they hide the same decisions, whatever their form — which is the
+same anti-imitation rule that
+[§51.1](execution-and-review.md#511-bind-consequences-not-resemblance) states for specifications,
+arriving from a different direction. And the question is **answer-blind**: naming the decision expected
+to vary is not naming where it should live. *"A second provider is expected"* was already public;
+*"delivery owns it"* would be the answer.
+
+This also explains the grader's false positives without appealing to preference. `notify` gaining a
+`provider` argument, and a dispatch point changing when a provider is registered, are both consequences
+of hiding the decision successfully — the boundary being used, not breached. A grader asked only whether
+a report "says the property fails" has no way to separate a boundary working from a boundary leaking.
+
+## 53. Craft, coherence, and the loop between them
+
+The boundary sharpens rather than moves.
+
+| | Referent | May block | Question |
+|---|---|---|---|
+| **Coherence** | Accepted decisions and their bound consequences | Yes, on the authority of the decision it projects | Does the system still uphold what was accepted? |
+| **Craft** | None | Never | Which decisions is this system failing to hide that nobody decided to hide? |
+
+They compose into a loop that already has every mechanism it needs: a craft observation is architectural
+pressure; pressure is escalated rather than settled by a bounded worker (`P7`); escalation produces a
+proposal, a decision and a bound consequence through the ordinary acceptance chain; from that point the
+consequence is coherence's to protect, and may project into an executable invariant
+([§37.4](long-running-autonomy.md#374-executable-invariants--accepted-decisions-made-operative)).
+
+Nothing in that loop is new machinery, and the direction matters: pressure becomes authority only by
+passing through an accepted decision. Craft never acquires authority by being repeatedly observed, which
+is what keeps `P11` intact — an evaluator's preference cannot become policy by repetition.
+
+## 54. Calibration V2 — separate the explanations
+
+V1 cannot distinguish a weak reflector, insufficient routed context, an unobservable property, an
+ambiguous grader, or a badly framed craft task. V2 should separate the two that the evidence actually
+implicates, and it is a **context treatment**, not a new instrument.
+
+**Independent variable.** What the reflector is asked, holding everything else frozen — same three
+states, same property, same models, same grader, same probe, same counterbalanced order.
+
+| Arm | Reflector receives |
+|---|---|
+| **Control** | Exactly what V1 supplied: intent, contract, before-state, diff |
+| **Treatment** | The same, plus the decisions expected to vary — stated as questions, never as answers: *where does provider-specific knowledge live; who owns provider selection; where are provider outcomes normalised* |
+
+The treatment adds a question and no answer. It does not say what should hide the decision, and every
+underlying fact was already visible in V1's material, which is what makes this a legitimate routing
+experiment rather than a leak. Those questions come from the **intent**, not from the ground-truth
+manifest — a distinction that must be enforced, because sourcing them from the manifest would make the
+result unable to generalise beyond the benchmark.
+
+**Falsifiers, fixed in advance.** If the treatment leaves sensitivity unchanged, the reflector is not
+context-starved and the instrument itself is the problem. If it recovers sensitivity but costs
+specificity, the questions are functioning as hints and the treatment is a disguised answer. If both
+improve, routing was the deficit — and the production question becomes where such questions legitimately
+come from outside a benchmark.
+
+**The grader needs its own correction, independently.** V1's specificity failures were partly a grader
+that could not separate a boundary being used from a boundary being breached. The property should be
+decomposed into independently graded obligations — provider detail absent from the notification domain;
+provider selection permitted in provider-neutral form; registration changes permitted inside the
+boundary — which is the resolution the multi-property milestone already established for exactly this
+class of failure. Decompose the grader **or** treat the reflector, not both at once, or V2 will be no
+more able to attribute its result than V1 was.
