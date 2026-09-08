@@ -4,9 +4,11 @@
     WARNING: `run` invokes real models — one implementation trial, one craft reflection and one
     grading call per trial. Nothing here is part of the deterministic suite.
 
-    validate   check behavioural equivalence and blindness without any model call
-    run        execute the calibration matrix and write a summary
-    reflect    re-reflect on retained implementations under two context arms
+    validate        check behavioural equivalence and blindness without any model call
+    run             execute the calibration matrix and write a summary
+    reflect         re-reflect on retained implementations under two context arms
+    regrade         repeat the grader over frozen report bytes
+    repeat-reflect  repeat the reflector over frozen implementations, grading each result once
 """
 from __future__ import annotations
 
@@ -24,6 +26,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import _craft  # noqa: E402
+import _repeat  # noqa: E402
 from _trial import VALID, harness_version, provider_available, run_trial  # noqa: E402
 
 CASES = HERE / "craft"
@@ -276,6 +279,161 @@ def cmd_reflect(args: argparse.Namespace) -> int:
     return 0
 
 
+def _anchors(case_dir: Path) -> tuple[dict, list[dict]]:
+    """The frozen report corpus, verified byte-for-byte against its manifest.
+
+    An anchor whose bytes no longer hash to what was pre-registered is not an anchor: the whole
+    point of layer G is that the text does not move, so a mismatch stops the run rather than
+    quietly measuring something else.
+    """
+    directory = Path(case_dir) / "anchors"
+    manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
+    loaded = []
+    for entry in manifest["anchors"]:
+        data = (directory / f"{entry['id']}.md").read_bytes()
+        got = hashlib.sha256(data).hexdigest()
+        if got != entry["sha256"] or len(data) != entry["bytes"]:
+            raise ValueError(f"anchor {entry['id']} no longer matches its manifest hash")
+        loaded.append({**entry, "report": data.decode("utf-8")})
+    return manifest, loaded
+
+
+def _frozen_system(args: argparse.Namespace, **extra: object) -> dict:
+    return {"proofbound_sha": subprocess.run(
+                ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+                capture_output=True, text=True, check=False).stdout.strip() or None,
+            "harness": "opencode-cli", "harness_version": harness_version(),
+            "python": f"{sys.version_info.major}.{sys.version_info.minor}",
+            "grader_prompt_sha256": _repeat.sha256_text(_craft.GRADER_PROMPT),
+            **extra}
+
+
+def cmd_regrade(args: argparse.Namespace) -> int:
+    """Layer G — identical report bytes, graded again and again."""
+    case = _craft.load(args.case)
+    ok, detail = provider_available()
+    if not ok:
+        print(f"ERROR: cannot grade: {detail}", file=sys.stderr)
+        return 2
+    manifest, anchors = _anchors(args.case)
+    scenario = case["property"]["scenario"]
+    config = {
+        "format": "proofbound-craft-grader-repeat-v1", "layer": _repeat.GRADER_LAYER,
+        "case": case["id"], "property": case["property"], "repeats": args.repeats,
+        "anchor_selection": manifest["selection_rule"],
+        "anchors": [{k: v for k, v in a.items() if k != "report"} for a in anchors],
+        "system": _frozen_system(args, grader_model=args.grader_model),
+    }
+    measurements = _repeat.load_series(args.out, config)
+    if measurements:
+        print(f"resuming: {len(measurements)} measurements already recorded for this "
+              f"frozen configuration")
+
+    for anchor in anchors:
+        status = case["ground_truth"][anchor["state"]]["status"]
+        for n in range(1, args.repeats + 1):
+            if _repeat._already_done(measurements, (anchor["id"], n)):
+                continue
+            got = _repeat.grade_once(
+                anchor["report"], scenario, status=status,
+                grader=_craft.classify_claim, outcome=_craft.outcome,
+                unavailable=_craft.UNAVAILABLE, model=args.grader_model)
+            measurements.append({"item": anchor["id"], "repeat": n, **got})
+            _repeat.write_series(args.out, config, measurements)
+            print(f"  {anchor['id']} {n}/{args.repeats}: {got['status']} "
+                  f"{got.get('outcome') or ''}", flush=True)
+
+    for anchor in anchors:
+        print(f"\n{anchor['id']} ({anchor['state']}, prior {anchor['prior_outcome']}): "
+              f"{_repeat.distribution(measurements, anchor['id'])['counts']}")
+    print(f"\nrecord written: {args.out}")
+    return 0
+
+
+def cmd_repeat_reflect(args: argparse.Namespace) -> int:
+    """Layers R and E — identical architecture, reflected again and again, each result graded once."""
+    case = _craft.load(args.case)
+    ok, detail = provider_available()
+    if not ok:
+        print(f"ERROR: cannot reflect: {detail}", file=sys.stderr)
+        return 2
+    intent = Path(case["intent"]).read_text(encoding="utf-8")
+    contract = Path(case["contract"]).read_text(encoding="utf-8")
+    by_id = {s["id"]: s for s in case["states"]}
+    wanted = [name.strip() for name in args.instances.split(",") if name.strip()]
+    retained = {t["instance"]: t for t in _retained_trials(args.evidence, case)}
+    missing = [name for name in wanted if name not in retained]
+    if missing:
+        raise ValueError(f"no retained implementation for: {', '.join(missing)}")
+
+    items = []
+    for name in wanted:
+        trial = retained[name]
+        state = by_id[trial["state"]]
+        before = "\n".join(
+            f"--- {p.relative_to(state['fixture'])}\n"
+            f"{p.read_text(encoding='utf-8', errors='ignore')}"
+            for p in sorted(_craft._fixture_files(Path(state["fixture"]))))
+        diff = trial["diff"][:20000]
+        prompt = _craft.CRAFT_PROMPT.format(intent=intent, contract=contract,
+                                            before=before, diff=diff)
+        items.append({"instance": name, "state": trial["state"],
+                      "state_identity": trial["identity"], "before": before, "diff": diff,
+                      "before_sha256": _repeat.sha256_text(before),
+                      "diff_sha256": _repeat.sha256_text(diff),
+                      "prompt_sha256": _repeat.sha256_text(prompt),
+                      "prompt_bytes": len(prompt.encode("utf-8"))})
+
+    config = {
+        "format": "proofbound-craft-reflector-repeat-v1", "layer": _repeat.REFLECTOR_LAYER,
+        "case": case["id"], "property": case["property"], "repeats": args.repeats,
+        "treatment": None,
+        "instances": [{k: v for k, v in i.items() if k not in ("before", "diff")} for i in items],
+        "system": _frozen_system(args, reflector_model=args.reflector_model,
+                                 grader_model=args.grader_model,
+                                 craft_prompt_sha256=_repeat.sha256_text(_craft.CRAFT_PROMPT)),
+    }
+    raw = _repeat.load_series(args.raw, config)
+    if raw:
+        print(f"resuming: {len(raw)} measurements already recorded for this frozen configuration")
+
+    scenario = case["property"]["scenario"]
+    for item in items:
+        status = case["ground_truth"][item["state"]]["status"]
+        for n in range(1, args.repeats + 1):
+            if _repeat._already_done(raw, (item["instance"], n)):
+                continue
+            got = _repeat.reflect_once(
+                reflector=_craft.reflect, intent=intent, contract=contract,
+                before=item["before"], diff=item["diff"], model=args.reflector_model)
+            record = {"item": item["instance"], "repeat": n,
+                      "reflection_status": got["status"], "seconds_reflect": got["seconds"]}
+            if got["status"] == _repeat.REFLECTED:
+                record.update({"report": got["report"], "report_sha256": got["report_sha256"],
+                               "report_bytes": got["report_bytes"]})
+                graded = _repeat.grade_once(
+                    got["report"], scenario, status=status, grader=_craft.classify_claim,
+                    outcome=_craft.outcome, unavailable=_craft.UNAVAILABLE,
+                    model=args.grader_model)
+                record.update({"status": graded["status"], "claim": graded["claim"],
+                               "outcome": graded["outcome"], "reason": graded["reason"],
+                               "seconds_grade": graded["seconds"]})
+            else:
+                record.update({"status": _repeat.REFLECTION_FAILURE, "claim": None,
+                               "outcome": None, "reason": got["reason"]})
+            raw.append(record)
+            _repeat.write_series(args.raw, config, raw)
+            _repeat.write_series(args.out, config, _repeat.redact(raw))
+            print(f"  {item['instance']} {n}/{args.repeats}: {record['status']} "
+                  f"{record.get('outcome') or ''}", flush=True)
+
+    for item in items:
+        print(f"\n{item['instance']} ({item['state']}): "
+              f"{_repeat.distribution(raw, item['instance'])['counts']}")
+    print(f"\ndurable record: {args.out}\nlocal reports:  {args.raw}")
+    return 0
+
+
 def parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="command", required=True)
@@ -301,6 +459,26 @@ def parser() -> argparse.ArgumentParser:
     f.add_argument("--grader-model", required=True)
     f.add_argument("--out", type=Path, required=True)
     f.set_defaults(handler=cmd_reflect)
+
+    g = sub.add_parser("regrade", help="layer G: repeat the grader over frozen report bytes")
+    g.add_argument("case", type=Path)
+    g.add_argument("--grader-model", required=True)
+    g.add_argument("--repeats", type=int, required=True)
+    g.add_argument("--out", type=Path, required=True)
+    g.set_defaults(handler=cmd_regrade)
+
+    q = sub.add_parser("repeat-reflect",
+                       help="layers R and E: repeat the reflector over frozen implementations")
+    q.add_argument("case", type=Path)
+    q.add_argument("--evidence", type=Path, required=True)
+    q.add_argument("--instances", required=True,
+                   help="comma-separated retained implementation instance names")
+    q.add_argument("--reflector-model", required=True)
+    q.add_argument("--grader-model", required=True)
+    q.add_argument("--repeats", type=int, required=True)
+    q.add_argument("--out", type=Path, required=True, help="durable record; carries no report text")
+    q.add_argument("--raw", type=Path, required=True, help="local record; retains every report")
+    q.set_defaults(handler=cmd_repeat_reflect)
     return ap
 
 

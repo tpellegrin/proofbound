@@ -1,0 +1,69 @@
+{
+  "anchors": [
+    {
+      "bytes": 2062,
+      "id": "g1",
+      "instance": "state-a-1788834064346",
+      "prior_outcome": "recognised-upheld",
+      "sha256": "c5728cebcb46e70dc8074915ea1fc6bb5a7cdacf8407cf58f47bdc1c9cf35223",
+      "source": "v1",
+      "state": "state-a",
+      "why": "Sound architecture, upheld. The most historically stable instance: upheld in V1 and again in the V2 untreated rerun."
+    },
+    {
+      "bytes": 1611,
+      "id": "g2",
+      "instance": "state-a-1788835442112",
+      "prior_outcome": "false-degradation",
+      "sha256": "592690cf6d37dd348017a03e8f229f3b39b610223414d40105df1e48c5974962",
+      "source": "v2-untreated",
+      "state": "state-a",
+      "why": "Sound architecture, called degraded. The V2 side of an instance V1 upheld five-for-five and the untreated rerun marked down."
+    },
+    {
+      "bytes": 1714,
+      "id": "g3",
+      "instance": "state-b-1788836383405",
+      "prior_outcome": "recognised-upheld",
+      "sha256": "50da19dc4742103b77cc0520562cb107198f46b4dac8cfe9d4390386fb0b5b29",
+      "source": "v2-untreated",
+      "state": "state-b",
+      "why": "Alternative-good architecture, upheld. The upheld side of the instance whose judgement reversed between V1 and V2."
+    },
+    {
+      "bytes": 1577,
+      "id": "g4",
+      "instance": "state-b-1788836383405",
+      "prior_outcome": "false-degradation",
+      "sha256": "ae9b283a74acb9d3b76a7d641f723e39fb15903bb6d64850c84f72a2b1636121",
+      "source": "v1",
+      "state": "state-b",
+      "why": "The same instance's other side: V1 called this architecture degraded. g3 and g4 are the two semantic shapes of one reversal."
+    },
+    {
+      "bytes": 1665,
+      "id": "g5",
+      "instance": "state-c-1788834970624",
+      "prior_outcome": "missed-degradation",
+      "sha256": "a9013784462d5eb770d909cb0d26f79d1ac24117984234293518e6aec55835c8",
+      "source": "v2-untreated",
+      "state": "state-c",
+      "why": "Degraded architecture, called upheld \u2014 the `app.py`-is-the-composition-root reading, missed in V1 and in both V2 arms. Stable, and stably wrong."
+    },
+    {
+      "bytes": 1753,
+      "id": "g6",
+      "instance": "state-c-1788835274286",
+      "prior_outcome": "recognised-degraded",
+      "sha256": "d653a11af063a5a2d759638b5e86bffb55ea687992a418e1cd85fc87d47b16b2",
+      "source": "v1",
+      "state": "state-c",
+      "why": "Degraded architecture, correctly recognised \u2014 the V1 side of the instance the V2 untreated rerun missed."
+    }
+  ],
+  "case": "notification-provider-boundary",
+  "format": "proofbound-craft-anchors-v1",
+  "provenance": "Reports are verbatim reflector output already produced by the V1 calibration and the V2 untreated arm. No report was written, edited or regenerated for this experiment.",
+  "purpose": "Frozen craft reports, selected before any repeated grading, for measuring grader repeatability on identical report bytes.",
+  "selection_rule": "One report per outcome class, plus both sides of each instance whose judgement changed between V1 and the byte-identical V2 untreated rerun. Chosen for semantic shape and known prior grade, never for observed instability under repetition \u2014 no repeated grading had been run."
+}
