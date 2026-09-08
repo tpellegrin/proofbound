@@ -368,20 +368,16 @@ is different and achievable:
 > context economy and longitudinal evidence each provide an independent way for the process to falsify
 > its own assumptions.
 
-One property, corroborated across channels — mechanical traversal, semantic observation, and the cost of
-an actual future change — is far stronger than any single verdict. V1 exercises two of those channels
-against declared truth; the rest is the ladder, not the first rung.
+One property corroborated across channels beats any single verdict. V1 exercises two of them against
+declared truth; the rest is the ladder, not the first rung.
 
 ### 50.10 The amended minimal experiment
 
 §49's structure is kept — one accepted intent, one contract replayed, one frozen configuration, CE1
-telemetry, three lenses, no score — with one change: **three states, not two.**
-
-| State | Declared status |
-|---|---|
-| `R` | Good. Vetted against the case's property scenarios |
-| `E` | Good. Structurally different from `R`, independently vetted against the same scenarios |
-| `D` | Behaviourally identical, degraded on exactly **one** named property |
+telemetry, three lenses, no score — with one change: **three states, not two.** `R` is good and vetted
+against the case's property scenarios; `E` is good, structurally different from `R`, independently
+vetted against the same scenarios; `D` is behaviourally identical and degraded on exactly **one** named
+property.
 
 Freeze one future-change contract, one worker configuration, one harness and version, one grader, one
 timeout, one trial count and one arm order. Replay the identical contract against each state. Record
@@ -389,16 +385,15 @@ mechanical traversal from evidence already retained, and one fresh, state-blind 
 state under the three lenses. An independent grader holding declared status decides whether the planted
 degradation was identified in `D` and whether `E` was left alone.
 
-**Success** is sensitivity and specificity together: the degradation in `D` identified, and `E` not
-reported as degraded merely for differing from `R`. **Failure** — `E` marked down for being different,
+**Success** is sensitivity and specificity together. **Failure** — `E` marked down for being different,
 or `D` passing unnoticed — means the instrument recognises resemblance rather than quality, and no
 amount of extra scenarios or trials would fix that. Either result is worth having, and neither produces
 a score, a ranking, a blocking finding or production routing.
 
 Deliberately excluded from V1: agent-generated candidates, which would add generation variance before
 the instrument is validated; multiple cases; multiple degraded properties; longitudinal trajectories;
-and any comparison of Proofbound against a bare model, which these cases would eventually make possible
-and which is worth nothing until the instrument is known to work.
+and any comparison of Proofbound against a bare model, worth nothing until the instrument is known to
+work.
 
 ### 50.11 The ladder, and the bar for production
 
@@ -430,10 +425,10 @@ all** — hand-built states and a future-change contract. Whatever is or is not 
 artifact semantics, it cannot explain a result produced where no artifacts existed.
 
 Worse, the proposed remedy would have destroyed the experiment. Handing the reflector *"delivery owns
-provider-specific knowledge"* converts the question from *is this architecture sound* into *does this
-code match the stated rule*. That is conformance review against an accepted referent, which is
-coherence ([§38.2](long-running-autonomy.md#38-cumulative-coherence)), and craft is defined precisely by
-having no such referent (§41). The calibration would then have passed by measuring something else.
+provider-specific knowledge"* converts *is this architecture sound* into *does this code match the
+stated rule* — conformance against an accepted referent, which is coherence
+([§38.2](long-running-autonomy.md#38-cumulative-coherence)); craft is defined by having no such
+referent (§41). The calibration would have passed by measuring something else.
 
 ### 52.2 The information was already there; the question was not
 
@@ -442,34 +437,33 @@ over time. Nothing about which providers, or when."* The decision expected to va
 in both the sound and the degraded states — and the reflector still reasoned from diff size, concluding
 that provider concerns "remain confined to `app.py` (the composition root)."
 
-So the deficit is not information the reflector lacked. It is a **question the reflector was never
-asked**. It was asked what the change touched. It was not asked which changeable decision each part of
-the system exists to hide.
+The hypothesis that followed: the deficit is not information the reflector lacked but a **question it
+was never asked** — asked what the change touched, never which changeable decision each part exists to
+hide. V2 tested exactly that and **refuted it**
+([§56](#56-why-routing-could-not-have-worked-here)): asked the question, the reflector answers it
+correctly and upholds the degradation anyway.
 
 ### 52.3 Parnas gives the missing question a foundation
 
 Parnas's criterion is that one begins with the design decisions likely to change, and each module is
-built to hide such a decision from the others. That reframes the craft question in a way that discriminates
-exactly where V1 could not:
+built to hide such a decision from the others. That reframes the craft question:
 
 > Which decision expected to vary does this part of the system hide, and from what?
 
-- `state-a` hides the provider decision behind an explicit contract.
-- `state-b` hides the same decision behind registration and dispatch, with no interface type at all.
-- `state-c` hides it nowhere: the endpoint, credential, header format and payload shape sit in the entry
-  point because there is no module whose purpose is to conceal them.
+`state-a` hides the provider decision behind an explicit contract; `state-b` behind registration and
+dispatch, with no interface type at all; `state-c` hides it nowhere — endpoint, credential, header
+format and payload shape sit in the entry point because no module exists whose purpose is to conceal
+them.
 
-Two architectures are equivalent when they hide the same decisions, whatever their form — which is the
-same anti-imitation rule that
-[§51.1](execution-and-review.md#511-bind-consequences-not-resemblance) states for specifications,
-arriving from a different direction. And the question is **answer-blind**: naming the decision expected
-to vary is not naming where it should live. *"A second provider is expected"* was already public;
-*"delivery owns it"* would be the answer.
+Two architectures are equivalent when they hide the same decisions, whatever their form — the same
+anti-imitation rule [§51.1](execution-and-review.md#511-bind-consequences-not-resemblance) states for
+specifications, reached from another direction. The question is also **answer-blind**: naming the
+decision expected to vary is not naming where it should live.
 
-This also explains the grader's false positives without appealing to preference. `notify` gaining a
-`provider` argument, and a dispatch point changing when a provider is registered, are both consequences
-of hiding the decision successfully — the boundary being used, not breached. A grader asked only whether
-a report "says the property fails" has no way to separate a boundary working from a boundary leaking.
+It also reads V1's false positives without appealing to preference: `notify` gaining a `provider`
+argument, and a dispatch point changing when a provider is registered, are consequences of hiding the
+decision successfully — the boundary used, not breached. V2 found a simpler account
+([§56](#56-why-routing-could-not-have-worked-here)).
 
 ## 53. Craft, coherence, and the loop between them
 
@@ -493,8 +487,8 @@ is what keeps `P11` intact — an evaluator's preference cannot become policy by
 ## 54. Calibration V2 — separate the explanations
 
 V1 cannot distinguish a weak reflector, insufficient routed context, an unobservable property, an
-ambiguous grader, or a badly framed craft task. V2 should separate the two that the evidence actually
-implicates, and it is a **context treatment**, not a new instrument.
+ambiguous grader, or a badly framed craft task. V2 separates the two the evidence implicates, and it is
+a **context treatment**, not a new instrument.
 
 **Independent variable.** What the reflector is asked, holding everything else frozen — same three
 states, same property, same models, same grader, same probe, same counterbalanced order.
@@ -502,24 +496,96 @@ states, same property, same models, same grader, same probe, same counterbalance
 | Arm | Reflector receives |
 |---|---|
 | **Control** | Exactly what V1 supplied: intent, contract, before-state, diff |
-| **Treatment** | The same, plus the decisions expected to vary — stated as questions, never as answers: *where does provider-specific knowledge live; who owns provider selection; where are provider outcomes normalised* |
+| **Treatment** | The same, plus the decisions expected to vary — stated as questions, never as answers |
 
-The treatment adds a question and no answer. It does not say what should hide the decision, and every
-underlying fact was already visible in V1's material, which is what makes this a legitimate routing
-experiment rather than a leak. Those questions come from the **intent**, not from the ground-truth
-manifest — a distinction that must be enforced, because sourcing them from the manifest would make the
-result unable to generalise beyond the benchmark.
+The treatment adds a question and no answer, and every underlying fact was already visible in V1's
+material, which is what makes it a routing experiment rather than a leak. The questions come from the
+**intent**, not the ground-truth manifest; sourcing them from the manifest would make the result unable
+to generalise beyond the benchmark.
 
-**Falsifiers, fixed in advance.** If the treatment leaves sensitivity unchanged, the reflector is not
-context-starved and the instrument itself is the problem. If it recovers sensitivity but costs
-specificity, the questions are functioning as hints and the treatment is a disguised answer. If both
-improve, routing was the deficit — and the production question becomes where such questions legitimately
-come from outside a benchmark.
+**Falsifiers, fixed in advance.** Unchanged sensitivity means the reflector is not context-starved and
+the instrument itself is the problem. Recovered sensitivity at the cost of specificity means the
+questions are functioning as hints. Both improving means routing was the deficit.
 
-**The grader needs its own correction, independently.** V1's specificity failures were partly a grader
-that could not separate a boundary being used from a boundary being breached. The property should be
-decomposed into independently graded obligations — provider detail absent from the notification domain;
-provider selection permitted in provider-neutral form; registration changes permitted inside the
-boundary — which is the resolution the multi-property milestone already established for exactly this
-class of failure. Decompose the grader **or** treat the reflector, not both at once, or V2 will be no
-more able to attribute its result than V1 was.
+**The grader needs its own correction, independently** — its property decomposed into obligations graded
+separately, the resolution the multi-property milestone already established for this class of failure.
+Decompose the grader *or* treat the reflector, never both at once, or V2 will attribute its result no
+better than V1 did. (V2 ran the treatment arm; [§57](#57-the-instrument-does-not-repeat-itself) shows why
+the decomposition is not yet the next step either.)
+
+## 55. Calibration V2 — the result
+
+V2 ran §54's experiment with one design change the evidence forced: **paired re-reflection** rather
+than a fresh implementation matrix. Fourteen of the fifteen V1 implementation trees still yielded a
+reconstructable change, so both arms ran against the same architecture, the same model-written code and
+the same diff — removing implementation variance, the largest noise source at this scale, by
+construction. The treatment is four questions, 667 bytes, each derived from a sentence the untreated
+arm already receives; it names no interface, adapter, registry, port, file or boundary. Full
+configuration and provenance: [§E50.B](evidence/evaluation-runs.md#e50b-system-craft-calibration-v2--routing-is-not-the-deficit-and-the-instrument-does-not-repeat).
+
+| | Sensitivity (state-c) | Specificity (state-a, state-b) |
+|---|---|---|
+| Untreated | 2/5 | 6/7 |
+| Question-routed | 2/5 | 5/7 |
+
+**On the degradation, the treatment changed nothing at all.** Not "no net change" — every one of the
+five state-c pairs returned the *same* outcome in both arms: three missed in both, two recognised in
+both, zero discordant. The three discordant pairs all fall on sound states, one gain and two
+regressions, a difference no run this size distinguishes from noise. The pre-registered falsifier for
+"the reflector is not context-starved" fired cleanly.
+
+## 56. Why routing could not have worked here
+
+The reports say why, and they say it in almost the same words every time. The routed arm answers
+the routed questions **correctly** — and then rules for the defence.
+
+> Provider identity and its associated wire format (endpoint, auth header, payload field names)
+> are now owned by `app.py`, which is the application entry point. **This aligns with the accepted
+> intent: "Provider credentials and endpoints are configuration, not user input."**
+
+That is a state-c reflection — the degraded state — graded as claiming the property upheld. It
+identifies the concentration precisely: it knows what moved, it knows where it went, it knows
+`app.py` did not hold that knowledge before. Question routing worked. The reflector then reads the
+intent's configuration clause as *authorising* the concentration, because configuration is what a
+composition root is for.
+
+It is not a bad reading. The accepted intent says provider credentials and endpoints are
+configuration. **It never says where configuration may live.** The invariant the ground truth
+encodes — provider wire detail stays out of the notification domain — is not entailed by anything
+the reflector was shown, and one clause of what it was shown points the other way.
+
+The specificity failures are the same gap from the other side. A state-b regression observes that the
+`provider` string now flows through the application layer and calls that a leak of delivery
+configuration into the application API — a real observation, correctly derived from the routed
+questions, and the manifest says state-b is sound, because a provider *name* is not an endpoint, an
+auth scheme, a payload field or an error code. With no stated line, the reflector drew its own:
+stricter than the manifest on state-b, looser on state-c. Routing raised attention to knowledge
+movement in both directions, which is what it was designed to do and why it could not move the score.
+
+So V1's diagnosis was wrong in an instructive way. The deficit was never a missing question, and
+never missing information. It is a **missing criterion**: the reflector is asked to arrive
+independently at a judgement the benchmark encodes privately, from material that does not entail
+it. No amount of asking fixes that.
+
+## 57. The instrument does not repeat itself
+
+The untreated arm is a byte-identical rerun of V1's reflection on V1's own implementations, so V2
+also measured something V1 could not: whether the instrument returns the same verdict twice.
+
+On thirteen comparable implementations it agreed with itself **nine times and disagreed four**: both of
+V1's state-b false degradations came back upheld, a state-a implementation V1 upheld five-for-five came
+back a false degradation, and a state-c degradation V1 recognised was missed. Same code, same diff,
+same prompt, same model, same grader — different answers.
+
+The retest disagreement is *larger than the treatment effect it was built to detect*. That
+reorders everything: V1's 3/5 and 7/9 were never stable measurements, the difference between them
+and V2's 2/5 and 6/7 is not a finding, and any future comparison at this scale is measuring its
+own variance. Before another treatment is worth running, the instrument needs repeats per
+implementation and a reported spread — n=1 per cell cannot support a claim either way.
+
+The obvious repair — state the invariant in the accepted intent — is legitimate in principle and
+forbidden to adopt now, after seeing outcomes; the [implementation
+plan](../specification-reflection-harness-implementation-plan.md) records the conditions under which a
+V3 may use it.
+
+[routing-record]: ../../../evals/results/craft-routing-v1.json

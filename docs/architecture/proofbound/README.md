@@ -130,6 +130,7 @@ One line each. **The canonical definitions, with their falsifiers, are in
 | Eval V3 — multi-property discrimination | **Implemented**; dynamic range demonstrated, no model ordering |
 | Eval V4 — P12 informational-independence control | **Implemented**; supplying the author's report lowered observed completeness |
 | Eval V5 — system-craft calibration | **Implemented**; instrument not ready — sensitivity 3/5, specificity 7/9 |
+| Eval V6 — craft question-routing control | **Implemented**; hypothesis rejected — routing changed no degradation verdict, and the instrument disagrees with itself on 4 of 13 repeats |
 | Decision provenance, coherence audit, context telemetry | Direction only; see the plan's dependency graph |
 
 Canonical test command: `python3 -m unittest discover -s tests -t .` (Python ≥3.10).

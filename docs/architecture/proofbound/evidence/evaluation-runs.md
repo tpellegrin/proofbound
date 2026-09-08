@@ -475,3 +475,67 @@ and called the specificity question unasked.
 
 Not established: anything about other domains, other properties, other models, or whether these
 defects are fixable by context routing rather than by a different instrument.
+
+## E50.B System-craft calibration V2 — routing is not the deficit, and the instrument does not repeat
+
+The controlled test of the one causal hypothesis V1 left standing: that the craft reflector missed
+degradations because nobody asked it the change-relevant architectural question, not because it
+lacked the information to answer one. It did not.
+
+**Frozen configuration**, pre-registered before the first official call. Proofbound `26c4177`;
+case `notification-provider-boundary`, fixtures byte-identical to V1; craft reflector
+`opencode/nemotron-3-ultra-free`; grader `opencode/big-pickle`, **unrepaired**, including the
+specificity defect V1 recorded — repairing the instrument and its measuring device in one run
+would make the outcome unattributable; `opencode-cli 1.18.29`; Python 3.14; grader timeout 900s.
+
+**Paired re-reflection, not a new implementation matrix.** Fifteen V1 implementation trees
+survived and fourteen still yielded a reconstructable diff. Both arms therefore ran against the
+same architecture, the same model-written code and the same change, which removes implementation
+variance entirely. Arm order was counterbalanced pair by pair; every reflection was a separate
+fresh session.
+
+**The independent variable** is 667 bytes appended after an unchanged task
+(`sha256:0ac314a0…`): four questions derived from sentences the untreated arm already receives.
+The untreated context is byte-identical to V1's — 3176 bytes, and the only delta in the routed
+arm is the treatment. Ten deterministic tests refuse a treatment that names a status, a state, the
+declared property, or any architectural form, that reads as a requirement rather than a question,
+that differs between states, or that reaches the implementer.
+
+| Arm | Sensitivity (`state-c`) | Specificity (`state-a`, `state-b`) |
+|---|---|---|
+| Untreated | 2/5 | 6/7 |
+| Question-routed | 2/5 | 5/7 |
+
+Twelve of fourteen pairs graded in both arms; one reflector call failed and one grader response
+was unparseable, both recorded as missing measurements rather than as misses.
+
+**Every degradation pair was concordant.** Three missed in both arms, two recognised in both,
+zero discordant. The three discordant pairs all fall on sound states — one gain, two regressions —
+which no run of this size separates from noise.
+
+**Why, in the reflector's own words.** The routed arm answers the questions correctly and then
+justifies what it found: a `state-c` reflection identifies that `app.py` now owns endpoints, auth
+headers and payload field names that it did not own before, and concludes *"this aligns with the
+accepted intent: provider credentials and endpoints are configuration, not user input."* The
+intent says credentials and endpoints are configuration; it never says where configuration may
+live. The invariant the manifest encodes is not entailed by what the reflector is shown. The
+`state-b` regressions are the same gap from the other side: routing made the reflector notice that
+a provider *name* now flows through the application layer, and it drew the line stricter than the
+manifest does. The deficit is a missing criterion, not a missing question.
+
+**Test-retest, measured for the first time.** The untreated arm is a byte-identical rerun of V1 on
+V1's own implementations. On thirteen comparable instances it agreed with itself nine times and
+**disagreed four**: both V1 state-b false degradations came back upheld, a state-a implementation
+V1 upheld five-for-five came back a false degradation, and one recognised state-c degradation was
+missed. The retest disagreement is larger than the treatment effect the run was built to detect,
+so V1's 3/5 and 7/9 were never stable numbers and the drift to 2/5 and 6/7 is not a finding.
+
+**Harness defect, repaired and re-run from zero.** The first official matrix was killed by a host
+timeout at seven pairs of fourteen and left no record. The driver now checkpoints after every
+pair through an atomic rename, covered by a test that kills a run mid-matrix; the entire official
+matrix was then restarted rather than resumed, and the partial run discarded.
+
+Record: [`evals/results/craft-routing-v1.json`](../../../../evals/results/craft-routing-v1.json).
+Analysis: [§55](../system-craft.md#55-calibration-v2--the-result),
+[§56](../system-craft.md#56-why-routing-could-not-have-worked-here),
+[§57](../system-craft.md#57-the-instrument-does-not-repeat-itself).

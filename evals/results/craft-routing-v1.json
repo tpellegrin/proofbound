@@ -1,0 +1,332 @@
+{
+  "case": "notification-provider-boundary",
+  "format": "proofbound-craft-routing-v1",
+  "pairs": [
+    {
+      "arm_order": [
+        "untreated",
+        "question-routed"
+      ],
+      "arms": {
+        "question-routed": {
+          "claim": "grading-unavailable",
+          "outcome": "grading-unavailable",
+          "reflection": "ok"
+        },
+        "untreated": {
+          "claim": "claims-upheld",
+          "outcome": "recognised-upheld",
+          "reflection": "ok"
+        }
+      },
+      "instance": "state-a-1788834064346",
+      "state": "state-a",
+      "state_identity": "99eb22040730fa1d3c3def41bfb0ef2fb1409cbfc4b553c35785422d6969da1b"
+    },
+    {
+      "arm_order": [
+        "question-routed",
+        "untreated"
+      ],
+      "arms": {
+        "question-routed": {
+          "claim": "claims-degraded",
+          "outcome": "false-degradation",
+          "reflection": "ok"
+        },
+        "untreated": {
+          "claim": null,
+          "outcome": null,
+          "reflection": "unavailable"
+        }
+      },
+      "instance": "state-a-1788835122369",
+      "state": "state-a",
+      "state_identity": "99eb22040730fa1d3c3def41bfb0ef2fb1409cbfc4b553c35785422d6969da1b"
+    },
+    {
+      "arm_order": [
+        "untreated",
+        "question-routed"
+      ],
+      "arms": {
+        "question-routed": {
+          "claim": "claims-upheld",
+          "outcome": "recognised-upheld",
+          "reflection": "ok"
+        },
+        "untreated": {
+          "claim": "claims-degraded",
+          "outcome": "false-degradation",
+          "reflection": "ok"
+        }
+      },
+      "instance": "state-a-1788835442112",
+      "state": "state-a",
+      "state_identity": "99eb22040730fa1d3c3def41bfb0ef2fb1409cbfc4b553c35785422d6969da1b"
+    },
+    {
+      "arm_order": [
+        "question-routed",
+        "untreated"
+      ],
+      "arms": {
+        "question-routed": {
+          "claim": "claims-upheld",
+          "outcome": "recognised-upheld",
+          "reflection": "ok"
+        },
+        "untreated": {
+          "claim": "claims-upheld",
+          "outcome": "recognised-upheld",
+          "reflection": "ok"
+        }
+      },
+      "instance": "state-a-1788835719297",
+      "state": "state-a",
+      "state_identity": "99eb22040730fa1d3c3def41bfb0ef2fb1409cbfc4b553c35785422d6969da1b"
+    },
+    {
+      "arm_order": [
+        "untreated",
+        "question-routed"
+      ],
+      "arms": {
+        "question-routed": {
+          "claim": "claims-upheld",
+          "outcome": "recognised-upheld",
+          "reflection": "ok"
+        },
+        "untreated": {
+          "claim": "claims-upheld",
+          "outcome": "recognised-upheld",
+          "reflection": "ok"
+        }
+      },
+      "instance": "state-a-1788837108502",
+      "state": "state-a",
+      "state_identity": "99eb22040730fa1d3c3def41bfb0ef2fb1409cbfc4b553c35785422d6969da1b"
+    },
+    {
+      "arm_order": [
+        "question-routed",
+        "untreated"
+      ],
+      "arms": {
+        "question-routed": {
+          "claim": "claims-upheld",
+          "outcome": "recognised-upheld",
+          "reflection": "ok"
+        },
+        "untreated": {
+          "claim": "claims-upheld",
+          "outcome": "recognised-upheld",
+          "reflection": "ok"
+        }
+      },
+      "instance": "state-b-1788834477264",
+      "state": "state-b",
+      "state_identity": "34c04693457b30d9e2cd17b8d324a5b61acf11f10d8305159abb95c8bfbae91e"
+    },
+    {
+      "arm_order": [
+        "untreated",
+        "question-routed"
+      ],
+      "arms": {
+        "question-routed": {
+          "claim": "claims-degraded",
+          "outcome": "false-degradation",
+          "reflection": "ok"
+        },
+        "untreated": {
+          "claim": "claims-upheld",
+          "outcome": "recognised-upheld",
+          "reflection": "ok"
+        }
+      },
+      "instance": "state-b-1788835605365",
+      "state": "state-b",
+      "state_identity": "34c04693457b30d9e2cd17b8d324a5b61acf11f10d8305159abb95c8bfbae91e"
+    },
+    {
+      "arm_order": [
+        "question-routed",
+        "untreated"
+      ],
+      "arms": {
+        "question-routed": {
+          "claim": "claims-degraded",
+          "outcome": "false-degradation",
+          "reflection": "ok"
+        },
+        "untreated": {
+          "claim": "claims-upheld",
+          "outcome": "recognised-upheld",
+          "reflection": "ok"
+        }
+      },
+      "instance": "state-b-1788836383405",
+      "state": "state-b",
+      "state_identity": "34c04693457b30d9e2cd17b8d324a5b61acf11f10d8305159abb95c8bfbae91e"
+    },
+    {
+      "arm_order": [
+        "untreated",
+        "question-routed"
+      ],
+      "arms": {
+        "question-routed": {
+          "claim": "claims-upheld",
+          "outcome": "recognised-upheld",
+          "reflection": "ok"
+        },
+        "untreated": {
+          "claim": "claims-upheld",
+          "outcome": "recognised-upheld",
+          "reflection": "ok"
+        }
+      },
+      "instance": "state-b-1788836552015",
+      "state": "state-b",
+      "state_identity": "34c04693457b30d9e2cd17b8d324a5b61acf11f10d8305159abb95c8bfbae91e"
+    },
+    {
+      "arm_order": [
+        "question-routed",
+        "untreated"
+      ],
+      "arms": {
+        "question-routed": {
+          "claim": "claims-upheld",
+          "outcome": "missed-degradation",
+          "reflection": "ok"
+        },
+        "untreated": {
+          "claim": "claims-upheld",
+          "outcome": "missed-degradation",
+          "reflection": "ok"
+        }
+      },
+      "instance": "state-c-1788834305207",
+      "state": "state-c",
+      "state_identity": "52d452536057a81203c14cadcbfa83a9de0667445e3b56e834f5fe9a9aa3b019"
+    },
+    {
+      "arm_order": [
+        "untreated",
+        "question-routed"
+      ],
+      "arms": {
+        "question-routed": {
+          "claim": "claims-upheld",
+          "outcome": "missed-degradation",
+          "reflection": "ok"
+        },
+        "untreated": {
+          "claim": "claims-upheld",
+          "outcome": "missed-degradation",
+          "reflection": "ok"
+        }
+      },
+      "instance": "state-c-1788834970624",
+      "state": "state-c",
+      "state_identity": "52d452536057a81203c14cadcbfa83a9de0667445e3b56e834f5fe9a9aa3b019"
+    },
+    {
+      "arm_order": [
+        "question-routed",
+        "untreated"
+      ],
+      "arms": {
+        "question-routed": {
+          "claim": "claims-upheld",
+          "outcome": "missed-degradation",
+          "reflection": "ok"
+        },
+        "untreated": {
+          "claim": "claims-upheld",
+          "outcome": "missed-degradation",
+          "reflection": "ok"
+        }
+      },
+      "instance": "state-c-1788835274286",
+      "state": "state-c",
+      "state_identity": "52d452536057a81203c14cadcbfa83a9de0667445e3b56e834f5fe9a9aa3b019"
+    },
+    {
+      "arm_order": [
+        "untreated",
+        "question-routed"
+      ],
+      "arms": {
+        "question-routed": {
+          "claim": "claims-degraded",
+          "outcome": "recognised-degraded",
+          "reflection": "ok"
+        },
+        "untreated": {
+          "claim": "claims-degraded",
+          "outcome": "recognised-degraded",
+          "reflection": "ok"
+        }
+      },
+      "instance": "state-c-1788836188882",
+      "state": "state-c",
+      "state_identity": "52d452536057a81203c14cadcbfa83a9de0667445e3b56e834f5fe9a9aa3b019"
+    },
+    {
+      "arm_order": [
+        "question-routed",
+        "untreated"
+      ],
+      "arms": {
+        "question-routed": {
+          "claim": "claims-degraded",
+          "outcome": "recognised-degraded",
+          "reflection": "ok"
+        },
+        "untreated": {
+          "claim": "claims-degraded",
+          "outcome": "recognised-degraded",
+          "reflection": "ok"
+        }
+      },
+      "instance": "state-c-1788837251429",
+      "state": "state-c",
+      "state_identity": "52d452536057a81203c14cadcbfa83a9de0667445e3b56e834f5fe9a9aa3b019"
+    }
+  ],
+  "property": {
+    "id": "provider-change-stays-in-delivery",
+    "response_measure": "Which modules must change, and whether provider-specific detail appears outside the delivery boundary, when a second provider is added.",
+    "scenario": "Adding a second delivery provider, selected per notification, requires changes only inside the delivery boundary and the explicit contract the notification domain depends on. The code that decides what to notify a user about does not change, and does not acquire knowledge of any provider's endpoint, authentication scheme, payload field names or error codes."
+  },
+  "states": {
+    "state-a": {
+      "identity": "99eb22040730fa1d3c3def41bfb0ef2fb1409cbfc4b553c35785422d6969da1b",
+      "status": "preserved"
+    },
+    "state-b": {
+      "identity": "34c04693457b30d9e2cd17b8d324a5b61acf11f10d8305159abb95c8bfbae91e",
+      "status": "preserved"
+    },
+    "state-c": {
+      "identity": "52d452536057a81203c14cadcbfa83a9de0667445e3b56e834f5fe9a9aa3b019",
+      "status": "degraded"
+    }
+  },
+  "system": {
+    "grader_model": "opencode/big-pickle",
+    "harness": "opencode-cli",
+    "harness_version": "1.18.29",
+    "proofbound_sha": "26c4177f3761d6e48cd7a31fa88042d251f3e4e7",
+    "python": "3.14",
+    "reflector_model": "opencode/nemotron-3-ultra-free"
+  },
+  "treatment": {
+    "bytes": 667,
+    "path": "evals/craft/notification-provider-boundary/question-treatment.md",
+    "sha256": "0ac314a0174fb36a45f1c3f0a64e910f0f6dfc2ac250b27326da7cc029eff7c2"
+  }
+}

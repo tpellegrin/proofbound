@@ -1344,7 +1344,7 @@ each sound one, so a change-surface heuristic would have ranked the degradation 
 of what `P13` states in the abstract. Full record in
 [§E50.A](proofbound/evidence/evaluation-runs.md#e50a-system-craft-calibration-v1--the-instrument-is-not-ready).
 
-## 7I. Eval V6 — craft calibration V2, as a context treatment  *(designed; not implemented)*
+## 7I. Eval V6 — craft calibration V2, as a context treatment  *(run; hypothesis rejected)*
 
 Design authority: [`system-craft.md` §54](proofbound/system-craft.md#54-calibration-v2--separate-the-explanations).
 
@@ -1376,6 +1376,32 @@ was.
 
 **Non-goals:** artifact semantics implementation; a craft role or purpose; giving the reflector accepted
 decisions; a second calibration case; production routing; any score.
+
+**Result: routing is not the deficit.** Fourteen retained V1 implementations, both arms on each, order
+counterbalanced. Sensitivity 2/5 untreated and 2/5 routed, with **every degradation pair concordant** —
+three missed in both arms, two recognised in both, none discordant. Specificity 6/7 and 5/7, a difference
+this size cannot separate from noise. The first falsifier fired: the reflector is not context-starved.
+
+The reports say why. The routed arm answers the questions correctly — it names exactly which
+provider knowledge `app.py` acquired — and then concludes the concentration *"aligns with the accepted
+intent: provider credentials and endpoints are configuration."* The intent says credentials and endpoints
+are configuration; it never says where configuration may live. The invariant the manifest encodes is not
+entailed by what the reflector is shown, so the deficit is a **missing criterion, not a missing
+question**, and the specificity regressions are the same gap read from the other side. Evidence:
+[§E50.B](proofbound/evidence/evaluation-runs.md#e50b-system-craft-calibration-v2--routing-is-not-the-deficit-and-the-instrument-does-not-repeat);
+analysis: [§56](proofbound/system-craft.md#56-why-routing-could-not-have-worked-here).
+
+**A prerequisite V2 exposed, which supersedes the grader decomposition as the next step.** The untreated
+arm was a byte-identical rerun of V1 on V1's own implementations and disagreed with V1 on **four of
+thirteen**. The instrument's test-retest noise exceeds the effect it was built to detect, so no
+treatment — grader decomposition included — is measurable at n=1 per cell until repeats per
+implementation and a reported spread exist
+([§57](proofbound/system-craft.md#57-the-instrument-does-not-repeat-itself)).
+
+**Explicitly not adopted here.** Stating the invariant in the accepted intent is the obvious repair and
+is legitimate in principle — it is a product constraint that passes the Field Test without naming an
+architecture. Adopting it now, after seeing these outcomes, would fit the benchmark to its own results.
+It must be pre-registered and its answer-blindness argued before any run that uses it.
 
 ## 7B. Threat mitigation status
 
