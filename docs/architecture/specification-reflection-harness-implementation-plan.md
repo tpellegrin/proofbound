@@ -1524,6 +1524,40 @@ diversity as a deliberate treatment; marginal-discovery yield as a `P13` observa
 **Next.** The closed-world multi-sample substrate, with the discovery grader characterised as its first
 run.
 
+## 7M. Closed-world multi-sample evaluation substrate  *(implemented; grader characterised)*
+
+Design authority: [`evaluation.md` §E20](proofbound/evaluation.md#e20-two-measurement-problems-wrongly-sequenced-as-one)
+and [§E24](proofbound/evaluation.md#e24-what-it-takes-to-call-an-increment-an-improvement).
+
+**Built.** A pre-registered experiment manifest (`_experiment.py`) declaring claim, measurand,
+baseline, treatment, frozen variables, primary comparison, guardrails, falsifier, invalidating
+conditions and adoption rule — every one refused if missing, all fixed before measurement. Slots are
+preallocated from the manifest alone and addressed by a composite naming instance, arm and pressure,
+so the repeated-measurement machinery from `§E51` applies unchanged and a sample taken for one
+pressure or arm cannot satisfy another's slot. Arms interleave from an order generated before
+execution. Thirty deterministic tests pin sample preservation, minority survival, missingness,
+resume, non-splicing, arm separation, order independence of derived counts, and the isolation of the
+legacy `trial_verdict` collapse.
+
+**Measured.** The discovery grader — the question a closed-world run actually uses — characterised
+over the six committed anchors, 15 gradings each. **Five of six unanimous, 5/90 = 5.6% pooled
+non-modal, no parse failures**, against the verdict grader's 1/6 and 16.9%. Dispersion is zero on
+sound architectures and 16.7% on ambiguous degraded reports, and the report V1 recorded as a missed
+degradation is graded *detected* here: it identifies the planted problem and declines to call it a
+breach. Evidence:
+[§E52](proofbound/evidence/evaluation-runs.md#e52-the-discovery-grader-characterised-before-anything-relies-on-it).
+
+**Gate: passed with a bound.** At ten samples per cell the grader contributes roughly 1.7 counts of
+noise on ambiguous reports, so V3 must pre-declare a minimum effect of three counts or more and a
+budget to match, and report per-cell dispersion rather than a pooled figure that hides it.
+
+**Not built:** finding consolidation, verification, adaptive sampling, majority voting, confidence
+fields, heterogeneous panels, model reputation, effective-sample-size estimation, capture–recapture,
+a metamorphic framework, a mutation engine, production multi-review.
+
+**Next.** Calibration V3's own design check, which must author its criterion and audit it for
+entailment before any live call, and must not move measurement mechanics in the same run.
+
 ## 7B. Threat mitigation status
 
 RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC

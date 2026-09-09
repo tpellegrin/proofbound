@@ -647,3 +647,63 @@ Records: [`craft-grader-repeat-v1.json`](../../../../evals/results/craft-grader-
 [`craft-reflector-repeat-v1.json`](../../../../evals/results/craft-reflector-repeat-v1.json),
 [`craft-reflector-coding-v1.json`](../../../../evals/results/craft-reflector-coding-v1.json).
 Method: [§E22](../evaluation-comparison.md#e22-reliability-before-validity).
+
+## E52. The discovery grader, characterised before anything relies on it
+
+`§E51` measured the craft **verdict** grader — *does this report say the property fails?* A
+closed-world experiment does not use it. It uses the **discovery** grader — *does this report
+identify this specific problem?* — which every other Proofbound evaluation already grades with, and
+which had never had its dispersion measured. This is that measurement, run before the substrate is
+relied upon rather than after.
+
+**Frozen configuration.** Proofbound `db05eef`; the six committed anchors from
+`anchors/manifest.json`, unchanged; 15 independent gradings each; grader `opencode/big-pickle`,
+unchanged; `opencode-cli 1.18.29`; Python 3.14. The planted-problem statement is `state-c`'s own
+committed rationale — written when the case was built, never shown to any worker or reflector, and
+not authored for this run, so nothing semantic here was fitted to reports already read.
+
+The anchor set carries its own controls by construction: the four `state-a` and `state-b` reports
+describe architectures where the `state-c` problem is genuinely absent, so *not-detected* is the
+correct answer and they act as negative items; the two `state-c` reports are the positive items.
+
+| Anchor | State | Counts | Modal share |
+|---|---|---|---|
+| `g1` | a | not-detected 15 | **1.00** |
+| `g2` | a | not-detected 15 | **1.00** |
+| `g3` | b | not-detected 15 | **1.00** |
+| `g4` | b | not-detected 15 | **1.00** |
+| `g5` | c | **detected 10**, not-detected 5 | 0.67 |
+| `g6` | c | detected 15 | **1.00** |
+
+**Five of six anchors unanimous, 90 of 90 calls graded, no parse failures.**
+
+| | Verdict grader (`§E51`) | Discovery grader |
+|---|---|---|
+| Unanimous anchors | 1/6 | **5/6** |
+| Pooled non-modal | 15/89 = **16.9%** | 5/90 = **5.6%** |
+| On sound architectures | 8/30 and 5/29 | **0/30 and 0/30** |
+| On the degraded architecture | 2/30 = 6.7% | 5/30 = 16.7% |
+| Missing measurements | 1/90 | **0/90** |
+
+**The profile inverts, and the inversion makes sense.** The verdict grader was least stable on
+sound architectures, where reports raise concerns without ever claiming a breach and it had to
+decide what the prose amounted to. The discovery grader is perfectly stable there — a report cannot
+identify a problem the architecture does not contain — and disperses only on `g5`, the genuinely
+ambiguous case where the report names the planted problem and then endorses it.
+
+**`g5` is the finding.** The verdict grader classified that report as *upheld*, which the V1 and V2
+records carry as a missed degradation. The discovery grader's modal answer on the identical bytes is
+**detected**: the report does identify the planted problem, and merely declines to call it a breach.
+The conflation [§E20.3](../evaluation.md#e20-two-measurement-problems-wrongly-sequenced-as-one)
+predicted — "says the property is fine" and "never addresses it" sharing one label — is visible here
+as recovered signal, not as an argument.
+
+**Adequacy, with a stated bound.** Dispersion is three times lower pooled and zero on four of six
+anchors, but it is not zero where it matters: 16.7% on ambiguous degraded reports, which is exactly
+where a sensitivity measurement lives. At ten samples per cell that is roughly 1.7 counts of grading
+noise, so a distribution shift of three counts or more is resolvable and a one-count shift is not. A
+future calibration must pre-declare a minimum effect above that floor and a budget to match, and
+must report per-cell dispersion rather than a pooled figure that would hide it.
+
+Record: [`craft-discovery-grader-repeat-v1.json`](../../../../evals/results/craft-discovery-grader-repeat-v1.json).
+Method: [§E24](../evaluation.md#e24-what-it-takes-to-call-an-increment-an-improvement).

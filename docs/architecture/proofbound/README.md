@@ -134,6 +134,7 @@ One line each. **The canonical definitions, with their falsifiers, are in
 | Eval V7 — craft instrument repeatability | **Implemented**; both layers material — reflector conclusion moves on 43% of identical repeats, grader on 17%, end to end 28% |
 | Multi-sample semantic evaluation | **Designed**; aggregation is layer-specific and the craft unit is the wrong shape — future unit is per-pressure discovery frequency |
 | Semantic discovery, finding identity and coverage | **Designed**; closed-world calibration needs no cross-sample finding identity — open-world consolidation is a separate, later problem |
+| Closed-world multi-sample evaluation substrate | **Implemented**; pre-registered experiments, preallocated sample slots, per-pressure discovery grading, full distributions retained |
 | Decision provenance, coherence audit, context telemetry | Direction only; see the plan's dependency graph |
 
 Canonical test command: `python3 -m unittest discover -s tests -t .` (Python ≥3.10).

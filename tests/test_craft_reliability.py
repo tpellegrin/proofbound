@@ -252,6 +252,7 @@ class RepeatedMeasurementIsIndependentTest(unittest.TestCase):
         seen = []
         with tempfile.TemporaryDirectory() as td:
             args = argparse.Namespace(case=CASE, grader_model="g", repeats=3,
+                                      question="verdict", problem_state="state-c",
                                       out=Path(td) / "g.json")
 
             def spy(report, scenario, **kw):
@@ -279,7 +280,7 @@ class RepeatedMeasurementIsIndependentTest(unittest.TestCase):
 
     def test_the_reflector_repeat_uses_the_untreated_prompt_and_no_treatment(self):
         source = (ROOT / "evals" / "pb_craft.py").read_text(encoding="utf-8")
-        body = source.split("def cmd_repeat_reflect", 1)[1].split("def parser", 1)[0]
+        body = source.split("def cmd_repeat_reflect", 1)[1].split("def cmd_sample", 1)[0]
         self.assertNotIn("treatment=", body)
         self.assertIn('"treatment": None', body)
 

@@ -402,5 +402,52 @@ class ExecutorTest(unittest.TestCase):
             self.assertEqual(len(m["report_sha256"]), 64)
 
 
+class FutureCalibrationShapeTest(unittest.TestCase):
+    """The substrate must already express the experiment it exists for, without pre-empting it.
+
+    Calibration V3's actual criterion is deliberately absent: its wording has to survive its own
+    entailment check before any live call, and writing it here would pre-register it by accident.
+    What is checked is that the *shape* needs no new architecture.
+    """
+
+    maxDiff = None
+
+    def test_a_paired_three_state_calibration_is_expressible_today(self):
+        instances = ["state-a-1788834064346", "state-b-1788834477264", "state-c-1788834970624"]
+        experiment = valid_experiment(
+            id="craft-v3-shape",
+            instances=instances,
+            pressures=[{"id": "pressure-under-design",
+                        "statement": "PLACEHOLDER: the accepted consequence V3 will declare, "
+                                     "which must pass its own entailment audit before any call."}],
+            arms=[{"id": "baseline", "treatment": None},
+                  {"id": "criterion-supplied", "treatment": "criterion.md"}],
+            samples_per_cell=10)
+        with tempfile.TemporaryDirectory() as td:
+            loaded = _experiment.load(write(Path(td), experiment))
+
+        slots = _experiment.slots(loaded)
+        self.assertEqual(len(slots), 3 * 2 * 10)
+        # Every instance is measured under both arms, the same number of times.
+        for instance in instances:
+            for arm in ("baseline", "criterion-supplied"):
+                mine = [s for s in slots if s["instance"] == instance and s["arm"] == arm]
+                self.assertEqual(len(mine), 10)
+                self.assertEqual(sorted(s["sample"] for s in mine), list(range(1, 11)))
+        # One cell per instance and arm, because one pressure was declared.
+        self.assertEqual(len(_experiment.cells(loaded)), 3 * 2 * 1)
+        # Pairing holds the implementation constant: the same instance appears in both arms.
+        baseline = {s["instance"] for s in slots if s["arm"] == "baseline"}
+        treated = {s["instance"] for s in slots if s["arm"] == "criterion-supplied"}
+        self.assertEqual(baseline, treated)
+
+    def test_the_committed_case_supplies_the_instances_such_an_experiment_needs(self):
+        """Three declared states, two upholding the property and one degraded, still stand."""
+        case = _craft.load(CASE)
+        statuses = [case["ground_truth"][s["id"]]["status"] for s in case["states"]]
+        self.assertEqual(statuses.count(_craft.PRESERVED), 2)
+        self.assertEqual(statuses.count(_craft.DEGRADED), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

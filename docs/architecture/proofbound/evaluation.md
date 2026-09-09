@@ -321,14 +321,10 @@ semantic classifications and never produces a semantic classification of its own
 ### E19.2 What makes two properties independent
 
 A scenario with three restatements of one reasoning chain measures one thing three times. Four criteria,
-all checked during scenario review:
-
-1. **Separate obligations.** Each property breaks a *different* accepted requirement, not one requirement
-   seen twice.
-2. **Separable repairs.** A plausible fix for one leaves the others standing.
-3. **No entailment.** A defensible report can raise any one without the others; noticing one does not
-   hand over another.
-4. **Distinct loci.** The artifact text that violates each property is different text.
+all checked during scenario review: each property breaks a **different** accepted requirement rather than
+one requirement seen twice; a plausible fix for one leaves the others standing; a defensible report can
+raise any one without the others, so noticing one does not hand over another; and the artifact text that
+violates each is different text.
 
 The anti-pattern, stated so it can be rejected on sight: *retry occurs* → *retries duplicate effects* →
 *duplication breaks idempotency* is one obligation split into three bullets. Engineering independence is
@@ -338,14 +334,7 @@ the standard, not statistical independence — properties may well correlate in 
 
 Ten planted mistakes measure checklist scanning. The artifact must read like something a competent
 engineer wrote on a deadline: mostly sound, with a few genuine non-breaking weaknesses and a small number
-of real breaches. Four rules, all mechanically checkable from the manifest:
-
-- `2 ≤ K ≤ 4`, and **3 unless realism argues otherwise**.
-- **At least `K` declared distractors**, so defensible-but-wrong concerns outnumber or match the breaches
-  and the reflector must prioritise rather than enumerate.
-- **At least two distinct difficulty dimensions** across the properties (E16.4).
-- **At least one `dependency-distance` property**, whose material the contract does not name — the
-  existing check that keeps Proofbound on the causal path rather than reverting to two-document review.
+of real breaches, all mechanically checkable from the manifest.
 
 ### E19.4 Grading: one independent call per property
 
@@ -365,72 +354,50 @@ others.
 
 ### E19.5 The trial vocabulary generalises without changing a recorded number
 
-A trial's semantic outcome is derived from its vector:
-
-| Trial outcome | Condition |
-|---|---|
-| detected | every property graded, and every one detected |
-| not-detected | every property graded, at least one not detected |
-| grading-unavailable | at least one property could not be graded |
-
-At `K = 1` these are **exactly** today's definitions, so every existing record keeps both its numbers and
-its meaning, and no historical run is reinterpreted (`P6`). Underneath, each scenario also reports
-per-property detections over gradeable opportunities for that property.
+A trial's semantic outcome is derived from its vector: *detected* when every property is graded and
+detected, *not-detected* when every property is graded and at least one is not, *grading-unavailable*
+when any could not be graded. At `K = 1` these are **exactly** the original definitions, so every
+existing record keeps both its numbers and its meaning and no historical run is reinterpreted (`P6`).
 
 **Never report the scenario total alone.** `P1 5/5, P2 5/5, P3 2/5` and `12/15` are the same arithmetic
-and not the same information: only the first says where the reflector is weak. The per-property
-breakdown is the finding; the total is a convenience.
-
-Two reliability views, both wanted: **complete-trial rate** (how often every obligation was found in one
-pass) and **per-property rate** (how often each obligation was found at all). A reviewer that finds all
-three once and two of three usually is not the same as one that finds all three every time, and only the
-first view separates them.
+and not the same information: only the first says where the reflector is weak. Two reliability views are
+both wanted — **complete-trial rate**, how often every obligation was found in one pass, and
+**per-property rate**, how often each was found at all. A reviewer that finds all three once and two of
+three usually is not the same as one that finds all three every time.
 
 ### E19.6 Over-reporting is observed now and measured later
 
 A richer completeness metric invites a cheap strategy: raise every possible concern and collect the
-detections. Three things already stand against it, so precision measurement is deferred rather than
-missing. Grading is property-specific, so a report earns a detection only by naming *that* conflict.
-The negative controls demonstrate the point empirically — a report raising all four of a scenario's
-declared distractors as genuine findings was refused for never mentioning the breach. And the reports
-are retained, so human calibration can ask directly whether detections were earned or sprayed.
+detections. Three things already stand against it. Grading is property-specific, so a report earns a
+detection only by naming *that* conflict; the negative controls showed it empirically, refusing a report
+that raised all four declared distractors as findings while never mentioning the breach; and reports are
+retained, so human calibration can ask whether detections were earned or sprayed.
 
-Precision becomes a milestone when calibration actually observes reports that combine high completeness
-with many unsupported findings. Extra findings are not false positives by default: whether an unplanted
-finding is valid is itself a semantic judgement, and treating "unplanted" as "wrong" would punish good
-review.
+Precision becomes a milestone when calibration observes reports combining high completeness with many
+unsupported findings. Extra findings are not false positives by default — whether an unplanted finding
+is valid is itself a semantic judgement, and treating "unplanted" as "wrong" would punish good review.
 
 ### E19.7 Identity: the property set defines the scenario; properties need only local names
 
-Scenario identity must cover the planted property set, because changing what a scenario asks for changes
-the engineering problem. It must do so **without disturbing the existing eight scenarios**: identity is
-computed from the form the manifest actually uses, so a legacy single-`property` scenario hashes exactly
-the fields it always did and keeps its recorded identity, while a multi-property scenario hashes its
-property set. Grader model and rubric stay outside identity, as they already are.
+Scenario identity covers the planted property set, because changing what a scenario asks for changes the
+engineering problem — and it does so without disturbing existing scenarios: identity is computed from
+the form the manifest actually uses, so a legacy single-`property` scenario hashes exactly the fields it
+always did. Grader model and rubric stay outside identity.
 
-Individual properties need stable names, not identities. Applying the field test — *does any durable
-artifact have to refer to one property across scenario versions?* — nothing does: results are reported
-within a scenario version, and a changed property set is a new scenario. **Scenario-local kebab-case ids
-are sufficient**, and a property hash would be identity created because a concept felt important. That
-changes only if a future evaluation needs to track one obligation across two scenario versions.
+Individual properties need stable names, not identities. The field test — *does any durable artifact
+have to refer to one property across scenario versions?* — finds nothing that does, since results are
+reported within a scenario version and a changed property set is a new scenario. Scenario-local
+kebab-case ids suffice; a property hash would be identity created because a concept felt important.
 
 ### E19.8 Two effectiveness views, both already derivable
 
-Calibration produced a case worth building on: the probe model mis-transcribed the launch prompt's
-absolute paths, lost a protocol file, and produced no report — three times. That is neither purely an
-infrastructure failure nor purely a reasoning failure, and it should not be filed as either.
-
-Proofbound evaluates a model *operating a role*, so following supplied pointers is part of the job. Two
-views answer two different questions, and both are already computable from `attempted` and `valid` with
-**no new state**:
-
-- **End-to-end role effectiveness** — detections over *attempted* trials. Failing to use the pointers
-  counts against the model, because in production it would.
-- **Conditional semantic performance** — detections over *valid* trials. Among runs that actually
-  reached the engineering question, how complete was the reflection?
-
-Report both. The conditional view alone would let a configuration that barely ran look excellent; the
-end-to-end view alone would conflate a provider outage with a weak reviewer.
+Calibration produced a case worth building on: the probe model mis-transcribed absolute paths, lost a
+protocol file and produced no report, three times. That is neither purely an infrastructure failure nor
+purely a reasoning one. Proofbound evaluates a model *operating a role*, so following supplied pointers
+is part of the job, and two views answer two questions with no new state — **end-to-end role
+effectiveness**, detections over *attempted* trials, and **conditional semantic performance**,
+detections over *valid* trials. Report both: the conditional view alone lets a configuration that barely
+ran look excellent, and the end-to-end view alone conflates a provider outage with a weak reviewer.
 
 ## E20. Two measurement problems, wrongly sequenced as one
 
@@ -550,3 +517,97 @@ observable than N, because it says what the spend bought. What it may never supp
 correlated evaluators fall silent together, so *"no new pressure surfaced in the last two samples under
 this measuring system"* is an observation about the measuring system, and never a statement that coverage
 is complete.
+
+## E24. What it takes to call an increment an improvement
+
+A substrate that can measure the same thing many times creates a new way to be wrong: adopting a
+change because it helped one run, because a paper endorses it, or because it sounds like better
+engineering. This is the discipline that makes those harder.
+
+**"Better" is never a property of an increment.** It is a relation between a declared claim, a
+declared measurand, a named baseline and guardrails, under measurement mechanics that did not move.
+An increment can raise discovery, cost ten times more, lose specificity and reduce repeatability at
+once; the harness reports that vector and a person decides whether the trade is worth making.
+
+### E24.1 What a pre-registered increment declares
+
+Before any treatment measurement exists — `_experiment.py` refuses a manifest missing any of it:
+
+| | |
+|---|---|
+| **Claim** | What is expected to improve, narrowly. *"Supplying accepted consequence C increases independent discovery of pressure P"*, never *"this makes evaluation better"* |
+| **Measurand** | The observable that changes, e.g. per-sample discovery frequency for `P` |
+| **Baseline** | The exact previous measuring system |
+| **Treatment** | The single intended change |
+| **Frozen** | What must stay identical: implementation evidence, model, grader contract, budget, everything but the treatment |
+| **Primary comparison** | Stated before data, so it cannot be chosen afterwards from what moved |
+| **Guardrails** | What must not materially regress — false pressure on sound architectures, ungradable rate, cost |
+| **Falsifier** | The outcome that would show the mechanism does not work |
+| **Invalid if** | Conditions that make the run uninterpretable rather than negative |
+| **Adoption rule** | Fixed in advance, and never reducible to a p-value |
+
+Once treatment measurement begins, none of it may change. A design flaw found mid-run makes the
+experiment **invalid**, and the repair is a new experiment rather than a rewritten rule — editing a
+criterion afterwards is how a benchmark gets fitted to itself.
+
+### E24.2 Paired, interleaved, and read against its own noise
+
+Baseline and treatment run in the **same window, on the same retained implementation evidence**,
+with neither arm's output ever reaching the other's evaluator. V1 and V2 were separated by days,
+which is why their comparison could not be read; the substrate now interleaves arms from an order
+generated before execution, so provider drift cannot line up with the comparison.
+
+Interpretation is against same-condition variation, not against a one-shot difference. A treatment
+whose observed shift is comparable to the dispersion the instrument shows when nothing changed has
+**not resolved** — and *"no measurable improvement under this configuration"* is a legitimate,
+publishable result, as are *"tradeoff observed"*, *"invalid experiment"* and *"regression"*. None of
+them is a protocol state; they are research conclusions about a run.
+
+### E24.3 Controls, and what they cannot prove
+
+Structurally different sound architectures remain the specificity control, because a treatment can
+raise discovery simply by making the evaluator complain more. A negative control — the same
+mechanics where the pressure should not be implicated — diagnoses that bias when it fails. **It
+proves nothing when it passes**, and no control is ground truth merely because someone labelled it
+one; its validity is argued before data collection or not at all.
+
+Every pressure also passes an **entailment audit** first: is the graded property actually entailed
+by the authority the evaluator receives? *"Must use a Sender interface"* is a mechanism and fails
+unless the mechanism is itself accepted intent; *"the code deciding what to notify a user about
+does not need to know how a provider is called"* is a consequence and can be satisfied by
+architectures that look nothing alike. Calibration V2 failed exactly here — the criterion was not
+entailed by what the reflector was shown — and that failure mode is common enough in coding
+benchmarks to be worth naming as a standing check rather than a lesson.
+
+### E24.4 Research motivates experiments; it never authorises adoption
+
+An external result may justify *running* something. It may not establish that Proofbound should
+adopt it. The sequence is: state the mechanism, state what it predicts, identify the Proofbound
+measurand, build baseline and treatment, pre-register controls, measure paired, attempt to
+falsify, inspect guardrails and cost — then adopt only the local claim that survived.
+
+Three ideas are recorded as motivated but unadopted. **Metamorphic framing** fits an oracle-less
+problem: a form-preserving change should not move discovery, a consequence-violating one should
+raise it, and a consequence-restoring change in a different form should lower it again — a relation
+about the accepted consequence, not about resemblance, which is why it is not a golden architecture.
+**Mutant adequacy** asks whether the evaluator separates deliberately constructed semantic variants
+in the predicted direction, testing the evaluator rather than the implementation; mutants built
+after seeing failures measure nothing. **Falsification routing** would send a semantic candidate
+toward a deterministic check where one exists, so the next evaluator need not be another model —
+deterministic evidence outranks semantic agreement (`P5`). None is implemented, and each would have
+to win its own controlled comparison first.
+
+### E24.5 Not fitting the benchmark to itself
+
+One case has now motivated three milestones, and repeatedly editing an instrument against the
+fixtures that exposed its faults turns those fixtures into training data for the research process.
+The discipline is a split, not a bigger benchmark: evidence used to *understand* failures and design
+a treatment is development material, and a claim of general improvement may not rest only on it. A
+small holdout that was not inspected while the treatment was designed is worth more than a large
+contaminated corpus, and `P13` makes the small one affordable. No claim generalises past the one
+domain that produced it.
+
+Statistics stay out unless their assumptions hold, for the reasons
+[§E23](evaluation-comparison.md#e23-what-one-semantic-measurement-should-be) already gives: exact
+paired counts, per-cell distributions, discordant direction, missingness, control behaviour and cost
+come first.

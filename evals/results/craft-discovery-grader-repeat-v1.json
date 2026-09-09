@@ -1,0 +1,897 @@
+{
+  "anchor_selection": "One report per outcome class, plus both sides of each instance whose judgement changed between V1 and the byte-identical V2 untreated rerun. Chosen for semantic shape and known prior grade, never for observed instability under repetition \u2014 no repeated grading had been run.",
+  "anchors": [
+    {
+      "bytes": 2062,
+      "id": "g1",
+      "instance": "state-a-1788834064346",
+      "prior_outcome": "recognised-upheld",
+      "sha256": "c5728cebcb46e70dc8074915ea1fc6bb5a7cdacf8407cf58f47bdc1c9cf35223",
+      "source": "v1",
+      "state": "state-a",
+      "why": "Sound architecture, upheld. The most historically stable instance: upheld in V1 and again in the V2 untreated rerun."
+    },
+    {
+      "bytes": 1611,
+      "id": "g2",
+      "instance": "state-a-1788835442112",
+      "prior_outcome": "false-degradation",
+      "sha256": "592690cf6d37dd348017a03e8f229f3b39b610223414d40105df1e48c5974962",
+      "source": "v2-untreated",
+      "state": "state-a",
+      "why": "Sound architecture, called degraded. The V2 side of an instance V1 upheld five-for-five and the untreated rerun marked down."
+    },
+    {
+      "bytes": 1714,
+      "id": "g3",
+      "instance": "state-b-1788836383405",
+      "prior_outcome": "recognised-upheld",
+      "sha256": "50da19dc4742103b77cc0520562cb107198f46b4dac8cfe9d4390386fb0b5b29",
+      "source": "v2-untreated",
+      "state": "state-b",
+      "why": "Alternative-good architecture, upheld. The upheld side of the instance whose judgement reversed between V1 and V2."
+    },
+    {
+      "bytes": 1577,
+      "id": "g4",
+      "instance": "state-b-1788836383405",
+      "prior_outcome": "false-degradation",
+      "sha256": "ae9b283a74acb9d3b76a7d641f723e39fb15903bb6d64850c84f72a2b1636121",
+      "source": "v1",
+      "state": "state-b",
+      "why": "The same instance's other side: V1 called this architecture degraded. g3 and g4 are the two semantic shapes of one reversal."
+    },
+    {
+      "bytes": 1665,
+      "id": "g5",
+      "instance": "state-c-1788834970624",
+      "prior_outcome": "missed-degradation",
+      "sha256": "a9013784462d5eb770d909cb0d26f79d1ac24117984234293518e6aec55835c8",
+      "source": "v2-untreated",
+      "state": "state-c",
+      "why": "Degraded architecture, called upheld \u2014 the `app.py`-is-the-composition-root reading, missed in V1 and in both V2 arms. Stable, and stably wrong."
+    },
+    {
+      "bytes": 1753,
+      "id": "g6",
+      "instance": "state-c-1788835274286",
+      "prior_outcome": "recognised-degraded",
+      "sha256": "d653a11af063a5a2d759638b5e86bffb55ea687992a418e1cd85fc87d47b16b2",
+      "source": "v1",
+      "state": "state-c",
+      "why": "Degraded architecture, correctly recognised \u2014 the V1 side of the instance the V2 untreated rerun missed."
+    }
+  ],
+  "case": "notification-provider-boundary",
+  "format": "proofbound-craft-grader-repeat-v1",
+  "frozen_identity": "675cb426c81a8081b79d857ece44d49738c9300414b368422fc60b38fbed0f59",
+  "graded_statement": "There is no delivery boundary. The endpoint, credential, header format and payload field names sit in the application entry point, and the retry and outcome policy sits in the notification package. Adding a provider requires editing both, and the notification domain acquires provider-specific knowledge.",
+  "layer": "G",
+  "measurements": [
+    {
+      "claim": "not-detected",
+      "item": "g1",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 1,
+      "seconds": 3.918,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g1",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 2,
+      "seconds": 2.898,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g1",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report critiques provider selection coupling, but never identifies the planted problem of missing delivery boundary (delivery details in the entry point, retry/outcome policy in the notification package) \u2014 it explicitly states the retry and outcome policies were untouched.",
+      "repeat": 3,
+      "seconds": 55.122,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g1",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report flags provider-selection coupling and duplication of the provider identity string, but never raises the planted issue: wire details (endpoint, credential, header format, field names) in the application entry point and retry/outcome policy in the notification package requirin",
+      "repeat": 4,
+      "seconds": 7.726,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g1",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report frames its concern around provider selection and registry routing, and even affirms retry/outcome policy lived outside the app layer \u2014 it never flags missing endpoint/credential/header/payload fields in the entry point or notification-domain provider knowledge.",
+      "repeat": 5,
+      "seconds": 11.1,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g1",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 6,
+      "seconds": 8.588,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g1",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 7,
+      "seconds": 11.907,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g1",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report critiques provider-selection wiring leaking into `app.py` and the delivery registry, but never identifies the planted problem: retry/outcome policy residing in the notification package with provider-specific delivery details in the application entry point.",
+      "repeat": 8,
+      "seconds": 10.201,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g1",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 9,
+      "seconds": 4.97,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g1",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 10,
+      "seconds": 13.143,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g1",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 11,
+      "seconds": 15.036,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g1",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report critiques provider-selection coupling and registry concerns, not the missing delivery boundary, leaking endpoints/credentials/header/payload format in the app entry point, or retry/outcome policy in the notification package.",
+      "repeat": 12,
+      "seconds": 10.201,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g1",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 13,
+      "seconds": 8.818,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g1",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report critiques provider-selection routing and default placement, but never raises the missing delivery boundary (endpoint/credential/header/payload fields in the entry point, retry/outcome policy in the notification package, provider additions touching both).",
+      "repeat": 14,
+      "seconds": 9.992,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g1",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report praises change locality, treats the registry and sender classes as a proper delivery structure, and its only mild critique is the default provider string in `app.py` \u2014 it never flags missing endpoint/credential/header/payload separation, retry/outcome policy in the notificat",
+      "repeat": 15,
+      "seconds": 8.855,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g2",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 1,
+      "seconds": 9.313,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g2",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report raises different concerns (provider registry, DEFAULT_PROVIDER cross-layer import, parameter alignment) and never describes the missing delivery boundary with endpoint/credential/header/payload in the entry point or retry/outcome policy in the notification package.",
+      "repeat": 2,
+      "seconds": 5.701,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g2",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 3,
+      "seconds": 4.454,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g2",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 4,
+      "seconds": 4.247,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g2",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report focuses on a leaked `DEFAULT_PROVIDER` import and a new provider-selection registry \u2014 it never mentions the endpoint/credential/header/payload details living in the app entry point or retry/outcome policy in the notification package that define the missing delivery boundary.",
+      "repeat": 5,
+      "seconds": 7.12,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g2",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report flags provider abstraction, the DEFAULT_PROVIDER import, and the delivery registry \u2014 but never mentions the misplaced transport details (endpoint, credential, header format, payload fields) or retry/outcome policy, which are the substance of the planted problem.",
+      "repeat": 6,
+      "seconds": 13.628,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g2",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe reviewer critiques the structure of an existing `delivery` module (registry, constant leakage), while the planted problem asserts no delivery boundary exists at all \u2014 with endpoint/creds/headers/payload in the entry point and retry/outcome policy in the notification package, none o",
+      "repeat": 7,
+      "seconds": 12.773,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g2",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 8,
+      "seconds": 3.174,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g2",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 9,
+      "seconds": 4.562,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g2",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report flags provider-selection/registry placement and a `DEFAULT_PROVIDER` constant leak, but never mentions endpoint/credential/header/payload details in the entry point, retry/outcome policy in the notification package, or having to edit both places to add a provider.",
+      "repeat": 10,
+      "seconds": 7.386,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g2",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report challenges a different concern (provider registry placement and a constant import) and never mentions the provider-specific endpoint, credentials, header format, payload fields sitting in the entry point, nor the retry/outcome policy in the notification package.",
+      "repeat": 11,
+      "seconds": 11.486,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g2",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 12,
+      "seconds": 4.305,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g2",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report critiques where the `DEFAULT_PROVIDER` constant and provider-registry concern live, but never identifies the actual planted problem: provider-specific transport knowledge (endpoint, credential, headers, payload fields) sitting in the entry point and retry/outcome policy in t",
+      "repeat": 13,
+      "seconds": 6.3,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g2",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report discusses a `DEFAULT_PROVIDER` constant leaking into the app layer and a provider registry inside `delivery`, but never identifies the absence of a delivery boundary (endpoint/credential/header/payload sitting in the entry point, retry/outcome policy in the notification pack",
+      "repeat": 14,
+      "seconds": 37.696,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g2",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report flags a different coupling (provider constant/registry leaking across `app.py`\u2194`delivery`), but never identifies the planted issue of wire-configuration (endpoint, credential, headers, payload field names) sitting in the entry point and retry/outcome policy sitting in the no",
+      "repeat": 15,
+      "seconds": 19.398,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 1,
+      "seconds": 17.568,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 2,
+      "seconds": 5.165,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 3,
+      "seconds": 7.309,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 4,
+      "seconds": 12.221,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe reviewer defends the current arrangement as correct (domain contract preserved, app.notify passes through opaquely, nothing provider-specific outside delivery), the opposite of the planted \"no delivery boundary\" problem; its only qualm is the import-registration pattern, a differen",
+      "repeat": 5,
+      "seconds": 16.605,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report affirms that providers own their endpoint/auth/payload and that the domain stays ignorant of delivery mechanics, the opposite of the planted problem; its only flagged coupling (the `delivery/__init__.py` import) is not the planted one.",
+      "repeat": 6,
+      "seconds": 6.198,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report frames provider details as property owned by each provider in the delivery layer and asserts `app.notify` treats the provider opaquely \u2014 the opposite of the planted problem. Its only boundary concern is the import in `delivery/__init__.py`, not endpoint/credential/header/pay",
+      "repeat": 7,
+      "seconds": 11.874,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report actually describes the opposite design: it claims each provider owns its endpoint, auth, and payload, and that retry/outcome policy lives in the provider \u2014 and only flags the delivery-boundary import, not the planted problem of provider details leaking into the app entry poi",
+      "repeat": 8,
+      "seconds": 11.378,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 9,
+      "seconds": 15.637,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report explicitly affirms the opposite: it states providers own their endpoint/auth/payload mapping, retry/outcome policy sits in providers, and the domain model is untouched \u2014 the only overlap is the narrower complaint about editing `delivery/__init__.py` imports, which is not the",
+      "repeat": 10,
+      "seconds": 14.785,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report asserts the delivery boundary already exists (specifics live in providers) rather than flagging that they sit in the app entry point and notification package.",
+      "repeat": 11,
+      "seconds": 10.812,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 12,
+      "seconds": 7.041,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report asserts the opposite \u2014 claiming endpoints, auth, and payload mapping live in providers and retry/outcome policy stays out of the domain \u2014 and only flags the benign import wiring in `delivery/__init__.py`, not the missing delivery boundary.",
+      "repeat": 13,
+      "seconds": 12.71,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 14,
+      "seconds": 3.969,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report affirms that a clean delivery boundary exists (providers own endpoints, credentials, payloads; the domain model stays ignorant) and only flags the import accumulation in `delivery/__init__.py` \u2014 it never identifies the missing boundary or provider-specific knowledge in the e",
+      "repeat": 15,
+      "seconds": 12.02,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report claims app.py only threads a provider name and that endpoints/headers/payloads live only in delivery/providers \u2014 the opposite of the planted problem, which put endpoint/credential/header/payload in the entry point and retry/outcome policy in the notification package.",
+      "repeat": 1,
+      "seconds": 10.981,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 2,
+      "seconds": 9.636,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report flags a different concern (hardcoded concrete imports in delivery/__init__.py) and explicitly endorses the opposite of the planted problem, calling app.py \"benign\" and stating provider endpoints/headers/payloads are \"confined to\" the provider modules and retries live in prov",
+      "repeat": 3,
+      "seconds": 8.815,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report claims provider concerns are confined to provider files and praises the layout, asserting the opposite of the planted problem's facts.",
+      "repeat": 4,
+      "seconds": 20.033,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report explicitly says provider-specific concerns are confined to the provider handlers and that `app.py`/the notification model stay clean, which contradicts (rather than identifies) the planted problem of endpoint/credential details living in the entry point and retry/outcome pol",
+      "repeat": 5,
+      "seconds": 10.429,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report explicitly states concepts are well-located and the notification model stays pure, contradicting the planted problem; it instead flags a different issue (explicit provider imports in `delivery/__init__.py`).",
+      "repeat": 6,
+      "seconds": 7.712,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report explicitly contradicts the planted problem: it asserts provider endpoints, headers, and payload fields are confined to `delivery/providers/*.py` (not the app entry point), that the notification model stays pure, and that retry/outcome policy lives in provider handlers \u2014 its ",
+      "repeat": 7,
+      "seconds": 10.29,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 8,
+      "seconds": 3.511,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 9,
+      "seconds": 3.971,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report flags a different issue: the static import list in `delivery/__init__.py`. It explicitly dismisses the app.py change as benign and endorses the domain alignment, so it does not identify the planted problem (config/retry/outcome policy leaking into the app entry point and not",
+      "repeat": 10,
+      "seconds": 5.269,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 11,
+      "seconds": 6.679,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report says the notification domain stays pure and provider concerns are well-located, directly contradicting the planted problem; it instead flags the registry's side-effect import list.",
+      "repeat": 12,
+      "seconds": 7.618,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 13,
+      "seconds": 3.731,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report affirms well-located provider concerns and a pure notification model, the direct opposite of the planted problem (whose issue was config living in the entry point and retry/outcome policy in the notification package). It instead flags a different coupling: concrete-provider ",
+      "repeat": 14,
+      "seconds": 12.571,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report praises domain alignment \u2014 asserting provider concerns are confined to provider files and the notification model stays pure \u2014 and its only coupling concern is the side-effect import list, not the planted scattered-boundary problem.",
+      "repeat": 15,
+      "seconds": 7.185,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g5",
+      "outcome": "detected",
+      "reason": "DETECTED \u2014 the Composability section explicitly identifies provider-specific knowledge embedded in the entry point and that adding a provider requires editing the composition root (non-pluggable), which is the same underlying problem.",
+      "repeat": 1,
+      "seconds": 44.981,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g5",
+      "outcome": "detected",
+      "reason": "DETECTED \u2014 The report flags that provider-specific delivery knowledge (endpoints, headers, payloads) is concentrated in `app.py` and that adding a provider requires editing the composition root because configuration isn't pluggable, which is the missing-delivery-boundary concern, even though it disp",
+      "repeat": 2,
+      "seconds": 29.53,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g5",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 3,
+      "seconds": 11.252,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report explicitly frames the setup as a reasonable tradeoff and asserts the retry/outcome policy and notification domain stay clean, contradicting the planted problem's core claim rather than identifying it.",
+      "repeat": 4,
+      "seconds": 17.3,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED. The report explicitly rejects the premise, concluding \"no domain concept leaked into the wrong module\" and that the composition-root placement is a reasonable, proportionate choice \u2014 the opposite of the planted problem.",
+      "repeat": 5,
+      "seconds": 22.402,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report explicitly refutes the problem \u2014 it claims nothing leaks into the notification domain, that adding a provider requires editing only `app.py`, and frames the config-in-entry-point as a reasonable composition-root choice rather than a defect.",
+      "repeat": 6,
+      "seconds": 8.487,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g5",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report identifies the missing delivery boundary: it notes provider-specific knowledge (endpoints, headers, payloads) is concentrated in `app.py`, adding a provider requires editing the composition root, and configuration isn't pluggable \u2014 even though it frames this as an acceptable tra",
+      "repeat": 7,
+      "seconds": 14.735,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 8,
+      "seconds": 4.856,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "g5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report argues the delivery functions remain composable and claims \"No domain concept leaked into the wrong module,\" contradicting the planted problem rather than identifying it.",
+      "repeat": 9,
+      "seconds": 7.309,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g5",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 10,
+      "seconds": 7.414,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g5",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report identifies the missing delivery boundary: it flags provider-specific knowledge (endpoints, headers, payloads) concentrated in `app.py` and that adding a provider requires touching the composition root rather than a pluggable seam \u2014 though it disputes the notification-domain leak",
+      "repeat": 11,
+      "seconds": 18.496,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g5",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report identifies the absence of a provider boundary: provider-specific wire knowledge (endpoints, auth, payloads) concentrated in `app.py`, requiring edits to the composition root to add a provider.",
+      "repeat": 12,
+      "seconds": 12.867,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g5",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report explicitly notes provider-specific knowledge (endpoints, auth headers, payload mappings) concentrated in `app.py` and that adding a provider requires editing the entry point \u2014 the same boundary problem.",
+      "repeat": 13,
+      "seconds": 6.049,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g5",
+      "outcome": "detected",
+      "reason": "DETECTED \u2014 the report identifies that provider-specific knowledge (endpoint/credentials/headers/payload) sits in the entry point and that adding a provider requires editing the composition root, i.e. no delivery boundary.",
+      "repeat": 14,
+      "seconds": 9.186,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g5",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 15,
+      "seconds": 15.41,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g6",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report identifies the missing delivery boundary: provider endpoints, credentials, header/payload mappings live in `app.py`, and adding a provider requires editing the entry point rather than extending a boundaried provider abstraction.",
+      "repeat": 1,
+      "seconds": 5.553,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g6",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 2,
+      "seconds": 5.203,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g6",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 3,
+      "seconds": 4.294,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g6",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 4,
+      "seconds": 5.502,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g6",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 5,
+      "seconds": 6.066,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g6",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 6,
+      "seconds": 6.914,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g6",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 7,
+      "seconds": 6.64,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g6",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report identifies the missing delivery boundary: provider endpoints, credentials and payload mappings live in the `app.py` entry point, adding a provider requires editing it, and there is no provider registry/abstraction.",
+      "repeat": 8,
+      "seconds": 9.9,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g6",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report identifies that provider-specific configuration (endpoints, credentials, request shapes) is coupled to the application entry point with no delivery boundary or provider abstraction, requiring edits to `app.py` per provider.",
+      "repeat": 9,
+      "seconds": 24.816,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g6",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 10,
+      "seconds": 3.732,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g6",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 11,
+      "seconds": 24.11,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g6",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 12,
+      "seconds": 5.66,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g6",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 13,
+      "seconds": 8.532,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g6",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 14,
+      "seconds": 2.833,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "g6",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 15,
+      "seconds": 2.846,
+      "status": "graded"
+    }
+  ],
+  "property": {
+    "id": "provider-change-stays-in-delivery",
+    "response_measure": "Which modules must change, and whether provider-specific detail appears outside the delivery boundary, when a second provider is added.",
+    "scenario": "Adding a second delivery provider, selected per notification, requires changes only inside the delivery boundary and the explicit contract the notification domain depends on. The code that decides what to notify a user about does not change, and does not acquire knowledge of any provider's endpoint, authentication scheme, payload field names or error codes."
+  },
+  "question": "discovery",
+  "repeats": 15,
+  "system": {
+    "grader_model": "opencode/big-pickle",
+    "grader_prompt_sha256": "c7a3d19d54fba8e71220a600a6cd620d8843c642951d8052bf0da8c81688d309",
+    "harness": "opencode-cli",
+    "harness_version": "1.18.29",
+    "proofbound_sha": "db05eefe0febd6db33f2710fae18fec193398f11",
+    "python": "3.14"
+  }
+}
