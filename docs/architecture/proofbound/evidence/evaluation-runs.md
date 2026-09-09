@@ -963,3 +963,80 @@ Pre-registrations: [`atomic-pressure-preregistration.md`](../../../../evals/craf
 [`baseline-preregistration-atomic.md`](../../../../evals/craft/notification-provider-boundary/baseline-preregistration-atomic.md).
 [§E54](#e54-the-repaired-case-measures-and-the-pressure-statement-does-not-discriminate) stands
 unchanged and was not re-graded.
+
+## E56. The modularity pilot finds material headroom, and two defects in the instrument that found it
+
+`full`-only headroom pilot for the modularity and local-reasoning calibration, pre-registered and
+committed before the first call. Six attempts, one arm, the frozen external task, implementer role,
+`opencode/nemotron-3-ultra-free`. Development evidence with its own experiment identity; **no attempt
+in it may become a `full` sample of a paired run.**
+
+Record: [`craft-mlr-c3-full-headroom-pilot.json`](../../../../evals/results/craft-mlr-c3-full-headroom-pilot.json).
+Pre-registration: [`MLR-C3-pilot-preregistration.md`](../../../../evals/craft/modularity-local-reasoning/MLR-C3-pilot-preregistration.md).
+Analysis: [`MLR-C3.md`](../../../../evals/craft/modularity-local-reasoning/MLR-C3.md).
+
+### The question the pilot was allowed to ask
+
+Only one: whether unrestricted `full` executions consume the module's implementation source often
+enough for a paired source-visibility experiment to have anything to remove. Not effect size, not
+whether the model understands modularity, and not an architecture verdict.
+
+### Headroom, against the categories declared before the first call
+
+| # | correct | impl. source | file reads only | impl. runtime | contract read | calls | input tokens |
+|---|---|---|---|---|---|---|---|
+| 1 | no | 5,458 | 4,076 | 0 | 0 | 16 | 154,233 |
+| 2 | yes | 4,740 | 3,358 | 611 | 0 | 27 | 216,145 |
+| 3 | yes | 5,458 | 4,076 | 0 | 0 | 22 | 154,132 |
+| 4 | yes | 7,204 | 5,822 | 151 | 0 | 38 | 288,296 |
+| 5 | yes | 0 | 0 | 0 | 0 | 21 | 182,953 |
+| 6 | yes | 6,602 | 4,076 | 0 | 2,994 | 32 | 207,647 |
+
+Six valid attempts, no setup or harness failure. Four of five correct runs consumed implementation
+source; median 5,458 bytes, or 4,076 counting only file reads and excluding the directory listing
+that names the module. **Material headroom** under either reading, and unchanged if the disputed
+attempt 1 is scored correct.
+
+Consumed bytes exceed the 4,405 bytes on disk because OpenCode's `read` returns a line-numbered
+rendering; every session was summarised, so all delivered-volume figures are upper bounds.
+
+**Five of six runs never opened the contract.** They read the implementation, or inferred the
+semantics from how the application already called the module. Attempt 5 completed the task correctly
+having consumed neither. This is not a modularity finding — it is only the finding that there is
+implementation-source consumption available for a treatment to remove.
+
+### Why the paired experiment was not pre-registered
+
+Two defects, both found by running the pilot, both fatal to the paired comparison rather than to the
+headroom answer.
+
+**The correctness oracle rejects a legitimate restructuring.** Attempt 1 is product-correct on every
+status, body and second-download assertion, and passes the service's own suite. It fails one line:
+the gate calls `exports.fetch(...)` and the agent had turned that into a get-or-create returning
+`(body, created)`. Nothing in the task fixes that signature and nothing else in the workspace pins
+it; the reference solution merely happens to keep it and add a separate `fetch_or_create`. The gate's
+own docstring promises it "asserts nothing about how the service is arranged". This is the defect
+MLR-C2 already repaired one level down, when it removed the gate's reach into the private helper
+`exports._key` and left a dependency on a public function's shape in its place.
+
+**Consumed-context attribution misses Python's own documentation route.** Attempt 5 — the run that
+reads as *used no implementation at all* — ran `help(objectstore)` and received 5,397 bytes carrying
+`_backend` and `_store`. The classifier scored it `other`; `python3 -m pydoc objectstore` is scored
+`behaviour`, which is worse. The independent internal-name flag is the only reason the gap is
+visible, and it records *that* interior names arrived, not how many bytes did — and the measurand is
+bytes. In `full` this costs little. In `contract`, where interrogating a closed-source package with
+`help()` is the most natural first move an agent has, such a run would report zero implementation
+representation and be read as pure contract substitution. That is the fake zero the pre-registration
+calls mandatory to prevent.
+
+### What this does not mean
+
+No modularity claim, no local-reasoning claim, no architecture verdict, and nothing about a second
+domain. Headroom is not evidence that hiding the implementation preserves correctness — only that
+there is something to hide. Both defects are pinned as deterministic tests and neither is repaired
+here: the fixture and telemetry are frozen for this series, and repairing them from observed
+behaviour is what creates a new revision, under which this pilot does not transfer.
+
+### Cost
+
+Six attempts, 1,203,406 input tokens, 51 minutes wall clock, no monetary cost on this model.

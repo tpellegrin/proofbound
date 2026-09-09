@@ -1905,10 +1905,30 @@ representation is reported beside it, which makes the decisive interpretation ru
 `contract` run that reconstructs the interior through introspection is **representation shifted, not
 removed**, never successful substitution.
 
-**Sequence.** Mechanics, tests and the pilot pre-registration are frozen in one commit before the
-first semantic call; the `full`-only headroom pilot follows; the paired pre-registration follows only
-if headroom exists. Pilot evidence is development evidence with its own experiment identity and may
-never be spliced into paired samples.
+**The pilot: material headroom, and two defects in the instrument that found it.** Six `full`
+attempts, all valid. Four of five correct runs consumed implementation source, median 5,458 bytes
+(4,076 counting only file reads) — **material headroom** under the categories declared before the
+first call, and unchanged if the disputed attempt is scored correct. **Five of six runs never opened
+the contract**, reading the implementation or inferring the semantics from how the application
+already called the module; one completed the task correctly having consumed neither. That is not a
+modularity finding — only that there is something for a treatment to remove.
+
+**No paired pre-registration was written**, because both defects are fatal to the paired comparison
+rather than to the headroom answer. The **correctness oracle rejects a legitimate restructuring**: a
+product-correct attempt fails one assertion that calls `exports.fetch`, whose signature the agent
+changed and which nothing in the task fixes — the defect MLR-C2 repaired one level down, when it
+removed the gate's reach into `exports._key` and left a dependency on a public function's shape.
+**Attribution misses Python's own documentation route**: `help(objectstore)` returned 5,397 bytes
+carrying `_backend` and `_store` and was scored `other`, and `pydoc` is scored `behaviour`. In
+`contract` that route is the most natural first move an agent has, and such a run would report zero
+implementation representation and be read as pure substitution — the fake zero the design exists to
+prevent. Both are pinned as deterministic tests; neither is repaired here, because repairing a frozen
+fixture from observed behaviour is what creates a new revision.
+
+Evidence: [`§E56`](proofbound/evidence/evaluation-runs.md), record
+[`craft-mlr-c3-full-headroom-pilot.json`](../../evals/results/craft-mlr-c3-full-headroom-pilot.json), analysis
+[`MLR-C3.md`](../../evals/craft/modularity-local-reasoning/MLR-C3.md). Pilot evidence is development
+evidence with its own experiment identity and may never be spliced into paired samples.
 
 ## 7B. Threat mitigation status
 
