@@ -138,6 +138,7 @@ One line each. **The canonical definitions, with their falsifiers, are in
 | Calibration V3 criterion | **Designed; case disqualified** — the probe change rewards the planted degradation, and no entailed discriminating consequence exists on this fixture |
 | Calibration case repair | **Encoded and frozen**; deterministic validity established, and no test separates sound from degraded |
 | Repaired-case baseline | **Run**; pressure non-specific — sound states detected 7/9 and 5/10, degraded at ceiling, and the entry-point clause explains all of it |
+| Atomic pressure and fresh baseline | **Run**; column repaired — sound states 1/10 and 2/9, degraded 10/10, so the case discriminates but leaves no treatment headroom |
 | Modularity and local reasoning | Deferred research; sequenced after calibration validity is restored |
 | Decision provenance, coherence audit, context telemetry | Direction only; see the plan's dependency graph |
 

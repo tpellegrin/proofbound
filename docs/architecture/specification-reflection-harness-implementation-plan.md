@@ -1659,6 +1659,39 @@ to reports already read. The narrowed pressure must earn its own frozen baseline
 **Next.** Re-pre-register the pressure against the reference implementations — which now exist and
 did not when the wording was first written — and re-run the baseline before any treatment.
 
+## 7R. Atomic pressure, grader adequacy and fresh baseline  *(column repaired; no headroom)*
+
+Pre-registrations: [`atomic-pressure-preregistration.md`](../../evals/craft/notification-provider-boundary/atomic-pressure-preregistration.md),
+[`baseline-preregistration-atomic.md`](../../evals/craft/notification-provider-boundary/baseline-preregistration-atomic.md).
+Evidence: [§E55](proofbound/evidence/evaluation-runs.md#e55-the-atomic-column-discriminates-and-the-untreated-reflector-is-already-at-ceiling).
+
+**The column was repaired by deletion.** Of the old pressure's three clauses, one is true in every
+state because the contract requires it and one is *inverted*, true in both sound states and false in
+the degraded one. Only the third discriminates, and the frozen pressure is now that clause alone —
+verbatim the criterion the pre-baseline case-repair design already used, so the wording predates
+every report. Fixture untouched since `4e0784a`.
+
+**Grader adequacy passed before reflector calls were spent.** Six frozen anchors, 15 gradings each,
+including the three reports the old column false-credited: every modal outcome matched its declared
+category, 90/90 graded, pooled non-modal 5/90. The three false-credited anchors now read
+not-detected 11/15, 15/15 and 15/15.
+
+**Specificity repaired; sensitivity saturated.** Fresh baseline, N=10 per state: `state-a` 1/10,
+`state-b` 2/9, `state-c` **10/10**. False pressure fell from 78% to 10% and from 50% to 22%. All
+three sound-state detections are grader errors of one measured kind — the report denies the pressure
+while reciting Beacon's mapping — matching anchor `d3`'s dispersion exactly.
+
+**No headroom, and the finding underneath it.** A treatment cannot raise 10/10. Given a probe that
+exercises the boundary and a column that asks one atomic question, the untreated reflector's
+*discovery* is already perfect on the degraded architecture. It was never criterion-starved for
+discovery; what V1 and V2 measured was a probe that did not exercise the degradation and a column
+that could not tell knowledge placement from provider awareness, and what the reliability run found
+unstable was *judgement* — the layer this column deliberately stopped measuring.
+
+**Next.** The treatment V3 was built to test is unrunnable on this case as posed. Either the
+question moves to a harder instance where untreated discovery is not saturated, or it moves off
+discovery entirely — and the second is a design question, not a calibration one.
+
 ## 7P. Modularity and local reasoning calibration — design check  *(deferred research)*
 
 **Sequenced after System Craft calibration validity is restored**, and not before. Testing a

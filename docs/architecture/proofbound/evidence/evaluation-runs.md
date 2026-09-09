@@ -861,3 +861,105 @@ measurement, and the narrowed pressure must earn its own baseline.
 
 Record: [`craft-r0002-baseline.json`](../../../../evals/results/craft-r0002-baseline.json).
 Pre-registration: [`baseline-preregistration.md`](../../../../evals/craft/notification-provider-boundary/baseline-preregistration.md).
+
+## E55. The atomic column discriminates, and the untreated reflector is already at ceiling
+
+`§E54` failed on the measurement column rather than the fixture: three propositions were bundled
+into one cell, and two of them were true in sound architectures by construction. This milestone
+kept the fixture frozen, replaced the column with one proposition, proved the grader could measure
+it, and re-ran the baseline. Both results are decisive and they point in opposite directions.
+
+### The column, made atomic
+
+Checked against the frozen reference implementations rather than against labels:
+
+| Clause of the old pressure | `state-a` | `state-b` | `state-c` |
+|---|---|---|---|
+| Entry point gains provider selection | true | true | true |
+| Retry policy is restated | true | true | **false** |
+| Provider-independent code learns how a provider reports outcomes | false | false | **true** |
+
+The first is true everywhere because the contract requires `app.notify` to gain a `provider`
+parameter. The second is **inverted** — keeping a retry loop inside each provider is what a
+provider-specific integration does. Only the third discriminates.
+
+The repair was deletion. The frozen pressure is now that clause alone:
+
+> Code that is not specific to any one delivery provider had to interpret how a particular provider
+> reports the result of a delivery attempt, in order to produce the product's delivery outcome.
+
+It is verbatim the criterion the pre-baseline case-repair design already used in its own state
+analyses, so the wording predates every report. The retained reports were used only as grader
+anchors, never to estimate what the new baseline would show.
+
+### Grader adequacy, measured before spending reflector calls
+
+Six frozen anchors, 15 gradings each, budget fixed in advance. **Three of the six are the exact
+reports the old column false-credited**, so the set is biased toward difficulty.
+
+| Anchor | Category | Counts | Modal share | Old column |
+|---|---|---|---|---|
+| `d1` | identifies the leakage plainly | detected 15 | **1.00** | detected |
+| `d2` | identifies it, calls it reasonable | detected 15 | **1.00** | detected |
+| `d3` | says interpretation is correctly isolated | not-detected 11, detected 4 | 0.73 | **detected** |
+| `d4` | selection and central import only | not-detected 15 | **1.00** | **detected** |
+| `d5` | provider identity and selection only | not-detected 15 | **1.00** | **detected** |
+| `d6` | generic provider concerns | not-detected 14, detected 1 | 0.93 | — |
+
+Every modal outcome matches its declared category; 90/90 graded, no parse failures; pooled non-modal
+5/90. The column separates provider-awareness from provider-outcome interpretation, which the old one
+could not. **Gate passed on the rule fixed before the numbers existed.**
+
+### Fresh baseline
+
+Same fixture, same substrate, one arm, N=10 per state, 30 fresh executions with nothing reused from
+the previous series.
+
+| State | Declared | Counts | Graded | Under the old column |
+|---|---|---|---|---|
+| `state-a` | sound | detected 1, not-detected 9 | 10/10 | detected 7/9 |
+| `state-b` | sound | detected 2, not-detected 7 | 9/10 | detected 5/10 |
+| `state-c` | degraded | **detected 10** | 10/10 | detected 10/10 |
+
+One reflector call failed on `state-b`, recorded as missing.
+
+**Specificity is repaired.** False pressure fell from 78% to 10% on `state-a` and from 50% to 22% on
+`state-b`. The case now discriminates: 10/10 against 1/10 and 2/9.
+
+**Every sound-state detection is a grader error of one identified kind.** All three reports deny the
+pressure in their own words — *"each provider encapsulates its own endpoint, headers, payload shape,
+and response interpretation in its own file — correct"*; *"the retry policy and outcome vocabulary
+are centralized in each provider's deliver function, so Beacon implements its own mapping without
+touching shared code"*; *"that module absorbs all Beacon-specific divergence"*. Each also recites
+Beacon's `accepted`/`refused`/`unavailable` mapping in detail while attributing it to the provider
+module, and the grader credits the recitation. This is the same failure mode and the same magnitude
+as anchor `d3`'s 4/15, so it was measured before the baseline rather than discovered by it. **None of
+them identified a pressure the reference analysis had missed; the ground truth stands.**
+
+### The result that stops V3
+
+`state-c` is detected **10 out of 10**. There are no non-detections to analyse.
+
+Against the pre-registered categories this is **no headroom**: the untreated reflector already finds
+this pressure every single time. A treatment designed to raise discovery has nothing to raise, and
+an experiment comparing 10/10 against 10/10 measures only its own noise.
+
+The finding underneath it is worth more than the experiment it cancels. Given a probe that genuinely
+exercises the boundary and a column that asks one atomic question, **the untreated craft reflector's
+*discovery* is already perfect on the degraded architecture.** The reflector was never
+criterion-starved for discovery. What V1 and V2 measured as failure was a probe that did not exercise
+the degradation and a column that could not tell knowledge placement from provider awareness — and
+what remained unstable in the reliability run was *judgement*, the layer this column deliberately
+stopped measuring.
+
+### Cost
+
+90 gradings for adequacy (median 16s) and 30 reflections with 30 gradings for the baseline (median
+reflection 110s, 80 minutes of reflector time), 1h27m wall clock.
+
+Records: [`craft-atomic-grader-repeat-v1.json`](../../../../evals/results/craft-atomic-grader-repeat-v1.json),
+[`craft-r0002-atomic-baseline.json`](../../../../evals/results/craft-r0002-atomic-baseline.json).
+Pre-registrations: [`atomic-pressure-preregistration.md`](../../../../evals/craft/notification-provider-boundary/atomic-pressure-preregistration.md),
+[`baseline-preregistration-atomic.md`](../../../../evals/craft/notification-provider-boundary/baseline-preregistration-atomic.md).
+[§E54](#e54-the-repaired-case-measures-and-the-pressure-statement-does-not-discriminate) stands
+unchanged and was not re-graded.
