@@ -26,6 +26,8 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import _craft  # noqa: E402
+import _experiment  # noqa: E402
+import _grade  # noqa: E402
 import _repeat  # noqa: E402
 from _trial import VALID, harness_version, provider_available, run_trial  # noqa: E402
 
@@ -308,6 +310,19 @@ def _frozen_system(args: argparse.Namespace, **extra: object) -> dict:
             **extra}
 
 
+def _discovery_grader(report: str, statement: str, **kw: object) -> dict:
+    """The closed-world question, adapted to the repeated-measurement interface.
+
+    `grade_property` asks whether a report identifies one specific planted problem — the question
+    every other Proofbound evaluation grades with, and a materially different one from the craft
+    verdict grader, which answers "upheld" both when a report says the property holds and when it
+    never mentions it. Its answer *is* the outcome: there is no declared status to combine with,
+    because a report either surfaced the pressure or it did not.
+    """
+    got = _grade.grade_property(report, statement, **kw)
+    return {"claim": got["result"], "reason": got.get("reason", "")}
+
+
 def cmd_regrade(args: argparse.Namespace) -> int:
     """Layer G — identical report bytes, graded again and again."""
     case = _craft.load(args.case)
@@ -316,10 +331,21 @@ def cmd_regrade(args: argparse.Namespace) -> int:
         print(f"ERROR: cannot grade: {detail}", file=sys.stderr)
         return 2
     manifest, anchors = _anchors(args.case)
-    scenario = case["property"]["scenario"]
+    discovery = args.question == "discovery"
+    if discovery:
+        # The planted problem, taken verbatim from the case's own committed ground truth. It was
+        # written when the case was built, is never shown to a worker or a reflector, and is not
+        # authored here — a statement invented now could be fitted to reports already read.
+        statement = case["ground_truth"][args.problem_state]["rationale"]
+        if not statement.strip():
+            raise ValueError(f"state {args.problem_state!r} declares no rationale to grade against")
+    else:
+        statement = case["property"]["scenario"]
     config = {
         "format": "proofbound-craft-grader-repeat-v1", "layer": _repeat.GRADER_LAYER,
+        "question": args.question,
         "case": case["id"], "property": case["property"], "repeats": args.repeats,
+        "graded_statement": statement,
         "anchor_selection": manifest["selection_rule"],
         "anchors": [{k: v for k, v in a.items() if k != "report"} for a in anchors],
         "system": _frozen_system(args, grader_model=args.grader_model),
@@ -334,10 +360,16 @@ def cmd_regrade(args: argparse.Namespace) -> int:
         for n in range(1, args.repeats + 1):
             if _repeat._already_done(measurements, (anchor["id"], n)):
                 continue
-            got = _repeat.grade_once(
-                anchor["report"], scenario, status=status,
-                grader=_craft.classify_claim, outcome=_craft.outcome,
-                unavailable=_craft.UNAVAILABLE, model=args.grader_model)
+            if discovery:
+                got = _repeat.grade_once(
+                    anchor["report"], statement, status=status,
+                    grader=_discovery_grader, outcome=lambda _status, claim: claim,
+                    unavailable=_grade.UNAVAILABLE, grader_model=args.grader_model)
+            else:
+                got = _repeat.grade_once(
+                    anchor["report"], statement, status=status,
+                    grader=_craft.classify_claim, outcome=_craft.outcome,
+                    unavailable=_craft.UNAVAILABLE, model=args.grader_model)
             measurements.append({"item": anchor["id"], "repeat": n, **got})
             _repeat.write_series(args.out, config, measurements)
             print(f"  {anchor['id']} {n}/{args.repeats}: {got['status']} "
@@ -434,6 +466,99 @@ def cmd_repeat_reflect(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_sample(args: argparse.Namespace) -> int:
+    """Execute one pre-registered closed-world experiment. Never runs during the test suite."""
+    experiment = _experiment.load(args.experiment)
+    case = _craft.load(args.case)
+    ok, detail = provider_available()
+    if not ok:
+        print(f"ERROR: cannot sample: {detail}", file=sys.stderr)
+        return 2
+
+    intent = Path(case["intent"]).read_text(encoding="utf-8")
+    contract = Path(case["contract"]).read_text(encoding="utf-8")
+    by_id = {s["id"]: s for s in case["states"]}
+    retained = {t["instance"]: t for t in _retained_trials(args.evidence, case)}
+    missing = [n for n in experiment["instances"] if n not in retained]
+    if missing:
+        raise ValueError(f"no retained implementation for: {', '.join(missing)}")
+
+    arms = {}
+    for arm in experiment["arms"]:
+        treatment = None
+        if arm.get("treatment"):
+            treatment = Path(arm["treatment"]).read_text(encoding="utf-8")
+            arm["treatment_sha256"] = _repeat.sha256_text(treatment)
+        arms[arm["id"]] = treatment
+
+    prepared = {}
+    for name in experiment["instances"]:
+        trial = retained[name]
+        state = by_id[trial["state"]]
+        before = "\n".join(
+            f"--- {p.relative_to(state['fixture'])}\n"
+            f"{p.read_text(encoding='utf-8', errors='ignore')}"
+            for p in sorted(_craft._fixture_files(Path(state["fixture"]))))
+        prepared[name] = {"before": before, "diff": trial["diff"][:20000],
+                          "state": trial["state"], "identity": trial["identity"]}
+
+    config = _experiment.configuration(experiment, _frozen_system(
+        args, reflector_model=args.reflector_model, grader_model=args.grader_model,
+        craft_prompt_sha256=_repeat.sha256_text(_craft.CRAFT_PROMPT)))
+    measurements = _repeat.load_series(args.out, config)
+    raw = _repeat.load_series(args.raw, config)
+    done_reflections = {r["item"]: r for r in raw}
+    if measurements:
+        print(f"resuming: {len(measurements)} graded cells and {len(raw)} reflections already "
+              f"recorded for this frozen configuration")
+
+    slots = _experiment.slots(experiment)
+    print(f"{len(slots)} reflection slots, {len(slots) * len(experiment['pressures'])} "
+          f"graded cells\n")
+    for n, slot in enumerate(slots, 1):
+        rows = _experiment.measurement_rows(experiment, slot)
+        if all(_repeat._already_done(measurements, (r["item"], r["repeat"])) for r in rows):
+            continue
+        item = prepared[slot["instance"]]
+        record = done_reflections.get(slot["reflection_slot"])
+        if record is None:
+            got = _repeat.reflect_once(
+                reflector=_craft.reflect, intent=intent, contract=contract,
+                before=item["before"], diff=item["diff"], model=args.reflector_model,
+                treatment=arms[slot["arm"]])
+            record = {"item": slot["reflection_slot"], "repeat": slot["sample"],
+                      "instance": slot["instance"], "arm": slot["arm"],
+                      "state_identity": item["identity"], **got}
+            raw.append(record)
+            done_reflections[record["item"]] = record
+            _repeat.write_series(args.raw, config, raw)
+
+        for row, pressure in zip(rows, experiment["pressures"]):
+            if _repeat._already_done(measurements, (row["item"], row["repeat"])):
+                continue
+            if record["status"] != _repeat.REFLECTED:
+                cell = {"status": _repeat.REFLECTION_FAILURE, "claim": None, "outcome": None}
+            else:
+                cell = _repeat.grade_once(
+                    record["report"], pressure["statement"], status=item["state"],
+                    grader=_discovery_grader, outcome=lambda _status, claim: claim,
+                    unavailable=_grade.UNAVAILABLE, grader_model=args.grader_model)
+            measurements.append({**row, "report_sha256": record.get("report_sha256"),
+                                 **{k: v for k, v in cell.items() if k != "reason"}})
+            _repeat.write_series(args.out, config, measurements)
+        print(f"  {n}/{len(slots)} {slot['instance']} {slot['arm']} #{slot['sample']}: "
+              f"{[m.get('outcome') for m in measurements if m['repeat'] == slot['sample'] and m['instance'] == slot['instance'] and m['arm'] == slot['arm']]}",
+              flush=True)
+
+    print("\nper-cell distributions (no verdict is derived from these):")
+    for cell in _experiment.cells(experiment):
+        d = _repeat.distribution(measurements, cell)
+        if d["attempted"]:
+            print(f"  {cell}: {d['counts']}  graded {d['graded']}/{d['attempted']}")
+    print(f"\ndurable record: {args.out}\nlocal reports:  {args.raw}")
+    return 0
+
+
 def parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="command", required=True)
@@ -464,6 +589,11 @@ def parser() -> argparse.ArgumentParser:
     g.add_argument("case", type=Path)
     g.add_argument("--grader-model", required=True)
     g.add_argument("--repeats", type=int, required=True)
+    g.add_argument("--question", choices=("verdict", "discovery"), default="verdict",
+                   help="verdict: does the report say the property fails; "
+                        "discovery: does the report identify this specific problem")
+    g.add_argument("--problem-state", default="state-c",
+                   help="whose declared rationale states the planted problem (discovery only)")
     g.add_argument("--out", type=Path, required=True)
     g.set_defaults(handler=cmd_regrade)
 
@@ -479,6 +609,16 @@ def parser() -> argparse.ArgumentParser:
     q.add_argument("--out", type=Path, required=True, help="durable record; carries no report text")
     q.add_argument("--raw", type=Path, required=True, help="local record; retains every report")
     q.set_defaults(handler=cmd_repeat_reflect)
+
+    e = sub.add_parser("sample", help="run one pre-registered closed-world experiment")
+    e.add_argument("case", type=Path)
+    e.add_argument("--experiment", type=Path, required=True)
+    e.add_argument("--evidence", type=Path, required=True)
+    e.add_argument("--reflector-model", required=True)
+    e.add_argument("--grader-model", required=True)
+    e.add_argument("--out", type=Path, required=True, help="durable record; carries no report text")
+    e.add_argument("--raw", type=Path, required=True, help="local record; retains every report")
+    e.set_defaults(handler=cmd_sample)
     return ap
 
 
