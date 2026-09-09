@@ -1784,6 +1784,41 @@ discards. No authority machinery changes.
 headroom pilot, then the paired run → MLR-C4 architecture-variation controls → MLR-C5 holdout
 confirmation.
 
+### 7P.1 MLR-C1 — fixture built; the approved internal control is blocked
+
+Record: [`MLR-C1.md`](../../evals/craft/modularity-local-reasoning/MLR-C1.md).
+
+**Built and validated deterministically.** A reporting service whose exports are kept in an
+`objectstore` package materialised outside the workspace and imported from there in both arms; the
+`full` workspace additionally carries a vendored, non-importable copy of that source. Nineteen tests
+on both interpreters pin the invariants: identical runtime digest, byte-identical contract, one
+shared task file, identical baseline behaviour, and an automated arm comparison whose only reported
+difference is the vendored source.
+
+**Five gates pass.** Entailment, exercise, discrimination, contract sufficiency and responsibility
+validity. The hidden gate fails before the work and passes after a reference solution that touches
+only `app/` — never the package, never the contract. **Headroom stays pending MLR-C3**, because it
+asks whether a `FULL` agent actually reads the implementation and only a run can answer that.
+
+**The approved internal control could not be built, and the reason is a contradiction between two
+approved decisions.** The control was *change the storage retry behaviour*; the isolation mechanism
+made the package an out-of-tree dependency. Demonstrated rather than argued: editing `full`'s
+readable copy leaves the running system on the old policy, so a test asserting the new one fails in
+**both** arms and the control measures only that neither arm can modify a dependency. A control of
+that shape needs the module inside the repository and made unreadable by an executor **read policy**
+— the mechanics MLR-C2 was already scheduled to build. It is blocked on a prerequisite rather than
+deferred by choice, and this fixture revision is frozen without it.
+
+**Two defects the gates caught before any model call**, both fixed in the fixture rather than in the
+tests: a hidden gate invoked through `unittest discover` was silently skipped because its filename
+did not match the discovery pattern, so it reported success for work never done; and the gate reached
+into a private application helper, which would have broken on any legitimate restructuring and turned
+the oracle into a shape check.
+
+**Fixture frozen.** No later milestone may add a contract sentence because `CONTRACT` failed, rename
+a file because agents did not find it, or enlarge the module because an effect was small. Each of
+those creates a new revision.
+
 **Not adopted, not named.** No `P14`, no modularity or coupling score, no module identity, no
 semantic-compression protocol term, no context-routing implementation, and no production use.
 
