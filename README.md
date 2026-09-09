@@ -11,6 +11,10 @@ separates those responsibilities. Engineering intent is made explicit and indepe
 result. Deterministic checks verify facts — what changed, what the artifact hashes are, whether a
 dependency moved, whether a qualifying independent review actually happened.
 
+And because the pipeline itself is an engineering artifact, Proofbound holds it to the same standard it
+holds anything else to: when a change to the pipeline is supposed to make the work better, cheaper or
+more thorough, that claim is measured under controlled conditions rather than assumed.
+
 **Specify. Challenge. Execute. Prove.**
 
 ---
@@ -29,7 +33,9 @@ Over a long run, that gets worse in specific ways:
 - the reasoning behind a decision decays out of context, so later work contradicts it without knowing;
 - the agent that wrote the code also reviews it, carrying every assumption that produced it;
 - a task "looks done" without anything mechanically establishing that it is;
-- a hundred individually reasonable changes add up to an architecture nobody chose.
+- a hundred individually reasonable changes add up to an architecture nobody chose;
+- the pipeline itself gets changed — a new role, a different context policy, a bigger prompt — and
+  nobody can say whether it helped, because nothing was held fixed and nothing was measured.
 
 Proofbound exists to make those relationships explicit rather than implicit.
 
@@ -117,6 +123,22 @@ Two rules carry most of the weight:
 
 1. **The agent that produced a change is not the sole authority on whether it satisfies the contract.**
 2. **Completion comes from independently reviewed work plus mechanical evidence, not from confidence.**
+
+There is a second loop, around the first. The one above produces software; this one asks whether changes
+to the pipeline that produces it actually help:
+
+```text
+a claim about the pipeline  ("bounded reviewer context loses nothing")
+       → state the property it must preserve, and the resources it should reduce
+       → hold the model, the task, the authority and the oracle fixed
+       → vary one thing about the pipeline
+       → run it fresh, repeatedly, both ways
+       → correctness first; then tokens, context, time, tools, cost
+       → a local result a person decides what to do with
+```
+
+The two loops are not the same kind of thing, and the README keeps them apart on purpose — see
+[what "proof" means here](#what-proof-means-here).
 
 ---
 
@@ -227,6 +249,8 @@ Proofbound is under active development. This table reflects the current checkout
 | Binding implementation tasks to an exact frozen contract | **Implemented** (M2C-C) |
 | Evaluation of the harness itself — scenarios, trials, blind semantic grading | **Implemented** (Eval V1–V3) |
 | Controlled evaluation arms (independence, context treatments) | **Implemented** (Eval V4, V6) |
+| Per-execution profile — model calls, tokens, tool activity, measured time, context by origin | **Implemented** |
+| Comparative pipeline evaluation — same model, one pipeline change, repeated fresh runs | **Research track**, exercised by one experiment, not yet a general capability |
 | System-craft measurement — does architecture stay changeable? | **Research track**, instrument not yet reliable |
 | Architectural decision provenance and applicability | **Planned** |
 | Cumulative coherence auditing | **Planned** |
@@ -247,7 +271,7 @@ it may satisfy, and the binding is checked mechanically rather than asserted.
 
 ---
 
-## Evaluating the harness itself
+## Measuring the pipeline itself
 
 A harness that claims to improve engineering rigour should be able to show it, so Proofbound evaluates
 itself the same way it asks anything else to be evaluated: with a planted, known answer, a fresh
@@ -260,6 +284,48 @@ That programme has produced results in both directions, and the negative ones ar
   obligations restored the resolution.
 - Withholding the author's reasoning from the reviewer produced *higher* observed completeness than
   supplying it, which is the independence rule (`P12`) surviving a test that could have refuted it.
+
+### The experimental design: hold the model fixed, vary the pipeline
+
+Most published agent comparisons vary the model. The question Proofbound needs answered is the other
+one — *does this change to the orchestration help?* — and it is answerable only if the model is not
+moving at the same time:
+
+| Question | Held fixed | Varied | Measured |
+|---|---|---|---|
+| Does a bounded module boundary support local reasoning? | model, task, runtime, oracle | whether the module's implementation is readable | correctness, context by origin, tools, time |
+| Does independent reflection help? | model, intent, artifact | whether the reviewer sees the author's reasoning | findings, completeness, cost |
+| Does purpose-bounded reviewer context lose anything? | model, change, ground truth | the reviewer's context policy | findings, false findings, tokens, files read |
+
+Each execution produces an outcome and an execution profile — model calls, input and output tokens,
+tool activity, measured tool time, and where each piece of context came from. Runs are repeated and
+fresh, because the same configuration produces materially different trajectories: in one recent series,
+identical conditions gave 16 to 38 model calls and 154k to 288k input tokens across six runs. A single
+run of an agent pipeline is an anecdote.
+
+**Correctness gates everything else.** A configuration that is cheaper and less correct is a tradeoff for
+a person to weigh, not an improvement. Resource figures are only interpretable once the property they
+were supposed to preserve has been checked and held.
+
+**There is no score.** Proofbound does not combine correctness, tokens, time and cost into one number,
+because nothing supplies the exchange rates that would require. What the evidence can support is
+narrower and honest: *under the pre-registered guardrail, this configuration was no worse on the outcome
+and used less of these resources.*
+
+### The instrument is part of the experiment
+
+The most useful thing this programme has learned recently is about itself. A pilot ran cleanly — six
+valid executions, no harness failure, a clear result — and was still uninterpretable, because two things
+the result depended on were quietly wrong. The correctness oracle asserted an internal function's
+signature while claiming to observe product behaviour, and rejected a change that was correct on every
+axis the task named. The context telemetry scored a package's own `help()` output — five kilobytes of its
+interior — as unclassified.
+
+Neither was exotic, and neither would have been found by running the agents more carefully. So: once
+alternative pipelines are compared empirically, **the measuring instrument becomes part of the
+experimental substrate and has to be validated on its own** — an oracle may require only what the
+property requires, and telemetry must attribute, not merely notice, the routes that substitute for what
+it measures.
 
 ### System Craft — the current frontier, and unresolved
 
@@ -284,6 +350,11 @@ The rule that came out of it is now general to all Proofbound evaluation: **do n
 smaller than the instrument's own measured variation under identical conditions.** Reliability comes
 before validity, and consistency is never evidence of correctness — a system can repeat the same wrong
 answer all day.
+
+That work has since moved from asking an evaluator for an architectural verdict — which has no accepted
+referent — to a narrower, deterministic question: for a change whose responsibility lies outside a
+module, does reading that module's implementation contribute anything to getting the change right? That
+experiment is built and its measurement mechanics are validated; the comparison itself has not been run.
 
 Details: [system-craft.md](docs/architecture/proofbound/system-craft.md),
 [evaluation.md](docs/architecture/proofbound/evaluation.md),
@@ -379,7 +450,18 @@ no machine-parseable test arithmetic. A report is evidence; if proof is genuinel
 
 ## Context economy
 
-Workers receive only what their task needs:
+A large context window does not make context free. Everything a worker is given is paid for in tokens,
+in latency, in money, and — the part that is easiest to forget — in attention: material that is present
+but irrelevant is material the model may reason from. Proofbound therefore treats context as an
+engineering resource with a budget, not as a container to fill.
+
+The target is **not** "less context". It is the smallest context that still supports correct reasoning
+for this role and this task, which is a different and harder thing: a reviewer starved of the authority
+it is reviewing against will miss real problems, and that is a worse failure than a large prompt. Where
+Proofbound has an opinion about a context policy, that opinion is something to measure rather than
+assert — which is what the second loop above exists for.
+
+Mechanically, workers receive only what their task needs:
 
 ```text
 WORKER_RULES.md                 run facts
@@ -447,6 +529,17 @@ Proofbound does **not** formally prove software correctness, and the name is not
 
 A SHA-256 establishes **integrity, not authority**: it proves content did not drift, never who wrote it
 or whether anyone was allowed to. Proofbound has no signing keys or trust roots and claims none.
+
+**And measurement is not authority either.** Two different things in this repository are easy to conflate
+and must not be:
+
+| | What it establishes | What it cannot do |
+|---|---|---|
+| **Engineering authority** | Accepted intent, a frozen contract, a binding, a qualifying independent review, mechanical evidence | Tell you whether the pipeline that produced it is a good pipeline |
+| **Empirical evaluation** | How a configuration behaves — correctness, context, tokens, time, tools, cost — under conditions held fixed | Authorise anything. A measurement is evidence for a person, never a decision |
+
+An experiment that shows one pipeline cheaper than another has produced a fact, not a mandate. Nothing
+in Proofbound may adopt a change because a number moved.
 
 ---
 

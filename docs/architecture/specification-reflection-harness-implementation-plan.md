@@ -1930,6 +1930,49 @@ Evidence: [`§E56`](proofbound/evidence/evaluation-runs.md), record
 [`MLR-C3.md`](../../evals/craft/modularity-local-reasoning/MLR-C3.md). Pilot evidence is development
 evidence with its own experiment identity and may never be spliced into paired samples.
 
+### 7P.4 MLR-C3R — the instrument repaired, and the pilot it could not run before
+
+Records: [`MLR-C3R.md`](../../evals/craft/modularity-local-reasoning/MLR-C3R.md),
+[`§E57`](proofbound/evidence/evaluation-runs.md). Methodology:
+[`§E25`](proofbound/evaluation.md#e25-the-instrument-is-part-of-the-experiment).
+
+**Oracle v2** derives its assertions from the task clause by clause and calls `app.api` only. Held
+against four realizations that satisfy the property with different internal decomposition and five
+that are behaviourally wrong, **v1 rejects two of the four**; v2 accepts all four and rejects all
+five. One task clause — *nothing is stored* for a refused account — is not observable from the
+product surface at all, and v2 asserts the observable consequence and records the gap rather than
+reaching into the service, which is what v1 did. v1 is retained: MLR-C3 keeps the oracle it was
+judged by.
+
+**Attribution v2** decides on route *and* content, with the module's internal names derived from its
+source by `ast` — the hand-written list already missed four names present today. Documentation and
+introspection became their own route family, tested before running the system, and within it the
+delivered content decides: `help(objectstore)` discloses `_backend`, `_errors`, `_store` and is
+implementation-derived; `inspect.signature` discloses nothing and is public. Verified by executing
+the whole surface against the fixture.
+
+**`_profile.py`** holds the experiment-independent half — model calls, tokens, tool activity, measured
+tool time, derived model time, stages, completeness — and a test asserts it never mentions the
+fixture. Missing telemetry fails closed.
+
+**The pilot: 6/6 correct, 6/6 consuming implementation source, median 5,670 bytes, every profile
+complete, zero material attribution escapes.** Correctness rose from 5/6 because the false negative
+is gone, not because the agents improved. Five of six runs again never opened the contract. The
+execution profile shows the pipeline is model-latency-bound: 733.8 s of session span against 1.72 s
+of measured tool execution. Stated limitation: no `full` run used `help` or `pydoc`, so the repaired
+documentation attribution is validated deterministically rather than in the field — the `contract`
+arm is what will exercise it.
+
+**The paired experiment is pre-registered and unrun**:
+[`MLR-paired-preregistration.md`](../../evals/craft/modularity-local-reasoning/MLR-paired-preregistration.md),
+N = 8 pairs derived from C3R's measured variation.
+
+**Comparative pipeline evaluation** is recorded as a direction, not a capability. The telemetry is
+layered so the experiment-independent half could describe another pipeline, and that claim is
+untested until it does. No generic compare command, schema, dashboard, leaderboard or efficiency
+score exists, and `§E25.3` records why the last of those cannot: nothing supplies exchange rates
+between quality and cost.
+
 ## 7B. Threat mitigation status
 
 RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC
