@@ -1040,3 +1040,75 @@ behaviour is what creates a new revision, under which this pilot does not transf
 ### Cost
 
 Six attempts, 1,203,406 input tokens, 51 minutes wall clock, no monetary cost on this model.
+
+## E57. The repaired instrument measures what E56 could not
+
+MLR-C3R. Two defects repaired before any call, the `full`-only pilot re-run under a new identity, and
+the repair audited against what the runs actually did. Development evidence with its own experiment
+identity; no MLR-C3 run is a sample of it and none of its runs may become a paired sample.
+
+Record: [`craft-mlr-c3r-full-headroom-pilot.json`](../../../../evals/results/craft-mlr-c3r-full-headroom-pilot.json).
+Pre-registration: [`MLR-C3R-pilot-preregistration.md`](../../../../evals/craft/modularity-local-reasoning/MLR-C3R-pilot-preregistration.md).
+Analysis: [`MLR-C3R.md`](../../../../evals/craft/modularity-local-reasoning/MLR-C3R.md).
+Methodology: [`§E25`](../evaluation.md#e25-the-instrument-is-part-of-the-experiment).
+
+### The oracle, stated as a number rather than an anecdote
+
+[§E56](#e56-the-modularity-pilot-finds-material-headroom-and-two-defects-in-the-instrument-that-found-it)
+reported one product-correct attempt rejected for changing an internal signature. Held against four
+realizations that satisfy the task with different internal decomposition and five that are
+behaviourally wrong, **v1 rejects two of the four**; v2 accepts all four and rejects all five, and
+still rejects a workspace where the task was not done.
+
+One clause of the task — *nothing is stored* for a refused account — turns out not to be observable
+from the product surface at all, since a refused account can never read anything back. v2 asserts the
+consequence that is observable, that it never receives the export, and records the gap rather than
+closing it by reaching into the service.
+
+### Attribution, decided by content rather than by verb
+
+Route and content are now two channels, and the module's internal names are derived from its source
+with `ast` rather than listed — the hand-written list already missed four names present in the module
+today. Executed against the fixture: `help(package)` 5,389 B, `help(_store)` 882 B,
+`pydoc.render_doc` 6,355 B, `vars(_store)` 912 B, `dir` 245 B, `getmembers` 245 B, `co_names` 92 B,
+disassembly 10,212 B and module enumeration 33 B all disclose interior names and are
+implementation-derived; `__all__` 68 B, signatures 110 B and docstrings 318 B disclose none and are
+public; `inspect.getsource`, `loader.get_source` and `importlib.metadata` remain refused.
+
+### The pilot
+
+| # | correct | impl. source | impl. runtime | contract | calls | input tok | cache read | s |
+|---|---|---|---|---|---|---|---|---|
+| 1 | yes | 7,204 | 0 | 0 | 46 | 324,731 | 440,640 | 746 |
+| 2 | yes | 7,204 | 0 | 0 | 34 | 273,570 | 354,240 | 458 |
+| 3 | yes | 4,797 | 0 | 0 | 21 | 159,127 | 159,840 | 299 |
+| 4 | yes | 4,797 | 0 | 0 | 33 | 232,212 | 185,760 | 412 |
+| 5 | yes | 2,761 | 0 | 0 | 23 | 172,530 | 159,840 | 251 |
+| 6 | yes | 6,543 | 0 | 0 | 24 | 200,903 | 203,040 | 238 |
+
+**6/6 correct, 6/6 consuming implementation source, median 5,670 bytes** — valid headroom under the
+categories declared before the first call. Every profile complete. 1,363,073 input tokens, 38,718
+output, 1,503,360 cache-read, 40 minutes, no monetary cost on this model.
+
+Correctness rose from 5/6 to 6/6 because the false negative is gone, not because the agents improved.
+Five of six runs again never opened the contract. And the execution profile shows the pipeline is
+**model-latency-bound**: attempt 1 spent 733.8 s of session span against 1.72 s of measured tool
+execution and 0.10 s of verification.
+
+### Attribution audit
+
+**Material inbound escapes: 0.** Five items carried internal names outside the implementation classes
+and all five are `assistant:reasoning` — text the model wrote, not a route by which information
+enters — each in a run that had consumed 4,797–7,204 attributed implementation bytes. Model-side
+disclosure in runs that consumed no implementation: 0, which is the check that would have caught an
+escape hiding behind that exclusion.
+
+**Stated limitation.** No `full` run used `help`, `pydoc` or introspection: implementation-runtime is
+0 in all six. An agent holding readable source has no reason to interrogate the live object. The
+repaired documentation attribution is therefore validated deterministically rather than by field
+observation, and the `contract` arm — where the source is gone — is what will exercise it.
+
+### What it does not establish
+
+No treatment effect, no local substitution, no modularity benefit, nothing about a second domain, and
+nothing about the boundary being the cause: the internal control remains unbuilt.
