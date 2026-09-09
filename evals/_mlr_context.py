@@ -63,24 +63,103 @@ IMPLEMENTATION_DERIVED = (IMPLEMENTATION_SOURCE, IMPLEMENTATION_RUNTIME)
 
 CONTRACT_DOC = "docs/storage-contract.md"
 
-# Identifiers that exist only inside the module. Their appearance in text handed to the model is
-# evidence that implementation-derived detail was delivered, whatever route requested it — which is
-# how a traceback through `_with_retries` is caught without asking why the command was run.
-INTERNAL_MARKERS = ("_ChecksumMismatch", "_with_retries", "_path_for", "_checksum", "_FANOUT",
-                    "_ATTEMPTS", "_BACKOFF_SECONDS", "_store", "_backend")
+# How a representation was asked for. The MLR-C3 defect was classifying a whole tool call from the
+# command name alone: `help(objectstore)` returned 5,397 bytes of the package's interior and was
+# scored `other`, and `python3 -m pydoc objectstore` matched a behaviour marker and was scored as
+# running the system. Route and delivered content are now two separate channels, and the routes that
+# render a live object are their own family rather than a fallthrough.
+SOURCE_FILE = "source-file"
+SEARCH = "search"
+DOCUMENTATION = "documentation"
+INTROSPECTION = "introspection"
+RUN = "run"
+EDIT = "edit"
+UNKNOWN = "unknown"
 
-# Facilities that render the interior of a live object. Counted only together with the module's own
-# name, because `dir(` and `vars(` are ordinary Python and mean nothing on their own.
+# Python's documentation surface. Separated from introspection because what it returns is sometimes
+# purely public — `__all__`, a signature, a docstring — and sometimes the package's interior. Which
+# one it was is decided by the bytes that came back, not by the verb that asked.
+DOCUMENTATION_MARKERS = ("help(", "pydoc", "render_doc", "__doc__", "getdoc", "plaintext.document")
+
+# Facilities that render the interior of a live object.
 INTROSPECTION_MARKERS = ("dis.dis", "dis(", "__code__", "co_consts", "co_names", "co_varnames",
                          "co_filename", "getsource", "getmembers", "getsourcelines", "marshal",
                          "__dict__", "vars(", "dir(", "importlib", "__loader__", ".pyc",
-                         "disassemble", "unmarshal")
+                         "disassemble", "unmarshal", "signature", "iter_modules", "__path__",
+                         "__all__", "mro(", "__mro__", "__module__")
 
 # Running the system, as an external caller would.
-BEHAVIOUR_MARKERS = ("unittest", "pytest", "python -m", "python3 -m", "test_service", "app.api",
-                     "download_export", "create_export")
+RUN_MARKERS = ("unittest", "pytest", "python -m", "python3 -m", "test_service", "app.api",
+               "download_export", "create_export")
+
+
+def internal_names(source: Path | None = None) -> tuple[str, ...]:
+    """Names that exist only inside the module, derived from its source rather than listed by hand.
+
+    A hand-written list is exactly the wrong instrument here: it silently stops covering the module
+    the moment the module changes, and the failure looks like an absence of evidence. This walks the
+    runtime source with `ast` and takes the private submodule stems plus every private module-level
+    binding in them, so a new internal constant is covered the day it is written.
+
+    These names are the fingerprint of implementation-derived text. Their appearance in something
+    handed to the model is evidence the interior was disclosed, whichever route asked for it.
+    """
+    import ast
+    root = Path(source) if source is not None else _mlr.FIXTURE / "runtime" / "objectstore"
+    found: set[str] = set()
+    for module in sorted(Path(root).glob("*.py")):
+        if module.stem.startswith("_") and not module.stem.startswith("__"):
+            found.add(module.stem)
+        try:
+            tree = ast.parse(module.read_text(encoding="utf-8"))
+        except (OSError, SyntaxError):
+            continue
+        for node in tree.body:
+            names = []
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                names = [node.name]
+            elif isinstance(node, ast.Assign):
+                names = [t.id for t in node.targets if isinstance(t, ast.Name)]
+            elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+                names = [node.target.id]
+            found.update(n for n in names if n.startswith("_") and not n.startswith("__"))
+    return tuple(sorted(found))
+
+
+def _name_pattern(names: tuple[str, ...]) -> "re.Pattern[str]":
+    """Word-bounded, so `_store` does not match inside `export_stored` or `objectstore`."""
+    if not names:
+        return re.compile(r"(?!x)x")
+    return re.compile(r"\b(?:%s)\b" % "|".join(re.escape(n) for n in names))
+
 
 _PATHLIKE = re.compile(r"[A-Za-z0-9_./\-]*[/.][A-Za-z0-9_./\-]*")
+
+
+def _mentions_module(text: str) -> bool:
+    return "objectstore" in text
+
+
+def command_route(command: str, built: dict[str, Any]) -> str:
+    """Which family of thing one shell command asked for.
+
+    Documentation and introspection are tested before running the system, which is the ordering the
+    C3 defect got wrong: `python3 -m pydoc objectstore` matches a run marker and is not a run.
+    """
+    text = command or ""
+    for token in set(_PATHLIKE.findall(text)):
+        if not token or token in (".", "..") or token.startswith("-"):
+            continue
+        if _mlr.classify_path(token, built) == _mlr.VENDORED_IMPLEMENTATION:
+            return SOURCE_FILE
+    if _mentions_module(text):
+        if any(m in text for m in DOCUMENTATION_MARKERS):
+            return DOCUMENTATION
+        if any(m in text for m in INTROSPECTION_MARKERS):
+            return INTROSPECTION
+    if any(m in text for m in RUN_MARKERS):
+        return RUN
+    return UNKNOWN
 
 
 def read_transcript(db: Path) -> list[dict[str, Any]]:
@@ -149,31 +228,6 @@ def token_usage(events: list[dict[str, Any]]) -> dict[str, Any]:
     return totals
 
 
-def _mentions_module(text: str) -> bool:
-    return "objectstore" in text or any(m in text for m in INTERNAL_MARKERS)
-
-
-def classify_command(command: str, built: dict[str, Any]) -> str:
-    """Where the output of one shell command came from.
-
-    Ordered most-implementation-first, so a command that both reads the module and runs the suite is
-    never recorded as mere behaviour. The command text is retained alongside the class in every case,
-    because §7 of the brief is right that this distinction is not always mechanically decidable and
-    a later reader must be able to check the call rather than trust the label.
-    """
-    text = command or ""
-    for token in set(_PATHLIKE.findall(text)):
-        if not token or token in (".", "..") or token.startswith("-"):
-            continue
-        if _mlr.classify_path(token, built) == _mlr.VENDORED_IMPLEMENTATION:
-            return IMPLEMENTATION_SOURCE
-    if _mentions_module(text) and any(m in text for m in INTROSPECTION_MARKERS):
-        return IMPLEMENTATION_RUNTIME
-    if any(m in text for m in BEHAVIOUR_MARKERS):
-        return BEHAVIOUR
-    return OTHER
-
-
 def classify_file(path: str, built: dict[str, Any]) -> str:
     """Where the contents of one opened file came from."""
     location = _mlr.classify_path(path, built)
@@ -190,16 +244,31 @@ def classify_file(path: str, built: dict[str, Any]) -> str:
     return OTHER
 
 
-def _internal_markers(text: str) -> list[str]:
-    return sorted({m for m in INTERNAL_MARKERS if m in text})
+_INTERNAL_NAMES = None
+_INTERNAL_RE = None
+
+
+def _internal_hits(text: str) -> list[str]:
+    """Which module-internal names the delivered text disclosed."""
+    global _INTERNAL_NAMES, _INTERNAL_RE
+    if _INTERNAL_RE is None:
+        _INTERNAL_NAMES = internal_names()
+        _INTERNAL_RE = _name_pattern(_INTERNAL_NAMES)
+    return sorted(set(_INTERNAL_RE.findall(text or "")))
 
 
 def attribute(event: dict[str, Any], built: dict[str, Any]) -> dict[str, Any] | None:
-    """One transcript part, as a representation that did or did not enter later calls.
+    """One transcript part, as a representation with a route and a provenance.
 
-    Assistant text and reasoning are the model's own output and are recorded — they re-enter the
-    context and cost something — but they are never attributed to the module: text a model wrote
-    about the implementation is not implementation representation it was given.
+    Two channels, because MLR-C3 proved one is not enough. The **route** says what was asked for and
+    is read from the path or the command. The **content** says what came back, and decides the case
+    the route cannot: `help(objectstore)` and `inspect.signature(objectstore.put)` are the same kind
+    of request, and one returns the package's private submodules while the other returns a public
+    signature. Asking the bytes is the only mechanically defensible way to tell them apart.
+
+    Assistant text and reasoning are recorded — they re-enter context and cost something — but are
+    never attributed to the module: text a model wrote about the implementation is not
+    implementation representation it was given.
     """
     part = event["part"]
     kind = part.get("type")
@@ -213,30 +282,53 @@ def attribute(event: dict[str, Any], built: dict[str, Any]) -> dict[str, Any] | 
         detail = ""
         if tool in ("read", "edit", "write") and isinstance(arguments.get("filePath"), str):
             detail = arguments["filePath"]
+            route = EDIT if tool in ("edit", "write") else SOURCE_FILE
             provenance = classify_file(detail, built)
         elif tool == "bash" and isinstance(arguments.get("command"), str):
             detail = arguments["command"]
-            provenance = classify_command(detail, built)
+            route = command_route(detail, built)
+            provenance = _command_provenance(route, payload, built)
         elif tool in ("grep", "glob"):
             detail = json.dumps(arguments, sort_keys=True)[:400]
+            route = SEARCH
             provenance = _search_provenance(payload, built)
         else:
             detail = json.dumps(arguments, sort_keys=True)[:400] if arguments else ""
+            route = UNKNOWN
             provenance = OTHER
         metadata = state.get("metadata") or {}
-        return _item(event, kind=f"tool:{tool}", provenance=provenance, detail=detail,
-                     text=payload, truncated=bool(metadata.get("truncated")))
+        return _item(event, kind=f"tool:{tool}", route=route, provenance=provenance, detail=detail,
+                     text=payload, truncated=bool(metadata.get("truncated")),
+                     status=state.get("status"))
     if kind in ("text", "reasoning"):
         text = part.get("text") or ""
         if not text:
             return None
         provenance = HARNESS if event.get("role") == "user" else OTHER
-        return _item(event, kind=f"{event.get('role')}:{kind}", provenance=provenance,
-                     detail="", text=text, truncated=False)
+        return _item(event, kind=f"{event.get('role')}:{kind}", route=UNKNOWN,
+                     provenance=provenance, detail="", text=text, truncated=False, status=None)
     if kind == "patch":
-        return _item(event, kind="patch", provenance=APPLICATION, detail="",
-                     text=json.dumps(part.get("files") or [], sort_keys=True), truncated=False)
+        return _item(event, kind="patch", route=EDIT, provenance=APPLICATION, detail="",
+                     text=json.dumps(part.get("files") or [], sort_keys=True), truncated=False,
+                     status=None)
     return None
+
+
+def _command_provenance(route: str, output: str, built: dict[str, Any]) -> str:
+    """Where a shell command's output came from, once both channels have spoken.
+
+    The documentation and introspection routes split on content: interior names present means the
+    module's inside was rendered, and their absence means what came back was the public surface. A
+    run of the system that happens to print a traceback through the module's interior stays a run —
+    its bytes are mostly test output — but the disclosure is recorded on the item either way.
+    """
+    if route == SOURCE_FILE:
+        return IMPLEMENTATION_SOURCE
+    if route in (DOCUMENTATION, INTROSPECTION):
+        return IMPLEMENTATION_RUNTIME if _internal_hits(output) else PUBLIC_CONTRACT
+    if route == RUN:
+        return BEHAVIOUR
+    return IMPLEMENTATION_RUNTIME if _internal_hits(output) else OTHER
 
 
 def _search_provenance(output: str, built: dict[str, Any]) -> str:
@@ -247,32 +339,38 @@ def _search_provenance(output: str, built: dict[str, Any]) -> str:
     return OTHER
 
 
-def _item(event: dict[str, Any], *, kind: str, provenance: str, detail: str, text: str,
-          truncated: bool) -> dict[str, Any]:
+def _item(event: dict[str, Any], *, kind: str, route: str, provenance: str, detail: str, text: str,
+          truncated: bool, status: str | None) -> dict[str, Any]:
     payload = text or ""
+    hits = _internal_hits(payload)
     return {
         "ordinal": event["ordinal"],
         "kind": kind,
+        "route": route,
         "provenance": provenance,
         "detail": detail[:600],
         "bytes": len(payload.encode("utf-8")),
         "sha256": hashlib.sha256(payload.encode("utf-8")).hexdigest(),
         "truncated": truncated,
-        "internal_markers": _internal_markers(payload),
+        "status": status,
+        "internal_names": hits,
     }
 
 
 def ledger(events: list[dict[str, Any]], built: dict[str, Any]) -> dict[str, Any]:
-    """The four quantities, kept apart.
+    """The four quantities, kept apart, plus the disclosure channel that stands beside them.
 
-    `unique` counts each distinct piece of text once, however often it was delivered: it answers
-    *what entered reasoning at all*. `delivered` multiplies it by the number of model calls that
-    began afterwards and therefore received it: it answers *what the context cost*. MLR-C3 keeps
-    both because the brief is right that they answer different questions and picking one discards
-    the other; the primary measurand is defined on `unique`.
+    `unique` counts each distinct piece of text once however often it was delivered: it answers
+    *what entered reasoning at all*, and the primary measurand is defined on it. `delivered`
+    multiplies by the number of model calls that began afterwards: it answers *what the context
+    cost*. Both are kept because they answer different questions and choosing one discards the other.
 
-    A session that OpenCode summarised is flagged. Summarisation replaces history with a shorter
-    rendering, so `delivered` becomes an upper bound and says so rather than quietly overcounting.
+    `disclosure` is the second channel MLR-C3 needed and did not have in usable form: bytes of text
+    that carried module-internal names, whatever route requested them. It is reported separately and
+    never added to the provenance totals — a 500-byte test output with a 60-byte traceback through
+    the module's interior is test output that disclosed something, not 500 bytes of implementation.
+
+    A session OpenCode summarised is flagged, which makes `delivered` an upper bound and says so.
     """
     calls = model_calls(events)
     items: list[dict[str, Any]] = []
@@ -285,7 +383,11 @@ def ledger(events: list[dict[str, Any]], built: dict[str, Any]) -> dict[str, Any
 
     by_class = {name: {"unique_bytes": 0, "delivered_bytes": 0, "items": 0}
                 for name in PROVENANCE}
+    by_route: dict[str, dict[str, int]] = {}
     seen: set[tuple[str, str]] = set()
+    disclosure_bytes = 0
+    disclosed: set[str] = set()
+    disclosure_seen: set[str] = set()
     for item in items:
         bucket = by_class[item["provenance"]]
         bucket["items"] += 1
@@ -294,6 +396,19 @@ def ledger(events: list[dict[str, Any]], built: dict[str, Any]) -> dict[str, Any
         if key not in seen:
             seen.add(key)
             bucket["unique_bytes"] += item["bytes"]
+        route = by_route.setdefault(item["route"], {"items": 0, "unique_bytes": 0})
+        route["items"] += 1
+        if item["internal_names"]:
+            disclosed.update(item["internal_names"])
+            if item["sha256"] not in disclosure_seen:
+                disclosure_seen.add(item["sha256"])
+                disclosure_bytes += item["bytes"]
+    route_unique: dict[str, set[str]] = {}
+    for item in items:
+        route_unique.setdefault(item["route"], set())
+        if item["sha256"] not in route_unique[item["route"]]:
+            route_unique[item["route"]].add(item["sha256"])
+            by_route[item["route"]]["unique_bytes"] += item["bytes"]
 
     implementation = {name: by_class[name] for name in IMPLEMENTATION_DERIVED}
     return {
@@ -301,13 +416,19 @@ def ledger(events: list[dict[str, Any]], built: dict[str, Any]) -> dict[str, Any
         "tokens": token_usage(events),
         "summarised": any(e.get("summary") for e in events),
         "by_provenance": by_class,
+        "by_route": dict(sorted(by_route.items())),
         "implementation_derived": {
             "unique_bytes": sum(v["unique_bytes"] for v in implementation.values()),
             "delivered_bytes": sum(v["delivered_bytes"] for v in implementation.values()),
         },
         "implementation_source_unique_bytes": by_class[IMPLEMENTATION_SOURCE]["unique_bytes"],
         "implementation_runtime_unique_bytes": by_class[IMPLEMENTATION_RUNTIME]["unique_bytes"],
-        "items_carrying_internal_names": sum(1 for i in items if i["internal_markers"]),
+        "disclosure": {
+            "unique_bytes": disclosure_bytes,
+            "items": sum(1 for i in items if i["internal_names"]),
+            "names": sorted(disclosed),
+        },
+        "items_carrying_internal_names": sum(1 for i in items if i["internal_names"]),
         "truncated_items": sum(1 for i in items if i["truncated"]),
         "items": items,
     }

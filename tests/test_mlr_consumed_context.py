@@ -226,7 +226,7 @@ class RuntimeRepresentationTest(unittest.TestCase):
             s.close()
             led = _mlr_context.consumed(a.db, built)
             self.assertEqual(led["items_carrying_internal_names"], 1)
-            self.assertIn("_ChecksumMismatch", led["items"][-1]["internal_markers"])
+            self.assertIn("_ChecksumMismatch", led["items"][-1]["internal_names"])
 
 
 class DeliveryAccountingTest(unittest.TestCase):
@@ -463,6 +463,7 @@ class SeriesTest(unittest.TestCase):
                     validity=_mlr_run.VALID):
         return {"item": _mlr.FULL, "repeat": repeat, "validity": validity,
                 "outcome": {"correct": correct},
+                "profile": {"complete": True},
                 "context": {"implementation_source_unique_bytes": source,
                             "implementation_runtime_unique_bytes": runtime,
                             "model_calls": 3, "tokens": {"input": 100}},
@@ -553,6 +554,7 @@ class SeriesTest(unittest.TestCase):
                 if len(calls) == 1:
                     return {"validity": _mlr_run.SETUP_FAILURE, "reason": "provider unavailable"}
                 return {"validity": _mlr_run.VALID, "outcome": {"correct": True},
+                        "profile": {"complete": True},
                         "context": {"implementation_source_unique_bytes": 0,
                                     "implementation_runtime_unique_bytes": 0,
                                     "model_calls": 1, "tokens": {"input": 1}}}
@@ -581,114 +583,64 @@ class SeriesTest(unittest.TestCase):
         self.assertIn(str(self.pb.MIN_CORRECT), text)
 
 
-class KnownDefectsTest(unittest.TestCase):
-    """The two defects the MLR-C3 pilot found, pinned so a revision cannot forget either.
+class RepairedDefectsTest(unittest.TestCase):
+    """The two MLR-C3 defects, now repaired, kept so the repair cannot silently regress.
 
-    Both are recorded as tests rather than prose because both are the kind of thing that reads as
-    obviously-fine until it silently corrupts a measurement — one already did, in C2, one level down.
-    When the next revision repairs them, these tests must be changed deliberately.
+    Both were pinned as tests when they were found; they are inverted rather than deleted, because
+    that each was once true is the reason the current behaviour is asserted at all. The detailed
+    replacements live in `test_mlr_instrument_v2.py`, against real realizations and real interpreter
+    output rather than strings.
     """
 
     maxDiff = None
 
-    # A get-or-create `fetch` returning `(body, created)`, with the handler deriving the status from
-    # the flag. Product behaviour is identical; only the service's internal arrangement differs.
-    EXPORTS_TAIL = '''
+    def realise(self, tmp, name):
+        built = _mlr.materialise(_mlr.CONTRACT, tmp / "arm")
+        source = _mlr.FIXTURE / "realizations" / "valid" / name
+        for src in sorted(source.rglob("*")):
+            if src.is_file():
+                dst = Path(built["workspace"]) / src.relative_to(source)
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                dst.write_bytes(src.read_bytes())
+        return built
 
-def fetch(user_id: str, report_id: str):
-    """Return a previously created export, creating it when it is not there."""
-    account = accounts.load(user_id)
-    key = _key(account, report_id)
-    try:
-        body = objectstore.get(key)
-        audit.record(user_id, "export.fetch", report_id)
-        return body, False
-    except objectstore.NotFound:
-        if not accounts.may_export(account):
-            raise ExportForbidden(user_id)
-        body = reports.render(account, report_id)
-        objectstore.put(key, body)
-        audit.record(user_id, "export.create", report_id)
-        return body, True
-'''
-
-    API_TAIL = '''
-
-def download_export(user_id: str, report_id: str):
-    try:
-        body, created = exports.fetch(user_id, report_id)
-    except accounts.UnknownAccount:
-        return 404, b"no such account"
-    except exports.ExportForbidden:
-        return 403, b"upgrade required"
-    except reports.UnknownReport:
-        return 404, b"no such report"
-    return 201 if created else 200, body
-'''
-
-    def test_the_gate_rejects_a_product_correct_restructuring(self):
-        """MLR-C3 §9. The oracle asserts `exports.fetch`'s shape, which the task never fixes."""
+    def test_the_oracle_no_longer_rejects_a_product_correct_restructuring(self):
+        """MLR-C3 §9: v1 failed the `(body, created)` shape the pilot actually produced."""
         tmp = Path(tempfile.mkdtemp())
         try:
-            built = _mlr.materialise(_mlr.CONTRACT, tmp / "arm")
-            workspace = Path(built["workspace"])
-            exports = workspace / "app" / "exports.py"
-            source = exports.read_text(encoding="utf-8")
-            head = source.split("def fetch(", 1)[0].rstrip("\n")
-            exports.write_text(head + self.EXPORTS_TAIL, encoding="utf-8")
-            api = workspace / "app" / "api.py"
-            api_source = api.read_text(encoding="utf-8")
-            api.write_text(api_source.split("def download_export(", 1)[0].rstrip("\n")
-                           + self.API_TAIL, encoding="utf-8")
-
-            outcome = _mlr_run.grade(built, tmp)
-            self.assertTrue(outcome["regression_passed"],
-                            "the service's own suite does not pin this")
-            self.assertFalse(outcome["gate_passed"],
-                             "the pilot observed this gate rejecting this exact shape")
-            self.assertIn("exports.fetch", outcome["gate_output"],
-                          "and rejecting it on the assertion that reaches into the service")
+            built = self.realise(tmp, "tuple")
+            self.assertTrue(_mlr_run.grade(built, tmp, oracle=_mlr_run.ORACLE_V2)["correct"])
+            self.assertFalse(_mlr_run.grade(built, tmp, oracle=_mlr_run.ORACLE_V1)["correct"])
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
-    def test_documentation_introspection_is_not_yet_attributed(self):
-        """MLR-C3 §10, and the reason no paired experiment was pre-registered.
-
-        `help()` returns the package's interior — its private submodule names among them — and the
-        classifier has no rule for it. In `contract` that would report a run which interrogated the
-        module as having consumed no implementation representation at all.
-        """
+    def test_documentation_routes_are_now_attributed(self):
+        """MLR-C3 §10: `help` was scored `other` and `pydoc` as running the system."""
         tmp = Path(tempfile.mkdtemp())
         try:
             built = _mlr.materialise(_mlr.CONTRACT, tmp / "arm")
-            # What each is scored as today. None is implementation-derived, and `pydoc` is worse
-            # than unclassified: interrogating the documentation is counted as running the system.
-            for command, scored in (
-                    ('python3 -c "import objectstore; help(objectstore)"', _mlr_context.OTHER),
-                    ("python3 -m pydoc objectstore", _mlr_context.BEHAVIOUR),
-                    ('python3 -c "import objectstore; print(objectstore.__doc__)"',
-                     _mlr_context.OTHER)):
+            for command in ('python3 -c "import objectstore; help(objectstore)"',
+                            "python3 -m pydoc objectstore",
+                            'python3 -c "import objectstore; help(objectstore._store)"'):
                 with self.subTest(command=command):
-                    actual = _mlr_context.classify_command(command, built)
-                    self.assertEqual(actual, scored,
-                                     "this must change in the next telemetry revision")
-                    self.assertNotIn(actual, _mlr_context.IMPLEMENTATION_DERIVED)
-            # The second channel is why the gap is visible rather than silent.
-            self.assertEqual(_mlr_context._internal_markers(
-                "objectstore/_store.py  objectstore/_backend.py"), ["_backend", "_store"])
+                    self.assertEqual(_mlr_context.command_route(command, built),
+                                     _mlr_context.DOCUMENTATION)
+            self.assertEqual(
+                _mlr_context._command_provenance(
+                    _mlr_context.DOCUMENTATION, "PACKAGE CONTENTS _store _backend", built),
+                _mlr_context.IMPLEMENTATION_RUNTIME)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
     def test_disassembly_and_source_paths_are_still_attributed(self):
-        """The gap is one route, not the classifier: what C3 pre-registered still works."""
+        """The repair added a route family; it must not cost the ones that already worked."""
         tmp = Path(tempfile.mkdtemp())
         try:
             built = _mlr.materialise(_mlr.CONTRACT, tmp / "arm")
-            self.assertEqual(_mlr_context.classify_command(
-                'python -c "import dis, objectstore; dis.dis(objectstore.put)"', built),
-                _mlr_context.IMPLEMENTATION_RUNTIME)
-            self.assertEqual(_mlr_context.classify_command(
-                'python -c "from objectstore import _store; print(vars(_store))"', built),
-                _mlr_context.IMPLEMENTATION_RUNTIME)
+            for command in ('python -c "import dis, objectstore; dis.dis(objectstore.put)"',
+                            'python -c "from objectstore import _store; print(vars(_store))"'):
+                with self.subTest(command=command):
+                    self.assertEqual(_mlr_context.command_route(command, built),
+                                     _mlr_context.INTROSPECTION)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)

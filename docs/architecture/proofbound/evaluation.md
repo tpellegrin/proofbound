@@ -391,13 +391,11 @@ kebab-case ids suffice; a property hash would be identity created because a conc
 
 ### E19.8 Two effectiveness views, both already derivable
 
-Calibration produced a case worth building on: the probe model mis-transcribed absolute paths, lost a
-protocol file and produced no report, three times. That is neither purely an infrastructure failure nor
-purely a reasoning one. Proofbound evaluates a model *operating a role*, so following supplied pointers
-is part of the job, and two views answer two questions with no new state — **end-to-end role
-effectiveness**, detections over *attempted* trials, and **conditional semantic performance**,
-detections over *valid* trials. Report both: the conditional view alone lets a configuration that barely
-ran look excellent, and the end-to-end view alone conflates a provider outage with a weak reviewer.
+Per-property incidence supports both readings without a third number: *how many of the planted
+obligations did this configuration surface* (recall across properties) and *how often is this
+particular obligation surfaced* (per-property frequency). Neither is a score, and neither is
+averaged into the other — an evaluator that finds one obligation reliably and another never is not
+the same system as one that finds each half the time, and a mean would say it was.
 
 ## E20. Two measurement problems, wrongly sequenced as one
 
@@ -416,107 +414,25 @@ distinct finding before anything can be counted at all.
 
 Only the second needs cross-sample semantic identity. The first never compares one sample with another.
 
-### E20.1 The relation already exists
+### E20.1 What it needed, and what it did not
 
 The incidence a multi-sample evaluation needs — *sample × obligation → detected / not-detected /
-grading-unavailable* — is the per-property vector `semantic()` has produced since
-[§E19.1](#e19-multi-property-scenarios--more-resolution-still-not-a-score), with one index added.
-`trial × property` becomes `sample × pressure`. No new artifact, no new protocol noun, no new state:
-the Field Test asks which invariant becomes impossible without one, and the answer is none.
+grading-unavailable* — is the per-property vector `semantic()` already produced, with one index added:
+`trial × property` becomes `sample × pressure`. No new artifact, no protocol noun, no state. A pressure
+surfaced by one sample of ten is a cell with `k = 1` recorded with its provenance, not the loser of an
+election; recurrence becomes observable without becoming authority, because nothing downstream consumes
+it (`P5`). **The per-pressure vector is the result** — no collapse across pressures, none across
+samples, which is the trap `trial_verdict`'s logical AND would have reintroduced.
 
-It preserves what matters by construction. A pressure surfaced by one sample of ten is a cell with
-`k = 1`, recorded with its provenance, not a loser of an election. Recurrence becomes *observable*
-without becoming authority, because nothing downstream consumes it — `P5` and
-[§53](system-craft.md#53-craft-coherence-and-the-loop-between-them) already place disposition with
-the parent.
+Closed-world calibration therefore needed no cross-sample identity, only a discovery grader whose
+repeatability had been measured — the verdict grader's 16.9% belongs to a different question — and the
+repeated-sampling machinery that already existed. Doing consolidation first would have changed the
+criterion and the instrument in the same run, the mistake
+[§E22](evaluation-comparison.md#e22-reliability-before-validity) exists to prevent.
 
-**One trap, in existing code.** `trial_verdict` collapses a property vector with a logical AND: every
-property detected, or the trial is not-detected. That is correct for its original purpose and would be
-silently wrong here, reintroducing the whole-report verdict this design rejects. **In a multi-sample
-matrix the per-pressure vector is the result**; no collapse across pressures, and none across samples.
-
-### E20.2 Calibration V3 is not blocked
-
-Every step of a closed-world run is available without cross-sample identity: pressures frozen in the
-manifest; one report per sample; one grading per (sample, pressure) cell, the report never shown
-alongside another sample's; counts and shares computed mechanically; missing measurements recorded as
-missing. There is no point in that path at which two samples meet.
-
-Most of it is not even new code. `semantic()` already reads a `properties` list and falls back to a
-single `property`, so a craft case gaining pre-registered pressures is additive fixture work that the
-grading path handles unchanged; the repeated-sampling machinery — preallocated `(item, repeat)` slots, a
-hash over the whole frozen configuration, atomic checkpointing and a resume that refuses to splice
-across configurations — was built for `§E51` and applies without modification.
-
-Doing consolidation first would also **contaminate the experiment**. V3's purpose is to introduce a
-pre-registered architectural criterion while holding measurement mechanics fixed. Adding semantic
-grouping, or changing the reflector's output contract to make grouping easier, would change the criterion
-and the instrument in the same run — the mistake
-[§E22](evaluation-comparison.md#e22-reliability-before-validity) was written to prevent.
-
-### E20.3 What V3 does need first, and it is small
-
-**A different grader, whose repeatability is unmeasured.** The 16.9% figure belongs to the craft *verdict*
-grader, which asks whether a report says the property fails and answers "upheld" both when the report
-says it is fine **and when it never addresses it**. A closed-world run uses the *discovery* grader
-instead — *does this report identify this specific problem?* — which has run since Eval V1, is already
-canonical, and does not conflate silence with endorsement. Its contract needs no design work. Its
-dispersion has simply never been measured, and one grade per sample is defensible only once it has been,
-against a frozen anchor corpus, exactly as `§E51` did for the other grader. That is a run, not a redesign.
-
-### E20.4 Open-world finding identity may be the wrong goal
-
-Six cases decide it. Wording variation and broad-versus-narrow are arguably mergeable. Common cause with
-distinct consequences is not obviously one finding or two. Partial overlap loses information when merged
-and inflates support when split. **Same observation with opposite interpretation** is the decisive one:
-the reliability run found precisely this shape — the observation stable, the judgement split — and any
-merge that produces a single canonical finding destroys the structure that was the most valuable thing
-measured. And a legitimate concern raised by one reviewer of ten must survive any scheme that records
-support at all.
-
-So the question "when are two concerns the same finding?" should be answered by not asking it. Reports
-retain their provenance and are read together; the parent reasons across them, which is the authority
-boundary that already exists. Canonical finding identity would add a semantic stage whose own reliability
-would then need measuring — a regress `P13` cannot fund and `P1` should not license, since deciding that
-two novel concerns mean the same thing is exactly a semantic judgement.
-
-Consolidation may still earn its place later as a **presentation** economy for a human reading ten
-reports. That is a different justification from measurement, and it must not be smuggled in as one.
-
-### E20.5 Three independences, kept apart
-
-| | What it means | Status |
-|---|---|---|
-| **Provenance independence** | No prior report, session or semantic result contaminates a sample | Enforced today (`P12`) |
-| **Statistical independence** | Errors are independent draws | **Not known, never claimed** |
-| **Perspective diversity** | Evaluators bring materially different search strategies | Not part of the protocol |
-
-External evidence makes the middle row load-bearing rather than pedantic: a panel of nine frontier judges
-across seven model families was measured as carrying roughly two votes' worth of independent information,
-with neither more judges nor better aggregation closing the gap. Proofbound's repeats share one model,
-one prompt and one provider, so their effective independence can only be worse. **Nominal N is not
-evidence strength**, and a heterogeneous panel is a different measuring system rather than a cheaper way
-to raise N.
-
-### E20.6 Coverage, and what it may not claim
-
-Software-inspection research offers one useful reframing and one clear warning. The reframing: under
-perspective-based reading, reviewers who find *different* defects are complementary rather than
-disagreeing, so low overlap in a discovery task is not automatically instrument noise. It does not rescue
-the reliability result, which measured contradictory judgements about an identical observation — that is
-not complementarity.
-
-The warning is capture–recapture, which estimates undiscovered defects from reviewer overlap and depends
-on inspector independence and homogeneous detection probability. Both assumptions are violated here, far
-more severely than in the human inspections where the technique is already contested, and the documented
-failure direction is **underestimation of what remains**. It is rejected for Proofbound as anything but a
-cautionary analogy.
-
-What may be recorded is **marginal discovery**: what an additional sample adds. It is a better `P13`
-observable than N, because it says what the spend bought. What it may never support is a stopping claim —
-correlated evaluators fall silent together, so *"no new pressure surfaced in the last two samples under
-this measuring system"* is an observation about the measuring system, and never a statement that coverage
-is complete.
+Everything downstream of this decision is recorded in the evidence sections it produced:
+[§E52](evidence/evaluation-runs.md), [§E53](evidence/evaluation-runs.md),
+[§E54](evidence/evaluation-runs.md) and [§E55](evidence/evaluation-runs.md).
 
 ## E24. What it takes to call an increment an improvement
 
@@ -599,15 +515,97 @@ to win its own controlled comparison first.
 
 ### E24.5 Not fitting the benchmark to itself
 
-One case has now motivated three milestones, and repeatedly editing an instrument against the
-fixtures that exposed its faults turns those fixtures into training data for the research process.
-The discipline is a split, not a bigger benchmark: evidence used to *understand* failures and design
-a treatment is development material, and a claim of general improvement may not rest only on it. A
-small holdout that was not inspected while the treatment was designed is worth more than a large
-contaminated corpus, and `P13` makes the small one affordable. No claim generalises past the one
-domain that produced it.
+The standing risk is that the corpus becomes a thing the evaluator is tuned to pass. The guards are
+the ones already stated: criteria pre-registered before data, entailment audited before a run,
+specificity controls that let a treatment lose, an invalidating-conditions list that makes a broken
+run uninterpretable rather than negative, and a holdout domain that nothing in the programme has
+inspected. A result that survives none of these is a result about the corpus.
 
-Statistics stay out unless their assumptions hold, for the reasons
-[§E23](evaluation-comparison.md#e23-what-one-semantic-measurement-should-be) already gives: exact
-paired counts, per-cell distributions, discordant direction, missingness, control behaviour and cost
-come first.
+## E25. The instrument is part of the experiment
+
+Every section before this one treats measurement mechanics as something to hold fixed while a
+treatment varies. `MLR-C3` showed that is not enough. Its pilot ran cleanly — six valid executions,
+no harness failure, a clear result — and was still uninterpretable, because two things the result
+depended on were wrong in ways no amount of careful execution would have surfaced.
+
+The correctness oracle asserted an internal function's signature while claiming to observe product
+behaviour, and rejected a change that was correct on every axis the task named. The context telemetry
+scored `help(objectstore)` — five kilobytes of a package's interior — as unclassified, and
+`python3 -m pydoc objectstore` as *running the system*. Neither is exotic. Both were written by
+someone trying to be careful, and both were found only by running the experiment and reading what
+came back.
+
+So: **once alternative pipelines are compared empirically, the measuring instrument becomes part of
+the experimental substrate, and must be validated independently before any comparative conclusion is
+allowed.** A comparison depends on the condition, the environment, the instrument, the oracle, the
+attribution and the interpretation rule; if any of them differs from what the experiment claims to
+measure, the result is invalid however well the agents ran.
+
+Two rules follow, both local to evaluation methodology. Neither is a principle, and neither needs to
+be: they are things this programme now knows how to get wrong.
+
+### E25.1 An oracle may require only what the property requires
+
+> An evaluation instrument must not encode architectural or implementation constraints that are
+> absent from the property it claims to measure.
+
+The failure is quiet in both directions. A correct result is scored as a failure, and — worse — the
+scoring looks principled, because the oracle was written against a reference solution that satisfies
+the extra constraint by coincidence. Correctness usually gates every other quantity, so a false
+negative there does not merely lose a sample; it removes it from the denominator of whatever the
+experiment is actually about.
+
+Constraints the task genuinely states are not a violation of this. *"Do not change the public API"*
+is a property. *"Keep this private helper's return type"*, when nothing said so, is the reference's
+shape wearing the property's clothes.
+
+**The check is adversarial and it is cheap.** Write several implementations that satisfy the property
+and decompose the system differently, and several that are behaviourally wrong. The oracle must
+accept all of the first and reject all of the second. `MLR-C3R` does this with four correct
+realizations and five broken ones, and the old oracle fails two of the four.
+
+### E25.2 Telemetry must attribute the substitutes, not merely notice them
+
+> Telemetry used for causal interpretation must be able to attribute — not merely detect — the
+> material alternative routes by which the measured information can enter the pipeline.
+
+An experiment that removes one route to some information is only measuring removal if the other
+routes are counted. Otherwise the treatment arm can obtain the same information a different way and
+be scored as having done without it, which reads as the effect the experiment was hoping for.
+
+`MLR-C3` had a detector and thought it had an accounting. A flag recorded that module-internal names
+had appeared in delivered text; the measurand was bytes, and the flag carried none. The repair keeps
+two channels: the **route** a representation was requested through, and the **content** that came
+back. Within a route family that can return either — Python's documentation surface returns a public
+signature or a package's private submodules depending on what you ask — the content decides, matched
+against names derived from the source rather than listed by hand. A list stops covering the thing it
+describes the day the thing changes, and the failure looks like an absence of evidence.
+
+**Detection without attribution is still worth keeping, separately.** Disclosure — bytes that carried
+internal names, whatever asked for them — is reported beside the provenance totals and never added to
+them, so a test run whose traceback passes through the module's interior is recorded as test output
+that disclosed something, rather than as implementation representation.
+
+### E25.3 Resource claims are conditioned on the property they preserve
+
+[§E24](#e24-what-it-takes-to-call-an-increment-an-improvement) already says "better" is a relation
+between a claim, a measurand, a baseline and guardrails. Comparative pipeline evaluation adds one
+clarification rather than a new rule: **a claim about tokens, latency or cost is established only
+where the outcome property it was supposed to preserve has been checked and held.** A pipeline that
+is cheaper and less correct is a tradeoff for a person to weigh, not an improvement, and nothing in
+Proofbound has the authority to exchange quality for cost on their behalf.
+
+This is why there is no scalar. `correctness / tokens / seconds / dollars` requires exchange rates
+that no accepted intent supplies. What the evidence supports instead is dominance, stated plainly:
+*under the pre-registered guardrail, B was no worse on the outcome and better on these resource
+dimensions, and worse on none that the claim depends on.* External practice has converged on the
+same shape — cost-versus-quality frontiers rather than a rank — and it is the shape Proofbound can
+justify.
+
+### E25.4 What follows from having measured the pipeline once
+
+Making an execution profile — outcome, model usage, tool activity, time, context provenance — is not
+the same as having a general instrument. The profile earns generality by describing an experiment it
+was not built for, and until it has, it is MLR machinery that happens to be layered cleanly. The
+layering is the part worth keeping now: what an execution *did* is experiment-independent, and where
+a representation *came from* is not, and they belong in different modules.

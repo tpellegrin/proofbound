@@ -29,6 +29,7 @@ import _mlr_run        # noqa: E402
 import _repeat         # noqa: E402
 
 PILOT = "mlr-c3-full-headroom-pilot"
+PILOT_R = "mlr-c3r-full-headroom-pilot"
 
 # Declared in MLR-C3-pilot-preregistration.md §12, before the first call, and read from here so the
 # analysis cannot quietly acquire a threshold that suits the numbers it received.
@@ -46,7 +47,7 @@ def configuration(*, model: str, samples: int, arms: list[str]) -> dict[str, Any
     """Everything that must not vary within one series."""
     fixture = _mlr.FIXTURE
     return {
-        "experiment": PILOT if arms == [_mlr.FULL] else "mlr-c3-paired",
+        "experiment": PILOT_R if arms == [_mlr.FULL] else "mlr-c3r-paired",
         "purpose": ("headroom: whether unrestricted `full` executions consume implementation "
                     "source often enough for a paired source-visibility experiment to measure"),
         "evidence_class": "development",
@@ -61,7 +62,11 @@ def configuration(*, model: str, samples: int, arms: list[str]) -> dict[str, Any
         "contract_sha256": _mlr.digest_file(fixture / "base" / "docs" / "storage-contract.md"),
         "task_sha256": _mlr.digest_file(fixture / "tasks" / "external.md"),
         "gate_sha256": _mlr.digest_file(fixture / "hidden" / "external_test.py"),
-        "telemetry_version": "mlr-context-1",
+        "oracle": _mlr_run.ORACLE,
+        "telemetry_version": "mlr-context-2",
+        "profile_version": "profile-1",
+        "attribution": ("route (path/command family) and content (module-internal names derived "
+                        "from the runtime source by ast), decided together"),
         "consumed_definition": ("text appearing in a part OpenCode places in the message history "
                                 "before a later model call"),
         "measurand": ("unique bytes of direct implementation-source representation consumed on "
@@ -165,8 +170,13 @@ def analyse(record: dict[str, Any]) -> dict[str, Any]:
     correct = arm.get("correct", 0)
     reading = arm.get("correct_runs_reading_source", 0)
     median = arm.get("median_source_bytes", 0)
+    # Fail closed. An execution whose telemetry is absent is not an execution that consumed
+    # nothing: reading it as zero would turn an infrastructure failure into the cheapest run in the
+    # series, and the primary measurand is a byte count where zero is a meaningful answer.
     missing_telemetry = [m["repeat"] for m in measurements
-                         if m.get("validity") == _mlr_run.VALID and not m.get("context")]
+                         if m.get("validity") == _mlr_run.VALID
+                         and (not m.get("context")
+                              or not (m.get("profile") or {}).get("complete", False))]
     if correct < MIN_CORRECT or missing_telemetry:
         verdict = INVALID
     elif reading <= 1 or median < INCIDENTAL_BYTES:

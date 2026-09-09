@@ -32,6 +32,7 @@ from typing import Any
 
 import _mlr
 import _mlr_context
+import _profile
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
@@ -54,6 +55,14 @@ ATTEMPT_TIMEOUT_SECONDS = 1800
 # constant rather than inherited from another script's default, because it is part of the frozen
 # configuration: an arm that could not write would fail the task for a reason unrelated to context.
 AUTO_FLAG = "--auto"
+
+# The correctness oracle, versioned rather than replaced. MLR-C3 ran under v1, which rejected a
+# product-correct restructuring because it asserted an internal function's signature; v2 asserts the
+# product surface only. Historical evidence keeps the oracle it was actually judged by, so a later
+# reader is never shown a correctness figure the run did not receive.
+ORACLE_V1 = "external_test.py"
+ORACLE_V2 = "external_test_v2.py"
+ORACLE = ORACLE_V2
 
 
 class RunError(RuntimeError):
@@ -110,21 +119,28 @@ def _prepare(built: dict[str, Any], root: Path, *, model: str,
     return run, db, contract
 
 
-def grade(built: dict[str, Any], root: Path) -> dict[str, Any]:
+def grade(built: dict[str, Any], root: Path, *,
+          oracle: str = ORACLE) -> dict[str, Any]:
     """Deterministic correctness, and whether the attempt stayed on its side of the boundary.
 
     Three independent facts, none of them a judgement: the hidden external gate, the service's own
     suite, and whether anything outside `app/` moved. The last is *evidence*, not a pass condition —
     an agent that edits the contract has not cheated, it has told us the boundary did not hold.
+
+    The oracle is named in the result. A correctness number whose gate version is unrecorded cannot
+    be compared with anything later, and MLR-C3 is the reason that matters here.
     """
-    gate = _mlr.run_gate(built, _mlr.FIXTURE / "hidden" / "external_test.py",
+    started = time.time()
+    gate = _mlr.run_gate(built, _mlr.FIXTURE / "hidden" / oracle,
                          data_root=root / "grade-gate")
     regression = _mlr.run_tests(built, data_root=root / "grade-regression")
+    verification_seconds = round(time.time() - started, 3)
     workspace = Path(built["workspace"])
     contract_now = _mlr.digest_file(workspace / "docs" / "storage-contract.md")
     vendored_now = (_mlr.digest_tree(workspace / _mlr.VENDORED / "objectstore")
                     if _mlr.arm_has_readable_copy(built) else None)
     return {
+        "oracle": oracle,
         "gate_passed": gate.returncode == 0,
         "gate_output": (gate.stdout + gate.stderr)[-1500:],
         "regression_passed": regression.returncode == 0,
@@ -133,6 +149,7 @@ def grade(built: dict[str, Any], root: Path) -> dict[str, Any]:
         "contract_unchanged": contract_now == built["contract_sha256"],
         "vendored_unchanged": vendored_now == built["vendored_digest"],
         "runtime_unchanged": _mlr.digest_tree(Path(built["runtime"])) == built["runtime_digest"],
+        "verification_seconds": verification_seconds,
     }
 
 
@@ -157,7 +174,7 @@ def pin_interpreter(root: Path, env: dict[str, str]) -> dict[str, str]:
 
 
 def run_attempt(arm: str, *, model: str, task: Path | None = None, keep: Path | None = None,
-                timeout: int = ATTEMPT_TIMEOUT_SECONDS,
+                timeout: int = ATTEMPT_TIMEOUT_SECONDS, oracle: str = ORACLE,
                 fixture: Path = _mlr.FIXTURE) -> dict[str, Any]:
     """One arm, one fresh execution, ungraded context accounting plus a deterministic verdict."""
     started = time.time()
@@ -167,6 +184,7 @@ def run_attempt(arm: str, *, model: str, task: Path | None = None, keep: Path | 
     result: dict[str, Any] = {"arm": arm, "model": model, "harness": "opencode-cli", "role": ROLE,
                               "task_sha256": _mlr.digest_file(task),
                               "auto_flag": AUTO_FLAG,
+                              "oracle": oracle,
                               "validity": HARNESS_FAILURE, "reason": None}
     try:
         built = _mlr.materialise(arm, root / "arm", fixture=fixture)
@@ -226,8 +244,16 @@ def run_attempt(arm: str, *, model: str, task: Path | None = None, keep: Path | 
             "prompt_bytes": len((event_dir / "launch-prompt.txt").read_bytes())
                             if (event_dir / "launch-prompt.txt").is_file() else None,
             "context": _mlr_context.consumed(db, built),
-            "outcome": grade(built, root),
         })
+        outcome = grade(built, root, oracle=oracle)
+        stage = _profile.profile(
+            db, stage=ROLE, model=model,
+            elapsed_seconds=round(time.time() - started, 3),
+            verification_seconds=outcome["verification_seconds"])
+        result["outcome"] = outcome
+        result["profile"] = _profile.pipeline([stage], outcome={
+            "correct": outcome["correct"], "gate_passed": outcome["gate_passed"],
+            "regression_passed": outcome["regression_passed"], "oracle": outcome["oracle"]})
         return result
     except Exception as exc:                              # noqa: BLE001 - reported, never raised
         result["reason"] = f"{type(exc).__name__}: {exc}"[:400]
