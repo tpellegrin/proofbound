@@ -1869,6 +1869,47 @@ before the first semantic call.
 **Not adopted, not named.** No `P14`, no modularity or coupling score, no module identity, no
 semantic-compression protocol term, no context-routing implementation, and no production use.
 
+### 7P.3 MLR-C3 — the boundary hides source, not knowledge; consumed context is now measurable
+
+Pre-registration:
+[`MLR-C3-pilot-preregistration.md`](../../evals/craft/modularity-local-reasoning/MLR-C3-pilot-preregistration.md).
+
+**What the treatment actually is.** C2 recorded that in `contract` the implementation quantity is
+*structurally zero, because no implementation text is reachable*. Probed directly, that holds for
+**text** only. With no source anywhere, `vars(_store)` returns `_ATTEMPTS = 3` and `_FANOUT = 2` —
+both hidden decisions, in one ordinary line; `dir(_store)` names `_checksum`, `_path_for`,
+`_with_retries` and `_ChecksumMismatch`; `dis` renders 10,212 characters of the logic. So the
+experiment manipulates **direct access to implementation-source representation**, not implementation
+knowledge. The narrower reading is adopted, and every route is now a regression test: if a later
+change closes one, the treatment has silently become a different one.
+
+**Consumed context, established against the executor rather than assumed.** `run_worker.py` runs
+`opencode run` with `OPENCODE_DB` at a per-attempt SQLite database whose `part` rows record
+`step-start` (a model call begins), `step-finish` (that call's provider-counted tokens and cost) and
+`tool` (whose `state.output` is the text placed in the message history). A representation is
+**consumed when its text appears in a part placed in the history before a later model call** — after
+the executor's own truncation, which is what makes the quantity what the model received rather than
+what a tool opened. Its limit is written down: it is not a capture of the provider request body and
+does not see the CLI's system prompt, so `tokens.input` is retained beside it as an independent
+aggregate that cannot be attributed but can contradict a wrong attribution.
+
+**Four ledgers stay apart** — available, supplied, requested, consumed — and because the launch prompt
+is a *pointer list*, even the contract is requested rather than supplied, so whether an arm reads it
+is measured and never assumed. **Unique and delivered are both kept:** what entered reasoning at all,
+and what the context cost when replayed into later calls.
+
+**Measurand revised again, before any evidence**, as `§E24` requires: **the unique bytes of direct
+implementation-source representation consumed on correct runs, per arm**. Source bytes and
+disassembly characters are not commensurable and are never summed. Implementation-derived *runtime*
+representation is reported beside it, which makes the decisive interpretation rule expressible — a
+`contract` run that reconstructs the interior through introspection is **representation shifted, not
+removed**, never successful substitution.
+
+**Sequence.** Mechanics, tests and the pilot pre-registration are frozen in one commit before the
+first semantic call; the `full`-only headroom pilot follows; the paired pre-registration follows only
+if headroom exists. Pilot evidence is development evidence with its own experiment identity and may
+never be spliced into paired samples.
+
 ## 7B. Threat mitigation status
 
 RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC

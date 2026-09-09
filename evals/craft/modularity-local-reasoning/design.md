@@ -214,6 +214,17 @@ same reason.
 
 ## 15. Result shapes, pre-registered
 
+> **Amended in MLR-C3, before any semantic evidence.** §10's measurand compared implementation
+> bytes read against contract bytes supplied. MLR-C2 replaced it because those are two accounting
+> categories; MLR-C3 replaced it again after probing what `contract` can still learn. The module's
+> hidden decisions turn out to be recoverable from the live object — `vars(_store)` returns
+> `_ATTEMPTS` and `_FANOUT`, `dis` renders the logic — so the treatment manipulates **direct access
+> to implementation-source representation**, not implementation knowledge, and the measurand is
+> **the unique bytes of direct implementation-source representation consumed on correct runs, per
+> arm**, with implementation-derived *runtime* representation reported beside it so a `contract`
+> reconstruction is never read as substitution. Full statement and pre-registration:
+> [`MLR-C3-pilot-preregistration.md`](MLR-C3-pilot-preregistration.md).
+
 **Substitution works** — correctness comparable, measurand materially smaller. **No effect** —
 correctness comparable, measurand similar, because `FULL` barely read `M` or the contract is as large
 as what was read. **Contract insufficient** — `CONTRACT` correctness drops, or hidden detail is

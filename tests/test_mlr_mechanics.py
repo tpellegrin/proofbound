@@ -304,3 +304,74 @@ class ExperimentShapeTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class KnowledgeSurvivesTheSourceBoundaryTest(unittest.TestCase):
+    """What `contract` can still learn about the interior, recorded as a fact of the design.
+
+    MLR-C2 wrote that in `contract` the implementation quantity is "structurally zero, because no
+    implementation text is reachable". The first half is true only of *text*. These probes pin how
+    much implementation-derived knowledge survives, because the measurand and the interpretation
+    categories are built on their answers: a boundary that hides source while leaving the hidden
+    decisions two ordinary lines away is a source-visibility treatment, not a knowledge treatment,
+    and must be described as one.
+
+    They are regression tests as much as evidence. If a later change makes any of this unreachable,
+    the treatment has silently become stronger than the one the experiment was pre-registered on.
+    """
+
+    maxDiff = None
+
+    def test_the_hidden_decisions_are_recoverable_without_any_source(self):
+        with Built() as arms:
+            result = probe(arms[_mlr.CONTRACT],
+                           "from objectstore import _store;"
+                           " print(sorted((k, v) for k, v in vars(_store).items()"
+                           " if isinstance(v, int) and not k.startswith('__')))")
+            self.assertEqual(result.returncode, 0, result.stderr[-300:])
+            self.assertIn("_ATTEMPTS", result.stdout)
+            self.assertIn("_FANOUT", result.stdout)
+
+    def test_the_private_structure_is_enumerable(self):
+        with Built() as arms:
+            result = probe(arms[_mlr.CONTRACT],
+                           "from objectstore import _store;"
+                           " print([n for n in dir(_store) if n.startswith('_')"
+                           " and not n.startswith('__')])")
+            self.assertEqual(result.returncode, 0, result.stderr[-300:])
+            for name in ("_checksum", "_path_for", "_with_retries", "_ChecksumMismatch"):
+                with self.subTest(name=name):
+                    self.assertIn(name, result.stdout)
+
+    def test_disassembly_renders_the_logic_the_source_would_have_shown(self):
+        with Built() as arms:
+            result = probe(arms[_mlr.CONTRACT],
+                           "import io, dis; from objectstore import _store\n"
+                           "buf = io.StringIO()\n"
+                           "for name in dir(_store):\n"
+                           "    obj = getattr(_store, name)\n"
+                           "    if hasattr(obj, '__code__'): dis.dis(obj, file=buf)\n"
+                           "print(len(buf.getvalue()))")
+            self.assertEqual(result.returncode, 0, result.stderr[-300:])
+            self.assertGreater(int(result.stdout.strip()), 1000)
+
+    def test_the_public_representation_is_small_and_identical_in_both_arms(self):
+        """§18: the contract is not the whole public surface, so report what the rest costs."""
+        sizes = {}
+        with Built() as arms:
+            for arm, built in arms.items():
+                result = probe(built,
+                               "import inspect, objectstore\n"
+                               "total = len(inspect.getdoc(objectstore) or '')\n"
+                               "for n in objectstore.__all__:\n"
+                               "    o = getattr(objectstore, n)\n"
+                               "    total += len(inspect.getdoc(o) or '')\n"
+                               "    try: total += len(str(inspect.signature(o)))\n"
+                               "    except Exception: pass\n"
+                               "print(total)")
+                self.assertEqual(result.returncode, 0, result.stderr[-300:])
+                sizes[arm] = int(result.stdout.strip())
+        self.assertEqual(sizes[_mlr.FULL], sizes[_mlr.CONTRACT])
+        contract_doc = (_mlr.FIXTURE / "base" / "docs" / "storage-contract.md").stat().st_size
+        self.assertLess(sizes[_mlr.CONTRACT], contract_doc,
+                        "docstrings that rivalled the contract would make it the smaller half")

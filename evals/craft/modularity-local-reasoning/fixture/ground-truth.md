@@ -26,9 +26,13 @@ internals and never asserts anything about the service's structure.
 touches neither the contract nor the package. Verified.
 
 **Known confounds:** `full` carries four extra files under `third_party/`, which is the treatment and
-also the only structural difference. An agent in either arm can reach the runtime through
-`objectstore.__file__` or `inspect.getsource`; isolation here is at the level of repository
-discovery, not access, and any such read is evidence to record rather than a breach to prevent.
+also the only structural difference. Source recovery through `inspect.getsource` or `__file__` was
+closed in MLR-C2 by compiling the runtime; what remains open, and was measured in MLR-C3, is the live
+object — `vars(_store)` yields `_ATTEMPTS` and `_FANOUT`, `dir` names the private helpers, and `dis`
+renders the logic. So the treatment hides implementation *source*, not implementation *knowledge*.
+That is evidence to record and to classify, never a breach to prevent: a `contract` run that
+reconstructs the interior is a result, and the accounting exists so it cannot be mistaken for one
+that did not.
 
 ## The internal control — not built, and why
 
