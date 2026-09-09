@@ -1596,6 +1596,70 @@ them. No fixture was edited, no criterion adopted, no manifest written, no live 
 accepted intent stating what must remain true rather than only what is configuration. Two fixture
 changes, hence their own milestone, and the criterion experiment follows it rather than accompanying it.
 
+## 7O. Calibration case repair — probe, intent and boundary consequence  *(designed; not encoded)*
+
+Design: [`case-repair-design.md`](../../evals/craft/notification-provider-boundary/case-repair-design.md).
+Methodology: [`system-craft.md` §59.1](proofbound/system-craft.md#591-what-a-calibration-probe-has-to-satisfy).
+
+**Diagnosis.** The old probe varied only *representational* facts — a URL, a header key, payload key
+names — and the degraded state had already co-located every representational fact in one function.
+Co-location is cheap for adding another instance of a variation point that already has a shape, so the
+degradation absorbed the change in one file while the sound states paid a boundary's price for nothing.
+A boundary earns its keep on a variation point whose shape **differs**.
+
+**Repair.** The decision expected to vary becomes *how a provider reports the outcome of a delivery
+attempt*: the second provider answers `200` to every well-formed request and carries the result in the
+body, which is ordinary industry behaviour and differs from the first in kind rather than in value. The
+accepted intent gains one factual sentence — providers differ in how they report outcomes, and the
+product's vocabulary is the same for all of them — naming the volatile decision without saying where
+knowledge of it should live. The three states are unchanged.
+
+**Why it discriminates.** In both sound states every changed location is provider-specific work,
+boundary composition, or an uninterpreted pass-through. In the degraded state `status.outcome_for(code)`
+cannot express a body-reported result, so it must either teach a provider-independent module about a
+provider or restate the retry policy in the entry point — and there is no third route, because nothing
+in it is specific to a provider. All three states are expected to touch roughly the same number of
+locations, which is what removes the old confound: the difference is in **kind**, not count.
+
+**A fourth gate.** `§59.1` now requires **discrimination** alongside entailment, exercise and headroom —
+an answer-blind structural account, authored before any call, of why each location had to change.
+
+**Headroom is not established and cannot be here.** It needs a measured baseline, so the sequence is
+implement the fixture, run a **baseline-only** single-arm experiment, inspect discovery frequency, and
+design a treatment only if room exists. The substrate already permits a single-arm run.
+
+**Unchanged.** No measurement mechanics, no fixture code, no criterion, no treatment, no live call.
+
+## 7P. Modularity and local reasoning calibration — design check  *(deferred research)*
+
+**Sequenced after System Craft calibration validity is restored**, and not before. Testing a
+context-economy hypothesis while the craft instrument's own validity is unsettled would move two things
+at once.
+
+**Hypothesis.** If a boundary genuinely hides a volatile design decision, work outside it should often
+be solvable from its public contract without reading the implementation behind it — the empirical form
+of `P13`'s second surface.
+
+**Shape.** Same repository, task, model, harness and accepted intent. Control: the external module's
+implementation is inspectable. Treatment: it is withheld and replaced by its contract plus the
+externally relevant accepted consequences. Observables: correctness, deterministic test success,
+semantic findings, context bytes, files opened, repository searches, cross-boundary reads, cost.
+
+**Falsifiers.** Correctness materially drops; the agent repeatedly needs hidden internals; the contract
+has to reproduce most of the implementation's semantics; the supposedly local task actually crosses the
+boundary; the treatment saves context only by removing information that was needed.
+
+**Two controls it must carry.** An **over-modularisation** arm — entangled, meaningfully modular, and
+excessively fragmented architectures compared on the same task — because *more modules is not the
+hypothesis and must be able to lose*. And a **minimum sufficient contract** ladder — signature only,
+signature plus behavioural contract, plus externally relevant invariants, full implementation — since
+the interesting quantity is the smallest context preserving correctness, not the smallest context.
+
+**Not adopted, not named.** No `P14`, no module score, no cohesion or coupling threshold, no ideal
+module size, no mandatory structure, and no `minimum_sufficient_contract` protocol term. Information
+hiding and change confinement are used here as reasoning aids for building a valid case, never as
+Proofbound policy.
+
 ## 7B. Threat mitigation status
 
 RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC

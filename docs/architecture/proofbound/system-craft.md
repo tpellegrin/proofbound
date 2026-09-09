@@ -17,8 +17,8 @@ surface it damages — **repository discovery context, which architecture qualit
 not observe at all"*.
 
 So the architecture has already said: this happens, here is the mechanism, here is the surface, and we
-are blind to it. What is missing is measurement, and the correct move is to **compose the pieces
-already designed rather than invent a parallel concept beside them**:
+are blind to it. What is missing is measurement, and the move is to **compose pieces already designed
+rather than invent a parallel concept beside them**:
 
 | Piece | Status |
 |---|---|
@@ -42,23 +42,23 @@ dependency does not apply. It still applies to any future production replay.
 | Level | Question | Referent |
 |---|---|---|
 | **Correctness** | Did this change satisfy the accepted intent for this change? | The accepted contract |
-| **Coherence** | Does the repository still conform to the accepted baseline plus the decisions that authorize divergence from it? | The accepted baseline and accepted decisions ([§38.2](long-running-autonomy.md#38-cumulative-coherence)) |
+| **Coherence** | Does the repository still conform to the accepted baseline plus the decisions authorizing divergence from it? | Accepted baseline and decisions ([§38.2](long-running-autonomy.md#38-cumulative-coherence)) |
 | **Craft** | Did the system become harder to understand and change? | **None** |
 
-The referent is what separates them, and it is not a presentational distinction. Correctness and
-coherence both ask whether reality conforms to something somebody accepted. **Craft has nothing
-accepted to conform to** — a system can conform perfectly to its baseline and still be miserable to
-work in, and no one ever accepted "stay easy to change" as a contract clause.
+The referent separates them, and it is not a presentational distinction. Correctness and coherence both
+ask whether reality conforms to something somebody accepted. **Craft has nothing accepted to conform
+to** — a system can conform perfectly to its baseline and still be miserable to work in, and no one
+ever accepted "stay easy to change" as a contract clause.
 
-Three consequences follow immediately, and they are the spine of this design:
+Three consequences follow, and they are the spine of this design:
 
 - Craft is **relative, never absolute**: the only honest question is whether a property became better,
-  worse, or unchanged, because there is no accepted standard to score against.
-- Craft **cannot block** anything. A finding that violates no accepted referent is an observation, and
-  treating it as a gate would let a generic concern override accepted engineering intent — `P5`
-  generalized: integrity is not authority, and neither is an opinion about the future.
-- Craft and coherence are **not merged**. Building one evaluator for both would give the blocking
-  authority of coherence to the advisory findings of craft.
+  worse or unchanged, because there is no accepted standard to score against.
+- Craft **cannot block**. A finding violating no accepted referent is an observation, and gating on it
+  would let a generic concern override accepted engineering intent — `P5` generalized: integrity is not
+  authority, and neither is an opinion about the future.
+- Craft and coherence are **not merged**: one evaluator for both would give coherence's blocking
+  authority to craft's advisory findings.
 
 ## 42. What system craft means here
 
@@ -69,18 +69,15 @@ Not "good code", "clean architecture" or "simple". Stated as a measurement of `P
 
 Proportionality carries the weight. A cross-cutting security change legitimately reaches many places —
 its conceptual size is large, and touching a lot is not a defect. The failure mode is **disproportion**:
-a small, single-concept change that requires loading, understanding, or modifying distant parts of the
+a small, single-concept change that requires loading, understanding or modifying distant parts of the
 system.
 
-This definition explicitly does not reward smallness. A system with many services, modules and
-workflows can be simple if boundaries are clear, state ownership is legible, contracts are stable and
-dependencies are directional; a four-file system can be entangled. **Structural size and conceptual
-complexity are different measurements**, which is exactly why `P13` refuses size metrics and why
-counting files, services or dependencies cannot stand in for craft.
-
-It is a guiding property, not an invariant. Promoting it to a rule would make every cross-cutting
-change a violation.
-
+The definition does not reward smallness. A system with many services, modules and workflows can be
+simple if boundaries are clear, state ownership is legible, contracts are stable and dependencies are
+directional; a four-file system can be entangled. **Structural size and conceptual complexity are
+different measurements**, which is why `P13` refuses size metrics and why counting files, services or
+dependencies cannot stand in for craft. It is a guiding property, not an invariant: promoting it to a
+rule would make every cross-cutting change a violation.
 ## 43. CUPID is a lens, and can only ever be a lens
 
 Dan North's CUPID — Composable, Unix philosophy, Predictable, Idiomatic, Domain-based — is useful here
@@ -131,72 +128,57 @@ pattern. Adding a `class` field would record something derivable from where a ru
 ## 45. Measuring the second surface without rewarding laziness
 
 `CE1` defines the telemetry: repository files read, repository bytes read, tool calls, duration —
-provider-neutral first, token counts as secondary. The evaluation harness already produces most of it
-as a by-product of execution; worker logs carry the tool trajectory, and the scope diff carries what
-changed. **No new instrumentation is required to begin**, only derivation from evidence already
+provider-neutral first, token counts secondary. The harness already produces most of it as a by-product
+of execution, so **no new instrumentation is required to begin**, only derivation from evidence already
 retained.
 
 The hard problem is interpretation, and it must be stated before any number is collected: **an agent's
 retrieval behaviour is not a property of the architecture.** A worker may open thirty files because it
 is thorough, because it is weak, because the harness encourages breadth, or because the system is
-genuinely tangled. A raw file count cannot distinguish those, and an evaluation that rewarded "read
-fewer files" would reward incuriosity — which is worse than the problem it set out to detect.
+genuinely tangled. A raw file count cannot distinguish those, and an evaluation rewarding "read fewer
+files" would reward incuriosity — worse than the problem it set out to detect.
 
-The control is the one this project has already used four times: **hold the agent configuration fixed
-and vary the architecture.** An absolute context footprint means nothing; the *contrast* between two
-repository states executing the identical contract under the identical configuration means something.
-That is precisely `CE2`'s structure, and it generalizes from "one refactoring step" to "two
-architectural histories" without changing shape.
+The control is the one this project has used four times: **hold the agent configuration fixed and vary
+the architecture.** An absolute context footprint means nothing; the *contrast* between two repository
+states executing the identical contract under the identical configuration means something. That is
+`CE2`'s structure, generalised from one refactoring step to two architectural histories.
 
 The derived quantity worth measuring first is **context traversed but not changed** — material the
 worker had to understand and did not need to modify — read against the conceptual size of the change,
-not against the repository's size.
-
+never against the repository's size.
 ## 46. Longitudinal composition needs no new identity
 
-A trajectory is `S0 → T1 → S1 → … → Tn → Sn`. Applying the field test — *which invariant becomes
-impossible without a new durable identity?* — none does:
-
-- **Repository state** is already identified by a Git commit; a synthetic evaluation can use a tree
-  hash. There is no case for `proofbound-system-state-v1`.
-- **A trajectory** is `(initial commit, ordered task-sequence identity, configuration)`, and the
-  ordered commits it produced. Derived, not stored.
-- **Craft observations** are evaluation evidence. `P13` and
-  [§28.3](context-economy.md#283-why-this-is-not-a-ledger-field) already forbid execution economics
-  from entering the artifact ledger, and evaluation evidence is not `L4` provenance. Small committed
-  summaries survive; transcripts do not.
+A trajectory is `S0 → T1 → S1 → … → Tn → Sn`. The field test — *which invariant becomes impossible
+without a new durable identity?* — finds none. Repository state is already identified by a Git commit,
+and a synthetic evaluation can use a tree hash; a trajectory is `(initial commit, ordered task-sequence
+identity, configuration)` plus the commits it produced, derived rather than stored; craft observations
+are evaluation evidence, and `P13` with
+[§28.3](context-economy.md#283-why-this-is-not-a-ledger-field) already keeps execution economics out of
+the artifact ledger. Small committed summaries survive; transcripts do not.
 
 **Architectural pressure** — the same craft observation recurring across many changes, such as three
 domains independently re-implementing provider-interaction semantics — is a **query over accumulated
-evaluation evidence, never a stored fact**. Its output is an inquiry, not a refactoring: it is evidence
-that a cross-cutting decision may be missing, which is exactly the escalation `P7` already requires a
-bounded worker to raise rather than settle. Pressure detected → parent → accepted decision → possibly a
-[§37.4](long-running-autonomy.md#374-executable-invariants--accepted-decisions-made-operative) invariant. Never pressure detected → abstraction introduced.
-
+evaluation evidence, never a stored fact**. Its output is an inquiry, not a refactoring: evidence that a
+cross-cutting decision may be missing, which is the escalation `P7` already requires a bounded worker to
+raise rather than settle. Pressure detected → parent → accepted decision → possibly a
+[§37.4](long-running-autonomy.md#374-executable-invariants--accepted-decisions-made-operative)
+invariant. Never pressure detected → abstraction introduced.
 ## 47. Who decides
 
 Craft findings are advisory to the parent, which already owns routing, architecture and the choice of
-authoritative context. The parent may accept, revise, open architectural work, or record a local
-decision. What neither the parent nor an evaluator may do is let a craft observation override accepted
+authoritative context, and which may accept, revise, open architectural work or record a local
+decision. What neither parent nor evaluator may do is let a craft observation override accepted
 engineering intent, and what Proofbound may never do is refactor a system because a metric moved.
 
 ## 48. What gaming would look like
 
 Every candidate signal has a pathological optimization, which is why none may become a target:
+dependency count is gamed by copying code instead of depending on it; files changed by growing one god
+file; interface size by hiding complexity behind untyped payloads; context bytes by compressing code
+until it is unreadable; and a craft score by writing prose the grader likes.
 
-| Signal | Gamed by |
-|---|---|
-| Dependency count | Copying code instead of depending on it |
-| Files changed | Growing one god file |
-| Interface size | Hiding complexity behind untyped payloads |
-| Context bytes | Compressing code until it is unreadable |
-| Craft findings | Trivial abstractions that look composable |
-
-Two structural defenses, neither of which is a threshold. **Mechanical facts are inputs to a semantic
-judgement, never verdicts** — the rule `T10` already depends on, and the reason no metric is a gate
-anywhere in Proofbound. And the strongest one: **measure change cost on tasks the agent did not author
-and could not anticipate.** Gaming a future-change measurement requires predicting the future change.
-
+This is why craft evidence stays advisory and why `P1` holds: every signal terminates in a semantic
+evaluator that can be asked *why*, and none of them gates anything on its own.
 ## 49. The smallest next milestone
 
 **Benchmark-first, and deliberately small.** This project's own history is the argument: Eval V1,
@@ -346,15 +328,10 @@ clothes.
 ### 50.9 Triangulation is the long-term answer to "bullet-proof"
 
 No evaluator can prove architectural optimality; tradeoffs make that incoherent. The realistic standard
-is different and achievable:
-
-> Architectural degradation becomes **hard to hide**, because correctness, declared invariants,
-> mechanical structure, independent semantic reflection, calibrated controls, future-change behaviour,
-> context economy and longitudinal evidence each provide an independent way for the process to falsify
-> its own assumptions.
-
-One property corroborated across channels beats any single verdict. V1 exercises two of them against
-declared truth; the rest is the ladder, not the first rung.
+is that architectural degradation becomes **hard to hide**, because correctness, declared invariants,
+mechanical structure, independent semantic reflection, calibrated controls, future-change behaviour,
+context economy and longitudinal evidence each give the process an independent way to falsify its own
+assumptions. One property corroborated across channels beats any single verdict.
 
 ### 50.10 The amended minimal experiment
 
@@ -556,10 +533,10 @@ survive that question.
 
 **The probe favours the degraded state, and always has.** The future contract asks for a second
 provider differing in endpoint, header and payload shape, with outcome vocabulary, retry policy and
-transport seam unchanged. Under it `state-c` edits **one** file; both sound states edit three and add
-one, in every trial ever run. Change locality is one of the three lenses the craft task asks about, so
-every reflector praising `state-c`'s locality reported a fact. The instrument was not failing to see
-the degradation — the probe was not exercising it.
+transport seam unchanged. Under it `state-c` edits **one** file and both sound states edit three, in
+every trial ever run. Change locality is one of the three lenses the craft task asks about, so every
+reflector praising `state-c`'s locality reported a fact: the instrument was not failing to see the
+degradation, the probe was not exercising it.
 
 **The consequence that would discriminate is not entailed**, the narrower one that is entailed fails
 its counterexample, and the pressure that remains is already discovered four times in five at baseline.
@@ -571,11 +548,21 @@ Analysis: [§E53](evidence/evaluation-runs.md#e53-why-calibration-v3-cannot-run-
 > the evaluator is asked to use. A probe the degradation handles more cheaply than the sound states
 > measures the evaluator's willingness to disbelieve its own evidence.
 
-Three conditions follow, all checkable before any model call. **Entailment**: the consequence the
-degradation violates follows from the accepted intent the evaluator receives, never from the author's
-private expectation. **Exercise**: the probe requires the degraded state to do more work, touch more
-modules, or break something the sound states do not. **Headroom**: baseline discovery leaves room to
-move, which means measuring baseline before designing a treatment rather than after.
+Four conditions follow. **Entailment**: the consequence the degradation violates follows from the
+accepted intent the evaluator receives, never from the author's private expectation. **Exercise**: the
+probe changes the decision that consequence governs, so the degraded state cannot absorb it without
+propagating knowledge outward. **Discrimination**: an answer-blind structural analysis, authored before
+any call, can say *why* each location had to change in each state — provider-specific work, boundary
+composition, an uninterpreted pass-through, or a module whose purpose is provider-independent. The last
+category is the degradation, and it is a difference in **kind**, never a file count: a sound
+architecture may well touch more files because its responsibilities are separated. **Headroom**:
+baseline discovery leaves room to move, which is the one gate measurement alone can settle, so a
+baseline arm runs before a treatment is designed rather than after.
+
+The repaired probe — a second provider reporting outcomes in the response body rather than the status
+line, which the degraded state cannot absorb without teaching a provider-independent module about a
+provider or restating the retry policy — is designed in
+[`case-repair-design.md`](../../../evals/craft/notification-provider-boundary/case-repair-design.md).
 
 The case satisfies none of the three. Repairing it means changing the future contract *and* the
 accepted intent — two fixture changes, which belong to their own milestone: moving the fixture and the
