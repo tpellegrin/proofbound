@@ -1,0 +1,49 @@
+{
+  "adoption_rule": "No adoption. This run decides only whether a treatment experiment is worth designing; the treatment must be pre-registered separately afterwards.",
+  "arms": [
+    {
+      "id": "baseline",
+      "treatment": null
+    }
+  ],
+  "baseline": "The frozen untreated System Craft reflection context, unchanged.",
+  "claim": "Untreated discovery of the atomic provider-outcome-interpretation pressure separates the degraded state from both sound states and leaves room for a later treatment.",
+  "falsifier": "The sound states are frequently detected, or the degraded state is saturated, or the three do not separate.",
+  "format": "proofbound-closed-world-experiment-v1",
+  "frozen": [
+    "intent.md",
+    "future-contract.md r0002",
+    "the three state fixtures",
+    "the reference r0002 implementations",
+    "reflector model and craft prompt",
+    "discovery grader prompt and model",
+    "sample budget",
+    "the atomic pressure text"
+  ],
+  "guardrails": [
+    "state-a and state-b discovery must stay low, or the pressure is ambiguous",
+    "missingness must stay small enough to leave every cell readable"
+  ],
+  "id": "craft-r0002-atomic-baseline",
+  "instances": [
+    "state-a-1788919811596",
+    "state-b-1788919811597",
+    "state-c-1788919811598"
+  ],
+  "invalid_if": [
+    "any fixture, pressure or budget changes after the first semantic call",
+    "a state fails the hidden future gate",
+    "samples are graded against a statement other than the frozen pressure",
+    "measurements are spliced with the previous pressure's series"
+  ],
+  "measurand": "Per-sample discovery frequency of the atomic pressure, per implementation instance.",
+  "pressures": [
+    {
+      "id": "provider-outcome-interpretation-escapes",
+      "statement": "Code that is not specific to any one delivery provider had to interpret how a particular provider\nreports the result of a delivery attempt, in order to produce the product's delivery outcome."
+    }
+  ],
+  "primary_comparison": "Per-state discovery frequency against the headroom categories in baseline-preregistration-atomic.md.",
+  "samples_per_cell": 10,
+  "treatment": "None. This experiment has one arm; no treatment exists and none is designed until this baseline has been read."
+}

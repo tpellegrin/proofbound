@@ -1,0 +1,910 @@
+{
+  "anchor_corpus": "anchors-atomic",
+  "anchor_selection": "One anchor per semantic category named in the atomic-pressure pre-registration, taken verbatim from the retained r0002 baseline and never edited. The three reports the previous non-specific column false-credited are deliberately included, so the set is biased toward difficulty; anchors were chosen before any repeated grading of this column existed, never for observed instability, and no repeated grading had been run.",
+  "anchors": [
+    {
+      "bytes": 2179,
+      "expected": "detected",
+      "id": "d1",
+      "instance": "state-c-1788919811598",
+      "prior_outcome": null,
+      "sha256": "2be03745482dfa289b47d9e0fcb53f6dff2c968af736a5729b3eb3d9c44f44ff",
+      "source": "craft-r0002-baseline",
+      "source_repeat": 1,
+      "state": "state-c",
+      "why": "Identifies the leakage plainly: provider-specific knowledge entered the module that had only interpreted generic HTTP status codes."
+    },
+    {
+      "bytes": 2052,
+      "expected": "detected",
+      "id": "d2",
+      "instance": "state-c-1788919811598",
+      "prior_outcome": null,
+      "sha256": "03c0605d7380229a9590753ece99e43547ea6105855f3ef1263a05d13125591b",
+      "source": "craft-r0002-baseline",
+      "source_repeat": 8,
+      "state": "state-c",
+      "why": "Identifies the same leakage and treats it as reasonable. Discovery is not a verdict, so a report may observe the pressure and endorse the design and still have found it."
+    },
+    {
+      "bytes": 2930,
+      "expected": "not-detected",
+      "id": "d3",
+      "instance": "state-b-1788919811597",
+      "prior_outcome": null,
+      "sha256": "262633d9b5de76edd7b635861797f928a9b7501fe1332c96f53a62a3d748d23c",
+      "source": "craft-r0002-baseline",
+      "source_repeat": 1,
+      "state": "state-b",
+      "why": "States that response interpretation is correctly isolated in the provider's own module \u2014 the opposite of the pressure. The old column credited it."
+    },
+    {
+      "bytes": 1665,
+      "expected": "not-detected",
+      "id": "d4",
+      "instance": "state-b-1788919811597",
+      "prior_outcome": null,
+      "sha256": "8176e0f6412d7f7f6b97abeef88f71d6d0e25fe727a9cd3749da412adaad410e",
+      "source": "craft-r0002-baseline",
+      "source_repeat": 3,
+      "state": "state-b",
+      "why": "Criticises the provider parameter reaching app.notify and a central provider import: selection and composition, never outcome interpretation. The old column credited it."
+    },
+    {
+      "bytes": 1903,
+      "expected": "not-detected",
+      "id": "d5",
+      "instance": "state-a-1788919811596",
+      "prior_outcome": null,
+      "sha256": "e0f75bc6550e2c45def2a9acde2fcdd817820b47fa8ccc367a24936fbd03c93e",
+      "source": "craft-r0002-baseline",
+      "source_repeat": 1,
+      "state": "state-a",
+      "why": "Provider identity and selection only. The old column credited it."
+    },
+    {
+      "bytes": 1813,
+      "expected": "not-detected",
+      "id": "d6",
+      "instance": "state-a-1788919811596",
+      "prior_outcome": null,
+      "sha256": "3fd07715fd5bf68c5ad7d35c111e8d831ad7e837038b8eb3f6a078325f809a95",
+      "source": "craft-r0002-baseline",
+      "source_repeat": 7,
+      "state": "state-a",
+      "why": "Generic provider concerns with no claim about interpreting a provider's reply."
+    }
+  ],
+  "case": "notification-provider-boundary",
+  "format": "proofbound-craft-grader-repeat-v1",
+  "frozen_identity": "6ca312c38f92a9e11840239760a0e8219d43e4aceb49a8f94037c0fc26cc9ece",
+  "graded_statement": "Code that is not specific to any one delivery provider had to interpret how a particular provider\nreports the result of a delivery attempt, in order to produce the product's delivery outcome.",
+  "layer": "G",
+  "measurements": [
+    {
+      "claim": "detected",
+      "item": "d1",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe report identifies that generic code in `status.py` absorbed provider-specific interpretation logic (parsing Beacon's `result` field), which is the planted problem.",
+      "repeat": 1,
+      "seconds": 14.664,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d1",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report explicitly states that generic code (`status.py`) absorbed provider-specific concern of interpreting Beacon's response envelope to produce the delivery outcome.",
+      "repeat": 2,
+      "seconds": 12.711,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d1",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report explicitly identifies that `status.py` \u2014 generic code not specific to any provider \u2014 now contains a provider-specific branch (`provider == \"beacon\"`) that interprets how Beacon reports delivery attempt results, which is precisely the planted problem.",
+      "repeat": 3,
+      "seconds": 16.559,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d1",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report explicitly identifies that `status.py` \u2014 previously generic code interpreting only HTTP status codes \u2014 absorbed provider-specific knowledge (Beacon's response body format) to produce delivery outcomes, which is precisely the planted problem.",
+      "repeat": 4,
+      "seconds": 19.23,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d1",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 5,
+      "seconds": 10.967,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d1",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe reviewer's report identifies the planted problem. The Composability section explicitly states that `status.py` (a generic module) now contains a `provider == \"beacon\"` branch that parses Beacon's response body format, meaning generic code that is not specific to any provider had to int",
+      "repeat": 6,
+      "seconds": 24.125,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d1",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 7,
+      "seconds": 23.204,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d1",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report explicitly identifies that `status.py` \u2014 a generic module \u2014 now branches on provider to parse a specific provider's response format in order to produce the shared delivery outcome, which is exactly the planted problem.",
+      "repeat": 8,
+      "seconds": 9.12,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d1",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report identifies that `status.py`, a module meant for generic status interpretation, absorbed provider-specific logic to interpret Beacon's response format \u2014 exactly the planted problem of generic code being forced to understand a specific provider's delivery result reporting.",
+      "repeat": 9,
+      "seconds": 11.287,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d1",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe report explicitly identifies that `status.py` \u2014 previously generic \u2014 now contains a provider-specific branch to interpret Beacon's response format, which is the planted problem of generic code interpreting provider-specific delivery results.",
+      "repeat": 10,
+      "seconds": 10.88,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d1",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe report explicitly identifies that the generic status module absorbed provider-specific logic for interpreting Beacon's response body to produce a delivery outcome.",
+      "repeat": 11,
+      "seconds": 10.586,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d1",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report explicitly identifies the planted problem: generic code (`status.py`) was forced to interpret how a specific provider (Beacon) reports delivery results, which is precisely the concern described in the planted problem.",
+      "repeat": 12,
+      "seconds": 21.209,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d1",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe report explicitly identifies that generic code in `status.py` had to interpret Beacon's provider-specific response format to produce delivery outcomes.",
+      "repeat": 13,
+      "seconds": 14.489,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d1",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report identifies that `status.py` \u2014 generic infrastructure not tied to any one provider \u2014 now contains a `provider == \"beacon\"` branch parsing Beacon's specific response format to produce delivery outcomes, which is the exact planted problem.",
+      "repeat": 14,
+      "seconds": 12.05,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d1",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe report explicitly identifies that `status.py` \u2014 generic code not specific to any one provider \u2014 now interprets Beacon's provider-specific response body format to produce delivery outcomes.",
+      "repeat": 15,
+      "seconds": 12.741,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d2",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe report identifies `status.py` as previously generic (only HTTP status codes) now branching on `provider` to interpret Beacon's `result` field, which is the planted problem.",
+      "repeat": 1,
+      "seconds": 17.711,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d2",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe \"Composability\" section explicitly identifies that generic code (`status.py`) now branches on provider to interpret Beacon's specific `result` field, which is the same problem \u2014 provider-agnostic code must understand provider-specific response formats to determine delivery outcomes.",
+      "repeat": 2,
+      "seconds": 22.201,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d2",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report explicitly notes that `status.py`, which previously handled only generic HTTP status codes, now branches on `provider` to interpret Beacon's specific `result` field \u2014 the exact problem of generic code being forced to understand a particular provider's response semantics.",
+      "repeat": 3,
+      "seconds": 18.915,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d2",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report explicitly identifies that provider-specific logic was introduced into `status.py`, which was previously provider-agnostic, and now must interpret how a particular provider (Beacon) reports delivery results.",
+      "repeat": 4,
+      "seconds": 13.463,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d2",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report identifies that generic status interpretation code (`status.py`) now must inspect response bodies and branch on provider to handle Beacon's specific `result` field format \u2014 which is the same underlying problem of non-provider-specific code having to interpret provider-specific d",
+      "repeat": 5,
+      "seconds": 20.586,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d2",
+      "outcome": "detected",
+      "reason": "DETECTED",
+      "repeat": 6,
+      "seconds": 16.61,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d2",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe report clearly identifies that `status.py` must branch on provider to interpret how Beacon reports delivery outcomes, which is exactly the planted problem of generic code interpreting provider-specific result formats.",
+      "repeat": 7,
+      "seconds": 4.968,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d2",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe report identifies that `status.py` must branch on `provider` to interpret Beacon's specific `result` field, which is the planted problem of provider-agnostic code interpreting provider-specific delivery results.",
+      "repeat": 8,
+      "seconds": 17.068,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d2",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report explicitly identifies `status.py` \u2014 previously provider-agnostic \u2014 now branching on `provider` to interpret Beacon's response body, which is the planted problem.",
+      "repeat": 9,
+      "seconds": 19.674,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d2",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe report explicitly identifies that general-purpose status interpretation code (`status.py`) now contains provider-specific branching to handle Beacon's response format, coupling the translation layer to provider details.",
+      "repeat": 10,
+      "seconds": 11.521,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d2",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe report's Composability section directly identifies the planted problem, noting that `status.py` \u2014 previously provider-agnostic, interpreting only HTTP status codes \u2014 now must branch on `provider` and inspect Beacon-specific response fields (`result`) to determine delivery outcomes.",
+      "repeat": 11,
+      "seconds": 12.485,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d2",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe reviewer's report explicitly notes that `status.py` now contains provider-specific logic to interpret Beacon's response, which matches the planted problem.",
+      "repeat": 12,
+      "seconds": 15.167,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d2",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe report's \"Composability\" section directly identifies the planted problem, describing how `status.py` (code not specific to any one provider) now branches on `provider` to interpret Beacon's specific response body fields.",
+      "repeat": 13,
+      "seconds": 13.812,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d2",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe report explicitly identifies that `status.py` \u2014 which should be provider-agnostic \u2014 now must branch on provider to interpret Beacon's `result` field, coupling generic outcome determination to provider-specific response semantics.",
+      "repeat": 14,
+      "seconds": 17.701,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d2",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe \"Composability\" section explicitly states that shared code (`status.py`) was forced to branch on provider-specific response details (Beacon's `result` field) to produce the product's delivery outcome \u2014 which is the planted problem.",
+      "repeat": 15,
+      "seconds": 17.817,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe planted problem lives in state-c, where the generic `notifications/status.py` module had to learn Beacon's specific response format (`body.get(\"result\")` for \"accepted\"/\"refused\"). The reviewer's report addresses only the state-b registry architecture, discussing import coupling, `",
+      "repeat": 1,
+      "seconds": 240.729,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d3",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report notes that `beacon.py` treats any non-200 status as `rejected` while acme correctly distinguishes 4xx from other errors, identifying how a specific provider's response interpretation leaks into delivery outcome logic in a way that violates the product's retry policy.",
+      "repeat": 2,
+      "seconds": 8.927,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report identifies several legitimate concerns (import coupling, `MAX_ATTEMPTS` duplication, incorrect status-code mapping in beacon.py), but none match the planted problem. The report actually states the opposite of what was planted: \"The provider-specific concerns (endpoint, heade",
+      "repeat": 3,
+      "seconds": 16.81,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report finds real issues (incorrect error classification in beacon.py, duplicated constants, import coupling) but does not identify the planted problem: shared/generic code that is not specific to any provider being forced to interpret a particular provider's response format to dete",
+      "repeat": 4,
+      "seconds": 19.009,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report critiques beacon.py for misclassifying HTTP status codes (treating 5xx as rejected), but this is an error *within* provider-specific code. The planted problem is about generic/non-provider-specific code being forced to interpret provider-specific response formats to determin",
+      "repeat": 5,
+      "seconds": 15.68,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d3",
+      "outcome": "detected",
+      "reason": "DETECTED\n\nThe report identifies the underlying problem in the \"Domain alignment\" section: beacon.py treats any non-200 status as `rejected` (line 22-23), but the acceptance criteria require distinguishing 4xx (rejected) from other errors (retryable). This is the planted problem \u2014 the provider-specif",
+      "repeat": 6,
+      "seconds": 20.887,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 7,
+      "seconds": 6.742,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report identifies a related but different issue \u2014 beacon.py incorrectly mapping all non-200 statuses to `rejected` \u2014 but does not identify that code outside any provider's module was interpreting how a specific provider reports delivery outcomes.",
+      "repeat": 8,
+      "seconds": 20.571,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report catches a bug in how `beacon.py` interprets HTTP statuses, but does not identify the planted problem \u2014 that generic/shared code was forced to interpret a specific provider's delivery-result semantics to produce the product's delivery outcome.",
+      "repeat": 9,
+      "seconds": 13.267,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe reviewer identifies issues with import coupling, constant duplication, and a status-code mapping bug in `beacon.py`, but none of these address the specific planted problem: non-provider-specific code being forced to interpret a particular provider's delivery-attempt response format",
+      "repeat": 10,
+      "seconds": 22.743,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d3",
+      "outcome": "not-detected",
+      "reason": "**NOT_DETECTED**\n\nThe planted problem is that generic, provider-agnostic code had to interpret a specific provider's response format to produce the product's delivery outcome (the translation from provider wire response to delivery status happened in the wrong place). The reviewer's report does not ",
+      "repeat": 11,
+      "seconds": 13.042,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d3",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe reviewer's discussion of beacon.py misclassifying non-200 status codes versus Acme's correct 4xx/5xx distinction identifies provider-specific response interpretation leaking into the product's delivery outcome logic.",
+      "repeat": 12,
+      "seconds": 9.989,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report discusses composability of the import pattern and domain alignment issues (constant duplication, incorrect error classification), but does not identify the specific problem of non-provider-specific code having to interpret a particular provider's delivery attempt result form",
+      "repeat": 13,
+      "seconds": 11.012,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d3",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe reviewer identified a correctness bug in `beacon.py` (provider-specific code) incorrectly mapping non-200 status codes to `rejected`, but the planted problem is about **provider-agnostic** code being forced to interpret **provider-specific** response formats to determine delivery ou",
+      "repeat": 14,
+      "seconds": 33.63,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d3",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe report identifies beacon.py interpreting provider-specific HTTP status codes (non-200 as rejected) to determine the product's delivery outcome, instead of letting the provider itself report its result.",
+      "repeat": 15,
+      "seconds": 11.839,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 1,
+      "seconds": 10.022,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe reviewer raised valid architectural concerns about composability, API surface coupling, and change locality \u2014 but did not identify the planted problem, which is about provider-agnostic code being forced to interpret provider-specific delivery response semantics.",
+      "repeat": 2,
+      "seconds": 8.961,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report addresses coupling, composability, and change locality \u2014 not the planted problem of generic code being forced to interpret provider-specific delivery responses to produce a standardized outcome.",
+      "repeat": 3,
+      "seconds": 8.633,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report identifies architectural coupling issues (composability, change locality, domain leakage) but does not address the specific problem of provider-agnostic code being forced to interpret how a particular provider reports delivery results to produce the product's delivery outcom",
+      "repeat": 4,
+      "seconds": 22.26,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report focuses on architectural coupling and layering, not on the interpretation of provider-specific delivery attempt results.",
+      "repeat": 5,
+      "seconds": 13.333,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report raises architectural concerns about coupling, composability, and API design, but never identifies that provider-agnostic delivery code is interpreting provider-specific result formats to produce delivery outcomes.",
+      "repeat": 6,
+      "seconds": 12.024,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report addresses architectural coupling and abstraction leakage of provider names, but never identifies the core issue: generic code interpreting a specific provider's delivery-result format.",
+      "repeat": 7,
+      "seconds": 12.309,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report addresses architectural coupling and composability concerns (explicit imports defeating self-registration, provider identifiers leaking into the application layer), but never identifies the core planted problem: that provider-agnostic code had to interpret provider-specific ",
+      "repeat": 8,
+      "seconds": 17.847,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report concerns architectural coupling (imports, API surface, change scope) but never addresses the core issue: generic/shared code interpreting a specific provider's delivery attempt result format to produce the product's delivery outcome.",
+      "repeat": 9,
+      "seconds": 13.295,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report raises valid architectural concerns about coupling and self-registration, but does not address the planted problem of generic code having to interpret provider-specific delivery outcome formats.",
+      "repeat": 10,
+      "seconds": 11.565,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report addresses architectural coupling (composability, central imports, API surface) but does not raise the problem of generic/shared code having to interpret provider-specific delivery attempt responses to produce the product's delivery outcome.",
+      "repeat": 11,
+      "seconds": 13.679,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report addresses architectural coupling and API surface concerns but does not identify the core problem: generic code being forced to interpret a specific provider's delivery outcome format.",
+      "repeat": 12,
+      "seconds": 29.932,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report addresses architectural coupling and layering concerns but never mentions generic/shared code interpreting provider-specific delivery response semantics to produce the product's own delivery outcome.",
+      "repeat": 13,
+      "seconds": 11.685,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report discusses architectural coupling and registry pattern violations, but never identifies that provider-agnostic code had to interpret provider-specific response formats to produce delivery outcomes.",
+      "repeat": 14,
+      "seconds": 17.477,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d4",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe reviewer's concerns focus on import coupling (hardcoded provider imports defeating self-registration), abstraction leaking (provider identifiers in the application API), and change scope (files modified unnecessarily). None of these address the planted problem: that generic/shared ",
+      "repeat": 15,
+      "seconds": 13.336,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe reviewer focused on provider selection and routing concerns leaking into the wrong architectural layers (which provider, where it's configured), but did not address the specific problem of generic code having to interpret how a particular provider formats or reports its delivery at",
+      "repeat": 1,
+      "seconds": 18.298,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report focuses on composability, provider identity placement, and change locality, but does not address the specific problem of generic code needing to interpret provider-specific delivery attempt results to produce delivery outcomes.",
+      "repeat": 2,
+      "seconds": 12.532,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report discusses provider *selection* and *routing* leaking into the application layer, but the planted problem is about generic code having to interpret a *specific provider's delivery result format* to produce a delivery outcome \u2014 a distinct concern about result interpretation, n",
+      "repeat": 3,
+      "seconds": 10.669,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report focuses on composability, domain alignment, and change locality issues (provider selection leaking into app.py and a registry in delivery/__init__.py), but never identifies the core problem: provider-agnostic code being forced to interpret a specific provider's delivery respo",
+      "repeat": 4,
+      "seconds": 9.494,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report discusses architectural concerns about where provider *selection* and *routing* logic lives, but never addresses the planted problem: that generic (non-provider-specific) code had to interpret a particular provider's delivery attempt response format to produce a delivery out",
+      "repeat": 5,
+      "seconds": 12.785,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report concerns provider selection and routing concerns leaking into the wrong architectural layers, not the planted problem of abstraction-level code being forced to interpret provider-specific delivery result formats.",
+      "repeat": 6,
+      "seconds": 15.963,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report addresses provider routing/selection leaking into application layers but does not identify the planted problem: generic (non-provider-specific) code having to interpret how a particular provider reports delivery attempt results to produce the product's delivery outcome.",
+      "repeat": 7,
+      "seconds": 10.805,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED",
+      "repeat": 8,
+      "seconds": 10.541,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report concerns provider *selection/routing* leaking into the application layer. The planted problem is about generic code having to interpret a specific provider's *delivery outcome reporting* \u2014 a different abstraction leak entirely.",
+      "repeat": 9,
+      "seconds": 12.898,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe reviewer focused on provider identity and selection routing leaking into application code, but never addressed the actual planted problem: generic code having to interpret provider-specific delivery result formats to produce the product's own delivery outcome.",
+      "repeat": 10,
+      "seconds": 19.046,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report addresses provider selection and routing leaking into the application layer, but never mentions generic code having to interpret provider-specific delivery results or outcome formats.",
+      "repeat": 11,
+      "seconds": 18.845,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report identifies architectural coupling (provider identity leaking into app and composition layers) but never addresses the core planted problem: that non-provider-specific code was forced to interpret how a particular provider reports delivery results to produce the product's deli",
+      "repeat": 12,
+      "seconds": 23.206,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report focuses on provider selection and routing concerns leaking into the application layer, but does not identify the specific problem of generic code having to interpret a particular provider's delivery-result format to produce a product-level outcome.",
+      "repeat": 13,
+      "seconds": 12.093,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe reviewer identified tangential architectural concerns (provider routing leakage into the application layer, composition root coupling) but never addresses the planted problem: that provider-agnostic code was forced to interpret provider-specific delivery-attempt result formats in or",
+      "repeat": 14,
+      "seconds": 16.76,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d5",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report focuses on provider selection and provider identity leaking into the application layer, but does not address the specific problem of generic code being forced to interpret a particular provider's delivery outcome format.",
+      "repeat": 15,
+      "seconds": 33.43,
+      "status": "graded"
+    },
+    {
+      "claim": "detected",
+      "item": "d6",
+      "outcome": "detected",
+      "reason": "DETECTED\nThe report's \"Domain alignment\" section identifies provider-specific knowledge (the \"provider string\" and routing concern) leaking into generic application and delivery boundary code, which is the same underlying problem as generic code interpreting provider-specific results.",
+      "repeat": 1,
+      "seconds": 45.671,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d6",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report focuses on provider-name coupling and composability concerns, but does not identify the planted problem about generic code being forced to interpret provider-specific delivery results to produce the product's own delivery outcome.",
+      "repeat": 2,
+      "seconds": 16.006,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d6",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report focuses on composability and architectural coupling (the provider string leaking into `app.py` and the boundary owning provider enumeration/dispatch), but never identifies the core planted problem: that generic, provider-agnostic code was forced to interpret provider-specifi",
+      "repeat": 3,
+      "seconds": 18.926,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d6",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe reviewer raises concerns about provider name leaking into the application layer and boundary, but this is about routing/wiring awareness, not about the planted problem: generic code having to interpret provider-specific delivery attempt results to produce the product's delivery outc",
+      "repeat": 4,
+      "seconds": 33.172,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d6",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report identifies provider *enumeration and routing* leaking into generic code (provider names in `app.py` and `delivery/__init__.py`), but the planted problem is about generic code having to *interpret a specific provider's delivery-result format* to produce the application's deli",
+      "repeat": 5,
+      "seconds": 21.785,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d6",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report identifies provider-coupling concerns (parameter leakage, hardcoded registry), but does not identify the core problem: that generic, non-provider-specific code was forced to interpret provider-specific delivery result formats to produce the product's delivery outcome.",
+      "repeat": 6,
+      "seconds": 49.346,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d6",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report identifies a real coupling concern \u2014 generic code (`app.py`, `delivery/__init__.py`) gaining awareness of provider names for routing and dispatch \u2014 but the planted problem is specifically about generic code having to **interpret how a particular provider reports the result o",
+      "repeat": 7,
+      "seconds": 27.743,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d6",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report addresses composability/routing concerns about provider names leaking into the application layer and boundary coupling via a hardcoded registry. The planted problem is specifically about generic code having to **interpret provider-specific delivery attempt result formats** t",
+      "repeat": 8,
+      "seconds": 30.081,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d6",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report focuses on provider routing/configuration leaking into the application layer and boundary coupling, but does not address the core problem of non-provider-specific code having to interpret provider-specific delivery attempt results to produce delivery outcomes.",
+      "repeat": 9,
+      "seconds": 16.343,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d6",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report addresses provider routing and dispatch leaking into the application layer, but does not discuss generic code having to interpret provider-specific delivery result formats to produce normalized outcomes.",
+      "repeat": 10,
+      "seconds": 25.231,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d6",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe reviewer identifies coupling to provider names and routing concerns, but does not identify the planted problem: that provider-agnostic code was forced to interpret a specific provider's delivery result format to produce the product's own delivery outcome.",
+      "repeat": 11,
+      "seconds": 20.02,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d6",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report discusses provider-awareness leaking into the application layer and coupling concerns, but does not identify the planted problem that generic code had to interpret a provider-specific delivery result to produce the product's own delivery outcome.",
+      "repeat": 12,
+      "seconds": 13.479,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d6",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\nThe report identifies provider identity and routing leaking into generic code, but the planted problem is specifically about generic code interpreting a provider's delivery-result format to produce the product's outcome. These are distinct concerns \u2014 one is about who chooses the provide",
+      "repeat": 13,
+      "seconds": 22.0,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d6",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe report identifies provider-name leakage and registry coupling in generic code (a routing/config concern), but does not address the specific problem of generic code having to interpret provider-specific delivery attempt results to produce the product's delivery outcome.",
+      "repeat": 14,
+      "seconds": 19.096,
+      "status": "graded"
+    },
+    {
+      "claim": "not-detected",
+      "item": "d6",
+      "outcome": "not-detected",
+      "reason": "NOT_DETECTED\n\nThe reviewer discusses provider awareness leaking into the application layer and composability concerns, but the planted problem is about generic code being forced to interpret provider-specific delivery attempt results to produce outcomes. The report addresses architectural coupling t",
+      "repeat": 15,
+      "seconds": 18.591,
+      "status": "graded"
+    }
+  ],
+  "property": {
+    "id": "provider-change-stays-in-delivery",
+    "response_measure": "Which modules must change, and whether provider-specific detail appears outside the delivery boundary, when a second provider is added.",
+    "scenario": "Adding a second delivery provider, selected per notification, requires changes only inside the delivery boundary and the explicit contract the notification domain depends on. The code that decides what to notify a user about does not change, and does not acquire knowledge of any provider's endpoint, authentication scheme, payload field names or error codes."
+  },
+  "question": "discovery",
+  "repeats": 15,
+  "system": {
+    "grader_model": "opencode/big-pickle",
+    "grader_prompt_sha256": "c7a3d19d54fba8e71220a600a6cd620d8843c642951d8052bf0da8c81688d309",
+    "harness": "opencode-cli",
+    "harness_version": "1.18.29",
+    "proofbound_sha": "036b94cf8bbdc3ffbc7dc3992a023e9f7fa919dd",
+    "python": "3.14"
+  }
+}
