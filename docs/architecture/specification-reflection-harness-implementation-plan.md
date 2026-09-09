@@ -1723,42 +1723,69 @@ satisfy, what an atomic column is, that discovery of an exercised pressure satur
 is underdetermined where intent is silent. No open question requires another run on it; it stays as
 reference evidence, failures included.
 
-**Sequencing.** [§7P](#7p-modularity-and-local-reasoning-calibration--design-check--deferred-research)
+**Sequencing.** [§7P](#7p-modularity-and-local-reasoning-calibration--design-check--designed-fixture-not-built)
 is promoted to the next substantive empirical programme, because it measures the canonical definition
 rather than a proxy for it, and its claim is consequence-shaped: when a boundary hides a decision, can
 work outside it proceed from the contract instead of the implementation, at equal correctness for less
 repository context? It keeps its over-modularisation arm — more modules must be able to lose — and its
 minimum-sufficient-contract ladder.
 
-## 7P. Modularity and local reasoning calibration — design check  *(deferred research)*
+## 7P. Modularity and local reasoning calibration — design check  *(designed; fixture not built)*
 
-**Sequenced after System Craft calibration validity is restored**, and not before. Testing a
-context-economy hypothesis while the craft instrument's own validity is unsettled would move two things
-at once.
+Design: [`modularity-local-reasoning/design.md`](../../evals/craft/modularity-local-reasoning/design.md).
+Promoted by [§7S](#7s-system-craft-observable-redesign--decided-calibration-corpus-closed) because it
+measures the canonical craft definition rather than a proxy for it.
 
-**Hypothesis.** If a boundary genuinely hides a volatile design decision, work outside it should often
-be solvable from its public contract without reading the implementation behind it — the empirical form
-of `P13`'s second surface.
+**Question.** For a change whose conceptual responsibility lies outside module `M`, does access to
+`M`'s implementation provide material correctness value — and if not, how much smaller is the
+representation of `M` that correct reasoning actually required?
 
-**Shape.** Same repository, task, model, harness and accepted intent. Control: the external module's
-implementation is inspectable. Treatment: it is withheld and replaced by its contract plus the
-externally relevant accepted consequences. Observables: correctness, deterministic test success,
-semantic findings, context bytes, files opened, repository searches, cross-boundary reads, cost.
+**One primary measurand: the size of the representation of `M` that correct reasoning required.** In
+`FULL`, the bytes of `M`'s implementation the agent read; in `CONTRACT`, the contract bytes supplied.
+Defined only for runs that completed the task correctly, so **correctness gates the measurand and is
+never traded against it**. This single formulation closes the three ways such an experiment usually
+cheats: a cheaper wrong answer contributes nothing; if `FULL` never reads `M` the measurand shows
+there was nothing to reduce, so no benefit can be claimed from arm assignment; and if the contract
+reproduces the implementation it shows no reduction. It is also the canonical definition's own
+quantity — repository discovery context — measured at fixed conceptual size, because both arms get
+the identical task.
 
-**Falsifiers.** Correctness materially drops; the agent repeatedly needs hidden internals; the contract
-has to reproduce most of the implementation's semantics; the supposedly local task actually crosses the
-boundary; the treatment saves context only by removing information that was needed.
+**Domain: object storage**, chosen over notification (four milestones of prior fitting), persistence
+(performance legitimately leaks), search (ranking legitimately leaks) and payments (regulation crosses
+the boundary by intent). Its apparent triviality is answered by what a client actually cannot invent:
+absence, overwrite safety, read-after-write visibility, lifetime.
 
-**Two controls it must carry.** An **over-modularisation** arm — entangled, meaningfully modular, and
-excessively fragmented architectures compared on the same task — because *more modules is not the
-hypothesis and must be able to lose*. And a **minimum sufficient contract** ladder — signature only,
-signature plus behavioural contract, plus externally relevant invariants, full implementation — since
-the interesting quantity is the smallest context preserving correctness, not the smallest context.
+**Isolation mechanism, tested rather than assumed.** Sourceless bytecode was rejected on evidence — it
+hides the source and imports correctly but pins the fixture to one interpreter, verified by a
+bad-magic-number failure importing 3.14 bytecode under 3.10, and the deterministic suite runs on both.
+Selected instead: `M` is installed **out of tree** and imported from there in both arms, so runtime
+bytes are identical, while only `FULL` carries a readable byte-identical copy inside the project. Out-
+of-tree access attempts become compliance evidence rather than something to police.
 
-**Not adopted, not named.** No `P14`, no module score, no cohesion or coupling threshold, no ideal
-module size, no mandatory structure, and no `minimum_sufficient_contract` protocol term. Information
-hiding and change confinement are used here as reasoning aids for building a valid case, never as
-Proofbound policy.
+**Controls.** A boundary-crossing task whose responsibility is genuinely *inside* `M` is included in
+V1, not deferred: without it a positive result cannot be told apart from a general context-reduction
+effect. Alternative-good and over-fragmented architectures are pre-registered for MLR-C4, because one
+sound realisation becoming a de facto reference architecture is exactly what the notification
+programme demonstrated, and **more modules must be able to lose**.
+
+**Stated limit.** One boundary and two context arms can establish that context substitution is
+measurable and whether it holds here. It **cannot** attribute the effect to boundary quality — a
+well-documented tangle might permit the same substitution. Architecture-quality variation is a later
+stage rather than a missing piece, because adding it before the instrument is validated would repeat
+the craft programme's own mistake.
+
+**Substrate.** Reuses `run_trial`'s isolation and evidence retention, the existing CE1 extraction, and
+`_experiment.py`'s manifest, slot, pairing and resume discipline. The honest delta: closed-world arms
+append a treatment to a *reflector prompt*, while these select a *fixture variant* and run implementer
+trials, so a new executor is required, plus retention of the absolute-path reads `ce1_facts` currently
+discards. No authority machinery changes.
+
+**Sequence.** MLR-C1 fixture and validity gates → MLR-C2 measurement mechanics → MLR-C3 `FULL`-only
+headroom pilot, then the paired run → MLR-C4 architecture-variation controls → MLR-C5 holdout
+confirmation.
+
+**Not adopted, not named.** No `P14`, no modularity or coupling score, no module identity, no
+semantic-compression protocol term, no context-routing implementation, and no production use.
 
 ## 7B. Threat mitigation status
 
