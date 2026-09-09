@@ -1,0 +1,81 @@
+{
+  "anchors": [
+    {
+      "bytes": 2179,
+      "expected": "detected",
+      "id": "d1",
+      "instance": "state-c-1788919811598",
+      "prior_outcome": null,
+      "sha256": "2be03745482dfa289b47d9e0fcb53f6dff2c968af736a5729b3eb3d9c44f44ff",
+      "source": "craft-r0002-baseline",
+      "source_repeat": 1,
+      "state": "state-c",
+      "why": "Identifies the leakage plainly: provider-specific knowledge entered the module that had only interpreted generic HTTP status codes."
+    },
+    {
+      "bytes": 2052,
+      "expected": "detected",
+      "id": "d2",
+      "instance": "state-c-1788919811598",
+      "prior_outcome": null,
+      "sha256": "03c0605d7380229a9590753ece99e43547ea6105855f3ef1263a05d13125591b",
+      "source": "craft-r0002-baseline",
+      "source_repeat": 8,
+      "state": "state-c",
+      "why": "Identifies the same leakage and treats it as reasonable. Discovery is not a verdict, so a report may observe the pressure and endorse the design and still have found it."
+    },
+    {
+      "bytes": 2930,
+      "expected": "not-detected",
+      "id": "d3",
+      "instance": "state-b-1788919811597",
+      "prior_outcome": null,
+      "sha256": "262633d9b5de76edd7b635861797f928a9b7501fe1332c96f53a62a3d748d23c",
+      "source": "craft-r0002-baseline",
+      "source_repeat": 1,
+      "state": "state-b",
+      "why": "States that response interpretation is correctly isolated in the provider's own module \u2014 the opposite of the pressure. The old column credited it."
+    },
+    {
+      "bytes": 1665,
+      "expected": "not-detected",
+      "id": "d4",
+      "instance": "state-b-1788919811597",
+      "prior_outcome": null,
+      "sha256": "8176e0f6412d7f7f6b97abeef88f71d6d0e25fe727a9cd3749da412adaad410e",
+      "source": "craft-r0002-baseline",
+      "source_repeat": 3,
+      "state": "state-b",
+      "why": "Criticises the provider parameter reaching app.notify and a central provider import: selection and composition, never outcome interpretation. The old column credited it."
+    },
+    {
+      "bytes": 1903,
+      "expected": "not-detected",
+      "id": "d5",
+      "instance": "state-a-1788919811596",
+      "prior_outcome": null,
+      "sha256": "e0f75bc6550e2c45def2a9acde2fcdd817820b47fa8ccc367a24936fbd03c93e",
+      "source": "craft-r0002-baseline",
+      "source_repeat": 1,
+      "state": "state-a",
+      "why": "Provider identity and selection only. The old column credited it."
+    },
+    {
+      "bytes": 1813,
+      "expected": "not-detected",
+      "id": "d6",
+      "instance": "state-a-1788919811596",
+      "prior_outcome": null,
+      "sha256": "3fd07715fd5bf68c5ad7d35c111e8d831ad7e837038b8eb3f6a078325f809a95",
+      "source": "craft-r0002-baseline",
+      "source_repeat": 7,
+      "state": "state-a",
+      "why": "Generic provider concerns with no claim about interpreting a provider's reply."
+    }
+  ],
+  "case": "notification-provider-boundary",
+  "format": "proofbound-craft-anchors-v1",
+  "provenance": "Verbatim reflector output already produced by the r0002 untreated baseline. No report was written, edited or regenerated for this experiment.",
+  "purpose": "Frozen craft reports for characterising the discovery grader against the atomic provider-outcome-interpretation column.",
+  "selection_rule": "One anchor per semantic category named in the atomic-pressure pre-registration, taken verbatim from the retained r0002 baseline and never edited. The three reports the previous non-specific column false-credited are deliberately included, so the set is biased toward difficulty; anchors were chosen before any repeated grading of this column existed, never for observed instability, and no repeated grading had been run."
+}

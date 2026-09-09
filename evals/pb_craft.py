@@ -281,14 +281,17 @@ def cmd_reflect(args: argparse.Namespace) -> int:
     return 0
 
 
-def _anchors(case_dir: Path) -> tuple[dict, list[dict]]:
+def _anchors(case_dir: Path, subdir: str = "anchors") -> tuple[dict, list[dict]]:
     """The frozen report corpus, verified byte-for-byte against its manifest.
 
     An anchor whose bytes no longer hash to what was pre-registered is not an anchor: the whole
     point of layer G is that the text does not move, so a mismatch stops the run rather than
     quietly measuring something else.
+
+    `subdir` selects which frozen corpus. A second corpus exists because a second semantic column
+    exists, and a column's dispersion belongs to that column rather than to the grader in general.
     """
-    directory = Path(case_dir) / "anchors"
+    directory = Path(case_dir) / subdir
     manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
     loaded = []
     for entry in manifest["anchors"]:
@@ -330,9 +333,15 @@ def cmd_regrade(args: argparse.Namespace) -> int:
     if not ok:
         print(f"ERROR: cannot grade: {detail}", file=sys.stderr)
         return 2
-    manifest, anchors = _anchors(args.case)
+    manifest, anchors = _anchors(args.case, args.anchors)
     discovery = args.question == "discovery"
-    if discovery:
+    if discovery and args.pressure_file:
+        # A pressure frozen in its own pre-registration, read from the file that froze it, so the
+        # bytes graded are the bytes committed.
+        statement = Path(args.pressure_file).read_text(encoding="utf-8").strip()
+        if len(statement) < 20:
+            raise ValueError(f"{args.pressure_file} does not state a pressure")
+    elif discovery:
         # The planted problem, taken verbatim from the case's own committed ground truth. It was
         # written when the case was built, is never shown to a worker or a reflector, and is not
         # authored here — a statement invented now could be fitted to reports already read.
@@ -346,6 +355,7 @@ def cmd_regrade(args: argparse.Namespace) -> int:
         "question": args.question,
         "case": case["id"], "property": case["property"], "repeats": args.repeats,
         "graded_statement": statement,
+        "anchor_corpus": args.anchors,
         "anchor_selection": manifest["selection_rule"],
         "anchors": [{k: v for k, v in a.items() if k != "report"} for a in anchors],
         "system": _frozen_system(args, grader_model=args.grader_model),
@@ -594,6 +604,9 @@ def parser() -> argparse.ArgumentParser:
                         "discovery: does the report identify this specific problem")
     g.add_argument("--problem-state", default="state-c",
                    help="whose declared rationale states the planted problem (discovery only)")
+    g.add_argument("--anchors", default="anchors", help="which frozen anchor corpus to grade")
+    g.add_argument("--pressure-file", type=Path,
+                   help="file holding the exact pressure to grade against (discovery only)")
     g.add_argument("--out", type=Path, required=True)
     g.set_defaults(handler=cmd_regrade)
 

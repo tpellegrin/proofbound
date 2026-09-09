@@ -253,6 +253,7 @@ class RepeatedMeasurementIsIndependentTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             args = argparse.Namespace(case=CASE, grader_model="g", repeats=3,
                                       question="verdict", problem_state="state-c",
+                                      anchors="anchors", pressure_file=None,
                                       out=Path(td) / "g.json")
 
             def spy(report, scenario, **kw):

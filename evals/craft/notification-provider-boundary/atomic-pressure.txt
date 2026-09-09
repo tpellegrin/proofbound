@@ -1,0 +1,2 @@
+Code that is not specific to any one delivery provider had to interpret how a particular provider
+reports the result of a delivery attempt, in order to produce the product's delivery outcome.
