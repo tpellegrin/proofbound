@@ -1630,6 +1630,35 @@ design a treatment only if room exists. The substrate already permits a single-a
 
 **Unchanged.** No measurement mechanics, no fixture code, no criterion, no treatment, no live call.
 
+## 7Q. Repaired case fixture and baseline  *(encoded; pressure non-specific)*
+
+Pre-registration: [`baseline-preregistration.md`](../../evals/craft/notification-provider-boundary/baseline-preregistration.md).
+Evidence: [§E54](proofbound/evidence/evaluation-runs.md#e54-the-repaired-case-measures-and-the-pressure-statement-does-not-discriminate).
+
+**Encoded and frozen before measurement.** Amended intent, `r0002` contract, hidden Beacon gate, and
+a reference implementation of the change per state. Seventeen tests hold the case's central property:
+with the change applied, every state passes the behaviour suite and the future gate identically, so
+**no deterministic result separates sound from degraded**. The old locality confound is gone — three
+files changed in every state — and the structural audit before any call confirmed that Beacon's
+reporting convention stays inside a Beacon-specific file in both sound states and lands in
+`notifications/status.py` in the degraded one.
+
+**Baseline: both failure conditions fired.** `state-c` detected 10/10 — at ceiling, no headroom —
+and the sound states detected 7/9 and 5/10, which is non-specificity severe enough that a treatment
+could not have been read even with headroom.
+
+**Cause: the pressure statement, not the fixture.** It offered three disjuncts, and the contract
+forces two of them true everywhere — `app.notify` must gain a `provider` parameter, so the entry
+point changes in every state, and both sound architectures keep each provider's retry loop in that
+provider's module. Every sound-state detection cites the entry-point clause; the clause that actually
+discriminates appears in 10 of 10 degraded reports and none of `state-b`'s detections.
+
+**Not repaired here.** Re-grading the retained reports against a narrowed pressure would fit numbers
+to reports already read. The narrowed pressure must earn its own frozen baseline.
+
+**Next.** Re-pre-register the pressure against the reference implementations — which now exist and
+did not when the wording was first written — and re-run the baseline before any treatment.
+
 ## 7P. Modularity and local reasoning calibration — design check  *(deferred research)*
 
 **Sequenced after System Craft calibration validity is restored**, and not before. Testing a

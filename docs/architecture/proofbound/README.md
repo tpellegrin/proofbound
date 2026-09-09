@@ -136,7 +136,8 @@ One line each. **The canonical definitions, with their falsifiers, are in
 | Semantic discovery, finding identity and coverage | **Designed**; closed-world calibration needs no cross-sample finding identity — open-world consolidation is a separate, later problem |
 | Closed-world multi-sample evaluation substrate | **Implemented**; pre-registered experiments, preallocated sample slots, per-pressure discovery grading, full distributions retained |
 | Calibration V3 criterion | **Designed; case disqualified** — the probe change rewards the planted degradation, and no entailed discriminating consequence exists on this fixture |
-| Calibration case repair | **Designed; not encoded** — the probe now varies how a provider reports outcomes, which the degradation cannot absorb without propagating knowledge outward |
+| Calibration case repair | **Encoded and frozen**; deterministic validity established, and no test separates sound from degraded |
+| Repaired-case baseline | **Run**; pressure non-specific — sound states detected 7/9 and 5/10, degraded at ceiling, and the entry-point clause explains all of it |
 | Modularity and local reasoning | Deferred research; sequenced after calibration validity is restored |
 | Decision provenance, coherence audit, context telemetry | Direction only; see the plan's dependency graph |
 

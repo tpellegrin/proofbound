@@ -781,3 +781,83 @@ notification package while the sound states still add a single module; and an ac
 states what must remain true rather than only what is configuration, so a discriminating consequence
 becomes entailed. Making those two changes and the criterion treatment in one run would leave the
 result unattributable.
+
+## E54. The repaired case measures, and the pressure statement does not discriminate
+
+The repaired `r0002` case was encoded, passed every deterministic gate, and was frozen before a
+single semantic call. Its untreated baseline then failed — not on the fixture, but on the sentence
+handed to the grader.
+
+**Fixture validity, established before measurement.** All three states pass the Acme behaviour suite
+before and after the change; none satisfies the hidden Beacon gate before it; all three satisfy it
+after, with a reference implementation written inside each state's own architecture. **No
+deterministic result separates sound from degraded**, which is the property the whole case rests on.
+The old confound is gone: the probe changes exactly three files in every state, where the old one
+changed one in the degraded state and three in the sound ones. Structural discrimination held —
+Beacon's reporting convention lives only in a Beacon-specific file in `state-a` and `state-b`, and
+in `notifications/status.py` in `state-c`, which is not specific to any provider.
+
+**Baseline**, Proofbound `4e0784a`, one untreated arm, N=10 per state, 30 reflections each graded
+once by the characterised discovery grader.
+
+| State | Declared | Counts | Graded |
+|---|---|---|---|
+| `state-a` | sound | **detected 7**, not-detected 2 | 9/10 |
+| `state-b` | sound | **detected 5**, not-detected 5 | 10/10 |
+| `state-c` | degraded | detected 10 | 10/10 |
+
+One reflector call failed on `state-a` and is recorded as missing, never as a not-detected.
+
+**Both pre-registered failure conditions fired at once.** `state-c` sits at ceiling, leaving no room
+for a treatment to raise it; and the sound states are detected 7 of 9 and 5 of 10, which is
+non-specificity severe enough that a treatment could not be read even if headroom existed.
+
+### Why: the pressure contains a disjunct the contract forces true everywhere
+
+The frozen pressure named three ways to fail — a provider-independent module acquiring outcome
+knowledge, **the application entry point** acquiring it, or **the retry policy being restated**. The
+future contract *requires* `app.notify` to gain a `provider` parameter, so the entry point changes in
+every state by construction; and both sound architectures keep each provider's retry loop inside that
+provider's own module, so the retry policy is restated in all three. Two of the three disjuncts are
+true in the sound states by design.
+
+Lexical corroboration of the human reading, across all thirty reports — which disjunct each detected
+report discusses:
+
+| State | Detected | mention the entry point | mention outcome interpretation |
+|---|---|---|---|
+| `state-a` | 7 | 7 | 1 |
+| `state-b` | 5 | 5 | **0** |
+| `state-c` | 10 | 10 | 10 |
+
+Every sound-state detection is driven by the entry-point clause. The clause that actually
+discriminates — provider-independent code learning how a provider reports outcomes — appears in
+10 of 10 degraded reports and in 0 of 5 `state-b` detections.
+
+The reports say it themselves. One `state-a` reflection graded *detected* states that each
+provider's own concerns, *"endpoint, auth header, payload field names, response-body interpretation,
+retry mapping"*, are **correctly encapsulated** in the provider modules — it declares the
+architecture sound on precisely the axis the pressure was meant to capture — and was credited anyway,
+because it also observed that `app.py` now knows provider names.
+
+### What this does and does not implicate
+
+**Not the fixture.** Intent, probe, states, reference implementations and hidden gate all did what
+they were designed to do, and the structural audit before measurement showed the discrimination the
+design predicted.
+
+**The pressure statement.** It was carried forward verbatim from the design milestone and never
+re-audited against the reference implementations, which only existed once this milestone wrote them.
+The design document had already noted that a criterion about restating the retry policy would be
+violated by both sound states; the final wording reintroduced exactly that clause, and added the
+entry point beside it.
+
+**Not repaired here.** Re-grading the same thirty reports against a narrowed pressure would be
+benchmark repair after results, and the numbers it produced would be fitted to reports already read.
+The corroboration above says what a next pre-registration should test; it is a diagnosis, never a
+measurement, and the narrowed pressure must earn its own baseline.
+
+**Cost.** 30 reflections and 30 gradings, 1h50m wall clock (02:22Z to 04:13Z); median reflection 128s, 104 minutes of reflector time.
+
+Record: [`craft-r0002-baseline.json`](../../../../evals/results/craft-r0002-baseline.json).
+Pre-registration: [`baseline-preregistration.md`](../../../../evals/craft/notification-provider-boundary/baseline-preregistration.md).
