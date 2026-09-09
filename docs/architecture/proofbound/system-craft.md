@@ -20,14 +20,9 @@ So the architecture has already said: this happens, here is the mechanism, here 
 are blind to it. What is missing is measurement, and the move is to **compose pieces already designed
 rather than invent a parallel concept beside them**:
 
-| Piece | Status |
-|---|---|
-| `CE1` passive context-economy telemetry — repository files read, bytes read, tool calls | Designed; unblocked since M2C; not built |
-| `CE2` controlled representative-change experiment — replay one contract against two repository states with a fresh worker | Designed; not built |
-| [§38.2](long-running-autonomy.md#38-cumulative-coherence) cumulative coherence audit | Designed; not built; trigger policy deliberately unresolved |
-| [§37.4](long-running-autonomy.md#374-executable-invariants--accepted-decisions-made-operative) executable invariants | Designed; not built |
-| **Semantic craft reflection** | **Absent** |
-| **Longitudinal trajectory comparison** | **Absent** — `CE2` is two points, not a sequence |
+`CE1` passive context telemetry and `CE2`'s controlled two-state replay are both designed and
+unbuilt; the cumulative coherence audit and executable invariants are designed with their triggers
+deliberately unresolved. None of it needs a parallel concept beside it.
 
 Two of those absences are the real content of this document. The rest is composition.
 
@@ -93,23 +88,17 @@ says repository patterns are evidence rather than authority; a vocabulary borrow
 repository has *less* claim than the repository's own patterns, not more. CUPID supplies words for
 asking questions, and nothing else.
 
-| Property | Semantic question | Danger if universalized |
-|---|---|---|
-| **Composable** | Were the new dependencies necessary and in the right place — or does this component now know something about another that it should not? | Rewards copy-paste over reuse: duplicating code removes an edge |
-| **Unix philosophy** | Does this component still have one coherent purpose, or did it acquire an unrelated responsibility? | Rewards splitting for its own sake ([§28.5](context-economy.md#285-measurement-is-mechanical-refactoring-is-semantic)) |
-| **Predictable** | Are the semantics explicit and observable, or did this add an implicit ordering assumption? | Largely *correctness*, already covered by planted-obligation scenarios |
-| **Idiomatic** | Does this belong here, and where it deviates, is the deviation deliberate? | **The sharpest `P11` hazard.** "Looks like the surrounding code" makes accumulated debt self-enforcing |
-| **Domain-based** | Does the code still name the problem, or has infrastructure language displaced domain language? | DDD is not mandatory; the question must stay meaningful where it was never adopted |
-
-Two notes keep the vocabulary from becoming taxonomy. **Composable and Unix philosophy overlap and must
-not become two evaluator dimensions** — North's distinction is that Unix philosophy concerns how code is
-*used* while single-responsibility concerns its *internals*, a difference in viewpoint rather than a
-second measurement. And **Predictable belongs mostly to correctness**, which existing scenarios already
-plant and grade.
+Two of its properties overlap and must not become separate evaluator dimensions: North's distinction is
+that Unix philosophy concerns how code is *used* while single-responsibility concerns its *internals*,
+a difference in viewpoint rather than a second measurement. **Predictable belongs mostly to
+correctness**, which existing scenarios already plant and grade. **Idiomatic is the sharpest `P11`
+hazard** — "looks like the surrounding code" would make accumulated debt self-enforcing — and is
+deferred until that tension has a defensible answer. **Domain-based** must stay meaningful in systems
+that never adopted DDD.
 
 A minimal first vocabulary is therefore **three lenses, not five**: composability (including cohesion),
-domain alignment, and change locality. Idiomatic fit is deferred until the `P11` tension has a
-defensible answer; Predictable stays where it already works.
+domain alignment, and change locality. They orient discovery
+([§58](#58-craft-returns-discovered-consequences-not-verdicts)); they are never criteria to score.
 
 ## 44. Invariants, properties, preferences
 
@@ -129,40 +118,37 @@ pattern. Adding a `class` field would record something derivable from where a ru
 
 `CE1` defines the telemetry: repository files read, repository bytes read, tool calls, duration —
 provider-neutral first, token counts secondary. The harness already produces most of it as a by-product
-of execution, so **no new instrumentation is required to begin**, only derivation from evidence already
-retained.
+of execution, so **no new instrumentation is required to begin**.
 
 The hard problem is interpretation, and it must be stated before any number is collected: **an agent's
 retrieval behaviour is not a property of the architecture.** A worker may open thirty files because it
 is thorough, because it is weak, because the harness encourages breadth, or because the system is
-genuinely tangled. A raw file count cannot distinguish those, and an evaluation rewarding "read fewer
-files" would reward incuriosity — worse than the problem it set out to detect.
+genuinely tangled. An evaluation rewarding "read fewer files" would reward incuriosity.
 
-The control is the one this project has used four times: **hold the agent configuration fixed and vary
+The control is the one this project has used repeatedly: **hold the agent configuration fixed and vary
 the architecture.** An absolute context footprint means nothing; the *contrast* between two repository
-states executing the identical contract under the identical configuration means something. That is
-`CE2`'s structure, generalised from one refactoring step to two architectural histories.
+states executing the identical contract under the identical configuration means something. The derived
+quantity worth measuring first is **context traversed but not changed**, read against the conceptual
+size of the change and never against the repository's size — and §60 records that this observable has
+been collected exactly once and never used as the measurement.
 
-The derived quantity worth measuring first is **context traversed but not changed** — material the
-worker had to understand and did not need to modify — read against the conceptual size of the change,
-never against the repository's size.
 ## 46. Longitudinal composition needs no new identity
 
 A trajectory is `S0 → T1 → S1 → … → Tn → Sn`. The field test — *which invariant becomes impossible
-without a new durable identity?* — finds none. Repository state is already identified by a Git commit,
-and a synthetic evaluation can use a tree hash; a trajectory is `(initial commit, ordered task-sequence
-identity, configuration)` plus the commits it produced, derived rather than stored; craft observations
-are evaluation evidence, and `P13` with
+without a new durable identity?* — finds none. Repository state is already identified by a Git commit;
+a trajectory is `(initial commit, ordered task-sequence identity, configuration)` plus the commits it
+produced, derived rather than stored; craft observations are evaluation evidence, and `P13` with
 [§28.3](context-economy.md#283-why-this-is-not-a-ledger-field) already keeps execution economics out of
-the artifact ledger. Small committed summaries survive; transcripts do not.
+the artifact ledger.
 
-**Architectural pressure** — the same craft observation recurring across many changes, such as three
-domains independently re-implementing provider-interaction semantics — is a **query over accumulated
-evaluation evidence, never a stored fact**. Its output is an inquiry, not a refactoring: evidence that a
-cross-cutting decision may be missing, which is the escalation `P7` already requires a bounded worker to
-raise rather than settle. Pressure detected → parent → accepted decision → possibly a
+**Architectural pressure** — the same craft observation recurring across many changes — is a **query
+over accumulated evaluation evidence, never a stored fact**. Its output is an inquiry, not a
+refactoring: evidence that a cross-cutting decision may be missing, which is the escalation `P7`
+already requires a bounded worker to raise rather than settle. Pressure detected → parent → accepted
+decision → possibly a
 [§37.4](long-running-autonomy.md#374-executable-invariants--accepted-decisions-made-operative)
 invariant. Never pressure detected → abstraction introduced.
+
 ## 47. Who decides
 
 Craft findings are advisory to the parent, which already owns routing, architecture and the choice of
@@ -187,15 +173,15 @@ on it, and production craft reflection has no ground truth to validate against.
 
 The minimum reuses the whole existing substrate — scenario loading, fresh isolated trials, blind
 per-property grading, comparison that proves only one field differed. Two repository states differing
-**architecturally, not behaviourally**, both satisfying the same accepted intent; one fixed task contract
-replayed against each under a fixed configuration; mechanical evidence from files read, bytes read, tool
-calls and files changed; bounded semantic observations under composability, domain alignment and change
-locality. Findings, never a score, and no persistence beyond an ordinary evaluation summary.
+**architecturally, not behaviourally**, both satisfying the same accepted intent; one fixed task
+contract replayed against each under a fixed configuration; mechanical evidence from files read, bytes
+read, tool calls and files changed; bounded semantic observations under composability, domain alignment
+and change locality. Findings, never a score.
 
 If a fixed configuration shows materially different change cost across two behaviourally equivalent
-states, the instrument works and longitudinal trajectories become worth building. If it does not, **the
-observable is wrong and no amount of sequence length will fix it** — the lesson the single-property
-ceiling taught, and the one [§58](#58-craft-may-not-need-a-verdict-at-all) eventually collected.
+states, the instrument works. If it does not, **the observable is wrong and no amount of sequence
+length will fix it** — the lesson the single-property ceiling taught, and the one
+[§58](#58-craft-returns-discovered-consequences-not-verdicts) eventually collected.
 
 **Explicitly not in that milestone:** a craft role or review purpose (no production routing exists to
 justify one under `P2`); a dependency database or static-analysis layer; architecture policy files;
@@ -215,22 +201,15 @@ the problem — evaluator ground truth is missing — and wrong about the remedy
 ### 50.1 Reject the yardstick
 
 A reference architecture used as a yardstick asks *how close is this to the good one*, and three
-independent lines of evidence say that measures the wrong thing.
-
-**Precedent from agent benchmarks.** SWE-bench carries a gold patch, but the gold patch is not what
-grades: hidden `FAIL_TO_PASS` and `PASS_TO_PASS` tests are. The reference exists to prove the problem is
-solvable; *behaviour* is the yardstick. And an OpenAI audit found frontier models reproducing gold
-patches verbatim — a reference that leaks into a model becomes worthless as ground truth, which is a
-structural warning about any design where ground truth is a repository somebody could recognise.
-
-**Proofbound's own P12 result.** Supplying an evaluator with the reasoning that produced an artifact
-*lowered* its completeness, concentrated on the obligation that reasoning argued for. An evaluator shown
-"the good architecture" before judging a candidate is the same hazard with a different artifact.
-
-**Architecture has no unique realisation.** A modular monolith with explicit internal boundaries and an
-event-driven decomposition may both be excellent for the same accepted intent. An instrument that ranks
-by proximity to one of them is measuring style, and `P11` already refuses to let prevailing patterns
-become authority.
+independent lines of evidence say that measures the wrong thing. **Agent-benchmark precedent:**
+SWE-bench carries a gold patch, but hidden tests grade — behaviour is the yardstick — and frontier
+models have been found reproducing gold patches verbatim, so a reference that leaks becomes worthless
+as ground truth. **Proofbound's own `P12` result:** supplying an evaluator with the reasoning that
+produced an artifact *lowered* its completeness, concentrated on the obligation that reasoning argued
+for; showing it "the good architecture" first is the same hazard. **Architecture has no unique
+realisation:** a modular monolith with explicit internal boundaries and an event-driven decomposition
+may both be excellent for one accepted intent, and ranking by proximity to either measures style, which
+`P11` already refuses to let become authority.
 
 ### 50.2 What replaces it: a calibration case with declared property status
 
@@ -335,74 +314,59 @@ assumptions. One property corroborated across channels beats any single verdict.
 
 ### 50.10 The amended minimal experiment
 
-§49's structure is kept — one accepted intent, one contract replayed, one frozen configuration, three
-lenses, no score — with one change: **three states, not two.** `R` is good and vetted against the case's
-property scenarios; `E` is good, structurally different, independently vetted against the same scenarios;
-`D` is behaviourally identical and degraded on exactly **one** named property.
+§49's structure is kept with one change: **three states, not two.** `R` is good and vetted against the
+case's property scenarios; `E` is good, structurally different, independently vetted; `D` is
+behaviourally identical and degraded on exactly **one** named property. Freeze the contract,
+configuration, harness version, grader, timeout, trial count and arm order; replay the identical
+contract against each state; take one fresh state-blind reflection per state. An independent grader
+holding declared status decides whether the degradation was identified in `D` and whether `E` was left
+alone. **Success is sensitivity and specificity together**; failure means the instrument recognises
+resemblance rather than quality. Neither result produces a score, a ranking, a blocking finding or
+production routing.
 
-Freeze the contract, configuration, harness version, grader, timeout, trial count and arm order. Replay
-the identical contract against each state and take one fresh state-blind craft reflection per state. An
-independent grader holding declared status decides whether the degradation was identified in `D` and
-whether `E` was left alone. **Success is sensitivity and specificity together**; failure — `E` marked
-down for differing, or `D` passing unnoticed — means the instrument recognises resemblance rather than
-quality. Neither result produces a score, a ranking, a blocking finding or production routing.
-
-Deliberately excluded: agent-generated candidates, which add generation variance before the instrument is
-validated; multiple cases; multiple degraded properties; longitudinal trajectories; and any comparison of
-Proofbound against a bare model.
+Deliberately excluded: agent-generated candidates, multiple cases, multiple degraded properties,
+longitudinal trajectories, and any comparison of Proofbound against a bare model.
 
 ### 50.11 The ladder, and the bar for production
 
 Each rung validates a claim the next depends on: three-state calibration → several independent
 properties per case → future-change probes as primary evidence → agent-generated candidates → ordered
-trajectories → comparison of whole engineering configurations. Fairness constraints apply from the
-moment a probe carries weight: it must be a plausible extension of the domain, never an evaluator-only
-fact, and diverse enough that no single speculative abstraction wins — otherwise the benchmark rewards
-**speculative generality**, the opposite of proportionality. [§59.1](#591-what-a-calibration-probe-has-to-satisfy)
-adds the condition this case was missing.
+trajectories → comparison of whole engineering configurations. A probe must be a plausible extension of
+the domain, never an evaluator-only fact, and diverse enough that no single speculative abstraction
+wins — otherwise the benchmark rewards **speculative generality**.
+[§59.1](#591-what-a-calibration-probe-has-to-satisfy) adds the conditions this case was missing.
 
 **Craft reflection reaches production routing only when** it detects controlled degradation, accepts
 equivalent-good alternatives, demonstrably does not reduce to size or coupling heuristics, has a
 calibrated grader, holds across more than one domain, repeats under a frozen configuration, and has its
-limitations written down. Until then it is an evaluation experiment, exactly as every measurement in
-this project has been before the architecture was allowed to depend on it.
+limitations written down. Until then it is an evaluation experiment.
 
 ## 52. What the failed calibration actually showed
 
-Calibration V1 failed on both counts — sensitivity 3/5, specificity 7/9 with every false positive on
-the structurally different sound state. The tempting reading was that Proofbound lacked a transformation
-from intent into bound architectural consequences, and that a craft evaluator handed accepted design
+Calibration V1 failed on both counts — sensitivity 3/5, specificity 7/9, every false positive on the
+structurally different sound state. The tempting reading was that Proofbound lacked a transformation
+from intent into bound architectural consequences, and that an evaluator handed accepted design
 decisions would have judged correctly. That reading does not survive the evidence.
 
-### 52.1 The failure was not caused by missing artifact semantics
+**It was not missing artifact semantics.** The calibration ran on three repositories containing no
+proposal, design or specification at all. And the proposed remedy would have destroyed the experiment:
+handing the reflector *"delivery owns provider-specific knowledge"* converts *is this architecture
+sound* into *does this code match the stated rule* — conformance against an accepted referent, which is
+coherence ([§38.2](long-running-autonomy.md#38-cumulative-coherence)); craft is defined by having no
+such referent (§41). The calibration would have passed by measuring something else.
 
-The calibration ran on three repositories containing **no proposal, design or specification at all** —
-hand-built states and a future-change contract. Whatever is or is not underspecified about artifact
-semantics cannot explain a result produced where no artifacts existed.
-
-Worse, the proposed remedy would have destroyed the experiment. Handing the reflector *"delivery owns
-provider-specific knowledge"* converts *is this architecture sound* into *does this code match the
-stated rule* — conformance against an accepted referent, which is coherence
-([§38.2](long-running-autonomy.md#38-cumulative-coherence)); craft is defined by having no such
-referent (§41). The calibration would have passed by measuring something else.
-
-### 52.2 The hypothesis V1 produced, and V2 destroyed
-
-V1's intent material stated, in every arm: *"More than one delivery provider is expected over time."*
-The decision expected to vary was named visibly in both the sound and degraded states, and the
-reflector still reasoned from diff size, concluding that provider concerns "remain confined to
-`app.py` (the composition root)."
-
-The hypothesis that followed was that the deficit is a **question never asked** — the reflector was
-asked what the change touched, never which changeable decision each part exists to hide. Parnas gives
-that question its foundation: begin with the decisions likely to change, and build each module to hide
-one. Under it, `state-a` hides the provider decision behind an explicit contract, `state-b` behind
-registration and dispatch with no interface type at all, and `state-c` nowhere. Two architectures are
-equivalent when they hide the same decisions, whatever their form — the anti-imitation rule
+**The hypothesis it produced, and V2 destroyed.** V1's intent stated in every arm that more than one
+provider was expected, so the decision expected to vary was named visibly in sound and degraded states
+alike — and the reflector still reasoned from diff size. The hypothesis that followed was a **question
+never asked**: the reflector was asked what the change touched, never which changeable decision each
+part exists to hide. Parnas grounds that question, and under it `state-a` hides the provider decision
+behind an explicit contract, `state-b` behind registration and dispatch with no interface type, and
+`state-c` nowhere — two architectures being equivalent when they hide the same decisions whatever their
+form, which is the anti-imitation rule
 [§51.1](execution-and-review.md#511-bind-consequences-not-resemblance) reaches from another direction.
 
-V2 tested it directly and **refuted it** ([§56](#56-why-routing-could-not-have-worked-here)); §59 later
-found the deeper reason.
+V2 tested it and **refuted it** ([§56](#56-why-routing-could-not-have-worked-here)); §59 found the
+deeper reason, and §58 the deepest.
 
 ## 53. Craft, coherence, and the loop between them
 
@@ -448,8 +412,7 @@ Configuration and per-pair record:
 
 ## 56. Why routing could not have worked here
 
-The reports say why, in almost the same words every time. The routed arm answers the routed questions
-**correctly** — and then rules for the defence:
+The routed arm answers the routed questions **correctly** — and then rules for the defence:
 
 > Provider identity and its associated wire format (endpoint, auth header, payload field names) are now
 > owned by `app.py`, which is the application entry point. **This aligns with the accepted intent:
@@ -460,87 +423,99 @@ identifies the concentration precisely: what moved, where it went, that `app.py`
 before. Question routing worked. The reflector then reads the intent's configuration clause as
 *authorising* the concentration, because configuration is what a composition root is for.
 
-It is not a bad reading. The accepted intent says provider credentials and endpoints are configuration.
-**It never says where configuration may live.** The invariant the ground truth encodes is not entailed
-by anything the reflector was shown, and one clause of what it was shown points the other way.
-
-The specificity failures are the same gap inverted. A `state-b` regression observes that the `provider`
-string now flows through the application layer and calls that a leak of delivery configuration into the
-application API — a real observation, correctly derived from the routed questions, and the manifest
-says `state-b` is sound because a provider *name* is not an endpoint, auth scheme, payload field or
-error code. With no stated line, the reflector drew its own: stricter than the manifest on `state-b`,
-looser on `state-c`.
+It is not a bad reading. The intent says credentials and endpoints are configuration; **it never says
+where configuration may live.** The specificity failures are the same gap inverted: a `state-b`
+regression calls a provider *name* flowing through the application layer a leak, and the manifest says
+`state-b` is sound because a name is not an endpoint, auth scheme, payload field or error code. With no
+stated line, the reflector drew its own — stricter than the manifest here, looser there.
 
 So V1's diagnosis was wrong in an instructive way. The deficit was never a missing question and never
-missing information; it is a **missing criterion**. [§59](#59-the-probe-rewards-the-degradation-it-plants)
-later found why no wording repairs it: the criterion is missing from the fixture, not from the sentence.
+missing information; it is a **missing criterion**.
+[§59](#59-the-probe-rewards-the-degradation-it-plants) found why no wording repairs it on this case,
+and [§58](#58-craft-returns-discovered-consequences-not-verdicts) why no wording repairs it at all: a
+criterion is what §41 denies craft by definition.
 
 ## 57. The instrument does not repeat itself
 
 V2's untreated arm was a byte-identical rerun of V1 on V1's own implementations, so it also measured
 whether the instrument returns the same verdict twice. On thirteen comparable implementations it agreed
 with itself **nine times and disagreed four** — same code, same diff, same prompt, same model, same
-grader. The retest disagreement is larger than the treatment effect it was built to detect, so V1's
-3/5 and 7/9 were never stable measurements and the drift to 2/5 and 6/7 is not a finding. The dedicated
-repeatability run that followed put numbers on it — 43% of reflector conclusions and 17% of grader
-readings differ from their own modal answer on unchanged input
+grader. The retest disagreement is larger than the treatment effect it was built to detect, so V1's 3/5
+and 7/9 were never stable measurements. The dedicated repeatability run that followed put numbers on it
+— 43% of reflector conclusions and 17% of grader readings differ from their own modal answer on
+unchanged input
 ([§E51](evidence/evaluation-runs.md#e51-craft-instrument-repeatability--both-layers-move)) — and the
 methodology it produced is now general to all Proofbound evaluation
 ([§E22](evaluation-comparison.md#e22-reliability-before-validity)).
 
-## 58. Craft may not need a verdict at all
+## 58. Craft returns discovered consequences, not verdicts
 
-Three milestones failed at the same joint: V1 caught neither the degradation nor spared the sound
-alternative, and V2 asked the missing question and changed nothing because the reflector answered it
-correctly and still endorsed what it found. The reliability run measured why: on identical evidence,
-**57 of 60 reports named where provider knowledge had moved, and 43% of their conclusions about whether
-that mattered disagreed with their own modal conclusion.**
+§58 was written as a question. Three more milestones answered it.
 
-The observation converges. The judgement does not. The judgement is the only part the instrument records.
+**The evidence separates two layers that were always conflated.** On identical evidence, reflectors
+name what moved and where in 57 of 60 reports, and disagree with their own modal *conclusion* 43% of
+the time ([§E51](evidence/evaluation-runs.md#e51-craft-instrument-repeatability--both-layers-move)).
+Once the probe genuinely exercised a boundary and the column asked one atomic question, untreated
+discovery of the planted pressure ran **10 of 10** on the degraded architecture against 1 of 10 and 2
+of 9 on the sound ones
+([§E55](evidence/evaluation-runs.md#e55-the-atomic-column-discriminates-and-the-untreated-reflector-is-already-at-ceiling)).
+The factual layer is reliable. The normative layer is not.
 
-That is self-inflicted. Craft is defined here as having **no accepted referent** (§41), which is exactly
-why it cannot ask *is this a breach?* and expect a stable answer: asked to judge against a criterion
-nobody supplied, each evaluator invents one, and the spread across evaluators is the spread of invented
-criteria rather than of architectural quality. Every other review purpose asks a *discovery* question
-([§51](execution-and-review.md#51-what-each-review-purpose-actually-asks)), and multi-property grading
-already asks *does this report identify this specific problem?*
-([§E19.1](evaluation.md#e19-multi-property-scenarios--more-resolution-still-not-a-score)). Craft is the
-one instrument asking for a whole-report verdict, and the one whose reliability collapsed.
+**The instability is not all evaluator failure.** Five reflectors said `app.py` is a composition root
+and configuration belongs there; four said provider integration knowledge was misplaced. The accepted
+intent decides neither. That is **normative underdetermination** — disagreement about a tradeoff the
+authority left open — and it is epistemically correct behaviour, not noise to be averaged away.
 
-**The advisory role points the same way.** Craft gates nothing and holds no authority (§47), and a
-finding that gates nothing needs no verdict — it needs surfacing to someone who can decide. The useful
-output is not "this architecture is degraded" but:
+**And the cause was structural, not statistical.** §41 defines craft as having **no accepted
+referent**. A verdict needs one. Asking an evaluator for *"is this degraded?"* asks it to invent the
+criterion the definition denies it, so each evaluator invents a different one and the spread is the
+spread of invented criteria. Three calibrations failed at that seam, and no wording repairs it.
 
-> *Seven of ten independent reflections observed that adding a provider moved endpoint, header and
-> payload knowledge into the module that decides what to notify a user about.*
+So craft's output is a **discovered consequence**: a claim about what future change becomes broader,
+stated so it could be shown false.
 
-Stable, checkable against the diff, and leaving the normative question with the parent where `P5` puts
-it. A concern raised once in ten keeps its support rather than being voted away: for discovery, union
-is the right operator ([§E23.2](evaluation-comparison.md#e23-what-one-semantic-measurement-should-be)).
+> *Adding a provider that reports results differently now requires changing code that is not about any
+> provider.*
 
-**What this does not resolve.** Recurrence is still not authority: §53 already settles that pressure
-becomes binding only by passing through an accepted decision, and ten reflections converging on adapters
-would change nothing about it. Calibration still needs ground truth; the question changes from *did the
-report classify the architecture correctly* to *how reliably is the planted pressure surfaced, and how
-much unsupported pressure comes with it*. Consolidating semantically equivalent concerns across samples
-is itself a semantic step, and is **not** designed here.
+Not *"this architecture is degraded"*, which needs a referent, and not merely *"provider knowledge is
+in `notifications/status.py`"*, which is an observation without a stake. A consequence predicts, so it
+can be tested — by making the change, by substituting an implementation, by a dependency query — and
+[§51.1](execution-and-review.md#511-bind-consequences-not-resemblance) already requires exactly this of
+specifications: bind consequences, never resemblance. Craft findings obey the rule the rest of the
+architecture already obeys.
+
+**This changes no machinery.** §53's loop already routes a craft observation as pressure → parent →
+accepted decision → bound consequence → coherence's to protect → possibly an executable invariant
+([§37.4](long-running-autonomy.md#374-executable-invariants--accepted-decisions-made-operative)). What
+changes is the shape of the thing entering that loop, and it now matches what the loop always expected.
+
+**What a finding carries** is decided by the Field Test, not a schema: the observation it rests on, the
+consequence it predicts, and evidence a reader can check. Counter-considerations belong in the prose —
+a small system, an unlikely change, a framework constraint may all make the consequence acceptable —
+and no `disputed`, `ambiguous` or `confidence` state is created, because nothing mechanical consumes
+one (`P3`). Unresolved tradeoffs stay unresolved in the report and in the dispersion across samples.
+
+**Authority is untouched.** Ten evaluators agreeing creates no engineering authority (`P5`), and one
+evaluator's consequence may be worth acting on without agreement at all. Recurrence still becomes
+binding only through an accepted decision (§53), and the three lenses stay what §43 made them —
+questions that orient discovery, never criteria to be scored.
 
 ## 59. The probe rewards the degradation it plants
 
 Calibration V3 was to change the criterion and freeze everything else. Deriving one meant reading the
-fixtures against the accepted intent asking *what is actually entailed here*, and the case does not
+fixtures against the accepted intent asking *what is actually entailed here*, and the case did not
 survive that question.
 
-**The probe favours the degraded state, and always has.** The future contract asks for a second
-provider differing in endpoint, header and payload shape, with outcome vocabulary, retry policy and
-transport seam unchanged. Under it `state-c` edits **one** file and both sound states edit three, in
-every trial ever run. Change locality is one of the three lenses the craft task asks about, so every
-reflector praising `state-c`'s locality reported a fact: the instrument was not failing to see the
-degradation, the probe was not exercising it.
+**The probe favoured the degraded state, and always had.** The future contract asked for a second
+provider differing in endpoint, header and payload shape with everything else unchanged, and under it
+`state-c` edited **one** file while both sound states edited three, in every trial ever run. Change
+locality is one of the three lenses the craft task asks about, so every reflector praising `state-c`'s
+locality reported a fact: the instrument was not failing to see the degradation, the probe was not
+exercising it.
 
-**The consequence that would discriminate is not entailed**, the narrower one that is entailed fails
-its counterexample, and the pressure that remains is already discovered four times in five at baseline.
-Analysis: [§E53](evidence/evaluation-runs.md#e53-why-calibration-v3-cannot-run-on-this-case).
+**The consequence that would discriminate was not entailed**, the narrower one that was entailed failed
+its counterexample, and the pressure that remained was already discovered four times in five at
+baseline. Analysis: [§E53](evidence/evaluation-runs.md#e53-why-calibration-v3-cannot-run-on-this-case).
 
 ### 59.1 What a calibration probe has to satisfy
 
@@ -568,3 +543,38 @@ The case satisfies none of the three. Repairing it means changing the future con
 accepted intent — two fixture changes, which belong to their own milestone: moving the fixture and the
 criterion together would leave the result unattributable, which
 [§E24](evaluation.md#e24-what-it-takes-to-call-an-increment-an-improvement) exists to prevent.
+
+## 60. What five milestones never measured
+
+§42 defines craft as **repository discovery context staying proportional to the conceptual size of a
+change**. Every calibration measured something else: whether a reflector classifies an architecture
+correctly. That is not a restatement of the definition — it is a different observable, and the drift
+went unnoticed for five milestones because a verdict is easy to grade.
+
+The definition's own observable was collected once and never used. V1 recorded context traversed but
+not changed for every trial: `state-a` median 5, `state-b` median 7, `state-c` median 5. It does not
+separate the states — the alternative-good architecture reads the most, the degraded one reads no more
+than the sound one. But that was measured under the probe
+[§59](#59-the-probe-rewards-the-degradation-it-plants) later showed does not exercise the degradation,
+so the honest statement is not *the canonical observable fails*; it is that **the canonical observable
+has never been given a fair test**, while five milestones tested a proxy for it.
+
+That reframes what comes next. A consequence-shaped craft finding (§58) is a claim about what future
+work becomes broader — which is the definition's language, not a verdict's. The way to test such a
+claim is to make the change and observe the cost, and the sharpest available form of that is the
+question `P13` has always implied:
+
+> When a boundary genuinely hides a decision, can work outside it proceed from the boundary's contract
+> instead of its implementation — at the same correctness, for less repository context?
+
+That is measurable without any verdict, it tests the definition rather than a proxy, and it fails
+honestly: if hiding an implementation costs correctness, or if the contract has to reproduce the
+implementation to work, the hypothesis is wrong. It also needs its own controls, because **more
+modules is not the claim** — an over-fragmented arm must be able to win, and a minimum-sufficient-
+contract ladder is what keeps the question *smallest context that preserves correctness* rather than
+*smallest context*.
+
+The notification-provider case is complete as a calibration corpus. It established what a probe must
+satisfy, what an atomic column is, that discovery of an exercised pressure saturates, and that
+judgement is underdetermined where intent is silent. Another run on it would answer nothing open, and
+running it anyway would be experimental inertia. It stays as reference evidence, failures included.

@@ -139,6 +139,7 @@ One line each. **The canonical definitions, with their falsifiers, are in
 | Calibration case repair | **Encoded and frozen**; deterministic validity established, and no test separates sound from degraded |
 | Repaired-case baseline | **Run**; pressure non-specific — sound states detected 7/9 and 5/10, degraded at ceiling, and the entry-point clause explains all of it |
 | Atomic pressure and fresh baseline | **Run**; column repaired — sound states 1/10 and 2/9, degraded 10/10, so the case discriminates but leaves no treatment headroom |
+| System Craft observable | **Decided**; craft returns discovered evolvability consequences, never verdicts — a verdict needs a referent craft is defined not to have |
 | Modularity and local reasoning | Deferred research; sequenced after calibration validity is restored |
 | Decision provenance, coherence audit, context telemetry | Direction only; see the plan's dependency graph |
 

@@ -1442,7 +1442,7 @@ validity first would tune a criterion against a measurement that redraws itself 
 ## 7K. Multi-sample semantic evaluation — design check  *(design only; no live calls)*
 
 Design authority: [`evaluation-comparison.md` §E23](proofbound/evaluation-comparison.md#e23-what-one-semantic-measurement-should-be)
-and [`system-craft.md` §58](proofbound/system-craft.md#58-craft-may-not-need-a-verdict-at-all).
+and [`system-craft.md` §58](proofbound/system-craft.md#58-craft-returns-discovered-consequences-not-verdicts).
 
 **Question.** If one semantic model invocation is an unstable measurement, what should Proofbound treat
 as semantic evidence, and under what conditions may several independent judgements support a usable
@@ -1691,6 +1691,44 @@ unstable was *judgement* — the layer this column deliberately stopped measurin
 **Next.** The treatment V3 was built to test is unrunnable on this case as posed. Either the
 question moves to a harder instance where untreated discovery is not saturated, or it moves off
 discovery entirely — and the second is a design question, not a calibration one.
+
+## 7S. System Craft observable redesign  *(decided; calibration corpus closed)*
+
+Design authority: [`system-craft.md` §58](proofbound/system-craft.md#58-craft-returns-discovered-consequences-not-verdicts)
+and [§60](proofbound/system-craft.md#60-what-five-milestones-never-measured).
+
+**Decision: craft returns a discovered evolvability consequence, not a verdict.** The evidence
+separates two layers — observation is stable across repeats, atomic discovery of an exercised pressure
+saturates at 10/10, and normative conclusions disagree with their own mode 43% of the time. The cause
+is structural rather than statistical: §41 defines craft as having **no accepted referent**, and a
+verdict needs one, so asking for one makes each evaluator invent a criterion and the spread is the
+spread of invented criteria. Part of that spread is **legitimate normative underdetermination** — a
+tradeoff the accepted intent leaves open — which must not be averaged away.
+
+**No new machinery.** §53's loop already routes pressure → parent → accepted decision → bound
+consequence → coherence → possibly an executable invariant. Only the shape of what enters it changes,
+and a consequence is falsifiable in the way
+[§51.1](proofbound/execution-and-review.md#511-bind-consequences-not-resemblance) already requires of
+specifications. No verdict enum, no score, no finding ontology, no confidence, no `P14`, and no
+production routing.
+
+**The drift that this exposed.** §42 defines craft as *repository discovery context proportional to
+conceptual change size*. Five milestones measured whether a reflector classifies an architecture
+correctly, which is a different observable. The definition's own observable was collected once, in V1,
+and never used as the measurement — and under a probe now known not to exercise the degradation it does
+not separate the states. It has never had a fair test.
+
+**Notification-provider programme: complete as a calibration corpus.** It established what a probe must
+satisfy, what an atomic column is, that discovery of an exercised pressure saturates, and that judgement
+is underdetermined where intent is silent. No open question requires another run on it; it stays as
+reference evidence, failures included.
+
+**Sequencing.** [§7P](#7p-modularity-and-local-reasoning-calibration--design-check--deferred-research)
+is promoted to the next substantive empirical programme, because it measures the canonical definition
+rather than a proxy for it, and its claim is consequence-shaped: when a boundary hides a decision, can
+work outside it proceed from the contract instead of the implementation, at equal correctness for less
+repository context? It keeps its over-modularisation arm — more modules must be able to lose — and its
+minimum-sufficient-contract ladder.
 
 ## 7P. Modularity and local reasoning calibration — design check  *(deferred research)*
 
