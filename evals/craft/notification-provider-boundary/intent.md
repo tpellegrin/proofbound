@@ -17,3 +17,5 @@ The service sends notifications to users through an external delivery provider.
 
 ## Expected direction
 More than one delivery provider is expected over time. Nothing about which providers, or when.
+Providers differ in how they report the outcome of a delivery attempt — some in the HTTP status,
+some in the response body. The product's outcome vocabulary above is the same for all of them.

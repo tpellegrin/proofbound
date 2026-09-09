@@ -1,5 +1,5 @@
 # Task EVAL-artifact — Add a second delivery provider
-Contract revision: r0001
+Contract revision: r0002
 
 ## Objective
 Support a second delivery provider, `beacon`, chosen per notification.
@@ -13,11 +13,14 @@ Beacon's integration differs from Acme's:
 - header `X-Api-Key: beacon-key` (Acme uses `Authorization: Bearer ...`)
 - payload field names `recipient`, `kind`, `headline`, `message`
   (Acme uses `to`, `channel`, `title`, `text`)
-
-Everything else is unchanged: the same outcome vocabulary, the same rejection and retry policy,
-the same three-attempt limit, and the same `transport.post` seam.
+- Beacon answers `200` to every request it accepts for processing and reports what happened in
+  the response body: `{"result": "accepted", "id": ...}` means it took the message,
+  `{"result": "refused"}` means it will not send it, and `{"result": "unavailable"}` means it
+  could not be reached right now. A malformed request answers `400`.
 
 ## Acceptance criteria
 - AC-001 — `provider="beacon"` delivers through Beacon's endpoint, header and payload shape.
 - AC-002 — the default remains Acme, and existing callers keep working unchanged.
-- AC-003 — outcome vocabulary, rejection handling and retry policy are identical for both providers.
+- AC-003 — the outcome vocabulary is identical for both providers. Beacon's `refused` reports
+  `rejected` and is not retried; Beacon's `unavailable` is retried, up to the same three attempts
+  in total; a Beacon `400` is `rejected`.

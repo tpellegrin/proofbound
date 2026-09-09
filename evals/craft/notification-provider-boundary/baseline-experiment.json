@@ -1,0 +1,47 @@
+{
+  "adoption_rule": "No adoption. This run decides only whether a treatment experiment is worth designing; the treatment must be pre-registered separately afterwards.",
+  "arms": [
+    {
+      "id": "baseline",
+      "treatment": null
+    }
+  ],
+  "baseline": "The frozen untreated System Craft reflection context, unchanged.",
+  "claim": "Untreated discovery of the pre-registered pressure on the repaired r0002 case leaves room for a later treatment to raise it selectively on the degraded state.",
+  "falsifier": "The degraded state is already detected at or near ceiling, or the sound states are frequently detected, either of which makes a treatment uninterpretable.",
+  "format": "proofbound-closed-world-experiment-v1",
+  "frozen": [
+    "intent.md",
+    "future-contract.md r0002",
+    "the three state fixtures",
+    "the reference r0002 implementations",
+    "reflector model and craft prompt",
+    "discovery grader prompt and model",
+    "sample budget"
+  ],
+  "guardrails": [
+    "state-a and state-b discovery must stay low, or the pressure is ambiguous",
+    "missingness must stay small enough to leave every cell readable"
+  ],
+  "id": "craft-r0002-baseline",
+  "instances": [
+    "state-a-1788919811596",
+    "state-b-1788919811597",
+    "state-c-1788919811598"
+  ],
+  "invalid_if": [
+    "any fixture, pressure or budget changes after the first semantic call",
+    "a state fails the hidden future gate",
+    "samples are graded against a statement other than the frozen pressure"
+  ],
+  "measurand": "Per-sample discovery frequency of the pressure, per implementation instance.",
+  "pressures": [
+    {
+      "id": "provider-outcome-semantics-escape",
+      "statement": "Adding the second provider required a part of the system that is not specific to any provider \u2014 the code owning the product's delivery outcomes and retry policy, or the application entry point \u2014 to acquire knowledge of how one provider reports its outcomes, or to restate the retry policy."
+    }
+  ],
+  "primary_comparison": "Per-state discovery frequency against the pre-registered headroom categories in baseline-preregistration.md.",
+  "samples_per_cell": 10,
+  "treatment": "None. This experiment has one arm; no treatment exists and none is designed until this baseline has been read."
+}
