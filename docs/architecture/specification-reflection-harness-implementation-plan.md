@@ -1555,8 +1555,46 @@ budget to match, and report per-cell dispersion rather than a pooled figure that
 fields, heterogeneous panels, model reputation, effective-sample-size estimation, capture–recapture,
 a metamorphic framework, a mutation engine, production multi-review.
 
-**Next.** Calibration V3's own design check, which must author its criterion and audit it for
-entailment before any live call, and must not move measurement mechanics in the same run.
+**Next — see [§7N](#7n-calibration-v3-criterion-design-check--case-disqualified-no-live-call).** The criterion
+design check ran and disqualified the case rather than the substrate.
+
+## 7N. Calibration V3 criterion design check  *(case disqualified; no live call)*
+
+Design authority: [`system-craft.md` §59](proofbound/system-craft.md#59-the-probe-rewards-the-degradation-it-plants).
+
+**Question.** What architectural consequence should V3 test, and is it entailed by the accepted intent
+rather than by benchmark-author preference?
+
+**Answer: no admissible consequence exists on this case.** Three candidates were derived and each
+failed. The carried-forward wording constrains a responsibility no fixture has — nothing in any state
+*decides* what to notify — and would have to overrule the intent's only placement-adjacent clause
+rather than follow from it. The one genuinely entailed alternative, about provider response-code
+interpretation reaching the module that owns the stable outcome vocabulary, fails its counterexample
+audit: `notifications/status.py` maps generic HTTP semantics, and a shared HTTP outcome mapper is a
+defensible design. The case's own rationale is a conjunction of four consequences and cannot be a
+single pre-registered column.
+
+**The probe rewards the degradation.** Under the frozen future contract the degraded state edits one
+file and both sound states edit three and add one — in every trial ever run. Change locality is one of
+the three lenses the reflector answers under, so the reports praising the degraded state's locality
+were correct about the probe they were given. Evidence:
+[§E53](proofbound/evidence/evaluation-runs.md#e53-why-calibration-v3-cannot-run-on-this-case).
+
+**And the remaining pressure is at ceiling**: 57 of 60 untreated reports already name where provider
+knowledge sits, and the two untreated degraded anchors were detected 25 times in 30 by the discovery
+grader. A treatment cannot raise what the baseline already finds four times in five.
+
+**Standing condition added.** A calibration probe must satisfy entailment, exercise and headroom, all
+checkable before any model call
+([§59.1](proofbound/system-craft.md#591-what-a-calibration-probe-has-to-satisfy)).
+
+**Unchanged.** No measurement mechanics were touched: `_experiment.py`, slot allocation, grading,
+distributions, the discovery-grader prompt, resume and configuration identity are all as `§7M` froze
+them. No fixture was edited, no criterion adopted, no manifest written, no live call made.
+
+**Next.** Repair the calibration case — a probe whose providers differ in rejection semantics, and an
+accepted intent stating what must remain true rather than only what is configuration. Two fixture
+changes, hence their own milestone, and the criterion experiment follows it rather than accompanying it.
 
 ## 7B. Threat mitigation status
 

@@ -707,3 +707,77 @@ must report per-cell dispersion rather than a pooled figure that would hide it.
 
 Record: [`craft-discovery-grader-repeat-v1.json`](../../../../evals/results/craft-discovery-grader-repeat-v1.json).
 Method: [§E24](../evaluation.md#e24-what-it-takes-to-call-an-increment-an-improvement).
+
+## E53. Why Calibration V3 cannot run on this case
+
+The V3 design check was to author one architectural consequence, prove it entailed, and pre-register a
+paired experiment. Deriving it required reading the three fixtures against the accepted intent asking
+*what is actually entailed here*. The answer disqualified the case. No live call was made.
+
+### The probe change favours the degraded state
+
+The future contract asks for a second provider differing in endpoint, header and payload field names,
+and states that everything else is unchanged — same outcome vocabulary, same rejection and retry
+policy, same three-attempt limit, same `transport.post` seam. Under that change:
+
+| State | Work the change requires | Files changed, every trial |
+|---|---|---|
+| `state-a` | new sender module, select per notification in `delivery/__init__`, thread parameter through `app` | 3, 3, 3, 4, 5 |
+| `state-b` | new provider module, register and dispatch, thread parameter through `app` | 3, 3, 3, 5 |
+| `state-c` | add a second endpoint, key and payload builder in `app.py` | **1, 1, 1, 1, 1** |
+
+Recomputed from [`craft-calibration-v1.json`](../../../../evals/results/craft-calibration-v1.json).
+**Change locality** is one of the three lenses the craft task asks the reflector to answer under, so
+every report that praised `state-c`'s locality was stating a fact about the probe it was given. The
+instrument was not failing to see a degradation; the probe was not exercising one.
+
+### Candidate consequences, and how each failed
+
+**C1 — "Code deciding what to notify a user about does not need to know how any delivery provider is
+called."** The wording carried from earlier milestones. It fails twice. No code in any fixture *decides*
+what to notify: `app.notify(user_id, channel, subject, body)` receives the content as parameters in all
+three states, so the responsibility the criterion constrains does not exist in the case. And the only
+statement the accepted intent makes about placement is *"provider credentials and endpoints are
+configuration, not user input"* — a statement about untrusted input, not about where configuration
+lives. Making `state-c`'s placement a violation would overrule the intent rather than follow from it.
+
+**C2 — "A change to provider invocation mechanics must not require changing a module whose purpose is
+the product's stable outcome vocabulary."** Genuinely entailed: the intent declares the outcome
+vocabulary contractually stable and more than one provider expected. It discriminates on paper —
+`state-c` interprets provider response codes in `notifications/status.py` while both sound states keep
+that inside the provider module. It fails its counterexample audit. That module maps `2xx → sent`,
+`400/422 → rejected`, everything else retry: **generic HTTP semantics, not Acme's**. A shared HTTP
+outcome mapper is a defensible design, so C2 would mark a legitimate architecture degraded.
+
+**C3 — the case's own committed `state-c` rationale.** Not usable as a pre-registered column: it is a
+conjunction of four separate consequences (no delivery boundary; endpoint, credential, header and
+payload names in the entry point; retry and outcome policy in the notification package; adding a
+provider requires editing both). A report naming any one of them would be credited, which makes
+"detected" semantically indeterminate.
+
+### And the remaining pressure is already at ceiling
+
+Fifty-seven of sixty untreated reports named where provider knowledge sits
+([§E51](#e51-craft-instrument-repeatability--both-layers-move)). Graded against C3 by the discovery
+grader, the two untreated `state-c` anchors were detected **25 times in 30**
+([§E52](#e52-the-discovery-grader-characterised-before-anything-relies-on-it)). A treatment cannot
+raise discovery of something the baseline already discovers four times in five. Eval V1 and the first
+calibration suite both ceilinged on exactly this; the discovery framing inherits it here rather than
+escaping it.
+
+### What this does not mean
+
+The substrate is not implicated: the closed-world machinery, the discovery grader characterisation and
+the increment contract all stand, and this design check used them exactly as intended — to refuse an
+experiment before spending on it. Nor is `state-c` a badly built fixture in isolation; it is a genuine
+degradation under a probe that would exercise it. What is missing is the pairing between the planted
+degradation and the change used to probe it, which
+[§59.1](../system-craft.md#591-what-a-calibration-probe-has-to-satisfy) now states as a standing
+condition on any calibration case.
+
+**A repaired case needs two changes**, and therefore its own milestone: a future change whose providers
+differ in *rejection semantics* rather than only in wire format, which would force `state-c` to edit the
+notification package while the sound states still add a single module; and an accepted intent that
+states what must remain true rather than only what is configuration, so a discriminating consequence
+becomes entailed. Making those two changes and the criterion treatment in one run would leave the
+result unattributable.
