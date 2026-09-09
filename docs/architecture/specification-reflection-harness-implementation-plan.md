@@ -1819,6 +1819,53 @@ the oracle into a shape check.
 a file because agents did not find it, or enlarge the module because an effect was small. Each of
 those creates a new revision.
 
+### 7P.2 MLR-C2 — the treatment was friction, not a boundary; now it is one
+
+Record: [`MLR-C2.md`](../../evals/craft/modularity-local-reasoning/MLR-C2.md).
+
+**The probe that decided it.** Against the C1 fixture, `inspect.getsource(objectstore)` returned the
+implementation and so did opening `__file__`. Leaving source out of the workspace is friction; an
+agent recovers everything with one ordinary line, and recording the collapse would not preserve the
+treatment.
+
+**Selected boundary: the representation C1 rejected, revived.** The runtime is now the module
+compiled to bytecode with no source beside it, imported from outside the workspace in both arms;
+`full` keeps a readable, non-importable copy in the repository. C1 rejected bytecode because 3.14
+objects will not import under 3.10 — which dissolves once compilation happens **at materialisation by
+the interpreter that will run it**, since nothing compiled is committed or shared. Verified on both.
+A read policy in the executor was rejected on mechanics: Python must read source to import it, so
+filesystem denial breaks execution and intercepting every tool surface is a sandbox project.
+
+Public semantics survive deliberately — `__all__`, signatures, docstrings, runtime behaviour — because
+a real closed-source dependency has them and withholding them would change the task rather than the
+treatment. No implementation text is reachable, verified. The claim is an **experimental information
+policy, not security isolation**: bytecode can be disassembled, and that limit is written down.
+
+**A vacuous check found and fixed.** C1's `digest_tree` skipped every `.pyc` as a cache, so the
+"identical runtime" assertion had been hashing an empty set. The digest now covers the compiled
+objects and is reproducible across materialisations.
+
+**Primary measurand revised before any evidence**, as `§E24` requires such changes to be. C1 compared
+implementation bytes *read* in one arm with contract bytes *supplied* in the other — two accounting
+categories, and a charge to one arm for a document both arms hold. It is now **the implementation
+bytes that entered reasoning on correct runs, per arm**: correctness still gates it, the contract and
+public surface cancel because they are byte-identical in both arms, and `full` is never charged for
+code it did not open. Reads by class, probes, tool calls and cost are retained alongside, because a
+`contract` run that probes heavily has not reasoned cheaply.
+
+**Internal control: separate design, after the first paired run.** With a compiled runtime the module
+is a closed-source dependency in *both* arms, so no task can modify it in either; the control needs
+the module in-repo and mutable in one arm, which needs the read policy this fixture rejected. C3's
+claim — that implementation access provides no correctness value for a task outside the module — is
+carried by the paired external task alone. **Without the control, C3 may not claim the boundary is
+why it worked.**
+
+**Check C passed mechanically:** a plausible patch assuming a missing object reads back as empty
+fails the hidden gate, so the task cannot be satisfied without knowing how absence is reported.
+
+**Still unproven:** `consumed` context attribution, which C3 must establish against its executor
+before the first semantic call.
+
 **Not adopted, not named.** No `P14`, no modularity or coupling score, no module identity, no
 semantic-compression protocol term, no context-routing implementation, and no production use.
 

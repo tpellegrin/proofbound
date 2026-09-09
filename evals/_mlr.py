@@ -7,10 +7,22 @@ system: the same application, the same tasks, the same public contract, and — 
 executed bytes. The only difference either arm may carry is whether the module's source is part of
 the repository the agent explores.
 
-So the module is materialised **outside** the workspace and imported from there in both arms, the
-way any installed dependency is. `full` additionally carries a vendored copy of that source inside
-the workspace, at a path that is not importable, so it can be read but cannot become a second
-implementation that quietly drifts from the one under test.
+So the module is materialised **outside** the workspace, compiled, and imported from there in both
+arms, the way an installed closed-source dependency is. `full` additionally carries a readable copy
+of the source inside the workspace, at a path that is not importable, so it can be read but cannot
+become a second implementation that quietly drifts from the one under test.
+
+Compiling it is what makes the treatment real. MLR-C1 shipped the runtime as source and measurement
+validation then found that `contract` recovered the whole implementation with one call to
+`inspect.getsource`: repository absence is friction, not an information boundary. The runtime is now
+bytecode, compiled at materialisation by the interpreter that will execute it — which is also why
+the version incompatibility that ruled this out earlier does not arise, since nothing compiled is
+ever committed or shared between interpreters. Hash-based invalidation keeps the output byte-identical
+across arms and runs, so "both arms execute the same module" stays checkable rather than asserted.
+
+The boundary this draws is an **experimental information policy, not a security boundary**. It stops
+ordinary development tooling — reading a file, `inspect.getsource`, following `__file__` — from
+returning the implementation. It does not resist disassembly, and is not meant to.
 
 Nothing here invokes a model. This module builds and describes the experimental object; measuring
 with it is a later milestone.
@@ -19,6 +31,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import py_compile
 import shutil
 import subprocess
 import sys
@@ -43,10 +56,14 @@ class FixtureError(Exception):
 
 
 def digest_tree(root: Path) -> str:
-    """Content identity of a directory: every relative path and every byte under it."""
+    """Content identity of a directory: every relative path and every byte under it.
+
+    Interpreter caches are skipped, but a `.pyc` that *is* the runtime is not a cache and must be
+    covered — the compiled module is the thing whose identity the two arms have to share.
+    """
     h = hashlib.sha256()
     for path in sorted(p for p in Path(root).rglob("*")
-                       if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc"):
+                       if p.is_file() and "__pycache__" not in p.parts):
         h.update(path.relative_to(root).as_posix().encode("utf-8"))
         h.update(b"\0")
         h.update(hashlib.sha256(path.read_bytes()).hexdigest().encode("ascii"))
@@ -71,13 +88,11 @@ def materialise(arm: str, into: Path, *, fixture: Path = FIXTURE) -> dict[str, A
     runtime = into / "runtime"
 
     shutil.copytree(fixture / "base", workspace, ignore=_IGNORE)
-    # Out of the workspace entirely, so exploring the repository does not reach it.
-    shutil.copytree(fixture / "runtime", runtime, ignore=_IGNORE)
+    source = fixture / "runtime" / "objectstore"
+    compile_runtime(source, runtime)
 
     if arm == FULL:
-        source = fixture / "runtime" / "objectstore"
-        target = workspace / VENDORED / "objectstore"
-        shutil.copytree(source, target, ignore=_IGNORE)
+        shutil.copytree(source, workspace / VENDORED / "objectstore", ignore=_IGNORE)
 
     return {
         "arm": arm,
@@ -85,10 +100,29 @@ def materialise(arm: str, into: Path, *, fixture: Path = FIXTURE) -> dict[str, A
         "runtime": runtime,
         "workspace_digest": digest_tree(workspace),
         "runtime_digest": digest_tree(runtime),
+        "source_digest": digest_tree(source),
         "contract_sha256": digest_file(workspace / "docs" / "storage-contract.md"),
         "vendored_digest": (digest_tree(workspace / VENDORED / "objectstore")
                             if arm == FULL else None),
     }
+
+
+def compile_runtime(source: Path, runtime: Path) -> Path:
+    """Compile the module to bytecode beside no source, with the running interpreter.
+
+    `dfile` normalises the path recorded inside each object so the output does not carry the
+    temporary directory it was built in, and unchecked-hash invalidation removes the source
+    timestamp — together they make two materialisations of the same source produce the same bytes,
+    which is what lets the arms be compared at all.
+    """
+    package = Path(runtime) / "objectstore"
+    package.mkdir(parents=True, exist_ok=True)
+    for module in sorted(Path(source).glob("*.py")):
+        py_compile.compile(
+            str(module), cfile=str(package / f"{module.stem}.pyc"),
+            dfile=f"objectstore/{module.name}", doraise=True,
+            invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH)
+    return Path(runtime)
 
 
 def environment(built: dict[str, Any], *, data_root: Path | None = None) -> dict[str, str]:
@@ -150,3 +184,86 @@ def arm_difference(full: dict[str, Any], contract: dict[str, Any]) -> dict[str, 
         "only_contract": sorted(only_contract),
         "unintended": sorted({p for p in only_full if not p.startswith(vendored)} | only_contract),
     }
+
+
+# Where a path an agent touched belongs. The experiment's accounting depends on telling
+# implementation reads apart from everything else, and a path is the only provenance available
+# without asking a model what it was doing.
+WORKSPACE = "workspace"
+VENDORED_IMPLEMENTATION = "vendored-implementation"
+RUNTIME = "runtime"
+OUTSIDE = "outside"
+
+
+def classify_path(path: str | Path, built: dict[str, Any]) -> str:
+    """Attribute one touched path to the arm's structure.
+
+    `ce1_facts` drops anything absolute as "not part of the system being measured", which is right
+    for a scenario whose whole system is the repository and wrong here: the implementation lives
+    outside the workspace on purpose, so a read of it is the single most interesting event the run
+    can produce. Classification is by resolved path, so a relative read and the absolute read of the
+    same file land in the same category.
+    """
+    resolved = Path(path)
+    if not resolved.is_absolute():
+        resolved = Path(built["workspace"]) / resolved
+    try:
+        resolved = resolved.resolve()
+    except OSError:
+        return OUTSIDE
+    workspace = Path(built["workspace"]).resolve()
+    runtime = Path(built["runtime"]).resolve()
+    vendored = (workspace / VENDORED).resolve()
+    if resolved == vendored or vendored in resolved.parents:
+        return VENDORED_IMPLEMENTATION
+    if resolved == workspace or workspace in resolved.parents:
+        return WORKSPACE
+    if resolved == runtime or runtime in resolved.parents:
+        return RUNTIME
+    return OUTSIDE
+
+
+def implementation_bytes(built: dict[str, Any], paths) -> int:
+    """How much implementation text a run actually took in.
+
+    Availability is not consumption: `full` carries the whole implementation whether or not the
+    agent opens any of it, so only paths that were touched count. In `contract` there is no
+    implementation text to touch, which is what makes the two arms comparable rather than merely
+    different.
+    """
+    total = 0
+    for path in paths:
+        if classify_path(path, built) != VENDORED_IMPLEMENTATION:
+            continue
+        resolved = Path(path)
+        if not resolved.is_absolute():
+            resolved = Path(built["workspace"]) / resolved
+        if resolved.is_file():
+            total += resolved.stat().st_size
+    return total
+
+
+def executed_module_is_not_the_readable_copy(built: dict[str, Any], *,
+                                             python: str | None = None) -> dict[str, Any]:
+    """Guard against the mistake that killed the approved internal control.
+
+    An agent editing a file that the running system does not load produces work that appears done
+    and changes nothing. Any fixture offering a readable copy of code it also executes has to be
+    able to say which one runs, so the confusion is detected mechanically instead of being
+    discovered from a failed experiment.
+    """
+    probe = subprocess.run(
+        [python or sys.executable, "-B", "-c", "import objectstore; print(objectstore.__file__)"],
+        cwd=Path(built["workspace"]), env=environment(built), capture_output=True, text=True,
+        check=False)
+    loaded = Path(probe.stdout.strip()) if probe.returncode == 0 else None
+    return {
+        "loaded": str(loaded) if loaded else None,
+        "from_runtime": bool(loaded) and classify_path(loaded, built) == RUNTIME,
+        "readable_copy_is_editable": arm_has_readable_copy(built),
+        "editing_the_copy_changes_execution": False,
+    }
+
+
+def arm_has_readable_copy(built: dict[str, Any]) -> bool:
+    return (Path(built["workspace"]) / VENDORED / "objectstore").is_dir()
