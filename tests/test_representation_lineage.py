@@ -154,8 +154,15 @@ class AdversarialProvenanceTest(unittest.TestCase):
         with Arm() as arm:
             listing = ("third_party/objectstore-1.4.0/objectstore/_store.py\n"
                        "third_party/objectstore-1.4.0/objectstore/_backend.py\n")
-            got = self.resolve(arm, _mlr_context.RUN, _mlr_context.BEHAVIOUR, listing)
+            got = self.resolve(arm, _mlr_context.UNKNOWN, _mlr_context.OTHER, listing)
             self.assertEqual(got["origin"], _lineage.IMPLEMENTATION_METADATA)
+            # MLR-C3D-R3: a request family outranks file names, because a test run that prints one
+            # module path is a test run. The names are still counted; only the label of the container
+            # moves.
+            run = self.resolve(arm, _mlr_context.RUN, _mlr_context.BEHAVIOUR, listing)
+            self.assertEqual(run["origin"], _mlr_context.BEHAVIOUR)
+            self.assertTrue([c for c in run["components"]
+                             if c["form"] == _lineage.PATH_METADATA])
             self.assertEqual(got["source_bytes"], 0)
             self.assertGreater(got["metadata"]["references"], 0)
             self.assertIn("_store.py", got["metadata"]["names"])

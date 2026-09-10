@@ -1,0 +1,39 @@
+{
+  "built": {
+    "runtime": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-nhmv35z4/arm/runtime",
+    "workspace": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-nhmv35z4/arm/workspace"
+  },
+  "derived_from": {
+    "arm": "full",
+    "experiment": "mlr-deepseek-v4-flash-high-paired-r2-qualification",
+    "note": "a `glob` for **/*.py returned 1,382 bytes of file paths, one of them under the vendored module; the whole rendering was charged to the primary measurand with zero source lines in it",
+    "pair": 1,
+    "record": "evals/results/craft-mlr-deepseek-v4-flash-high-paired-r2-qualification.json"
+  },
+  "expect": {
+    "direct_source_bytes": 0,
+    "origin_not": "implementation-source",
+    "original_charged_bytes": 1382
+  },
+  "kind": "derived regression fixture \u2014 not an experiment record",
+  "parts": [
+    {
+      "role": "assistant",
+      "type": "step-start"
+    },
+    {
+      "input": {
+        "pattern": "**/*.py"
+      },
+      "output": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-nhmv35z4/arm/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py\n/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-nhmv35z4/arm/workspace/third_party/objectstore-1.4.0/objectstore/_store.py\n/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-nhmv35z4/arm/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py\n/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-nhmv35z4/arm/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py\n/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-nhmv35z4/arm/workspace/tests/__init__.py\n/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-nhmv35z4/arm/workspace/tests/test_service.py\n/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-nhmv35z4/arm/workspace/app/reports.py\n/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-nhmv35z4/arm/workspace/app/api.py\n/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-nhmv35z4/arm/workspace/app/__init__.py\n/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-nhmv35z4/arm/workspace/app/accounts.py\n/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-nhmv35z4/arm/workspace/app/exports.py\n/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-nhmv35z4/arm/workspace/app/audit.py",
+      "role": "assistant",
+      "status": "completed",
+      "tool": "glob",
+      "type": "tool"
+    },
+    {
+      "role": "assistant",
+      "type": "step-start"
+    }
+  ]
+}

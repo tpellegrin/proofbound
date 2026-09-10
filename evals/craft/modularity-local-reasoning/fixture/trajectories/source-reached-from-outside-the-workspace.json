@@ -1,0 +1,83 @@
+{
+  "built": {
+    "runtime": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-319mnfnp/arm/runtime",
+    "workspace": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-319mnfnp/arm/workspace"
+  },
+  "derived_from": {
+    "arm": "contract",
+    "experiment": "mlr-deepseek-v4-flash-high-paired-r2-qualification",
+    "note": "the CONTRACT agent found a stale FULL workspace elsewhere on the host and read all four module source files out of it; a real source exposure that must stay one. The delivered text is referenced from the fixture's own module rather than copied, so this file holds no second copy of the implementation.",
+    "pair": 2,
+    "record": "evals/results/craft-mlr-deepseek-v4-flash-high-paired-r2-qualification.json"
+  },
+  "expect": {
+    "arm": "contract",
+    "direct_source_positive": true,
+    "historical_direct_source_bytes": 3909,
+    "note": "byte total differs from the historical figure because the fixture substitutes the module text for the reader's numbered rendering",
+    "origin": "implementation-source"
+  },
+  "kind": "derived regression fixture \u2014 not an experiment record",
+  "parts": [
+    {
+      "role": "assistant",
+      "type": "step-start"
+    },
+    {
+      "input": {
+        "filePath": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py"
+      },
+      "output_from_module": "__init__.py",
+      "role": "assistant",
+      "status": "completed",
+      "tool": "read",
+      "type": "tool"
+    },
+    {
+      "role": "assistant",
+      "type": "step-start"
+    },
+    {
+      "input": {
+        "filePath": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/workspace/third_party/objectstore-1.4.0/objectstore/_store.py"
+      },
+      "output_from_module": "_store.py",
+      "role": "assistant",
+      "status": "completed",
+      "tool": "read",
+      "type": "tool"
+    },
+    {
+      "role": "assistant",
+      "type": "step-start"
+    },
+    {
+      "input": {
+        "filePath": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py"
+      },
+      "output_from_module": "_backend.py",
+      "role": "assistant",
+      "status": "completed",
+      "tool": "read",
+      "type": "tool"
+    },
+    {
+      "role": "assistant",
+      "type": "step-start"
+    },
+    {
+      "input": {
+        "filePath": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py"
+      },
+      "output_from_module": "_errors.py",
+      "role": "assistant",
+      "status": "completed",
+      "tool": "read",
+      "type": "tool"
+    },
+    {
+      "role": "assistant",
+      "type": "step-start"
+    }
+  ]
+}

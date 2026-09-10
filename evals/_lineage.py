@@ -91,6 +91,14 @@ FORMS = SUBSTANTIVE_FORMS + (OTHER_FORM, MIXED_FORM)
 # between source text and source-form reconstruction necessary.
 MATERIAL_BYTES = MIN_FINGERPRINT
 
+# How much evidence each form needs before it is material — counted in lines, because that is the
+# unit each recogniser natively works in, and because a share of the container is the wrong question
+# entirely. A minority component is still evidence: the field corpus holds 249 bytes of a namespace
+# rendering inside a 13 KB log, and roughly 2.9 KB of opcodes inside a 10 KB search result, and both
+# are treatment-relevant. Every floor is one line except disassembly, where an opcode mnemonic can
+# appear in ordinary prose and three lines is what separates a rendering from a mention.
+MATERIAL_LINES = {SOURCE_FORM: 1, DISASSEMBLY: 3, RUNTIME_STRUCTURE: 1, PATH_METADATA: 1}
+
 # CPython's disassembler prints an optional source line number, an optional jump marker, a byte
 # offset and then the opcode in capitals. That shape is the body of a disassembly; the header lines
 # around it name files and objects and are counted as what they are.
@@ -100,6 +108,12 @@ _DIS_HEADER = re.compile(r"^Disassembly of ")
 # Renderings of a live code object or namespace, as `dis`, `inspect`, `vars` and `dir` produce them.
 _STRUCTURE_MARKERS = ("<code object ", "co_names", "co_consts", "co_varnames", "co_filename",
                       "co_argcount", "co_flags", "<function ", "<module ")
+
+# How many of the module's private names a line must render before it counts as a rendering of the
+# module rather than a sentence that mentions it. Two is what a person writes in prose — "we set
+# `_ATTEMPTS` and `_FANOUT`" — and three is what `dir()` and `vars()` produce: the one such line in
+# the field corpus carries three, in two hundred and forty-nine bytes.
+_STRUCTURE_NAMES = 3
 
 
 def source_fingerprint(source: Path) -> frozenset[str]:
@@ -151,6 +165,7 @@ _DECORATIONS = (
     re.compile(r"^[A-Za-z0-9_./\-]+\.py[:\-]\d+[:\-]\s?(?P<rest>.*)$"),   # grep -n / ripgrep
     re.compile(r"^[A-Za-z0-9_./\-]+\.py[:\-]\s?(?P<rest>.*)$"),             # grep without -n
     re.compile(r"^\s*\d+[:\|\t]\s?(?P<rest>.*)$"),                          # numbered readers
+    re.compile(r"^\s*Line \d+:\s?(?P<rest>.*)$"),                            # search-hit line labels
     re.compile(r"^[+\-> ]\s?(?P<rest>.*)$"),                                 # diff / quote markers
 )
 
@@ -266,7 +281,7 @@ def components(text: str, marks: frozenset[str], module_files: Iterable[str],
                 form = DISASSEMBLY
             elif any(any(m in c for m in _STRUCTURE_MARKERS) for c in candidates) or (
                     name_pattern is not None
-                    and len(set(name_pattern.findall(line))) >= 2):
+                    and len(set(name_pattern.findall(line))) >= _STRUCTURE_NAMES):
                 form = RUNTIME_STRUCTURE
             elif any(module_reference(tok, stems, marker) for tok in _PATHISH.findall(line)):
                 form = PATH_METADATA
@@ -314,3 +329,29 @@ def component_identity(comp: dict[str, Any], form: str) -> str | None:
     if sum(len(l.encode("utf-8")) + 1 for l in lines) < MATERIAL_BYTES:
         return None
     return hashlib.sha256("\n".join(sorted(set(lines))).encode("utf-8")).hexdigest()
+
+
+def material_forms(comp: dict[str, Any]) -> tuple[str, ...]:
+    """Which substantive forms are present in enough evidence to matter, whatever their share.
+
+    Share is deliberately not consulted. A representation does not stop being treatment-relevant
+    because something larger arrived with it, and an instrument that asks "is this most of the item?"
+    will miss exactly the components an agent produces incidentally — a namespace dump inside a log,
+    a disassembly inside a search result. Each form is judged in its own unit against a floor derived
+    from what its recogniser needs to be distinctive at all.
+    """
+    return tuple(form for form in SUBSTANTIVE_FORMS
+                 if len(comp["lines"].get(form) or []) >= MATERIAL_LINES[form])
+
+
+def dominant_form(comp: dict[str, Any]) -> str | None:
+    """The substantive form that is most of this text, if one is.
+
+    Separate from materiality and used for a different purpose: materiality decides what is counted,
+    dominance decides what the container as a whole should be called. A text that is mostly opcodes
+    is a disassembly; a text that merely contains some is not.
+    """
+    for form in SUBSTANTIVE_FORMS:
+        if comp["bytes"][form] * 2 >= comp["total"] > 0:
+            return form
+    return None

@@ -103,7 +103,8 @@ UNKNOWN = "unknown"
 DOCUMENTATION_MARKERS = ("help(", "pydoc", "render_doc", "__doc__", "getdoc", "plaintext.document")
 
 # Facilities that render the interior of a live object.
-INTROSPECTION_MARKERS = ("dis.dis", "dis(", "__code__", "co_consts", "co_names", "co_varnames",
+INTROSPECTION_MARKERS = ("dis.dis", "dis(", "import dis", "__code__", "co_consts", "co_names",
+                         "co_varnames",
                          "co_filename", "getsource", "getmembers", "getsourcelines", "marshal",
                          "__dict__", "vars(", "dir(", "importlib", "__loader__", ".pyc",
                          "disassemble", "unmarshal", "signature", "iter_modules", "__path__",
@@ -419,86 +420,112 @@ class _Session:
 _SETTLING_LOCATIONS = (IMPLEMENTATION_SOURCE, IMPLEMENTATION_RUNTIME, PUBLIC_CONTRACT)
 
 
-def attribute(event: dict[str, Any], built: dict[str, Any],
-              session: "_Session | None" = None) -> dict[str, Any] | None:
-    """One transcript part, as a representation with a route, a form and an origin.
+# Every tool whose result can enter model-visible history, and the adapter that normalises it. The
+# registry is the coverage boundary: a tool that is not here does not get a quiet default, it gets
+# recorded as uncovered so a test can fail on it rather than an experiment silently losing evidence.
+INBOUND_TOOLS = ("read", "edit", "write", "bash", "grep", "glob", "todowrite")
 
-    Three channels, because two were not enough. The **route** says what was asked for. The **form**
-    says what the delivered bytes encode. The **origin** says where the information came from, and is
-    settled by the strongest evidence available: a link to the event that produced it, failing that
-    the identity of the artifact opened, failing that the family of the request, failing that the
-    bytes, and failing all of those, nothing — recorded as unresolved rather than as zero.
+# Part types that carry text into the message history. Same purpose.
+INBOUND_PART_TYPES = ("tool", "text", "reasoning", "patch")
 
-    Assistant text and reasoning are attributed to the model. That is an origin and not a shrug: text
-    a model wrote is text the model wrote, however exactly it reproduces something it read.
+
+def normalise(event: dict[str, Any], built: dict[str, Any]) -> dict[str, Any] | None:
+    """One recorded part, as a transport-independent inbound representation.
+
+    The R2 qualification failed because `grep` and `glob` never reached the precedence table that
+    `read` and `bash` obeyed: a `glob` returning file paths was called implementation source because
+    one path sat under the module, and a `grep` returning three kilobytes of opcodes was called
+    nothing at all. Neither is a search-specific problem. Both are what happens when provenance is
+    decided per tool.
+
+    So the tools stop deciding. Each adapter answers the same small set of questions — what text
+    entered history, which artifact this *is* the contents of, which paths it names, which files it
+    produced, whether the model wrote it — and one resolver answers the rest. Tool identity survives
+    as the route, which is where it belongs.
     """
-    session = session if session is not None else _Session(built)
     part = event["part"]
     kind = part.get("type")
+    role = event.get("role")
     if kind == "tool":
         state = part.get("state") or {}
         payload = state.get("output")
-        if not isinstance(payload, str):
-            payload = ""
+        payload = payload if isinstance(payload, str) else ""
         arguments = state.get("input") or {}
         tool = part.get("tool") or "?"
-        detail = ""
-        basis = BASIS_DEFAULT
-        if tool in ("read", "edit", "write") and isinstance(arguments.get("filePath"), str):
-            detail = arguments["filePath"]
-            route = EDIT if tool in ("edit", "write") else SOURCE_FILE
-            provenance = classify_file(detail, built)
-            ancestry = session.artifact(detail)
-            if ancestry:
-                basis = BASIS_ANCESTRY
-            else:
-                basis = BASIS_ARTIFACT if provenance in _SETTLING_LOCATIONS else BASIS_DEFAULT
-            if tool == "write":
-                # The model produced this file. A later read of it is a replay of the model's own
-                # text, not a fresh observation of anything.
-                session.note_artifact(detail, MODEL_DERIVED)
-        elif tool == "bash" and isinstance(arguments.get("command"), str):
-            detail = arguments["command"]
-            route = command_route(detail, built)
-            written = produced_artifacts(detail)
-            provenance = _command_provenance(route, payload, built)
-            ancestry = next((session.artifact(tok) for tok in referenced_paths(detail)
-                             if tok not in written and session.artifact(tok)), None)
-            basis = BASIS_ANCESTRY if ancestry else BASIS_ROUTE
-            produced = artifact_origin(route, detail, built)
-            if produced:
-                for path in written:
-                    session.note_artifact(path, produced)
-        elif tool in ("grep", "glob"):
-            detail = json.dumps(arguments, sort_keys=True)[:400]
-            route = SEARCH
-            provenance, basis = _search_provenance(payload, built), BASIS_ROUTE
-            ancestry = None
-        else:
-            detail = json.dumps(arguments, sort_keys=True)[:400] if arguments else ""
-            route = UNKNOWN
-            provenance, basis, ancestry = OTHER, BASIS_DEFAULT, None
         metadata = state.get("metadata") or {}
-        return _item(event, session, kind=f"tool:{tool}", route=route, provenance=provenance,
-                     basis=basis, ancestry=ancestry, detail=detail, text=payload,
-                     truncated=bool(metadata.get("truncated")), status=state.get("status"))
+        base = {"kind": f"tool:{tool}", "text": payload, "author": False,
+                "truncated": bool(metadata.get("truncated")), "status": state.get("status"),
+                "artifact": None, "referenced": (), "produces": (), "route_hint": None,
+                "hint": None, "covered": tool in INBOUND_TOOLS}
+        if tool in ("read", "edit", "write") and isinstance(arguments.get("filePath"), str):
+            path = arguments["filePath"]
+            produces = () if tool == "read" else ((path, MODEL_DERIVED),)
+            return {**base, "route": EDIT if tool in ("edit", "write") else SOURCE_FILE,
+                    "detail": path, "artifact": path, "referenced": (path,), "produces": produces}
+        if tool == "bash" and isinstance(arguments.get("command"), str):
+            command = arguments["command"]
+            route = command_route(command, built)
+            written = produced_artifacts(command)
+            origin = artifact_origin(route, command, built)
+            return {**base, "route": route, "detail": command,
+                    "referenced": tuple(p for p in referenced_paths(command) if p not in written),
+                    "produces": tuple((w, origin) for w in written) if origin else (),
+                    "hint": "command"}
+        if tool in ("grep", "glob"):
+            # A search names its subject in the output, not in its arguments. Paths that came back
+            # are how a search can inherit the history of something produced earlier; what the
+            # search *returned* is decided by the same decomposition as everything else.
+            return {**base, "route": SEARCH,
+                    "detail": json.dumps(arguments, sort_keys=True)[:400],
+                    "referenced": tuple(_PATHLIKE.findall(payload or ""))[:200]}
+        return {**base, "route": UNKNOWN,
+                "detail": json.dumps(arguments, sort_keys=True)[:400] if arguments else ""}
     if kind in ("text", "reasoning"):
         text = part.get("text") or ""
         if not text:
             return None
-        if event.get("role") == "user":
-            provenance, basis = HARNESS, BASIS_DEFAULT
-        else:
-            provenance, basis = MODEL_DERIVED, BASIS_AUTHOR
-        return _item(event, session, kind=f"{event.get('role')}:{kind}", route=UNKNOWN,
-                     provenance=provenance, basis=basis, ancestry=None, detail="", text=text,
-                     truncated=False, status=None)
+        return {"kind": f"{role}:{kind}", "route": UNKNOWN, "detail": "", "text": text,
+                "artifact": None, "referenced": (), "produces": (), "author": role != "user",
+                "route_hint": None if role != "user" else HARNESS, "truncated": False,
+                "status": None, "covered": True}
     if kind == "patch":
-        return _item(event, session, kind="patch", route=EDIT, provenance=APPLICATION,
-                     basis=BASIS_ARTIFACT, ancestry=None, detail="",
-                     text=json.dumps(part.get("files") or [], sort_keys=True), truncated=False,
-                     status=None)
+        return {"kind": "patch", "route": EDIT, "detail": "",
+                "text": json.dumps(part.get("files") or [], sort_keys=True),
+                "artifact": None, "referenced": (), "produces": (), "author": False,
+                "route_hint": APPLICATION, "truncated": False, "status": None, "covered": True}
+    if kind in ("step-start", "step-finish"):
+        return None
+    text = part.get("text")
+    if not isinstance(text, str) or not text:
+        return None
+    # A textual part of a kind nothing here knows about. Recorded rather than dropped, so the
+    # coverage test has something to fail on.
+    return {"kind": f"{kind}:unknown", "route": UNKNOWN, "detail": "", "text": text,
+            "artifact": None, "referenced": (), "produces": (), "author": False,
+            "route_hint": None, "truncated": False, "status": None, "covered": False}
+
+
+def _route_hint(route: str) -> str | None:
+    """What the family of request would imply, if the delivered bytes imply nothing.
+
+    A hint and nothing more. It is consulted after the content, which is the ordering the R2
+    qualification proved necessary — twice now a route saying *source* has turned a listing of paths
+    into implementation source, and a route is the weakest evidence in the table for a reason.
+    """
+    if route == RUN:
+        return BEHAVIOUR
+    if route in (DOCUMENTATION, INTROSPECTION):
+        return PUBLIC_CONTRACT
     return None
+
+
+def attribute(event: dict[str, Any], built: dict[str, Any],
+              session: "_Session | None" = None) -> dict[str, Any] | None:
+    """One transcript part, as a representation with a route, forms and origins."""
+    inbound = normalise(event, built)
+    if inbound is None:
+        return None
+    return _resolve(event, inbound, session if session is not None else _Session(built), built)
 
 
 def _command_provenance(route: str, output: str, built: dict[str, Any]) -> str:
@@ -542,14 +569,6 @@ def _command_provenance(route: str, output: str, built: dict[str, Any]) -> str:
     return OTHER
 
 
-def _search_provenance(output: str, built: dict[str, Any]) -> str:
-    """A search returns paths; the interesting question is whether any of them was the module."""
-    for token in set(_PATHLIKE.findall(output or "")):
-        if _mlr.classify_path(token, built) == _mlr.VENDORED_IMPLEMENTATION:
-            return IMPLEMENTATION_SOURCE
-    return OTHER
-
-
 _MARKS = None
 _MODULE_FILES = None
 
@@ -576,80 +595,125 @@ def _components(text: str) -> dict[str, Any]:
                                "objectstore")
 
 
+# What each representation form is, when nothing stronger says where it came from. A form is not an
+# origin — the same form can have any history — so this mapping is consulted only after ancestry, the
+# artifact's own identity and authorship have all declined to answer.
+# Forms that are *of* the module rather than *about* it. Only these decide what a container as a
+# whole is: a text that is mostly opcodes is a disassembly, but a three-line test failure that names
+# one module file is a test failure that named a file, and dominance over so few lines says more
+# about the size of the snippet than about what it is.
+CONTENT_FORMS = (_lineage.SOURCE_FORM, _lineage.DISASSEMBLY, _lineage.RUNTIME_STRUCTURE)
+
+FORM_ORIGIN = {
+    _lineage.SOURCE_FORM: IMPLEMENTATION_SOURCE,
+    _lineage.DISASSEMBLY: IMPLEMENTATION_RUNTIME,
+    _lineage.RUNTIME_STRUCTURE: IMPLEMENTATION_RUNTIME,
+    _lineage.PATH_METADATA: _lineage.IMPLEMENTATION_METADATA,
+}
+
+
 def resolve_origin(route: str, requested: str, text: str, *, basis: str = BASIS_ROUTE,
                    ancestry: str | None = None,
                    comp: dict[str, Any] | None = None) -> dict[str, Any]:
-    """What this delivered text is, and — separately — where the strongest available evidence says
-    it came from.
+    """What this delivered text is, and where the strongest available evidence says it came from.
 
     Three questions, kept apart. **Form** is what the bytes encode, and is decided by the bytes
     alone. **Origin** is where the information came from, and is decided by the strongest evidence
     there is. **Route** is how it arrived, and is the caller's to record.
 
     The precedence is the whole of the repair. Linked ancestry outranks a classified path; a
-    classified path outranks the family of request; all of those outrank what the text looks like;
-    and what the text looks like outranks nothing but the absence of evidence. Content may still
-    *promote* an origin nobody could name — that is how source echoed through a log is caught — but
-    it may never overwrite an origin something stronger already settled. Two byte-identical texts can
-    therefore carry different origins, which is the point: a module source line read from the module
-    and the same line typed out by a model that only saw bytecode are the same form and different
-    histories.
+    classified path outranks authorship of the text; all of those outrank what the text looks like;
+    and what the text looks like outranks the family of request, which is the weakest evidence in the
+    table and has now twice turned a listing of file paths into implementation source.
 
-    Metadata is claimed only when the module's file names are most of what came back, and only when
-    nothing more substantial came with them.
+    **Components carry their own origins.** An item is not one thing. A log that echoes a namespace
+    dump is a log containing a namespace dump, and calling the whole thing harness loses 249 bytes of
+    the module's interior while calling the whole thing runtime overstates thirteen kilobytes. Each
+    material component is attributed; the item's headline origin describes only what the container
+    mostly is.
     """
     comp = comp if comp is not None else _components(text)
     forms = comp["bytes"]
     total = comp["total"]
+    material = _lineage.material_forms(comp)
+    dominant = _lineage.dominant_form(comp)
     form = _lineage.form_of(comp)
     metadata = _lineage.metadata_in(text, _module_files(), "objectstore")
-    origin = ancestry if ancestry else requested
     settled = basis in SETTLED_BASES
 
-    if not settled:
-        if forms[_lineage.SOURCE_FORM] >= _lineage.MATERIAL_BYTES \
-                and origin not in _lineage.IMPLEMENTATION_ORIGINS:
-            origin = _lineage.IMPLEMENTATION_SOURCE
-        elif (forms[_lineage.DISASSEMBLY] + forms[_lineage.RUNTIME_STRUCTURE]) * 2 >= total \
-                and forms[_lineage.DISASSEMBLY] + forms[_lineage.RUNTIME_STRUCTURE] \
-                >= _lineage.MATERIAL_BYTES \
-                and origin not in _lineage.IMPLEMENTATION_ORIGINS:
-            origin = IMPLEMENTATION_RUNTIME
-        elif metadata["references"] and origin not in _lineage.IMPLEMENTATION_ORIGINS \
-                and forms[_lineage.PATH_METADATA] * 2 >= total:
-            # Only when the references are most of what came back. A `git ls-files` listing *is* the
-            # module's structure; a test run whose traceback happens to name one file is test output
-            # that disclosed a file name, and relabelling the whole artifact by its smallest part is
-            # the same mistake as labelling it by its path. The references are recorded on the item
-            # either way, so a minority disclosure is visible without being promoted.
-            origin = _lineage.IMPLEMENTATION_METADATA
+    if settled:
+        origin = ancestry or requested
+    elif dominant in CONTENT_FORMS:
+        origin = FORM_ORIGIN[dominant]
+    elif requested not in (OTHER, None):
+        origin = requested
+    elif dominant is not None:
+        origin = FORM_ORIGIN[dominant]
+    else:
+        origin = OTHER
 
-    # How much of this is *direct* implementation source. When the artifact opened is one of the
-    # module's own files the whole delivered rendering counts, because a line-numbered read of a
-    # 2,200-byte file delivered 2,697 bytes of that file and charging only the distinctive lines
-    # would understate what the model received. Everywhere else only the lines demonstrably verbatim
-    # from the module are claimed — and only when the origin is source at all, so a reconstruction
-    # that matches byte for byte contributes nothing to the primary measurand.
+    # Every material component, with the origin the evidence gives it. Under a settled basis they all
+    # inherit that history — a model's own sentence is the model's however exactly it reproduces
+    # something, and a module source file is source throughout. Otherwise each component takes the
+    # origin its form implies, which is what lets a minority body be counted without promoting the
+    # container it arrived in.
+    components = []
+    for candidate in material:
+        components.append({
+            "form": candidate,
+            "bytes": forms[candidate],
+            "lines": len(comp["lines"][candidate]),
+            "origin": origin if settled else FORM_ORIGIN[candidate],
+            "identity": _lineage.component_identity(comp, candidate),
+        })
+
+    if origin in _lineage.IMPLEMENTATION_ORIGINS and \
+            not any(c["origin"] == origin for c in components):
+        # Attributed as a whole and recognised in no part: a `vars()` dump too small to be a
+        # rendering, a help page that names two private modules. The item is the component.
+        components.append({"form": form, "bytes": total, "lines": 0, "origin": origin,
+                           "identity": hashlib.sha256((text or "").encode("utf-8")).hexdigest()})
+
+    # How much of this is *direct* implementation source. When ancestry or the artifact's own path
+    # asserted source, the whole delivered rendering counts — a line-numbered read of a 2,200-byte
+    # file delivered 2,697 bytes of that file. Everywhere else only the lines demonstrably verbatim
+    # from the module are claimed, so a listing that merely lives under the module contributes
+    # nothing, and a reconstruction that matches byte for byte contributes nothing either.
+    asserted = (ancestry or requested) == _lineage.IMPLEMENTATION_SOURCE
+    source_component = next((c for c in components
+                             if c["form"] == _lineage.SOURCE_FORM
+                             and c["origin"] == _lineage.IMPLEMENTATION_SOURCE), None)
     source_bytes = 0
     identity = None
-    asserted = (ancestry or requested) == _lineage.IMPLEMENTATION_SOURCE
-    if origin == _lineage.IMPLEMENTATION_SOURCE:
-        source_bytes = (len((text or "").encode("utf-8")) if asserted
-                        else forms[_lineage.SOURCE_FORM])
+    if source_component is not None:
+        source_bytes = len((text or "").encode("utf-8")) if asserted else source_component["bytes"]
+        identity = _lineage.source_identity(comp["matched"]) if comp["matched"] else \
+            hashlib.sha256((text or "").encode("utf-8")).hexdigest()
+    elif asserted and origin == _lineage.IMPLEMENTATION_SOURCE:
+        # The artifact opened is one of the module's own files. What came back is that file, whether
+        # or not enough of its lines were long enough to be recognised on their own.
+        source_bytes = len((text or "").encode("utf-8"))
         identity = _lineage.source_identity(comp["matched"]) if comp["matched"] else \
             hashlib.sha256((text or "").encode("utf-8")).hexdigest()
 
-    # Source-shaped text that did not come from source. Reported in its own channel: it is evidence
-    # about the treatment — how completely an agent rebuilt the interior it could not read — and it
-    # is not evidence that the boundary leaked.
-    reconstruction = forms[_lineage.SOURCE_FORM] if origin != _lineage.IMPLEMENTATION_SOURCE else 0
-    reconstruction_identity = (_lineage.source_identity(comp["matched"])
-                               if reconstruction >= _lineage.MATERIAL_BYTES else None)
+    # Source-shaped text that did not come from source. Its own channel: it is evidence about the
+    # treatment — how completely an agent rebuilt an interior it could not read — and not evidence
+    # that the boundary leaked.
+    reconstruction = 0
+    reconstruction_identity = None
+    recon_component = next((c for c in components
+                            if c["form"] == _lineage.SOURCE_FORM
+                            and c["origin"] != _lineage.IMPLEMENTATION_SOURCE), None)
+    if recon_component is not None:
+        reconstruction = recon_component["bytes"]
+        reconstruction_identity = recon_component["identity"]
 
     return {
         "origin": origin,
         "form": form,
         "form_bytes": dict(forms),
+        "form_lines": {f: len(comp["lines"][f]) for f in comp["lines"]},
+        "components": components,
         "source_bytes": source_bytes,
         "source_lines": comp["source_lines"],
         "source_identity": identity,
@@ -659,60 +723,113 @@ def resolve_origin(route: str, requested: str, text: str, *, basis: str = BASIS_
         "component_identities": {f: _lineage.component_identity(comp, f)
                                  for f in _lineage.SUBSTANTIVE_FORMS},
         # True when something other than the path or the route decided: the delivered bytes, or a
-        # link to the event that produced them. This is the count that says whether the lineage
-        # machinery did anything in a given run.
+        # link to the event that produced them.
         "by_lineage": origin != requested,
     }
 
 
-def _item(event: dict[str, Any], session: "_Session", *, kind: str, route: str, provenance: str,
-          basis: str, ancestry: str | None, detail: str, text: str, truncated: bool,
-          status: str | None) -> dict[str, Any]:
-    payload = text or ""
+def _command_provenance(route: str, output: str, built: dict[str, Any]) -> str:
+    """Where a shell command's output came from, once both channels have spoken.
+
+    Kept as its own entry point because a command is the case where route and content most often
+    disagree. The answer is the same one the common resolver gives: the delivered bytes first, the
+    family of request only when the bytes say nothing.
+    """
+    comp = _components(output)
+    dominant = _lineage.dominant_form(comp)
+    if dominant in CONTENT_FORMS:
+        return FORM_ORIGIN[dominant]
+    if route in (DOCUMENTATION, INTROSPECTION):
+        return IMPLEMENTATION_RUNTIME if _internal_hits(output) else PUBLIC_CONTRACT
+    hint = _route_hint(route)
+    if hint:
+        return hint
+    if dominant is not None:
+        return FORM_ORIGIN[dominant]
+    return OTHER
+
+
+def _resolve(event: dict[str, Any], inbound: dict[str, Any], session: "_Session",
+             built: dict[str, Any]) -> dict[str, Any]:
+    """One normalised inbound event, through the single precedence table."""
+    payload = inbound["text"] or ""
     hits = _internal_hits(payload)
     comp = _components(payload)
     identities = {f: _lineage.component_identity(comp, f) for f in _lineage.SUBSTANTIVE_FORMS}
-    if ancestry is None and basis not in SETTLED_BASES:
+
+    ancestry = None
+    basis = BASIS_DEFAULT
+    requested = OTHER
+
+    artifact = inbound.get("artifact")
+    if artifact:
+        requested = classify_file(artifact, built)
+        inherited = session.artifact(artifact)
+        if inherited:
+            ancestry, basis = inherited, BASIS_ANCESTRY
+        elif requested in _SETTLING_LOCATIONS:
+            basis = BASIS_ARTIFACT
+    if ancestry is None:
+        for path in inbound.get("referenced") or ():
+            inherited = session.artifact(path)
+            if inherited:
+                ancestry, basis = inherited, BASIS_ANCESTRY
+                break
+    if ancestry is None and inbound.get("author"):
+        requested, basis = MODEL_DERIVED, BASIS_AUTHOR
+    if ancestry is None and basis == BASIS_DEFAULT:
         # This exact content has been delivered before. Whatever it was then, it still is: a log that
         # echoes a source read echoes source, a log that echoes a disassembly echoes a disassembly,
         # and a log that echoes the model's own sentence echoes the model. The log is a route.
         seen = session.echo(identities)
         if seen:
             ancestry, basis = seen, BASIS_ANCESTRY
-    lineage = resolve_origin(route, provenance, payload, basis=basis, ancestry=ancestry, comp=comp)
+    if basis == BASIS_DEFAULT and requested == OTHER:
+        # The request family, which is the weakest evidence in the table and is consulted last. For a
+        # shell command the family is worth asking properly, because a documentation call that
+        # returned the interior and one that returned a signature are the same request with
+        # different answers.
+        hint = (_command_provenance(inbound["route"], payload, built)
+                if inbound.get("hint") == "command" else inbound.get("route_hint"))
+        if hint and hint != OTHER:
+            requested, basis = hint, BASIS_ROUTE
+
+    for path, origin in inbound.get("produces") or ():
+        session.note_artifact(path, origin)
+
+    lineage = resolve_origin(inbound["route"], requested, payload, basis=basis, ancestry=ancestry,
+                             comp=comp)
     origin = lineage["origin"]
-    if basis not in SETTLED_BASES and origin != (ancestry or provenance):
-        # Nothing stronger had an answer and the delivered bytes supplied one. Recorded as such, so
-        # the audit can see how much of a run's attribution rests on the weakest evidence there is.
+    if basis not in SETTLED_BASES and origin != (ancestry or requested):
         basis = BASIS_CONTENT
-    # An item that plainly discloses the interior but resolves to no implementation origin is not
-    # quietly filed as harmless. It is marked unresolved, so the audit sees an open question rather
-    # than a clean zero.
-    # Fail closed on *inbound* text only, and only where nothing settled the origin. Text the model
-    # wrote is downstream of what it already consumed, not a route by which information enters, and
-    # marking it unresolved would flag every run that reasoned aloud about the module it had just
-    # read. Where ancestry or an artifact identified the source of the bytes, a disclosure is
-    # explained rather than open. It stays recorded and flagged as a disclosure diagnostic; the check
-    # that matters is whether such text appears in a run that consumed no implementation at all,
-    # which the audit asks separately.
-    inbound = kind.startswith("tool:") or kind.startswith("user:")
-    if inbound and hits and basis not in SETTLED_BASES \
+
+    # An item that plainly discloses the interior but resolves to no implementation origin, in no
+    # material component, is not quietly filed as harmless. It is marked unresolved, so the audit
+    # sees an open question rather than a clean zero. Inbound only: text the model wrote is
+    # downstream of what it consumed, not a route by which information enters.
+    inbound_kind = inbound["kind"].startswith("tool:") or inbound["kind"].startswith("user:")
+    implementation_components = [c for c in lineage["components"]
+                                 if c["origin"] in _lineage.IMPLEMENTATION_ORIGINS]
+    if inbound_kind and hits and basis not in SETTLED_BASES \
             and origin not in _lineage.IMPLEMENTATION_ORIGINS \
-            and not lineage["metadata"]["references"]:
+            and not implementation_components and not lineage["metadata"]["references"]:
         origin = _lineage.UNRESOLVED
     session.note_content(identities, origin)
     return {
         "ordinal": event["ordinal"],
-        "kind": kind,
-        "route": route,
+        "kind": inbound["kind"],
+        "route": inbound["route"],
         "basis": basis,
-        "requested": provenance,
+        "covered": bool(inbound.get("covered")),
+        "requested": requested,
         "origin": origin,
         "provenance": origin,
         "form": lineage["form"],
         "form_bytes": lineage["form_bytes"],
+        "form_lines": lineage["form_lines"],
+        "components": lineage["components"],
         "by_lineage": lineage["by_lineage"],
-        "detail": detail[:600],
+        "detail": (inbound.get("detail") or "")[:600],
         "bytes": len(payload.encode("utf-8")),
         "source_bytes": lineage["source_bytes"],
         "source_lines": lineage["source_lines"],
@@ -722,40 +839,50 @@ def _item(event: dict[str, Any], session: "_Session", *, kind: str, route: str, 
         "metadata_bytes": lineage["metadata"]["bytes"],
         "metadata_names": lineage["metadata"]["names"],
         "sha256": hashlib.sha256(payload.encode("utf-8")).hexdigest(),
-        "truncated": truncated,
-        "status": status,
+        "truncated": inbound.get("truncated", False),
+        "status": inbound.get("status"),
         "internal_names": hits,
     }
 
 
 def contradiction(item: dict[str, Any]) -> str | None:
-    """Whether an item's recorded origin is contradicted by what it delivered.
+    """Whether an item's recorded attribution is contradicted by what it delivered.
 
-    Detection, never classification. This does not reassign anything — a second classifier quietly
-    overruling the first is how instruments acquire two disagreeing opinions and report the louder
-    one. It asks one question: given how weakly this origin is evidenced, does the delivered
-    representation contradict it strongly enough that the attribution should be treated as failed?
+    Detection, never classification. It reassigns nothing — a second classifier quietly overruling
+    the first is how instruments acquire two disagreeing opinions and report the louder one.
 
-    Only weakly evidenced origins can be contradicted. Where ancestry or an artifact settled the
-    origin, a form that disagrees is not a contradiction but the finding: source-shaped text under a
-    runtime ancestry is reconstruction, and reporting it as an escape would make the instrument
-    unable to see the very thing it was repaired to see.
+    **Materiality, not dominance.** The share rule this replaces missed 3,632 bytes of opcodes because
+    they were only a third of the item that carried them, which is the same mistake in a smaller
+    costume as the one that lost 29,499 bytes behind a temporary path. Each form is judged against
+    its own floor, in its own unit, with no reference to how much else arrived alongside it.
+
+    It re-derives materiality from the recorded form counts rather than trusting the component list,
+    so it fails if the two ever disagree. That is the whole of its job: a safety net that catches a
+    classifier which stopped attributing something, not a second opinion about what things are.
     """
-    if item["basis"] in SETTLED_BASES:
+    if item["origin"] == _lineage.UNRESOLVED:
+        # The classifier has already recorded an open question. Reporting it a second time as a
+        # contradiction would double-count one uncertainty and make the audit look worse than the
+        # evidence is.
         return None
-    forms = item["form_bytes"]
-    total = max(item["bytes"], 1)
-    runtime_form = forms[_lineage.DISASSEMBLY] + forms[_lineage.RUNTIME_STRUCTURE]
-    if runtime_form * 2 >= total and runtime_form >= _lineage.MATERIAL_BYTES \
-            and item["origin"] not in _lineage.IMPLEMENTATION_ORIGINS:
-        return "runtime-form body under a non-implementation origin"
-    if forms[_lineage.SOURCE_FORM] * 2 >= total \
-            and forms[_lineage.SOURCE_FORM] >= _lineage.MATERIAL_BYTES \
-            and item["origin"] != _lineage.IMPLEMENTATION_SOURCE:
-        return "source-form body under a non-source origin"
+    forms = item.get("form_bytes") or {}
+    lines = item.get("form_lines") or {}
+    attributed = {c["form"] for c in item.get("components") or []}
+    for form in _lineage.SUBSTANTIVE_FORMS:
+        if form in attributed:
+            continue
+        if lines.get(form, 0) >= _lineage.MATERIAL_LINES[form] and forms.get(form, 0):
+            return f"material {form} component attributed to nothing"
     if item["origin"] == _lineage.IMPLEMENTATION_SOURCE \
-            and forms[_lineage.SOURCE_FORM] < _lineage.MATERIAL_BYTES:
+            and item["basis"] not in SETTLED_BASES \
+            and forms.get(_lineage.SOURCE_FORM, 0) < _lineage.MATERIAL_BYTES:
         return "source origin with no source content"
+    if item.get("internal_names") and item["basis"] not in SETTLED_BASES \
+            and not [c for c in item.get("components") or []
+                     if c["origin"] in _lineage.IMPLEMENTATION_ORIGINS] \
+            and item["origin"] not in _lineage.IMPLEMENTATION_ORIGINS \
+            and not item.get("metadata_bytes"):
+        return "module-internal names with no attributed implementation component"
     return None
 
 
@@ -826,6 +953,23 @@ def ledger(events: list[dict[str, Any]], built: dict[str, Any]) -> dict[str, Any
         source_seen.add(item["source_identity"])
         source_unique += item["source_bytes"]
 
+    # Attributed components, deduplicated by content identity. This is where the module-internal
+    # channels are counted from, because an item's headline origin describes the container and the
+    # experiment is asking about what was inside it.
+    component_origin: dict[str, dict[str, int]] = {}
+    component_seen: set[tuple[str, str]] = set()
+    for item in items:
+        for part in item.get("components") or []:
+            bucket = component_origin.setdefault(part["origin"],
+                                                 {"unique_bytes": 0, "delivered_bytes": 0,
+                                                  "components": 0})
+            bucket["components"] += 1
+            bucket["delivered_bytes"] += part["bytes"] * item["delivered_to_calls"]
+            key = (part["origin"], part["identity"] or item["sha256"])
+            if key not in component_seen:
+                component_seen.add(key)
+                bucket["unique_bytes"] += part["bytes"]
+
     metadata_seen: set[str] = set()
     metadata_names: set[str] = set()
     metadata_refs = 0
@@ -888,7 +1032,8 @@ def ledger(events: list[dict[str, Any]], built: dict[str, Any]) -> dict[str, Any
                                    "bytes": item["bytes"], "reason": reason})
 
     unresolved = [i for i in items if i["origin"] == _lineage.UNRESOLVED]
-    runtime = by_class[IMPLEMENTATION_RUNTIME]
+    runtime = component_origin.get(IMPLEMENTATION_RUNTIME,
+                                   {"unique_bytes": 0, "delivered_bytes": 0, "components": 0})
     return {
         "model_calls": len(calls),
         "tokens": token_usage(events),
@@ -918,6 +1063,9 @@ def ledger(events: list[dict[str, Any]], built: dict[str, Any]) -> dict[str, Any
             "after_implementation_representation": reconstruction_after,
         },
         "by_form": dict(sorted(by_form.items())),
+        "by_component_origin": dict(sorted(component_origin.items())),
+        "uncovered_events": [{"ordinal": i["ordinal"], "kind": i["kind"]}
+                             for i in items if not i.get("covered")],
         "by_basis": dict(sorted(
             (b, sum(1 for i in items if i["basis"] == b)) for b in BASES)),
         "contradictions": contradictions,

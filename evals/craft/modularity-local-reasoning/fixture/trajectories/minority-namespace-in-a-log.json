@@ -1,0 +1,39 @@
+{
+  "built": {
+    "runtime": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-319mnfnp/arm/runtime",
+    "workspace": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-319mnfnp/arm/workspace"
+  },
+  "derived_from": {
+    "arm": "contract",
+    "experiment": "mlr-deepseek-v4-flash-high-paired-r2-qualification",
+    "note": "one 249-byte line of a namespace rendering inside a 13 KB worker-log read; it kept harness origin because it was 1.9% of the item that carried it",
+    "pair": 2,
+    "record": "evals/results/craft-mlr-deepseek-v4-flash-high-paired-r2-qualification.json"
+  },
+  "expect": {
+    "component_origin": "implementation-runtime",
+    "direct_source_bytes": 0,
+    "original_missed_bytes": 249
+  },
+  "kind": "derived regression fixture \u2014 not an experiment record",
+  "parts": [
+    {
+      "role": "assistant",
+      "type": "step-start"
+    },
+    {
+      "input": {
+        "filePath": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-319mnfnp/arm/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/phases/build/tasks/MLR-external/attempts/implementer-1/worker.log"
+      },
+      "output": "<path>/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-319mnfnp/arm/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/phases/build/tasks/MLR-external/attempts/implementer-1/worker.log</path>\n<type>file</type>\n<content>\n1: \u001b[0m\n2: > build \u00b7 deepseek-v4-flash\n3: \u001b[0m\n72: \u001b[0m$ \u001b[0mpython3 -c \"import objectstore, inspect; print(objectstore.__file__); print(dir(objectstore))\" 2>&1; echo \"---\"; python3 --version; echo \"---\"; git -C /private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-319mnfnp/arm/workspace status --short; echo \"---\"; git -C /private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-319mnfnp/arm/workspace log --oneline -5\n73: /private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-319mnfnp/arm/runtime/objectstore/__init__.pyc\n74: ['NotFound', 'StorageUnavailable', '__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__', '__version__', '_backend', '_errors', '_store', 'delete', 'exists', 'get', 'put']\n75: ---\n76: Python 3.9.6\n\n(End of file - total 153 lines)\n</content>",
+      "role": "assistant",
+      "status": "completed",
+      "tool": "read",
+      "type": "tool"
+    },
+    {
+      "role": "assistant",
+      "type": "step-start"
+    }
+  ]
+}

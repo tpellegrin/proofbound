@@ -98,6 +98,26 @@ def ledger(parts, built):
     return _mlr_context.ledger(events(parts), built)
 
 
+def load_fixture(doc):
+    """A derived trajectory fixture, replayed through the ledger."""
+    parts = []
+    for entry in doc["parts"]:
+        kind = entry["type"]
+        if kind == "step-start":
+            parts.append(call())
+            continue
+        if kind == "tool":
+            output = entry.get("output")
+            if output is None:
+                output = (MODULE / entry["output_from_module"]).read_text(encoding="utf-8")
+            parts.append({"type": "tool", "tool": entry["tool"],
+                          "state": {"input": entry["input"], "output": output,
+                                    "status": entry.get("status")}})
+            continue
+        parts.append({"type": kind, "text": entry.get("text", "")})
+    return _mlr_context.ledger(events(parts), doc["built"])
+
+
 def only(led, kind_prefix="tool:"):
     """The one attributed item of interest, when a case delivers exactly one."""
     items = [i for i in led["items"] if i["kind"].startswith(kind_prefix)]
@@ -399,28 +419,89 @@ class CausalPrecedenceTest(unittest.TestCase):
 
 
 class EscapeDetectionTest(unittest.TestCase):
-    """Contradiction, not reclassification. §54, §55."""
+    """Contradiction, not reclassification — and materiality, not dominance. §26-§32."""
 
     maxDiff = None
 
-    def test_a_runtime_body_under_a_weakly_evidenced_other_is_a_contradiction(self):
-        item = {"basis": _mlr_context.BASIS_DEFAULT, "origin": _mlr_context.OTHER,
-                "bytes": 1000, "form_bytes": {f: 0 for f in _lineage.SUBSTANTIVE_FORMS}}
-        item["form_bytes"][_lineage.DISASSEMBLY] = 950
+    def item(self, *, origin, basis, bytes_, forms, lines, components=(), names=(), metadata=0):
+        blank = {f: 0 for f in _lineage.SUBSTANTIVE_FORMS}
+        blank[_lineage.OTHER_FORM] = 0
+        return {"origin": origin, "basis": basis, "bytes": bytes_,
+                "form_bytes": {**blank, **forms}, "form_lines": dict(lines),
+                "components": list(components), "internal_names": list(names),
+                "metadata_bytes": metadata}
+
+    def test_a_minority_disassembly_body_that_nothing_attributed_is_a_contradiction(self):
+        """§29 B. 3,632 bytes inside a 10 KB item is a third of it, and entirely material."""
+        item = self.item(origin=_mlr_context.OTHER, basis=_mlr_context.BASIS_ROUTE, bytes_=10302,
+                         forms={_lineage.DISASSEMBLY: 3632},
+                         lines={_lineage.DISASSEMBLY: 23})
+        self.assertIsNotNone(_mlr_context.contradiction(item))
+
+    def test_a_single_namespace_line_inside_a_large_log_is_a_contradiction(self):
+        """§29 A. 250 bytes inside 13 KB, on one line, and still the module's interior."""
+        item = self.item(origin=_mlr_context.HARNESS, basis=_mlr_context.BASIS_DEFAULT,
+                         bytes_=13276, forms={_lineage.RUNTIME_STRUCTURE: 249},
+                         lines={_lineage.RUNTIME_STRUCTURE: 1})
+        self.assertIsNotNone(_mlr_context.contradiction(item))
+
+    def test_one_source_line_inside_a_larger_metadata_item_is_a_contradiction(self):
+        item = self.item(origin=_lineage.IMPLEMENTATION_METADATA,
+                         basis=_mlr_context.BASIS_ROUTE, bytes_=4000,
+                         forms={_lineage.SOURCE_FORM: 80, _lineage.PATH_METADATA: 3800},
+                         lines={_lineage.SOURCE_FORM: 1, _lineage.PATH_METADATA: 60},
+                         components=[{"form": _lineage.PATH_METADATA, "bytes": 3800, "lines": 60,
+                                      "origin": _lineage.IMPLEMENTATION_METADATA,
+                                      "identity": "x"}])
         self.assertIsNotNone(_mlr_context.contradiction(item))
 
     def test_a_source_origin_with_no_source_content_is_a_contradiction(self):
-        item = {"basis": _mlr_context.BASIS_ROUTE, "origin": _lineage.IMPLEMENTATION_SOURCE,
-                "bytes": 300, "form_bytes": {f: 0 for f in _lineage.SUBSTANTIVE_FORMS}}
-        item["form_bytes"][_lineage.PATH_METADATA] = 300
+        """§29 C. The `glob` over-attribution, asserted so it stays impossible."""
+        item = self.item(origin=_lineage.IMPLEMENTATION_SOURCE, basis=_mlr_context.BASIS_ROUTE,
+                         bytes_=1383, forms={_lineage.PATH_METADATA: 561},
+                         lines={_lineage.PATH_METADATA: 4},
+                         components=[{"form": _lineage.PATH_METADATA, "bytes": 561, "lines": 4,
+                                      "origin": _lineage.IMPLEMENTATION_METADATA,
+                                      "identity": "x"}])
         self.assertIsNotNone(_mlr_context.contradiction(item))
+
+    def test_an_attributed_component_is_not_a_contradiction(self):
+        """The safety net stays out of the way when the classifier did its job. §31."""
+        item = self.item(origin=_mlr_context.HARNESS, basis=_mlr_context.BASIS_DEFAULT,
+                         bytes_=13276, forms={_lineage.RUNTIME_STRUCTURE: 249},
+                         lines={_lineage.RUNTIME_STRUCTURE: 1},
+                         components=[{"form": _lineage.RUNTIME_STRUCTURE, "bytes": 249, "lines": 1,
+                                      "origin": _mlr_context.IMPLEMENTATION_RUNTIME,
+                                      "identity": "x"}])
+        self.assertIsNone(_mlr_context.contradiction(item))
 
     def test_a_reconstruction_under_a_settled_origin_is_not_an_escape(self):
         """Otherwise the instrument could not see the thing it was repaired to see."""
-        item = {"basis": _mlr_context.BASIS_AUTHOR, "origin": _lineage.MODEL_DERIVED,
-                "bytes": 200, "form_bytes": {f: 0 for f in _lineage.SUBSTANTIVE_FORMS}}
-        item["form_bytes"][_lineage.SOURCE_FORM] = 200
+        item = self.item(origin=_lineage.MODEL_DERIVED, basis=_mlr_context.BASIS_AUTHOR,
+                         bytes_=200, forms={_lineage.SOURCE_FORM: 200},
+                         lines={_lineage.SOURCE_FORM: 2},
+                         components=[{"form": _lineage.SOURCE_FORM, "bytes": 200, "lines": 2,
+                                      "origin": _lineage.MODEL_DERIVED, "identity": "x"}])
         self.assertIsNone(_mlr_context.contradiction(item))
+
+    def test_a_benign_token_overlap_is_not_a_contradiction(self):
+        """§77. Two internal names in a sentence is prose, not a rendering of a namespace."""
+        with Arm(_mlr.CONTRACT) as arm:
+            led = ledger([call(),
+                          bash("python -m unittest tests.test_service",
+                               "the retry policy uses _ATTEMPTS and _FANOUT internally\nRan 5 tests"),
+                          call()], arm.built)
+            self.assertEqual(led["contradictions"], [])
+            self.assertEqual(led["implementation_runtime_unique_bytes"], 0)
+            # Not silently clean either: names were disclosed by something with no recognisable
+            # form, and that is an open question rather than a zero.
+            self.assertEqual(led["unresolved"]["items"], 1)
+
+    def test_no_arbitrary_universal_percentage_survives(self):
+        """§80. Floors are per form and in the unit that form is recognised in."""
+        self.assertEqual(set(_lineage.MATERIAL_LINES), set(_lineage.SUBSTANTIVE_FORMS))
+        self.assertGreater(_lineage.MATERIAL_LINES[_lineage.DISASSEMBLY],
+                           _lineage.MATERIAL_LINES[_lineage.SOURCE_FORM])
 
     def test_the_detector_never_changes_an_origin(self):
         with Arm(_mlr.CONTRACT) as arm:
@@ -430,94 +511,6 @@ class EscapeDetectionTest(unittest.TestCase):
             for item in led["items"]:
                 _mlr_context.contradiction(item)
             self.assertEqual([i["origin"] for i in led["items"]], before)
-
-
-class RetainedTrajectoryTest(unittest.TestCase):
-    """The already-paid adversarial corpus. §30, §80.
-
-    These fixtures are derived from the invalid paired run and are test material, not results. Each
-    records the run it came from; none of them alters it.
-    """
-
-    maxDiff = None
-
-    def load(self, name):
-        doc = json.loads((TRAJECTORIES / f"{name}.json").read_text(encoding="utf-8"))
-        parts = []
-        for entry in doc["parts"]:
-            kind = entry["type"]
-            if kind == "step-start":
-                parts.append(call())
-                continue
-            if kind == "tool":
-                output = entry.get("output")
-                if output is None:
-                    output = (MODULE / entry["output_from_module"]).read_text(encoding="utf-8")
-                parts.append({"type": "tool", "tool": entry["tool"],
-                              "state": {"input": entry["input"], "output": output,
-                                        "status": entry.get("status")}})
-                continue
-            parts.append({"type": kind, "text": entry.get("text", "")})
-        return doc, _mlr_context.ledger(events(parts), doc["built"])
-
-    def test_every_fixture_declares_where_it_came_from(self):
-        """§31, §84. Derived material says so, and says which run it was derived from."""
-        found = sorted(TRAJECTORIES.glob("*.json"))
-        self.assertGreaterEqual(len(found), 6)
-        for path in found:
-            with self.subTest(fixture=path.stem):
-                doc = json.loads(path.read_text(encoding="utf-8"))
-                self.assertIn("derived", doc["kind"])
-                self.assertIn("not an experiment record", doc["kind"])
-                for field in ("experiment", "record", "arm", "pair", "note"):
-                    self.assertIn(field, doc["derived_from"])
-
-    def test_the_temporary_file_disassembly_is_runtime_and_was_recorded_as_other(self):
-        """§32. The defect is closed, and the fixture shows what the old rule would have said."""
-        doc, led = self.load("runtime-through-temporary-file")
-        item = [i for i in led["items"] if i["kind"] == "tool:read"][0]
-        self.assertEqual(item["origin"], _mlr_context.IMPLEMENTATION_RUNTIME)
-        self.assertEqual(item["form"], _lineage.DISASSEMBLY)
-        self.assertEqual(item["basis"], _mlr_context.BASIS_ANCESTRY)
-        self.assertEqual(led["implementation_source_unique_bytes"], 0)
-        # What the path alone says, which is what the previous instrument recorded.
-        self.assertEqual(_mlr_context.classify_file(item["detail"], doc["built"]),
-                         _mlr_context.OTHER)
-
-    def test_the_reconstruction_is_not_source_and_is_not_invisible(self):
-        """§33. The most important regression: matching bytes, non-matching history."""
-        doc, led = self.load("source-equivalent-reconstruction")
-        item = [i for i in led["items"] if i["kind"].endswith("reasoning")][0]
-        self.assertEqual(item["origin"], _lineage.MODEL_DERIVED)
-        self.assertEqual(led["implementation_source_unique_bytes"], 0)
-        recon = led["source_equivalent_reconstruction"]
-        self.assertGreater(recon["unique_bytes"], 0)
-        self.assertEqual(recon["after_implementation_representation"], 1)
-        self.assertGreater(item["form_bytes"][_lineage.SOURCE_FORM], 0)
-
-    def test_a_directory_mention_no_longer_charges_the_primary_measurand(self):
-        """§31 of the report, and the second defect of the invalid run."""
-        for pair in (4, 5):
-            with self.subTest(pair=pair):
-                _, led = self.load(f"module-directory-named-without-source-{pair}")
-                self.assertEqual(led["implementation_source_unique_bytes"], 0)
-                item = [i for i in led["items"] if i["kind"] == "tool:bash"][0]
-                self.assertNotEqual(item["origin"], _lineage.IMPLEMENTATION_SOURCE)
-
-    def test_an_ordinary_source_read_is_unchanged(self):
-        """The repair must not cost the measurement what it already measured correctly."""
-        _, led = self.load("direct-source-read")
-        item = [i for i in led["items"] if i["kind"] == "tool:read"][0]
-        self.assertEqual(item["origin"], _lineage.IMPLEMENTATION_SOURCE)
-        self.assertEqual(item["basis"], _mlr_context.BASIS_ARTIFACT)
-        self.assertEqual(led["implementation_source_unique_bytes"],
-                         len((MODULE / "_store.py").read_text(encoding="utf-8").encode("utf-8")))
-
-    def test_an_ordinary_runtime_probe_is_unchanged(self):
-        _, led = self.load("runtime-introspection-direct")
-        item = [i for i in led["items"] if i["kind"] == "tool:bash"][0]
-        self.assertEqual(item["origin"], _mlr_context.IMPLEMENTATION_RUNTIME)
-        self.assertEqual(led["implementation_source_unique_bytes"], 0)
 
 
 SCHEMA = """
@@ -603,6 +596,175 @@ class RetrospectiveDiagnosisTest(unittest.TestCase):
             shutil.move(str(Path(record["measurements"][0]["evidence"])), str(moved / "full-1"))
             self.assertFalse(pb_mlr.retrospect(record)["explained"])
             self.assertTrue(pb_mlr.retrospect(record, evidence_root=moved)["explained"])
+
+
+class InboundCoverageTest(unittest.TestCase):
+    """Every model-visible representation crosses one boundary, and a new one cannot slip past.
+
+    The R2 qualification failed because two tools never reached the precedence table. Nothing about
+    that was specific to search — it is what happens when each tool decides provenance for itself —
+    so the repair is a normalisation boundary and this is the test that keeps it whole.
+    """
+
+    maxDiff = None
+
+    def normalised(self, part, built, role="assistant"):
+        event = {"ordinal": 0, "part_id": "p", "message_id": "m", "time_created": 0,
+                 "role": role, "summary": False, "part": part, "message": {}}
+        return _mlr_context.normalise(event, built)
+
+    def test_every_tool_seen_in_the_field_has_an_adapter(self):
+        """The inventory is the seven tools the eighteen paid sessions actually produced."""
+        for tool in ("read", "bash", "edit", "write", "todowrite", "grep", "glob"):
+            with self.subTest(tool=tool):
+                self.assertIn(tool, _mlr_context.INBOUND_TOOLS)
+
+    def test_every_adapter_answers_the_same_questions(self):
+        with Arm() as arm:
+            cases = [
+                {"type": "tool", "tool": "read",
+                 "state": {"input": {"filePath": arm.vendored()}, "output": "x", "status": "ok"}},
+                {"type": "tool", "tool": "bash",
+                 "state": {"input": {"command": "ls"}, "output": "x", "status": "ok"}},
+                {"type": "tool", "tool": "grep",
+                 "state": {"input": {"pattern": "p"}, "output": "x", "status": "ok"}},
+                {"type": "tool", "tool": "glob",
+                 "state": {"input": {"pattern": "*"}, "output": "x", "status": "ok"}},
+                {"type": "tool", "tool": "write",
+                 "state": {"input": {"filePath": "/tmp/a"}, "output": "", "status": "ok"}},
+                {"type": "tool", "tool": "edit",
+                 "state": {"input": {"filePath": "/tmp/a"}, "output": "", "status": "ok"}},
+                {"type": "tool", "tool": "todowrite",
+                 "state": {"input": {"todos": []}, "output": "x", "status": "ok"}},
+                {"type": "reasoning", "text": "thinking"},
+                {"type": "text", "text": "saying"},
+                {"type": "patch", "files": ["app/api.py"]},
+            ]
+            for part in cases:
+                with self.subTest(kind=part.get("tool") or part["type"]):
+                    inbound = self.normalised(dict(part), arm.built)
+                    self.assertIsNotNone(inbound)
+                    for field in ("kind", "route", "text", "artifact", "referenced", "produces",
+                                  "author", "covered"):
+                        self.assertIn(field, inbound)
+                    self.assertTrue(inbound["covered"])
+
+    def test_an_unknown_textual_part_is_recorded_rather_than_dropped(self):
+        """§78. A future event type must fail a test, not silently bypass attribution."""
+        with Arm() as arm:
+            inbound = self.normalised({"type": "summary-from-the-future", "text": "x" * 100},
+                                      arm.built)
+            self.assertIsNotNone(inbound)
+            self.assertFalse(inbound["covered"])
+
+    def test_an_unknown_tool_is_recorded_rather_than_dropped(self):
+        with Arm() as arm:
+            inbound = self.normalised(
+                {"type": "tool", "tool": "webfetch",
+                 "state": {"input": {"url": "u"}, "output": "x", "status": "ok"}}, arm.build
+                if False else arm.built)
+            self.assertFalse(inbound["covered"])
+
+    def test_the_ledger_reports_uncovered_events(self):
+        with Arm() as arm:
+            led = ledger([call(),
+                          {"type": "tool", "tool": "webfetch",
+                           "state": {"input": {"url": "u"}, "output": "x" * 60, "status": "ok"}},
+                          call()], arm.built)
+            self.assertEqual(len(led["uncovered_events"]), 1)
+
+    def test_the_field_corpus_contains_no_uncovered_event(self):
+        for path in sorted(TRAJECTORIES.glob("*.json")):
+            with self.subTest(fixture=path.stem):
+                doc = json.loads(path.read_text(encoding="utf-8"))
+                led = load_fixture(doc)
+                self.assertEqual(led["uncovered_events"], [])
+
+
+class SearchAttributionTest(unittest.TestCase):
+    """Search is a transport, not a provenance. §21-§23."""
+
+    maxDiff = None
+
+    def test_a_search_returning_module_lines_is_source(self):
+        with Arm() as arm:
+            lines = [l for l in arm.source().splitlines() if len(l.strip()) >= 40][:8]
+            body = "\n".join(f"{arm.vendored()}:{n}: {l}" for n, l in enumerate(lines, 1))
+            item = only(ledger([call(), {"type": "tool", "tool": "grep",
+                                         "state": {"input": {"pattern": "def"}, "output": body,
+                                                   "status": "ok"}}, call()], arm.built))
+            self.assertEqual(item["origin"], _lineage.IMPLEMENTATION_SOURCE)
+            self.assertGreater(item["source_bytes"], 0)
+
+    def test_a_search_returning_only_paths_is_metadata(self):
+        """The `full` over-attribution of the R2 qualification, fixed generically."""
+        with Arm() as arm:
+            body = "\n".join(f"{arm.workspace}/third_party/objectstore-1.4.0/objectstore/{n}"
+                              for n in ("__init__.py", "_store.py", "_backend.py", "_errors.py"))
+            item = only(ledger([call(), {"type": "tool", "tool": "glob",
+                                         "state": {"input": {"pattern": "**/*.py"}, "output": body,
+                                                   "status": "ok"}}, call()], arm.built))
+            self.assertNotEqual(item["origin"], _lineage.IMPLEMENTATION_SOURCE)
+            self.assertEqual(item["source_bytes"], 0)
+            self.assertTrue([c for c in item["components"]
+                             if c["origin"] == _lineage.IMPLEMENTATION_METADATA])
+
+    def test_a_search_over_a_runtime_artefact_keeps_the_runtime_ancestry(self):
+        with Arm(_mlr.CONTRACT) as arm:
+            led = ledger([call(),
+                          bash("python -c 'import dis, objectstore; dis.dis(objectstore)' "
+                               "> /tmp/d.txt", ""),
+                          call(),
+                          {"type": "tool", "tool": "grep",
+                           "state": {"input": {"pattern": "LOAD"}, "output":
+                                     "/tmp/d.txt\n" + DISASSEMBLY, "status": "ok"}},
+                          call()], arm.built)
+            hit = [i for i in led["items"] if i["kind"] == "tool:grep"][0]
+            self.assertEqual(hit["origin"], _mlr_context.IMPLEMENTATION_RUNTIME)
+            self.assertEqual(hit["basis"], _mlr_context.BASIS_ANCESTRY)
+
+    def test_search_uses_the_same_resolver_as_a_read(self):
+        """§83 H/J. Equivalent bytes, different transport, same answer."""
+        with Arm() as arm:
+            src = arm.source()
+            read_item = only(ledger([call(), read(arm.vendored(), src), call()], arm.built))
+            body = "\n".join(f"{arm.vendored()}:{n}: {l}"
+                              for n, l in enumerate(src.splitlines(), 1))
+            grep_item = only(ledger([call(), {"type": "tool", "tool": "grep",
+                                              "state": {"input": {"pattern": "."}, "output": body,
+                                                        "status": "ok"}}, call()], arm.built))
+            self.assertEqual(read_item["origin"], grep_item["origin"])
+
+
+class MaterialComponentTest(unittest.TestCase):
+    """A representation need not dominate its container to be counted. §26-§28."""
+
+    maxDiff = None
+
+    def test_a_minority_disassembly_is_counted_and_not_promoted(self):
+        with Arm(_mlr.CONTRACT) as arm:
+            filler = "\n".join(f"ordinary log line number {n} with nothing in it" for n in range(200))
+            led = ledger([call(), read(arm.workspace / "DeepSeekAndDestroy" / "worker.log",
+                                       filler + "\n" + DISASSEMBLY), call()], arm.built)
+            item = only(ledger([call(), read(arm.workspace / "DeepSeekAndDestroy" / "worker.log",
+                                             filler + "\n" + DISASSEMBLY), call()], arm.built))
+            self.assertGreater(led["implementation_runtime_unique_bytes"], 0)
+            self.assertNotEqual(item["origin"], _mlr_context.IMPLEMENTATION_RUNTIME)
+            self.assertTrue([c for c in item["components"]
+                             if c["origin"] == _mlr_context.IMPLEMENTATION_RUNTIME])
+
+    def test_one_source_line_in_a_large_container_is_counted(self):
+        with Arm() as arm:
+            line = sorted(_lineage.source_fingerprint(MODULE), key=len)[-1]
+            filler = "\n".join(f"unrelated line {n}" for n in range(300))
+            led = ledger([call(), read(arm.workspace / "notes.txt", filler + "\n" + line), call()],
+                         arm.built)
+            self.assertGreater(led["implementation_source_unique_bytes"], 0)
+
+    def test_floors_are_per_form_and_not_a_share(self):
+        self.assertEqual(_lineage.MATERIAL_LINES[_lineage.SOURCE_FORM], 1)
+        self.assertEqual(_lineage.MATERIAL_LINES[_lineage.RUNTIME_STRUCTURE], 1)
+        self.assertGreater(_lineage.MATERIAL_LINES[_lineage.DISASSEMBLY], 1)
 
 
 class GenericityTest(unittest.TestCase):

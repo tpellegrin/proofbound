@@ -148,18 +148,41 @@ class SourceConsumptionTest(unittest.TestCase):
             led = _mlr_context.consumed(a.db, built)
             self.assertEqual(led["implementation_source_unique_bytes"], 500)
 
-    def test_a_search_that_returns_the_implementation_is_attributed_to_it(self):
+    def test_a_search_is_attributed_by_what_it_returned(self):
+        """MLR-C3D-R3 changed this rule, and the change is the point.
+
+        A search used to be called source because one of the paths it returned sat under the module.
+        That is how a `glob` listing four file paths was charged 1,382 bytes to the primary measurand
+        with no source line in it. A search that returns the module's *lines* is source; a search that
+        returns its *names* is metadata; the tool is the same either way.
+        """
         with Arms() as a:
             built = a.arms[_mlr.FULL]
-            hit = f"{_mlr.VENDORED.as_posix()}/objectstore/_store.py:41: def put(...)"
+            module = (_mlr.FIXTURE / "runtime" / "objectstore" / "_store.py").read_text()
+            body = "\n".join(f"{_mlr.VENDORED.as_posix()}/objectstore/_store.py:{n}: {line}"
+                              for n, line in enumerate(module.splitlines(), start=1)
+                              if len(line.strip()) >= 40)
+            names = f"{_mlr.VENDORED.as_posix()}/objectstore/_store.py:41: def put(...)"
             s = a.session()
             m = s.message("assistant")
             s.call(m)
-            s.tool(m, "grep", {"pattern": "def put"}, hit)
+            s.tool(m, "grep", {"pattern": "def put"}, body)
             s.call(m)
             s.close()
             led = _mlr_context.consumed(a.db, built)
             self.assertGreater(led["implementation_source_unique_bytes"], 0)
+
+            b = Arms()
+            with b as c:
+                s = c.session()
+                m = s.message("assistant")
+                s.call(m)
+                s.tool(m, "grep", {"pattern": "def put"}, names)
+                s.call(m)
+                s.close()
+                only_names = _mlr_context.consumed(c.db, c.arms[_mlr.FULL])
+            self.assertEqual(only_names["implementation_source_unique_bytes"], 0)
+            self.assertGreater(only_names["implementation_metadata"]["references"], 0)
 
 
 class RuntimeRepresentationTest(unittest.TestCase):

@@ -1,0 +1,40 @@
+{
+  "built": {
+    "runtime": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-s3dcca0d/arm/runtime",
+    "workspace": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-s3dcca0d/arm/workspace"
+  },
+  "derived_from": {
+    "arm": "contract",
+    "experiment": "mlr-deepseek-v4-flash-high-paired-r2-qualification",
+    "note": "a `grep` returned opcode lines among its matches; 3,632 bytes of runtime representation were recorded with origin `other` because a search never reached the precedence table",
+    "pair": 3,
+    "record": "evals/results/craft-mlr-deepseek-v4-flash-high-paired-r2-qualification.json"
+  },
+  "expect": {
+    "component_origin": "implementation-runtime",
+    "direct_source_bytes": 0,
+    "original_escaped_bytes": 3632
+  },
+  "kind": "derived regression fixture \u2014 not an experiment record",
+  "parts": [
+    {
+      "role": "assistant",
+      "type": "step-start"
+    },
+    {
+      "input": {
+        "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-s3dcca0d/arm/workspace",
+        "pattern": "fetch|create|download_export|exports\\.|objectstore"
+      },
+      "output": "Found 87 matches\n/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-s3dcca0d/arm/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/phases/build/tasks/MLR-external/contracts/r0001.md:\n  Line 3: Today `download_export` only works after `create_export` has been called. If a client asks for an\n\n  Line 4: export that was never created, the request fails instead of producing the report it asked for.\n\n  Line 6: Change the service so that `app.api.download_export(user_id, report_id)` returns the export whether\n\n  Line 13: - calling `download_export` twice in a row for the same account and report must return the same\n\n  Line 16: `create_export` keeps its current behaviour. The service's existing tests must still pass.\n\n\n/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-s3dcca0d/arm/workspace/docs/storage-contract.md:\n  Line 1: # objectstore 1.4.0 \u2014 what callers may rely on\n\n  Line 3: `objectstore` keeps opaque byte payloads under string keys. This document is the whole of what the\n\n  Line 9: objectstore.put(key: str, payload: bytes) -> None\n\n  Line 10: objectstore.get(key: str) -> bytes\n\n  Line 11: objectstore.exists(key: str) -> bool\n\n  Line 12: objectstore.delete(key: str) -> None\n\n  Line 32: `get` raises `objectstore.NotFound` when no payload is stored under the key. `NotFound` is the only\n\n  Line 55: `put` and `get` raise `objectstore.StorageUnavailable` when the operation could not be completed. A\n\n  Line 63: | `objectstore.NotFound` | `get` is called for a key with no stored payload |\n\n  Line 64: | `objectstore.StorageUnavailable` | the backend could not be reached |\n\n\n/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-s3dcca0d/arm/workspace/README.md:\n  Line 7: - `app/exports.py` \u2014 creating and fetching exports\n\n  Line 11: - `docs/storage-contract.md` \u2014 the semantics of the `objectstore` package the service stores exports in\n\n\n/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-s3dcca0d/arm/workspace/tests/test_service.py:\n  Line 12:         status, body = api.create_export(\"u-1\", \"weekly\")\n\n  Line 17:     def test_a_created_export_can_be_downloaded(self):\n\n  Line 18:         api.create_export(\"u-1\", \"monthly\")\n\n  Line 19:         status, body = api.download_export(\"u-1\", \"monthly\")\n\n  Line 24:         self.assertEqual(api.create_export(\"u-2\", \"weekly\")[0], 403)\n\n  Line 27:         self.assertEqual(api.create_export(\"u-1\", \"quarterly\")[0], 404)\n\n  Line 30:         api.create_export(\"u-3\", \"weekly\")\n\n  Line 31:         self.assertEqual([e[\"action\"] for e in audit.entries(\"u-3\")], [\"export.create\"])\n\n\n/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-s3dcca0d/arm/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/phases/build/tasks/MLR-external/attempts/implementer-1/report.md:",
+      "role": "assistant",
+      "status": "completed",
+      "tool": "grep",
+      "type": "tool"
+    },
+    {
+      "role": "assistant",
+      "type": "step-start"
+    }
+  ]
+}

@@ -107,12 +107,14 @@ def configuration(*, model: str, samples: int, arms: list[str], variant: str | N
         "interpreter": _mlr.interpreter_identity(),
         # Bumped whenever what an origin *means* changes. A record carries the version its numbers
         # were produced under, so a later classifier cannot silently reinterpret an earlier result.
-        "telemetry_version": "mlr-context-4",
+        "telemetry_version": "mlr-context-5",
         "profile_version": "profile-1",
-        "attribution": ("origin follows the strongest available evidence — linked ancestry, then "
-                        "artifact identity, then request family, then delivered content; "
-                        "representation form and delivery route recorded separately; source, "
-                        "runtime-derived, reconstructed and structural units never summed"),
+        "attribution": ("every inbound representation normalised before attribution, whichever tool "
+                        "carried it; origin follows the strongest available evidence — linked "
+                        "ancestry, then artifact identity, then authorship, then delivered content, "
+                        "then request family; material components attributed individually whatever "
+                        "their share; representation form and delivery route recorded separately; "
+                        "source, runtime-derived, reconstructed and structural units never summed"),
         "consumed_definition": ("text appearing in a part OpenCode places in the message history "
                                 "before a later model call"),
         "measurand": ("unique bytes of direct implementation-source representation consumed on "
