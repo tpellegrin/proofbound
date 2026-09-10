@@ -1,0 +1,39 @@
+{
+  "built": {
+    "runtime": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-a5khib08/arm/runtime",
+    "workspace": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-a5khib08/arm/workspace"
+  },
+  "derived_from": {
+    "arm": "full",
+    "experiment": "mlr-deepseek-v4-flash-high-paired",
+    "note": "an ordinary `full` read of one of the module's own source files",
+    "pair": 1,
+    "record": "evals/results/craft-mlr-deepseek-v4-flash-high-paired.json"
+  },
+  "expect": {
+    "basis": "artifact-path",
+    "form": "source-form",
+    "origin": "implementation-source"
+  },
+  "kind": "derived regression fixture \u2014 not an experiment record",
+  "parts": [
+    {
+      "role": "assistant",
+      "type": "step-start"
+    },
+    {
+      "input": {
+        "filePath": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-a5khib08/arm/workspace/third_party/objectstore-1.4.0/objectstore/_store.py"
+      },
+      "output_from_module": "_store.py",
+      "role": "assistant",
+      "status": "completed",
+      "tool": "read",
+      "type": "tool"
+    },
+    {
+      "role": "assistant",
+      "type": "step-start"
+    }
+  ]
+}

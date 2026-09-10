@@ -1,0 +1,38 @@
+{
+  "built": {
+    "runtime": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-749b3pf5/arm/runtime",
+    "workspace": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-749b3pf5/arm/workspace"
+  },
+  "derived_from": {
+    "arm": "full",
+    "experiment": "mlr-deepseek-v4-flash-high-paired",
+    "note": "a shell command whose argument named the vendored module directory and whose output was paths, a version string and a directory entry; 224 bytes of it were charged to the primary measurand",
+    "pair": 5,
+    "record": "evals/results/craft-mlr-deepseek-v4-flash-high-paired.json"
+  },
+  "expect": {
+    "direct_source_bytes": 0,
+    "origin_not": "implementation-source"
+  },
+  "kind": "derived regression fixture \u2014 not an experiment record",
+  "parts": [
+    {
+      "role": "assistant",
+      "type": "step-start"
+    },
+    {
+      "input": {
+        "command": "python3 -c \"import objectstore, sys; print(objectstore.__version__, objectstore.__file__)\" 2>&1; echo \"PYTHONPATH=$PYTHONPATH\"; ls third_party/objectstore-1.4.0"
+      },
+      "output": "1.4.0 /private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-749b3pf5/arm/runtime/objectstore/__init__.pyc\nPYTHONPATH=/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-749b3pf5/arm/runtime\nobjectstore\n",
+      "role": "assistant",
+      "status": "completed",
+      "tool": "bash",
+      "type": "tool"
+    },
+    {
+      "role": "assistant",
+      "type": "step-start"
+    }
+  ]
+}

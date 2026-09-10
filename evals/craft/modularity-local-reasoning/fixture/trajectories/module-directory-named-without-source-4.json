@@ -1,0 +1,39 @@
+{
+  "built": {
+    "runtime": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-wvjpyrbq/arm/runtime",
+    "workspace": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-wvjpyrbq/arm/workspace"
+  },
+  "derived_from": {
+    "arm": "full",
+    "experiment": "mlr-deepseek-v4-flash-high-paired",
+    "note": "a shell command whose argument named the vendored module directory and whose output was paths, a version string and a directory entry; 301 bytes of it were charged to the primary measurand",
+    "pair": 4,
+    "record": "evals/results/craft-mlr-deepseek-v4-flash-high-paired.json"
+  },
+  "expect": {
+    "direct_source_bytes": 0,
+    "origin_not": "implementation-source"
+  },
+  "kind": "derived regression fixture \u2014 not an experiment record",
+  "parts": [
+    {
+      "role": "assistant",
+      "type": "step-start"
+    },
+    {
+      "input": {
+        "command": "python -c \"import objectstore, sys; print(objectstore.__file__)\"; python -c \"import sys; print([p for p in sys.path if 'third_party' in p or 'site-packages' in p])\"; ls third_party/objectstore-1.4.0",
+        "workdir": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-wvjpyrbq/arm/workspace"
+      },
+      "output": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-wvjpyrbq/arm/runtime/objectstore/__init__.pyc\n['/Users/thiago/Library/Python/3.9/lib/python/site-packages', '/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/site-packages']\nobjectstore\n",
+      "role": "assistant",
+      "status": "completed",
+      "tool": "bash",
+      "type": "tool"
+    },
+    {
+      "role": "assistant",
+      "type": "step-start"
+    }
+  ]
+}

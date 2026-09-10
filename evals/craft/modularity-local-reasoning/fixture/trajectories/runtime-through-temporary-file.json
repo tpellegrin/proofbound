@@ -1,0 +1,55 @@
+{
+  "built": {
+    "runtime": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-7ekohp3e/arm/runtime",
+    "workspace": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-7ekohp3e/arm/workspace"
+  },
+  "derived_from": {
+    "arm": "contract",
+    "experiment": "mlr-deepseek-v4-flash-high-paired",
+    "note": "a disassembly redirected into a temporary file and read back; the read was 29,499 bytes and was recorded as `other` by the instrument this fixture exists to keep repaired",
+    "pair": 5,
+    "record": "evals/results/craft-mlr-deepseek-v4-flash-high-paired.json"
+  },
+  "expect": {
+    "basis": "ancestry",
+    "direct_source_bytes": 0,
+    "form": "disassembly",
+    "origin": "implementation-runtime",
+    "original_read_bytes": 29499
+  },
+  "kind": "derived regression fixture \u2014 not an experiment record",
+  "parts": [
+    {
+      "role": "assistant",
+      "type": "step-start"
+    },
+    {
+      "input": {
+        "command": "cd /private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-7ekohp3e/arm/workspace && /var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-7ekohp3e/bin/python -c \"\nimport dis, marshal\nfor name in ['_backend','_store']:\n    path='/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-7ekohp3e/arm/runtime/objectstore/%s.pyc'%name\n    print('='*40, name)\n    with open(path,'rb') as f:\n        f.read(16)\n        code=marshal.load(f)\n    dis.dis(code)\n\" > /tmp/objectstore_dis.txt 2>&1; wc -l /tmp/objectstore_dis.txt"
+      },
+      "output": "     593 /tmp/objectstore_dis.txt\n",
+      "role": "assistant",
+      "status": "completed",
+      "tool": "bash",
+      "type": "tool"
+    },
+    {
+      "role": "assistant",
+      "type": "step-start"
+    },
+    {
+      "input": {
+        "filePath": "/tmp/objectstore_dis.txt"
+      },
+      "output": "<path>/tmp/objectstore_dis.txt</path>\n<type>file</type>\n<content>\n1: ======================================== _backend\n2:   1           0 LOAD_CONST               0 ('The filesystem backend. Nothing outside this package may depend on this layout.')\n3:               2 STORE_NAME               0 (__doc__)\n4: \n5:   2           4 LOAD_CONST               1 (0)\n6:               6 LOAD_CONST               2 (None)\n7:               8 IMPORT_NAME              1 (os)\n8:              10 STORE_NAME               1 (os)\n9: \n10:   3          12 LOAD_CONST               1 (0)\n11:              14 LOAD_CONST               2 (None)\n12:              16 IMPORT_NAME              2 (tempfile)\n13:              18 STORE_NAME               2 (tempfile)\n14: \n15:   4          20 LOAD_CONST               1 (0)\n16:              22 LOAD_CONST               3 (('Path',))\n17:              24 IMPORT_NAME              3 (pathlib)\n18:              26 IMPORT_FROM              4 (Path)\n19:              28 STORE_NAME               4 (Path)\n20:              30 POP_TOP\n21: \n22:   6          32 LOAD_CONST               4 ('OBJECTSTORE_ROOT')\n23:              34 STORE_NAME               5 (_ROOT_ENV)\n24: \n25:   7          36 LOAD_CONST               5 ('OBJECTSTORE_FLAKY_WRITES')\n26:              38 STORE_NAME               6 (_FLAKE_ENV)\n27: \n28:  10          40 LOAD_NAME                4 (Path)\n29:              42 LOAD_CONST               6 (('return',))\n30:              44 BUILD_CONST_KEY_MAP      1\n31:              46 LOAD_CONST               7 (<code object root at 0x1026455b0, file \"objectstore/_backend.py\", line 10>)\n32:              48 LOAD_CONST               8 ('root')\n33:              50 MAKE_FUNCTION            4 (annotations)\n34:              52 STORE_NAME               7 (root)\n35: \n36:  16          54 LOAD_NAME                8 (int)\n37:              56 LOAD_CONST               6 (('return',))",
+      "role": "assistant",
+      "status": "completed",
+      "tool": "read",
+      "type": "tool"
+    },
+    {
+      "role": "assistant",
+      "type": "step-start"
+    }
+  ]
+}

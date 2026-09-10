@@ -1,0 +1,50 @@
+{
+  "built": {
+    "runtime": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-_n6v1g2r/arm/runtime",
+    "workspace": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-_n6v1g2r/arm/workspace"
+  },
+  "derived_from": {
+    "arm": "contract",
+    "experiment": "mlr-deepseek-v4-flash-high-paired",
+    "note": "an agent with no source available disassembled the compiled module and then wrote two of its source lines verbatim in its own reasoning; the bytes matched source and the origin did not",
+    "pair": 6,
+    "record": "evals/results/craft-mlr-deepseek-v4-flash-high-paired.json"
+  },
+  "expect": {
+    "basis": "author",
+    "direct_source_bytes": 0,
+    "form": "other",
+    "origin": "model-derived",
+    "reconstruction_lines": 2
+  },
+  "kind": "derived regression fixture \u2014 not an experiment record",
+  "parts": [
+    {
+      "role": "assistant",
+      "type": "step-start"
+    },
+    {
+      "input": {
+        "command": "cd /private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-_n6v1g2r/arm/runtime && python3 - <<'EOF'\nimport dis, marshal, importlib.util, sys\n\nfor name in [\"objectstore/__init__\",\"objectstore/_errors\",\"objectstore/_backend\",\"objectstore/_store\"]:\n    path = name + \".pyc\"\n    with open(path,\"rb\") as f:\n        f.read(16)  # header (magic+flags+timestamp/size) py39 is 16 bytes\n        code = marshal.load(f)\n    print(\"=\"*70)\n    print(name, \"version\", sys.version)\n    dis.dis(code)\nEOF"
+      },
+      "output": "======================================================================\nobjectstore/__init__ version 3.9.6 (default, Feb  3 2024, 15:58:27) \n[Clang 15.0.0 (clang-1500.3.9.4)]\n  1           0 LOAD_CONST               0 ('objectstore \u2014 durable storage for opaque application artefacts.\\n\\nPublic surface: `put`, `get`, `delete`, `exists`, and the errors they raise. Everything else in\\nthis package is an implementation detail and may change between releases.\\n')\n              2 STORE_NAME               0 (__doc__)\n\n  6           4 LOAD_CONST               1 (0)\n              6 LOAD_CONST               2 (('NotFound', 'StorageUnavailable'))\n              8 IMPORT_NAME              1 (objectstore._errors)\n             10 IMPORT_FROM              2 (NotFound)\n             12 STORE_NAME               2 (NotFound)\n             14 IMPORT_FROM              3 (StorageUnavailable)\n             16 STORE_NAME               3 (StorageUnavailable)\n             18 POP_TOP\n\n  7          20 LOAD_CONST               1 (0)\n             22 LOAD_CONST               3 (('delete', 'exists', 'get', 'put'))\n             24 IMPORT_NAME              4 (objectstore._store)\n             26 IMPORT_FROM              5 (delete)\n             28 STORE_NAME               5 (delete)\n             30 IMPORT_FROM              6 (exists)\n             32 STORE_NAME               6 (exists)\n             34 IMPORT_FROM              7 (get)\n             36 STORE_NAME               7 (get)\n             38 IMPORT_FROM              8 (put)\n             40 STORE_NAME               8 (put)\n             42 POP_TOP\n\n  9          44 BUILD_LIST               0\n             46 LOAD_CONST               4 (('put', 'get', 'delete', 'exists', 'NotFound', 'StorageUnavailable'))\n             48 LIST_EXTEND              1\n             50 STORE_NAME               9 (__all__)\n\n 10          52 LOAD_CONST               5 ('1.4.0')\n             54 STORE_NAME              10 (__version__)\n             56 LOAD_CONST               6 (None)\n             58 RETURN_VALUE\n======================================================================\nobjectstore/_errors version 3.9.6 (default, Feb  3 2024, 15:58:27) \n[Clang 15.0.0 (clang-1500.3.9.4)]",
+      "role": "assistant",
+      "status": "completed",
+      "tool": "bash",
+      "type": "tool"
+    },
+    {
+      "role": "assistant",
+      "type": "step-start"
+    },
+    {
+      "role": "assistant",
+      "text": "Now let me write the report skeleton early, then implement.\n\nLet me first check the objectstore data dir (OBJECTSTORE_ROOT=/private/.../arm/data) \u2014 it doesn't exist yet. The `.pyc` root() uses `os.environ.get(\"OBJECTSTORE_ROOT\", tempfile.gettempdir()) / \"objectstore-data\"`. Wait, in the disassembly:\n\n```\npath = Path(os.environ.get(_ROOT_ENV, tempfile.gettempdir())) / \"objectstore-data\"\npath.mkdir(parents=True, exist_ok=True)\nreturn path\n```\n\nSo with OBJECTSTORE_ROOT=/private/.../arm/data, path = /private/.../arm/data/objectstore-data. That doesn't exist yet, will be created on first use.\n",
+      "type": "reasoning"
+    },
+    {
+      "role": "assistant",
+      "type": "step-start"
+    }
+  ]
+}

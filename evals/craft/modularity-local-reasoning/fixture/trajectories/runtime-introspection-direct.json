@@ -1,0 +1,40 @@
+{
+  "built": {
+    "runtime": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-2kkze6av/arm/runtime",
+    "workspace": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-2kkze6av/arm/workspace"
+  },
+  "derived_from": {
+    "arm": "contract",
+    "experiment": "mlr-deepseek-v4-flash-high-paired",
+    "note": "an ordinary `contract` disassembly whose output came back inline rather than through a file",
+    "pair": 2,
+    "record": "evals/results/craft-mlr-deepseek-v4-flash-high-paired.json"
+  },
+  "expect": {
+    "basis": "command-route",
+    "direct_source_bytes": 0,
+    "form": "disassembly",
+    "origin": "implementation-runtime"
+  },
+  "kind": "derived regression fixture \u2014 not an experiment record",
+  "parts": [
+    {
+      "role": "assistant",
+      "type": "step-start"
+    },
+    {
+      "input": {
+        "command": "python3 -c \"\nimport dis, marshal, importlib.util\nfor name in ['_store','_backend','_errors']:\n    p=f'/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-mlr-2kkze6av/arm/runtime/objectstore/{name}.pyc'\n    data=open(p,'rb').read()\n    code=marshal.loads(data[16:])\n    print('='*30, name, '='*30)\n    dis.dis(code)\n\""
+      },
+      "output": "============================== _store ==============================\n  1           0 LOAD_CONST               0 ('Key derivation, retry policy and checksum verification.\\n\\nThese are the decisions the package exists to own. Callers see `put`, `get`, `delete` and `exists`,\\nand are not expected to know how a key becomes a path, how many times a failed write is retried, or\\nthat anything is checksummed at all.\\n')\n              2 STORE_NAME               0 (__doc__)\n\n  7           4 LOAD_CONST               1 (0)\n              6 LOAD_CONST               2 (None)\n              8 IMPORT_NAME              1 (hashlib)\n             10 STORE_NAME               1 (hashlib)\n\n  8          12 LOAD_CONST               1 (0)\n             14 LOAD_CONST               2 (None)\n             16 IMPORT_NAME              2 (time)\n             18 STORE_NAME               2 (time)\n\n 10          20 LOAD_CONST               1 (0)\n             22 LOAD_CONST               3 (('_backend',))\n             24 IMPORT_NAME              3 (objectstore)\n             26 IMPORT_FROM              4 (_backend)\n             28 STORE_NAME               4 (_backend)\n             30 POP_TOP\n\n 11          32 LOAD_CONST               1 (0)\n             34 LOAD_CONST               4 (('NotFound', 'StorageUnavailable', '_ChecksumMismatch'))\n             36 IMPORT_NAME              5 (objectstore._errors)\n             38 IMPORT_FROM              6 (NotFound)\n             40 STORE_NAME               6 (NotFound)\n             42 IMPORT_FROM              7 (StorageUnavailable)\n             44 STORE_NAME               7 (StorageUnavailable)\n             46 IMPORT_FROM              8 (_ChecksumMismatch)\n             48 STORE_NAME               8 (_ChecksumMismatch)\n             50 POP_TOP\n\n 13          52 LOAD_CONST               5 (3)\n             54 STORE_NAME               9 (_ATTEMPTS)\n\n 14          56 LOAD_CONST               6 (0.0)\n             58 STORE_NAME              10 (_BACKOFF_SECONDS)\n\n 15          60 LOAD_CONST               7 (2)\n             62 STORE_NAME              11 (_FANOUT)",
+      "role": "assistant",
+      "status": "completed",
+      "tool": "bash",
+      "type": "tool"
+    },
+    {
+      "role": "assistant",
+      "type": "step-start"
+    }
+  ]
+}
