@@ -1,0 +1,20 @@
+(version 1)
+(import "system.sb")
+(deny file-read* file-write*)
+(allow file-read* file-write* (subpath (param "SEMROOT")))
+(allow file-read* process-exec (subpath (param "OCDIR")))
+(allow file-read-metadata (subpath "/Users"))
+(allow file-read*
+  (subpath "/usr/lib") (subpath "/usr/bin") (subpath "/bin") (subpath "/sbin")
+  (subpath "/usr/sbin") (subpath "/System") (subpath "/usr/share")
+  (subpath "/Library/Developer") (subpath "/private/var/db/dyld") (subpath "/dev")
+  (subpath "/private/etc"))
+(allow file-read*
+  (literal "/") (literal "/usr") (literal "/Library") (literal "/private")
+  (literal "/private/tmp") (literal "/tmp") (literal "/private/var") (literal "/var")
+  (literal "/etc"))
+(allow file-write-data (literal "/dev/null") (literal "/dev/stdout") (literal "/dev/stderr"))
+(allow process-exec
+  (subpath "/usr/bin") (subpath "/bin") (subpath "/sbin") (subpath "/usr/sbin")
+  (subpath "/System") (subpath "/Library/Developer") (subpath (param "SEMROOT")))
+(allow network*)

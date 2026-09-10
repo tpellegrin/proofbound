@@ -1,0 +1,110 @@
+{
+  "host": {
+    "interpreter": "CPython 3.9.6 (/Library/Developer/CommandLineTools)",
+    "opencode": "1.18.29, arm64 Mach-O, 144 MB",
+    "platform": "macOS 15.7.8, Darwin 24.6.0, arm64",
+    "primitives": {
+      "chroot": "present (needs root)",
+      "docker": "CLI present, daemon not running",
+      "sandbox-exec": "present",
+      "unshare": "absent"
+    }
+  },
+  "kind": "execution-boundary feasibility probes \u2014 design check, no semantic evidence purchased",
+  "mechanism_probed": "macOS seatbelt profile (sandbox-exec) constructing an evidence view",
+  "note": "No model call was made. Every probe is local and free.",
+  "preflight_gaps_found": [
+    {
+      "gap": "host HOME is not a scanned preflight root",
+      "measured": "the global opencode.db (38 MB) and its snapshot store hold zero of the module's 68 fingerprint lines and zero oracle lines today",
+      "status": "clean by measurement, unscanned by rule"
+    },
+    {
+      "gap": "agent-produced runtime dumps are not in the preflight identity set",
+      "measured": "/private/tmp/objectstore_dis.txt, 26,533 bytes, 296 opcode lines, 0 source lines \u2014 written by the paired run's contract pair 5 and still present; the preflight does not detect it",
+      "status": "open"
+    }
+  ],
+  "probes": [
+    {
+      "detail": "a process runs; reads inside the semantic root succeed",
+      "probe": "deny-default profile with the system base imported",
+      "result": "pass"
+    },
+    {
+      "detail": "cat README.md -> Operation not permitted",
+      "probe": "read the Proofbound repository",
+      "result": "denied"
+    },
+    {
+      "detail": "cat ~/.local/share/opencode/auth.json -> Operation not permitted",
+      "probe": "read the host user's opencode auth",
+      "result": "denied"
+    },
+    {
+      "detail": "ls /Users/thiago -> Operation not permitted",
+      "probe": "list the host home directory",
+      "result": "denied"
+    },
+    {
+      "detail": "ls /var/folders/.../T -> Operation not permitted; this is where twelve stale arm materialisations lived",
+      "probe": "list the host per-user temp directory",
+      "result": "denied"
+    },
+    {
+      "detail": "cat /private/tmp/<sibling> -> Operation not permitted",
+      "probe": "read a sibling file in host /private/tmp",
+      "result": "denied"
+    },
+    {
+      "detail": "needed so `find /` can descend into the view, which lives there; sibling names are visible and sibling contents are not",
+      "probe": "list host /private/tmp",
+      "result": "allowed (names only)"
+    },
+    {
+      "detail": "returns the view's own runtime and data directories and nothing else, plus one leftover name in /private/tmp whose contents are denied",
+      "probe": "find / -name 'objectstore*' (the historical attack)",
+      "result": "only the view"
+    },
+    {
+      "probe": "find / -name 'external_test*' (oracle discovery)",
+      "result": "0 results"
+    },
+    {
+      "detail": "a copy planted inside the view is discoverable, which is required so the preflight and the agent see the same surface",
+      "probe": "find / reaches the view's own files",
+      "result": "yes"
+    },
+    {
+      "detail": "objectstore.put/get under CPython 3.9.6 inside the view",
+      "probe": "compiled fixture runtime imports and executes",
+      "result": "pass"
+    },
+    {
+      "detail": "same CPython 3.9.6 as every prior MLR run; no new runtime identity",
+      "probe": "interpreter parity",
+      "result": "unchanged"
+    },
+    {
+      "detail": "1.18.29, staged into the view by hard link (same volume, no copy cost), with a constructed HOME containing only auth.json and opencode.jsonc",
+      "probe": "opencode runs inside the view",
+      "result": "pass"
+    },
+    {
+      "detail": "seatbelt refuses exec when an ancestor of the binary is denied, so tools must be staged inside the view rather than allowed in place",
+      "probe": "opencode executed from its host path",
+      "result": "denied"
+    },
+    {
+      "detail": "the Xcode git shim tries to write an xcrun cache into the host per-user temp and prints errors; the command still succeeds",
+      "probe": "git inside the view",
+      "result": "works with warnings"
+    },
+    {
+      "detail": "CLI 27.3.1 installed, daemon not running; on this host Docker means a Linux VM",
+      "probe": "docker daemon",
+      "result": "absent"
+    }
+  ],
+  "reference_profile": "evals/craft/modularity-local-reasoning/boundary/semantic-view.sb.reference"
+}
