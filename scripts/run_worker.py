@@ -309,6 +309,11 @@ def child_run(args: argparse.Namespace, paths: dict[str, Path], reserved_at: str
     title = args.title or f"dsd:{args.task_id}:{args.role}:{args.attempt}"
     prompt = prompt_file.read_text(encoding="utf-8")
     cmd = ["opencode", "run", "--model", args.model]
+    # Provider-specific reasoning effort. Passed explicitly rather than inherited: a provider that
+    # changes its default effort would otherwise change a frozen experiment without anything in the
+    # record moving.
+    if getattr(args, "variant", None):
+        cmd += ["--variant", args.variant]
     if args.auto_flag:
         cmd.append(args.auto_flag)
     cmd += ["--title", title, "--dir", str(project_root)]
@@ -404,6 +409,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--resume-session", help="trustworthy same-role continuation after a benign early stop, transport/recovery, or post-DECISION_REQUIRED resume; cross-role transitions start fresh")
     ap.add_argument("--force-read-only", action="store_true", help="reserve this attempt as project-read-only regardless of task write scope; used by routine Evidence Clerk interpretation")
     ap.add_argument("--auto-flag", default="--auto", help="OpenCode permission flag; pass empty string to omit")
+    ap.add_argument("--variant", default=None, help="OpenCode model variant (provider reasoning effort)")
     ap.add_argument("--detach", action="store_true", help="spawn the monitor in a detached process and return")
     ap.add_argument("--_child", action="store_true", help=argparse.SUPPRESS)
     ap.add_argument("--_reserved-at", help=argparse.SUPPRESS)
@@ -441,6 +447,9 @@ def main() -> int:
         if isinstance(value, bool):
             if value:
                 child_argv.append(opt)
+        elif key == "variant":
+            if value:
+                child_argv += ["--variant", str(value)]
         elif key == "auto_flag":
             child_argv.append(f"{opt}={value}")
         else:

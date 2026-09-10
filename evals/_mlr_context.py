@@ -173,11 +173,17 @@ def read_transcript(db: Path) -> list[dict[str, Any]]:
     if not path.is_file():
         return []
     uri = f"file:{path.as_posix()}?mode=ro"
-    with sqlite3.connect(uri, uri=True) as conn:
+    # Closed explicitly: sqlite3's context manager commits the transaction but leaves the
+    # connection open, which leaks a handle per session read and surfaces as a ResourceWarning
+    # once a suite reads many of them.
+    conn = sqlite3.connect(uri, uri=True)
+    try:
         rows = conn.execute(
             "SELECT p.id, p.message_id, p.data, m.data, m.time_created "
             "FROM part p JOIN message m ON m.id = p.message_id "
             "ORDER BY m.time_created, p.message_id, p.id").fetchall()
+    finally:
+        conn.close()
     events: list[dict[str, Any]] = []
     for ordinal, (part_id, message_id, part_raw, message_raw, created) in enumerate(rows):
         try:

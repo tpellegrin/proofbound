@@ -45,11 +45,17 @@ def read_parts(db: Path) -> list[dict[str, Any]]:
     if not path.is_file():
         return []
     uri = f"file:{path.as_posix()}?mode=ro"
-    with sqlite3.connect(uri, uri=True) as conn:
+    # Closed explicitly: sqlite3's context manager commits the transaction but leaves the
+    # connection open, which leaks a handle per session read and surfaces as a ResourceWarning
+    # once a suite reads many of them.
+    conn = sqlite3.connect(uri, uri=True)
+    try:
         rows = conn.execute(
             "SELECT p.id, p.message_id, p.data, m.data, m.time_created "
             "FROM part p JOIN message m ON m.id = p.message_id "
             "ORDER BY m.time_created, p.message_id, p.id").fetchall()
+    finally:
+        conn.close()
     events: list[dict[str, Any]] = []
     for ordinal, (part_id, message_id, part_raw, message_raw, created) in enumerate(rows):
         try:
@@ -60,8 +66,13 @@ def read_parts(db: Path) -> list[dict[str, Any]]:
         events.append({"ordinal": ordinal, "part_id": part_id, "message_id": message_id,
                        "time_created": created, "role": message.get("role"),
                        "summary": bool(message.get("summary")),
-                       "model": message.get("modelID") or message.get("model"),
+                       # `modelID` only: DeepSeek puts an object in `model` on some messages, and
+                       # an identity that is sometimes a name and sometimes a structure cannot be
+                       # compared across runs.
+                       "model": message.get("modelID") if isinstance(
+                           message.get("modelID"), str) else None,
                        "provider": message.get("providerID"),
+                       "variant": message.get("variant"),
                        "part": part, "message": message})
     return events
 
@@ -99,7 +110,11 @@ def usage(events: list[dict[str, Any]]) -> dict[str, Any]:
                 totals[key] += int(value)
         if isinstance(part.get("cost"), (int, float)):
             totals["cost"] += float(part["cost"])
-    totals["cost"] = round(totals["cost"], 6)
+    # This is the *executor's* cost figure, from OpenCode's own price table. It is retained as
+    # reported and is not the same thing as a cost derived from the provider's published rates:
+    # a smoke probe found the two disagreeing, so both are kept and neither is allowed to stand in
+    # for the token counts, which are the primary evidence.
+    totals["executor_cost"] = round(totals.pop("cost"), 8)
     return totals
 
 
@@ -165,7 +180,29 @@ def timing(events: list[dict[str, Any]], *, elapsed_seconds: float | None = None
     }
 
 
+def observed_identity(events: list[dict[str, Any]]) -> dict[str, Any]:
+    """What the provider said it was, as distinct from what was asked for.
+
+    A requested model name is often an alias that moves. The identity the provider returns is the
+    only mechanically available check that the alias still resolved to what the experiment was
+    frozen against, so it is recorded separately and never merged with the request. More than one
+    distinct value across a single run means the run did not use one model, which is a validity
+    failure rather than a curiosity.
+    """
+    models = sorted({e["model"] for e in events if isinstance(e.get("model"), str)})
+    providers = sorted({e["provider"] for e in events if isinstance(e.get("provider"), str)})
+    variants = sorted({e["variant"] for e in events if isinstance(e.get("variant"), str)})
+    return {
+        "observed_models": models,
+        "observed_providers": providers,
+        "observed_variants": variants,
+        "single_model": len(models) == 1,
+        "single_variant": len(variants) <= 1,
+    }
+
+
 def profile(db: Path, *, stage: str, model: str, provider: str = "opencode-cli",
+            variant: str | None = None,
             elapsed_seconds: float | None = None,
             verification_seconds: float | None = None) -> dict[str, Any]:
     """One stage's execution profile: what it spent, and whether the record is complete.
@@ -185,10 +222,15 @@ def profile(db: Path, *, stage: str, model: str, provider: str = "opencode-cli",
         missing.append("model-calls")
     if counts["calls_finished"] == 0:
         missing.append("provider-usage")
+    identity = observed_identity(events)
+    if events and not identity["single_model"]:
+        missing.append("single-model-identity")
     return {
         "stage": stage,
         "model": model,
         "provider": provider,
+        "variant": variant,
+        "identity": identity,
         "usage": counts,
         "tools": tools,
         "time": timing(events, elapsed_seconds=elapsed_seconds,
@@ -209,14 +251,14 @@ def pipeline(stages: list[dict[str, Any]], *, outcome: dict[str, Any]) -> dict[s
     been checked.
     """
     totals = {"calls_started": 0, "calls_finished": 0, "input": 0, "output": 0, "reasoning": 0,
-              "cache_read": 0, "cache_write": 0, "cost": 0.0}
+              "cache_read": 0, "cache_write": 0, "executor_cost": 0.0}
     tool_calls = failed_calls = 0
     for stage in stages:
         for key in totals:
             totals[key] += stage["usage"].get(key, 0)
         tool_calls += stage["tools"]["calls"]
         failed_calls += stage["tools"]["failed_calls"]
-    totals["cost"] = round(totals["cost"], 6)
+    totals["executor_cost"] = round(totals["executor_cost"], 8)
     return {
         "outcome": outcome,
         "stages": stages,

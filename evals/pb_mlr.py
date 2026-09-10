@@ -26,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _mlr            # noqa: E402
 import _mlr_context    # noqa: E402
 import _mlr_run        # noqa: E402
+import _pricing        # noqa: E402
 import _repeat         # noqa: E402
 
 PILOT = "mlr-c3-full-headroom-pilot"
@@ -43,11 +44,26 @@ MATERIAL_HEADROOM = "material-headroom"
 INVALID = "pilot-invalid"
 
 
-def configuration(*, model: str, samples: int, arms: list[str]) -> dict[str, Any]:
+def _model_slug(model: str, variant: str | None) -> str:
+    """A short, stable name for one model configuration, effort included."""
+    slug = model.split("/", 1)[-1].replace("_", "-")
+    return f"{slug}-{variant}" if variant else slug
+
+
+def _experiment_id(model: str, variant: str | None, arms: list[str]) -> str:
+    shape = "full-headroom" if arms == [_mlr.FULL] else "paired"
+    return f"mlr-{_model_slug(model, variant)}-{shape}"
+
+
+def configuration(*, model: str, samples: int, arms: list[str], variant: str | None = None,
+                  thinking: str = "enabled") -> dict[str, Any]:
     """Everything that must not vary within one series."""
     fixture = _mlr.FIXTURE
     return {
-        "experiment": PILOT_R if arms == [_mlr.FULL] else "mlr-c3r-paired",
+        # The model is part of the experiment's name, not only of its configuration hash. Two
+        # series that differ by model are different experiments, and a name that hid that would
+        # let a later reader pool them by reading the file listing.
+        "experiment": _experiment_id(model, variant, arms),
         "purpose": ("headroom: whether unrestricted `full` executions consume implementation "
                     "source often enough for a paired source-visibility experiment to measure"),
         "evidence_class": "development",
@@ -63,6 +79,12 @@ def configuration(*, model: str, samples: int, arms: list[str]) -> dict[str, Any
         "task_sha256": _mlr.digest_file(fixture / "tasks" / "external.md"),
         "gate_sha256": _mlr.digest_file(fixture / "hidden" / "external_test.py"),
         "oracle": _mlr_run.ORACLE,
+        # Model controls are part of the frozen configuration, not incidental runtime detail: a
+        # provider that changes its default effort would otherwise alter a frozen experiment with
+        # nothing in the record moving.
+        "variant": variant,
+        "thinking": thinking,
+        "price_id": _pricing.DEEPSEEK_2026_09_09["id"],
         "telemetry_version": "mlr-context-2",
         "profile_version": "profile-1",
         "attribution": ("route (path/command family) and content (module-internal names derived "
@@ -89,6 +111,22 @@ def slots(arms: list[str], samples: int) -> list[dict[str, Any]]:
     return out
 
 
+# What one more slot could conservatively cost, in dollars. Derived from the largest observed MLR
+# run rather than the median, because a ceiling checked against an average is a ceiling that is
+# exceeded half the time.
+_RESERVE = 0.20
+
+
+def _spent(measurements: list[dict[str, Any]]) -> float:
+    """Money actually derived so far. Attempts with no priced usage contribute nothing."""
+    total = 0.0
+    for m in measurements:
+        amount = (m.get("cost") or {}).get("amount")
+        if isinstance(amount, (int, float)):
+            total += float(amount)
+    return round(total, 6)
+
+
 # A slot that fails for setup or harness reasons is re-run, because an outage is not a measurement.
 # Bounded, because a re-run that keeps failing is an infrastructure problem and pretending otherwise
 # would burn the budget on it. Both records are always kept: a discarded failure is a falsified run.
@@ -96,7 +134,8 @@ MAX_ATTEMPTS_PER_SLOT = 3
 
 
 def run_series(out: Path, *, model: str, samples: int, arms: list[str],
-               keep: Path | None) -> dict[str, Any]:
+               keep: Path | None, variant: str | None = None,
+               thinking: str = "enabled", budget: float | None = None) -> dict[str, Any]:
     """Fill every preallocated slot exactly once with a *valid* attempt, checkpointing each.
 
     Only valid attempts close a slot. An invalid one is retained beside the slot it failed and the
@@ -104,7 +143,8 @@ def run_series(out: Path, *, model: str, samples: int, arms: list[str],
     attempt rather than editing a record — and it is the reason a provider outage cannot quietly
     become "the agent consumed no implementation".
     """
-    config = configuration(model=model, samples=samples, arms=arms)
+    config = configuration(model=model, samples=samples, arms=arms, variant=variant,
+                           thinking=thinking)
     measurements = _repeat.load_series(out, config)
     done = {(m["item"], m["repeat"]) for m in measurements
             if m.get("validity") == _mlr_run.VALID}
@@ -113,7 +153,18 @@ def run_series(out: Path, *, model: str, samples: int, arms: list[str],
         tried = sum(1 for m in measurements
                     if (m.get("item"), m.get("repeat")) == key)
         while key not in done and tried < MAX_ATTEMPTS_PER_SLOT:
-            attempt = _mlr_run.run_attempt(slot["item"], model=model, keep=keep)
+            # Budget is enforced *before* launching a slot, never by cutting one short: a
+            # trajectory truncated for money would change the correctness distribution, which is
+            # the quantity everything else is gated on.
+            if budget is not None and _spent(measurements) + _RESERVE > budget:
+                measurements.append({**slot, "attempt": tried + 1,
+                                     "validity": _mlr_run.SETUP_FAILURE,
+                                     "reason": f"budget ceiling {budget} would be exceeded"})
+                _repeat.write_series(out, config, measurements)
+                return {"config": config, "measurements": measurements,
+                        "stopped": "budget-ceiling"}
+            attempt = _mlr_run.run_attempt(slot["item"], model=model, keep=keep,
+                                           variant=variant)
             measurements.append({**slot, "attempt": tried + 1, **attempt})
             _repeat.write_series(out, config, measurements)
             tried += 1
@@ -240,7 +291,7 @@ def _row(measurement: dict[str, Any]) -> dict[str, Any]:
         "output_tokens": usage.get("output") if valid else None,
         "cache_read": usage.get("cache_read") if valid else None,
         "reasoning_tokens": usage.get("reasoning") if valid else None,
-        "cost": usage.get("cost") if valid else None,
+        "executor_cost": usage.get("executor_cost") if valid else None,
         "tool_calls": tools.get("calls") if valid else None,
         "failed_tool_calls": tools.get("failed_calls") if valid else None,
         "by_tool": tools.get("by_tool") if valid else None,
@@ -303,7 +354,7 @@ def paired_analysis(record: dict[str, Any]) -> dict[str, Any]:
     fields = ("source", "runtime_repr", "disclosure", "contract_doc", "application", "behaviour",
               "calls", "input_tokens", "output_tokens", "cache_read", "reasoning_tokens",
               "tool_calls", "failed_tool_calls", "tool_seconds", "session_seconds",
-              "model_seconds", "verification_seconds", "elapsed_seconds", "cost")
+              "model_seconds", "verification_seconds", "elapsed_seconds", "executor_cost")
     arms = {}
     for arm in _mlr.ARMS:
         correct = [r for r in by_arm[arm] if r["correct"]]
@@ -346,12 +397,17 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--model", default="opencode/nemotron-3-ultra-free")
     p.add_argument("--samples", type=int, default=6)
     p.add_argument("--keep", type=Path, default=None)
+    p.add_argument("--variant", default=None, help="provider reasoning effort, frozen per series")
+    p.add_argument("--budget", type=float, default=None,
+                   help="hard spend ceiling in USD, checked before launching each slot")
 
     q = sub.add_parser("paired", help="run the pre-registered paired full/contract comparison")
     q.add_argument("--out", type=Path, required=True)
     q.add_argument("--model", default="opencode/nemotron-3-ultra-free")
     q.add_argument("--samples", type=int, default=8)
     q.add_argument("--keep", type=Path, default=None)
+    q.add_argument("--variant", default=None, help="provider reasoning effort, frozen per series")
+    q.add_argument("--budget", type=float, default=None, help="hard spend ceiling in USD")
 
     a = sub.add_parser("analyse", help="classify a completed series")
     a.add_argument("--record", type=Path, required=True)
@@ -360,12 +416,16 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     if args.command == "pilot":
         record = run_series(args.out, model=args.model, samples=args.samples,
-                            arms=[_mlr.FULL], keep=args.keep)
+                            arms=[_mlr.FULL], keep=args.keep,
+                            variant=getattr(args, "variant", None),
+                            budget=getattr(args, "budget", None))
         print(json.dumps(analyse({**record["config"], **record}), indent=2, sort_keys=True))
         return 0
     if args.command == "paired":
         record = run_series(args.out, model=args.model, samples=args.samples,
-                            arms=list(_mlr.ARMS), keep=args.keep)
+                            arms=list(_mlr.ARMS), keep=args.keep,
+                            variant=getattr(args, "variant", None),
+                            budget=getattr(args, "budget", None))
         print(json.dumps(paired_analysis({**record["config"], **record}),
                          indent=2, sort_keys=True))
         return 0

@@ -191,6 +191,8 @@ def launch(args: argparse.Namespace) -> int:
             cmd += ["--resume-session", args.resume_session]
         if args.auto_flag is not None:
             cmd += [f"--auto-flag={args.auto_flag}"]
+        if getattr(args, "variant", None):
+            cmd += ["--variant", args.variant]
         # Always use the detached low-level monitor so the immutable reservation can
         # be bound into state immediately. Foreground behavior is implemented by a
         # cheap wait *after* state binding, not by hiding a long worker inside launch.
@@ -492,6 +494,7 @@ def parser() -> argparse.ArgumentParser:
     l.add_argument("--wait-kind")
     l.add_argument("--resume-session", help="trustworthy same-role continuation: benign early stop, transport/recovery, or post-DECISION_REQUIRED resume")
     l.add_argument("--auto-flag", default="--auto", help="OpenCode permission flag; pass empty string to omit")
+    l.add_argument("--variant", default=None, help="OpenCode model variant (provider reasoning effort)")
     l.add_argument("--input", action="append", default=[], help="additional exact run artifact input supplied to this worker")
     l.add_argument("--force-read-only", action="store_true", help="reserve attempt as project-read-only regardless of task write scope")
     l.add_argument("--supersede-incomplete", action="store_true", help="exceptional recovery: archive a terminal-less prior attempt as lifecycle-incomplete before binding the new attempt; never use while the old worker may still write")

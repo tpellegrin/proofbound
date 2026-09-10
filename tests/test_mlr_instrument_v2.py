@@ -294,8 +294,13 @@ class Session:
         self.messages += 1
         mid = f"m{self.messages:04d}"
         self.clock += 100
+        # Real sessions carry the provider's own identity on every assistant message; a synthetic
+        # one that omits it would exercise a shape the executor never produces.
+        identity = {"modelID": "test-model", "providerID": "test-provider", "variant": "high"} \
+            if role == "assistant" else {}
         self.conn.execute("INSERT INTO message VALUES (?,?,?,?,?)",
-                          (mid, "s", self.clock, self.clock, json.dumps({"role": role, **data})))
+                          (mid, "s", self.clock, self.clock,
+                           json.dumps({"role": role, **identity, **data})))
         return mid
 
     def part(self, mid, data):
@@ -349,7 +354,7 @@ class ExecutionProfileTest(unittest.TestCase):
             self.assertEqual(got["usage"]["calls_started"], 2)
             self.assertEqual(got["usage"]["input"], 2500)
             self.assertEqual(got["usage"]["output"], 300)
-            self.assertAlmostEqual(got["usage"]["cost"], 0.75)
+            self.assertAlmostEqual(got["usage"]["executor_cost"], 0.75)
             self.assertEqual(got["tools"]["calls"], 2)
             self.assertEqual(got["tools"]["failed_calls"], 1)
             self.assertEqual(got["tools"]["by_tool"], {"bash": 1, "read": 1})
@@ -510,7 +515,7 @@ class PairedAnalysisTest(unittest.TestCase):
             },
             "profile": {"complete": complete, "stages": [{
                 "usage": {"input": tokens, "output": 100, "cache_read": 0, "reasoning": 0,
-                          "cost": 0.0},
+                          "executor_cost": 0.0},
                 "tools": {"calls": 12, "failed_calls": 0, "by_tool": {"read": 12}, "seconds": 1.0},
                 "time": {"session_span_seconds": 200.0, "model_seconds_derived": 199.0,
                          "verification_seconds": 0.1},

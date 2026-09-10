@@ -27,11 +27,13 @@ import subprocess
 import sys
 import tempfile
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import _mlr
 import _mlr_context
+import _pricing
 import _profile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,6 +57,10 @@ ATTEMPT_TIMEOUT_SECONDS = 1800
 # constant rather than inherited from another script's default, because it is part of the frozen
 # configuration: an arm that could not write would fail the task for a reason unrelated to context.
 AUTO_FLAG = "--auto"
+
+# Provider reasoning effort, passed explicitly. A provider that changes its default would otherwise
+# change a frozen experiment without anything in the record moving.
+VARIANT = None
 
 # The correctness oracle, versioned rather than replaced. MLR-C3 ran under v1, which rejected a
 # product-correct restructuring because it asserted an internal function's signature; v2 asserts the
@@ -175,6 +181,7 @@ def pin_interpreter(root: Path, env: dict[str, str]) -> dict[str, str]:
 
 def run_attempt(arm: str, *, model: str, task: Path | None = None, keep: Path | None = None,
                 timeout: int = ATTEMPT_TIMEOUT_SECONDS, oracle: str = ORACLE,
+                variant: str | None = VARIANT,
                 fixture: Path = _mlr.FIXTURE) -> dict[str, Any]:
     """One arm, one fresh execution, ungraded context accounting plus a deterministic verdict."""
     started = time.time()
@@ -184,6 +191,7 @@ def run_attempt(arm: str, *, model: str, task: Path | None = None, keep: Path | 
     result: dict[str, Any] = {"arm": arm, "model": model, "harness": "opencode-cli", "role": ROLE,
                               "task_sha256": _mlr.digest_file(task),
                               "auto_flag": AUTO_FLAG,
+                              "variant": variant,
                               "oracle": oracle,
                               "validity": HARNESS_FAILURE, "reason": None}
     try:
@@ -204,7 +212,8 @@ def run_attempt(arm: str, *, model: str, task: Path | None = None, keep: Path | 
             launch = _sh([sys.executable, str(SCRIPTS / "dsd_attempt.py"), "launch",
                           "--run-root", str(run.resolve()), "--phase-id", PHASE_ID,
                           "--task-id", TASK_ID, "--role", ROLE,
-                          f"--auto-flag={AUTO_FLAG}"],
+                          f"--auto-flag={AUTO_FLAG}"]
+                         + (["--variant", variant] if variant else []),
                          timeout=timeout, env=env)
         except subprocess.TimeoutExpired:
             result["reason"] = f"worker did not finish within {timeout}s"
@@ -247,9 +256,15 @@ def run_attempt(arm: str, *, model: str, task: Path | None = None, keep: Path | 
         })
         outcome = grade(built, root, oracle=oracle)
         stage = _profile.profile(
-            db, stage=ROLE, model=model,
+            db, stage=ROLE, model=model, variant=variant,
             elapsed_seconds=round(time.time() - started, 3),
             verification_seconds=outcome["verification_seconds"])
+        # Money is derived from usage under a named price table, and recorded beside it rather
+        # than in its place: the window is fixed by when this attempt actually started, so a series
+        # that crosses a pricing boundary is not costed at one rate.
+        result["cost"] = _pricing.cost(
+            stage["usage"], model=(model.split("/", 1)[-1]),
+            when=datetime.fromtimestamp(started, tz=timezone.utc))
         result["outcome"] = outcome
         result["profile"] = _profile.pipeline([stage], outcome={
             "correct": outcome["correct"], "gate_passed": outcome["gate_passed"],
