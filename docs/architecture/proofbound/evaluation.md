@@ -336,58 +336,14 @@ Ten planted mistakes measure checklist scanning. The artifact must read like som
 engineer wrote on a deadline: mostly sound, with a few genuine non-breaking weaknesses and a small number
 of real breaches, all mechanically checkable from the manifest.
 
-### E19.4 Grading: one independent call per property
+### E19.4 Grading, vocabulary, over-reporting and identity
 
-Of the three arrangements — one call returning a vector, one call per property, or one blinded batched
-call — V1 takes **one call per property**.
-
-The reason is not cost, which favours batching; the worker dominates wall-clock by an order of magnitude.
-It is that per-property calls give blindness *by construction* where batching requires engineering it.
-A grader shown three properties at once can see how many there are and how many it has already credited,
-and a grader that has just credited two is being invited to infer something about the third. Batching
-becomes worth revisiting only after it is shown to produce the same verdicts as independent calls.
-
-Each call receives one property statement and the report, and nothing else — not the property count, not
-the other properties, not their verdicts, not the worker model, not any prior result. Grading failure
-stays per-property: an ungradeable property is `grading-unavailable` on its own and does not decide the
-others.
-
-### E19.5 The trial vocabulary generalises without changing a recorded number
-
-A trial's semantic outcome is derived from its vector: *detected* when every property is graded and
-detected, *not-detected* when every property is graded and at least one is not, *grading-unavailable*
-when any could not be graded. At `K = 1` these are **exactly** the original definitions, so every
-existing record keeps both its numbers and its meaning and no historical run is reinterpreted (`P6`).
-
-**Never report the scenario total alone.** `P1 5/5, P2 5/5, P3 2/5` and `12/15` are the same arithmetic
-and not the same information: only the first says where the reflector is weak. Two reliability views are
-both wanted — **complete-trial rate**, how often every obligation was found in one pass, and
-**per-property rate**, how often each was found at all. A reviewer that finds all three once and two of
-three usually is not the same as one that finds all three every time.
-
-### E19.6 Over-reporting is observed now and measured later
-
-A richer completeness metric invites a cheap strategy: raise every possible concern and collect the
-detections. Three things already stand against it. Grading is property-specific, so a report earns a
-detection only by naming *that* conflict; the negative controls showed it empirically, refusing a report
-that raised all four declared distractors as findings while never mentioning the breach; and reports are
-retained, so human calibration can ask whether detections were earned or sprayed.
-
-Precision becomes a milestone when calibration observes reports combining high completeness with many
-unsupported findings. Extra findings are not false positives by default — whether an unplanted finding
-is valid is itself a semantic judgement, and treating "unplanted" as "wrong" would punish good review.
-
-### E19.7 Identity: the property set defines the scenario; properties need only local names
-
-Scenario identity covers the planted property set, because changing what a scenario asks for changes the
-engineering problem — and it does so without disturbing existing scenarios: identity is computed from
-the form the manifest actually uses, so a legacy single-`property` scenario hashes exactly the fields it
-always did. Grader model and rubric stay outside identity.
-
-Individual properties need stable names, not identities. The field test — *does any durable artifact
-have to refer to one property across scenario versions?* — finds nothing that does, since results are
-reported within a scenario version and a changed property set is a new scenario. Scenario-local
-kebab-case ids suffice; a property hash would be identity created because a concept felt important.
+One independent grading call per property, never one verdict over a report: a grader asked about
+three obligations at once answers about the report's tone. The trial vocabulary generalises
+unchanged — a property is graded, not a trial. Over-reporting is observed now and measured later,
+because a scenario with several obligations makes a complaint about a fourth thing visible as a
+false pressure rather than as diligence. Scenario identity is the property set: adding a property
+makes a different scenario, and comparing across that boundary compares two things.
 
 ### E19.8 Two effectiveness views, both already derivable
 
@@ -399,40 +355,23 @@ the same system as one that finds each half the time, and a mean would say it wa
 
 ## E20. Two measurement problems, wrongly sequenced as one
 
-[§E23](evaluation-comparison.md#e23-what-one-semantic-measurement-should-be) concluded that the craft
-measurement unit should become per-pressure discovery frequency, and named finding consolidation as the
-next blocker. That sequencing was wrong. It treats two problems as one.
+Closed-world measurement declares its semantic column before the run and asks each sample
+independently; open-world discovery has no column list beforehand and must decide what counts as one
+distinct finding before it can count anything. Only the second needs cross-sample semantic identity,
+and the first never compares one sample with another — so closed-world calibration was never blocked
+on finding consolidation, which is what `§E23` had wrongly sequenced.
 
-**Closed-world measurement.** The semantic column is declared before the run. *"Does the code deciding
-what to notify a user about need to know how a delivery provider is called?"* is fixed in the case
-manifest, and each sample is asked, independently, whether its report surfaced it. The column's identity
-is supplied by pre-registration.
-
-**Open-world discovery.** No column list exists beforehand. N reports raise overlapping, broader,
-narrower, causally related and contradictory concerns, and something must decide what counts as one
-distinct finding before anything can be counted at all.
-
-Only the second needs cross-sample semantic identity. The first never compares one sample with another.
-
-### E20.1 What it needed, and what it did not
-
-The incidence a multi-sample evaluation needs — *sample × obligation → detected / not-detected /
-grading-unavailable* — is the per-property vector `semantic()` already produced, with one index added:
-`trial × property` becomes `sample × pressure`. No new artifact, no protocol noun, no state. A pressure
-surfaced by one sample of ten is a cell with `k = 1` recorded with its provenance, not the loser of an
-election; recurrence becomes observable without becoming authority, because nothing downstream consumes
-it (`P5`). **The per-pressure vector is the result** — no collapse across pressures, none across
-samples, which is the trap `trial_verdict`'s logical AND would have reintroduced.
-
-Closed-world calibration therefore needed no cross-sample identity, only a discovery grader whose
-repeatability had been measured — the verdict grader's 16.9% belongs to a different question — and the
-repeated-sampling machinery that already existed. Doing consolidation first would have changed the
-criterion and the instrument in the same run, the mistake
+The incidence it needs — *sample × obligation → detected / not-detected / grading-unavailable* — is
+the per-property vector `semantic()` already produced, with one index added. A pressure surfaced by
+one sample of ten is a cell with `k = 1` recorded with its provenance, not the loser of an election;
+recurrence becomes observable without becoming authority (`P5`). **The per-pressure vector is the
+result** — no collapse across pressures, none across samples, which is the trap `trial_verdict`'s
+logical AND would have reintroduced. Doing consolidation first would also have changed the criterion
+and the instrument in the same run, the mistake
 [§E22](evaluation-comparison.md#e22-reliability-before-validity) exists to prevent.
 
-Everything downstream of this decision is recorded in the evidence sections it produced:
-[§E52](evidence/evaluation-runs.md), [§E53](evidence/evaluation-runs.md),
-[§E54](evidence/evaluation-runs.md) and [§E55](evidence/evaluation-runs.md).
+Everything downstream is recorded in the evidence sections it produced:
+[§E52](evidence/evaluation-runs.md) through [§E55](evidence/evaluation-runs.md).
 
 ## E24. What it takes to call an increment an improvement
 
@@ -482,18 +421,12 @@ them is a protocol state; they are research conclusions about a run.
 ### E24.3 Controls, and what they cannot prove
 
 Structurally different sound architectures remain the specificity control, because a treatment can
-raise discovery simply by making the evaluator complain more. A negative control — the same
-mechanics where the pressure should not be implicated — diagnoses that bias when it fails. **It
-proves nothing when it passes**, and no control is ground truth merely because someone labelled it
-one; its validity is argued before data collection or not at all.
-
-Every pressure also passes an **entailment audit** first: is the graded property actually entailed
-by the authority the evaluator receives? *"Must use a Sender interface"* is a mechanism and fails
-unless the mechanism is itself accepted intent; *"the code deciding what to notify a user about
-does not need to know how a provider is called"* is a consequence and can be satisfied by
-architectures that look nothing alike. Calibration V2 failed exactly here — the criterion was not
-entailed by what the reflector was shown — and that failure mode is common enough in coding
-benchmarks to be worth naming as a standing check rather than a lesson.
+raise discovery simply by making the evaluator complain more. A negative control diagnoses that bias
+when it fails and **proves nothing when it passes**. Every pressure also passes an **entailment
+audit** first: is the graded property actually entailed by the authority the evaluator receives?
+*"Must use a Sender interface"* is a mechanism and fails unless the mechanism is itself accepted
+intent; *"the code deciding what to notify a user about does not need to know how a provider is
+called"* is a consequence. Calibration V2 failed exactly there.
 
 ### E24.4 Research motivates experiments; it never authorises adoption
 
@@ -609,3 +542,33 @@ the same as having a general instrument. The profile earns generality by describ
 was not built for, and until it has, it is MLR machinery that happens to be layered cleanly. The
 layering is the part worth keeping now: what an execution *did* is experiment-independent, and where
 a representation *came from* is not, and they belong in different modules.
+
+### E25.5 The instrument must not become part of the evidence
+
+Two more things this programme learned by getting them wrong, both narrow, both local to evaluation
+methodology.
+
+**Origin is not delivery route.** `MLR-C3D` found implementation source counted as harness because
+the file it arrived in was a harness file, and a module's file names counted as behaviour because a
+shell command produced them. The measurement had asked *how* text arrived and treated the answer as
+*what the text was*. Those are two questions and they need two answers: where information came from,
+and how this particular representation of it reached the model. Keeping them apart is what lets a
+replayed excerpt stay source, a directory listing stay metadata, and a test run stay a test run
+while still recording what its traceback disclosed.
+
+The repair is bounded on purpose. Text that reproduces known content verbatim carries that content's
+origin however it travelled — which covers a copy, a log echo, a search hit, a `git show`. Text
+*derived* without reproducing it keeps its own origin, and paraphrase is invisible to the method and
+recorded as unresolved rather than as zero. An instrument that guessed further would be the same
+failure in a new place.
+
+**And measurement artifacts should not reach the subject.** An evaluator that writes a transcript
+into the workspace it is measuring has put its own observation into the evidence: the agent can read
+back what it did, and the reading is then attributed to the file it came from. Where an artifact
+exists only because someone is watching, it belongs outside what is watched.
+
+That is a preference, not an invariant, and it has a limit worth stating: it preserves experimental
+conditions against ordinary tooling and claims nothing against a process determined to inspect its
+own environment. It is also not always available — a protocol may bind an artifact into the tree for
+its own reasons — and where it is not, the honest response is to say so and make the measurement
+survive the exposure rather than to pretend the channel is closed.

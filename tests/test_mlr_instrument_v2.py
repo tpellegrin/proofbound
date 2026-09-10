@@ -445,7 +445,8 @@ class LedgerV2Test(unittest.TestCase):
                                    ' print(inspect.signature(objectstore.put))"'},
                        "put(key: str, payload: bytes) -> None"),
                 s.call(m)))
-            self.assertEqual(led["implementation_derived"]["unique_bytes"], 0)
+            self.assertEqual(led["implementation_derived"]["source_unique_bytes"], 0)
+            self.assertEqual(led["implementation_derived"]["runtime_unique_bytes"], 0)
             self.assertGreater(led["by_provenance"][_mlr_context.PUBLIC_CONTRACT]["unique_bytes"], 0)
 
     def test_disclosure_is_reported_beside_provenance_and_never_added_to_it(self):
@@ -456,7 +457,7 @@ class LedgerV2Test(unittest.TestCase):
                 s.tool(m, "bash", {"command": "python3 -m unittest discover -s tests"}, output),
                 s.call(m)))
             self.assertGreater(led["by_provenance"][_mlr_context.BEHAVIOUR]["unique_bytes"], 0)
-            self.assertEqual(led["implementation_derived"]["unique_bytes"], 0)
+            self.assertEqual(led["implementation_derived"]["source_unique_bytes"], 0)
             self.assertGreater(led["disclosure"]["unique_bytes"], 0)
             self.assertIn("_with_retries", led["disclosure"]["names"])
 

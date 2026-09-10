@@ -182,7 +182,9 @@ class RuntimeRepresentationTest(unittest.TestCase):
             led = _mlr_context.consumed(a.db, built)
             self.assertEqual(led["implementation_source_unique_bytes"], 0)
             self.assertGreater(led["implementation_runtime_unique_bytes"], 0)
-            self.assertGreater(led["implementation_derived"]["unique_bytes"], 0)
+            # Source, runtime and metadata are separate units and are never summed.
+            self.assertGreater(led["implementation_derived"]["runtime_unique_bytes"], 0)
+            self.assertEqual(led["implementation_derived"]["source_unique_bytes"], 0)
 
     def test_reading_module_constants_is_implementation_derived(self):
         """The two hidden decisions are two ordinary lines away; the ledger must see that."""
@@ -210,7 +212,8 @@ class RuntimeRepresentationTest(unittest.TestCase):
             s.close()
             led = _mlr_context.consumed(a.db, built)
             self.assertGreater(led["by_provenance"][_mlr_context.BEHAVIOUR]["unique_bytes"], 0)
-            self.assertEqual(led["implementation_derived"]["unique_bytes"], 0)
+            self.assertEqual(led["implementation_derived"]["source_unique_bytes"], 0)
+            self.assertEqual(led["implementation_derived"]["runtime_unique_bytes"], 0)
 
     def test_internal_names_delivered_by_any_route_are_flagged(self):
         """A traceback through the module's interior is implementation-derived text, whoever asked."""
@@ -335,7 +338,7 @@ class SymmetryTest(unittest.TestCase):
             s.close()
             led = _mlr_context.consumed(a.db, built)
             self.assertGreater(led["by_provenance"][_mlr_context.HARNESS]["unique_bytes"], 0)
-            self.assertEqual(led["implementation_derived"]["unique_bytes"], 0)
+            self.assertEqual(led["implementation_derived"]["source_unique_bytes"], 0)
 
     def test_provider_token_usage_is_retained_beside_the_byte_accounting(self):
         with Arms() as a:

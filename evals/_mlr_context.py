@@ -42,6 +42,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+import _lineage
 import _mlr
 
 # Where a representation came from. Evaluation-local: these classify this fixture's transcripts and
@@ -345,17 +346,112 @@ def _search_provenance(output: str, built: dict[str, Any]) -> str:
     return OTHER
 
 
+_MARKS = None
+_MODULE_FILES = None
+
+
+def _fingerprint() -> "frozenset[str]":
+    global _MARKS
+    if _MARKS is None:
+        _MARKS = _lineage.source_fingerprint(_mlr.FIXTURE / "runtime" / "objectstore")
+    return _MARKS
+
+
+def _module_files() -> tuple[str, ...]:
+    global _MODULE_FILES
+    if _MODULE_FILES is None:
+        _MODULE_FILES = _lineage.module_paths(_mlr.FIXTURE / "runtime" / "objectstore")
+    return _MODULE_FILES
+
+
+def resolve_origin(route: str, requested: str, text: str) -> dict[str, Any]:
+    """What this delivered text actually is, once its content has been asked as well as its path.
+
+    The route said how the text arrived and the path offered a guess. This settles the guess against
+    the bytes — the repair MLR-C3D needed, where source echoed through a harness log was counted as
+    harness because the log's path said so.
+
+    **Lineage supplements the path; it does not overrule it where the path is right.** When the path
+    already identifies one of the module's files, the whole delivered rendering is source
+    representation and is counted as such — a line-numbered read of a 2,200-byte file delivered 2,697
+    bytes of that file, and charging only the lines long enough to fingerprint would understate what
+    the model received. When the path says something else, only the lines demonstrably verbatim from
+    the module are claimed, because those are the only ones that can be shown to be source.
+
+    Metadata is claimed only when no source came with it: a listing that names `_store.py` discloses
+    that the module has a private store module, which is real information, is not source, and is
+    counted in its own unit.
+    """
+    marks = _fingerprint()
+    found = _lineage.source_in(text, marks)
+    metadata = _lineage.metadata_in(text, _module_files(), "objectstore")
+    origin = requested
+    source_bytes = 0
+    identity = None
+    if requested == _lineage.IMPLEMENTATION_SOURCE:
+        # The path already established the artifact. Count the whole delivered rendering, and take
+        # identity over its matched lines so the same file arriving twice is one representation.
+        source_bytes = len((text or "").encode("utf-8"))
+        identity = _lineage.source_identity(found["matched"]) if found["bytes"] else \
+            hashlib.sha256((text or "").encode("utf-8")).hexdigest()
+    elif found["bytes"]:
+        origin = _lineage.IMPLEMENTATION_SOURCE
+        source_bytes = found["bytes"]
+        identity = _lineage.source_identity(found["matched"])
+    elif metadata["references"] and requested not in (
+            _lineage.IMPLEMENTATION_SOURCE, _lineage.IMPLEMENTATION_RUNTIME) \
+            and metadata["bytes"] * 2 >= len((text or "").encode("utf-8")):
+        # Only when the references are most of what came back. A `git ls-files` listing *is* the
+        # module's structure; a test run whose traceback happens to name one file is test output
+        # that disclosed a file name, and relabelling the whole artifact by its smallest part is the
+        # same mistake as labelling it by its path. The references are recorded on the item either
+        # way, so a minority disclosure is visible without being promoted.
+        origin = _lineage.IMPLEMENTATION_METADATA
+    return {
+        "origin": origin,
+        "source_bytes": source_bytes,
+        "source_lines": found["lines"],
+        "source_identity": identity,
+        "metadata": metadata,
+        # True when the bytes, not the path, decided. This is the count that says whether the
+        # lineage repair did anything in a given run.
+        "by_lineage": origin != requested,
+    }
+
+
 def _item(event: dict[str, Any], *, kind: str, route: str, provenance: str, detail: str, text: str,
           truncated: bool, status: str | None) -> dict[str, Any]:
     payload = text or ""
     hits = _internal_hits(payload)
+    lineage = resolve_origin(route, provenance, payload)
+    origin = lineage["origin"]
+    # An item that plainly discloses the interior but resolves to no implementation origin is not
+    # quietly filed as harmless. It is marked unresolved, so the audit sees an open question rather
+    # than a clean zero.
+    # Fail closed on *inbound* text only. Text the model wrote is downstream of what it already
+    # consumed, not a route by which information enters, and marking it unresolved would flag every
+    # run that reasoned aloud about the module it had just read. It stays recorded and flagged as a
+    # disclosure diagnostic; the check that matters is whether such text appears in a run that
+    # consumed no implementation at all, which the audit asks separately.
+    inbound = kind.startswith("tool:") or kind.startswith("user:")
+    if inbound and hits and origin not in _lineage.IMPLEMENTATION_ORIGINS \
+            and not lineage["metadata"]["references"]:
+        origin = _lineage.UNRESOLVED
     return {
         "ordinal": event["ordinal"],
         "kind": kind,
         "route": route,
-        "provenance": provenance,
+        "requested": provenance,
+        "origin": origin,
+        "provenance": origin,
+        "by_lineage": lineage["by_lineage"],
         "detail": detail[:600],
         "bytes": len(payload.encode("utf-8")),
+        "source_bytes": lineage["source_bytes"],
+        "source_lines": lineage["source_lines"],
+        "source_identity": lineage["source_identity"],
+        "metadata_bytes": lineage["metadata"]["bytes"],
+        "metadata_names": lineage["metadata"]["names"],
         "sha256": hashlib.sha256(payload.encode("utf-8")).hexdigest(),
         "truncated": truncated,
         "status": status,
@@ -364,19 +460,20 @@ def _item(event: dict[str, Any], *, kind: str, route: str, provenance: str, deta
 
 
 def ledger(events: list[dict[str, Any]], built: dict[str, Any]) -> dict[str, Any]:
-    """The four quantities, kept apart, plus the disclosure channel that stands beside them.
+    """The four quantities, kept apart, with origin now decided by content rather than by path.
 
-    `unique` counts each distinct piece of text once however often it was delivered: it answers
-    *what entered reasoning at all*, and the primary measurand is defined on it. `delivered`
-    multiplies by the number of model calls that began afterwards: it answers *what the context
-    cost*. Both are kept because they answer different questions and choosing one discards the other.
+    `unique` counts each distinct piece of text once however often it was replayed; `delivered`
+    multiplies it by the model calls that began afterwards. Both are kept because they answer
+    different questions.
 
-    `disclosure` is the second channel MLR-C3 needed and did not have in usable form: bytes of text
-    that carried module-internal names, whatever route requested them. It is reported separately and
-    never added to the provenance totals — a 500-byte test output with a 60-byte traceback through
-    the module's interior is test output that disclosed something, not 500 bytes of implementation.
+    **Source is counted by lineage identity, not by the blob it arrived in.** The same lines read
+    directly, echoed into a log and read back again are one unique implementation-source
+    representation and three deliveries. Counting them three times would inflate exactly the number
+    the paired experiment turns on, and counting them once for the first route only would lose the
+    context cost of the replay.
 
-    A session OpenCode summarised is flagged, which makes `delivered` an upper bound and says so.
+    Metadata and runtime-derived representation are reported in their own units and are never added
+    to source: file names, disassembly characters and source bytes are not exchangeable.
     """
     calls = model_calls(events)
     items: list[dict[str, Any]] = []
@@ -385,55 +482,109 @@ def ledger(events: list[dict[str, Any]], built: dict[str, Any]) -> dict[str, Any
         if item is not None:
             item["delivered_to_calls"] = sum(1 for c in calls if c > item["ordinal"])
             item["delivered_bytes"] = item["bytes"] * item["delivered_to_calls"]
+            item["delivered_source_bytes"] = item["source_bytes"] * item["delivered_to_calls"]
             items.append(item)
 
     by_class = {name: {"unique_bytes": 0, "delivered_bytes": 0, "items": 0}
-                for name in PROVENANCE}
+                for name in PROVENANCE + (_lineage.IMPLEMENTATION_METADATA, _lineage.UNRESOLVED)}
     by_route: dict[str, dict[str, int]] = {}
     seen: set[tuple[str, str]] = set()
-    disclosure_bytes = 0
-    disclosed: set[str] = set()
-    disclosure_seen: set[str] = set()
     for item in items:
-        bucket = by_class[item["provenance"]]
+        bucket = by_class.setdefault(item["origin"],
+                                     {"unique_bytes": 0, "delivered_bytes": 0, "items": 0})
         bucket["items"] += 1
         bucket["delivered_bytes"] += item["delivered_bytes"]
-        key = (item["provenance"], item["sha256"])
+        key = (item["origin"], item["sha256"])
         if key not in seen:
             seen.add(key)
             bucket["unique_bytes"] += item["bytes"]
         route = by_route.setdefault(item["route"], {"items": 0, "unique_bytes": 0})
         route["items"] += 1
+
+    route_seen: dict[str, set[str]] = {}
+    for item in items:
+        got = route_seen.setdefault(item["route"], set())
+        if item["sha256"] not in got:
+            got.add(item["sha256"])
+            by_route[item["route"]]["unique_bytes"] += item["bytes"]
+
+    # Direct implementation source, counted once per distinct set of source lines however delivered.
+    source_seen: set[str] = set()
+    source_unique = 0
+    source_delivered = 0
+    source_routes: dict[str, int] = {}
+    replays = 0
+    for item in items:
+        if not item["source_bytes"]:
+            continue
+        source_delivered += item["delivered_source_bytes"]
+        source_routes[item["route"]] = source_routes.get(item["route"], 0) + item["source_bytes"]
+        if item["source_identity"] in source_seen:
+            replays += 1
+            continue
+        source_seen.add(item["source_identity"])
+        source_unique += item["source_bytes"]
+
+    metadata_seen: set[str] = set()
+    metadata_names: set[str] = set()
+    metadata_refs = 0
+    for item in items:
+        if not item["metadata_bytes"]:
+            continue
+        metadata_refs += 1
+        metadata_names.update(item["metadata_names"])
+        metadata_seen.add(item["sha256"])
+
+    disclosure_bytes = 0
+    disclosed: set[str] = set()
+    disclosure_seen: set[str] = set()
+    for item in items:
         if item["internal_names"]:
             disclosed.update(item["internal_names"])
             if item["sha256"] not in disclosure_seen:
                 disclosure_seen.add(item["sha256"])
                 disclosure_bytes += item["bytes"]
-    route_unique: dict[str, set[str]] = {}
-    for item in items:
-        route_unique.setdefault(item["route"], set())
-        if item["sha256"] not in route_unique[item["route"]]:
-            route_unique[item["route"]].add(item["sha256"])
-            by_route[item["route"]]["unique_bytes"] += item["bytes"]
 
-    implementation = {name: by_class[name] for name in IMPLEMENTATION_DERIVED}
+    unresolved = [i for i in items if i["origin"] == _lineage.UNRESOLVED]
+    runtime = by_class[IMPLEMENTATION_RUNTIME]
     return {
         "model_calls": len(calls),
         "tokens": token_usage(events),
         "summarised": any(e.get("summary") for e in events),
         "by_provenance": by_class,
         "by_route": dict(sorted(by_route.items())),
-        "implementation_derived": {
-            "unique_bytes": sum(v["unique_bytes"] for v in implementation.values()),
-            "delivered_bytes": sum(v["delivered_bytes"] for v in implementation.values()),
+        # The primary measurand's quantity, and the routes it arrived by. Replay raises delivered
+        # and leaves unique alone, which is the whole point of resolving origin by content.
+        "implementation_source": {
+            "unique_bytes": source_unique,
+            "delivered_bytes": source_delivered,
+            "distinct_representations": len(source_seen),
+            "replays": replays,
+            "by_route": dict(sorted(source_routes.items())),
         },
-        "implementation_source_unique_bytes": by_class[IMPLEMENTATION_SOURCE]["unique_bytes"],
-        "implementation_runtime_unique_bytes": by_class[IMPLEMENTATION_RUNTIME]["unique_bytes"],
+        "implementation_metadata": {
+            "references": metadata_refs,
+            "names": sorted(metadata_names),
+            "items": len(metadata_seen),
+        },
+        "implementation_source_unique_bytes": source_unique,
+        "implementation_runtime_unique_bytes": runtime["unique_bytes"],
+        "implementation_derived": {
+            "source_unique_bytes": source_unique,
+            "runtime_unique_bytes": runtime["unique_bytes"],
+            "metadata_references": metadata_refs,
+        },
         "disclosure": {
             "unique_bytes": disclosure_bytes,
             "items": sum(1 for i in items if i["internal_names"]),
             "names": sorted(disclosed),
         },
+        "unresolved": {
+            "items": len(unresolved),
+            "bytes": sum(i["bytes"] for i in unresolved),
+            "routes": sorted({i["route"] for i in unresolved}),
+        },
+        "attributed_by_lineage": sum(1 for i in items if i["by_lineage"]),
         "items_carrying_internal_names": sum(1 for i in items if i["internal_names"]),
         "truncated_items": sum(1 for i in items if i["truncated"]),
         "items": items,

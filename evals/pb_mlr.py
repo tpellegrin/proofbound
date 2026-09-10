@@ -85,10 +85,10 @@ def configuration(*, model: str, samples: int, arms: list[str], variant: str | N
         "variant": variant,
         "thinking": thinking,
         "price_id": _pricing.DEEPSEEK_2026_09_09["id"],
-        "telemetry_version": "mlr-context-2",
+        "telemetry_version": "mlr-context-3",
         "profile_version": "profile-1",
-        "attribution": ("route (path/command family) and content (module-internal names derived "
-                        "from the runtime source by ast), decided together"),
+        "attribution": ("origin decided by content lineage, delivery route recorded separately; "
+                        "source, runtime-derived and structural metadata kept in distinct units"),
         "consumed_definition": ("text appearing in a part OpenCode places in the message history "
                                 "before a later model call"),
         "measurand": ("unique bytes of direct implementation-source representation consumed on "
