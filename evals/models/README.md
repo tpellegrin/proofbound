@@ -83,6 +83,9 @@ must not silently reinterpret evidence gathered before it moved.
   [18-session retrospective](../results/craft-mlr-eighteen-session-retrospective.json),
   [preflight before cleanup](../results/craft-mlr-hermeticity-preflight-contaminated.json),
   [after cleanup](../results/craft-mlr-hermeticity-preflight-after-cleanup.json)
+- Execution-boundary design check — a per-slot constructed view selected, **not implemented**:
+  [`MLR-C3D-R4-execution-boundary.md`](../craft/modularity-local-reasoning/MLR-C3D-R4-execution-boundary.md),
+  [feasibility probes](../results/craft-mlr-boundary-feasibility-probes.json)
 
 ---
 
@@ -122,6 +125,7 @@ load-bearing.
 | MLR paired (`full` vs `contract`) | attempted, invalid — provider outage | executed, invalid — attribution escape |
 | MLR attribution qualification | not run | executed, does not pass — search route, host filesystem |
 | MLR hermeticity precondition | not run | not met — the host holds reachable copies of the controlled evidence |
+| MLR execution boundary | not run | designed, not implemented — a per-slot constructed view |
 
 An empty cell means *not run*, never *worse*.
 
