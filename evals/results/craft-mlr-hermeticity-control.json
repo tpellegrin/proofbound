@@ -1,0 +1,16 @@
+{
+  "after_removal_findings": 35,
+  "baseline_findings": 35,
+  "kind": "hermeticity control \u2014 a deliberately planted copy, no semantic slot consumed",
+  "newly_detected": [
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/pb-control-k4p746v0/somewhere/objectstore/_store.py"
+    }
+  ],
+  "note": "\u00a759. Detection is demonstrated against a copy placed on purpose, so it does not rest on the historical stale directory alone. The absolute counts stay above zero because the structural residue \u2014 the repository and the retained sessions \u2014 is still reachable.",
+  "planted_still_detected_after_removal": false,
+  "self_reference": "Recording evidence enlarges the reachable surface: committing the eighteen-session retrospective added one more `experiment-result` finding to the very scan that reports it. Measured, not assumed, and recorded because it bounds how clean this environment can be made while the repository is reachable.",
+  "with_planted_copy": 36
+}
