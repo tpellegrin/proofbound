@@ -45,7 +45,7 @@ must not silently reinterpret evidence gathered before it moved.
 | provider-observed identity | `deepseek-v4-flash` / provider `deepseek` |
 | thinking | enabled (provider default, set explicitly) |
 | reasoning effort | `high`, passed as `--variant high` and confirmed in session telemetry |
-| attribution | `mlr-context-3` — origin by content lineage, delivery route recorded separately |
+| attribution | `mlr-context-4` — origin by causal precedence, with representation form and delivery route recorded separately (`mlr-context-3` for the paired run and everything before it) |
 | sampling | **not controllable** — the provider documents that thinking mode ignores `temperature`, `top_p`, `presence_penalty` and `frequency_penalty` |
 | context | 1M documented |
 | pricing identity | `deepseek-2026-09-09` |
@@ -67,6 +67,16 @@ must not silently reinterpret evidence gathered before it moved.
   classified it as `other`:
   [`MLR-deepseek-paired-run.md`](../craft/modularity-local-reasoning/MLR-deepseek-paired-run.md),
   [record](../results/craft-mlr-deepseek-v4-flash-high-paired.json)
+- Attribution repair — causal provenance, representation form and delivery route separated:
+  [`MLR-C3D-R2.md`](../craft/modularity-local-reasoning/MLR-C3D-R2.md), with the invalid run
+  re-read for diagnosis under the repaired instrument
+  ([retrospective](../results/craft-mlr-deepseek-v4-flash-high-paired-retrospective.json) — a
+  diagnostic, not that experiment's result)
+- R2 field qualification — 6/6 correct, **does not pass**: the search route was never brought under
+  the causal model, and a `contract` agent found a stray `full` workspace on the host filesystem:
+  [prereg](../craft/modularity-local-reasoning/MLR-R2-qualification-preregistration.md),
+  [`MLR-R2-qualification.md`](../craft/modularity-local-reasoning/MLR-R2-qualification.md),
+  [record](../results/craft-mlr-deepseek-v4-flash-high-paired-r2-qualification.json)
 
 ---
 
@@ -104,6 +114,7 @@ load-bearing.
 |---|---|---|
 | MLR headroom (`full` only) | MLR-C3, MLR-C3R | MLR-C3D, MLR-C3D-R — requalified |
 | MLR paired (`full` vs `contract`) | attempted, invalid — provider outage | executed, invalid — attribution escape |
+| MLR attribution qualification | not run | executed, does not pass — search route, host filesystem |
 
 An empty cell means *not run*, never *worse*.
 
