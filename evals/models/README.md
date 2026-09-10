@@ -90,6 +90,10 @@ must not silently reinterpret evidence gathered before it moved.
   yet integrated with the worker**:
   [`_semantic_view.py`](../_semantic_view.py),
   [substrate probes](../results/craft-mlr-semantic-view-probes.json)
+- Real worker integration — the MLR arm, launcher, executor and subprocess tree inside the boundary,
+  with the model-driven tool route reserved for field qualification:
+  [`_mlr_boundary.py`](../_mlr_boundary.py),
+  [integration probes](../results/craft-mlr-boundary-integration-probes.json)
 
 ---
 
@@ -129,7 +133,7 @@ load-bearing.
 | MLR paired (`full` vs `contract`) | attempted, invalid — provider outage | executed, invalid — attribution escape |
 | MLR attribution qualification | not run | executed, does not pass — search route, host filesystem |
 | MLR hermeticity precondition | not run | not met — the host holds reachable copies of the controlled evidence |
-| MLR execution boundary | not run | substrate built and locally proven; worker integration pending |
+| MLR execution boundary | not run | worker integrated and locally proven; model-driven tool route pending |
 
 An empty cell means *not run*, never *worse*.
 

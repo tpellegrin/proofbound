@@ -356,3 +356,103 @@ view's parent remain listable, and the boundary is macOS-only.
 executor, `roots()` for the preflight, `collect` for the workspace and session database, and
 destruction on the way out. R4-B supplies the arm, the executor, a narrow credential home, the
 session location and the declared exposure for `full`; it changes nothing in this module.
+
+---
+
+# R4-B — real worker integration status
+
+**Integrated and proven to the deepest layer reachable without buying a semantic sample.** One layer
+is explicitly not proven, and is named rather than glossed.
+
+## B1. The cut
+
+The boundary is entered **once**, around the inherited launcher:
+
+```
+control plane          materialise arm · stage declared inputs · preflight
+      │
+      ▼  sandbox-exec, one entry
+semantic view          dsd_attempt.py → run_worker.py → opencode → tools → subprocesses
+      │
+      ▼  after termination, from outside
+control plane          extract workspace + session · destroy view · hidden gate · ledger · profile
+```
+
+Everything below the entry is a descendant and inherits it. Wrapping individual shell commands would
+have left the executor itself outside, which is where *what can the evaluated process see* stops
+having one answer.
+
+`evals/_mlr_boundary.py` holds the integration. `_semantic_view.py` was not modified; neither were
+`_hermetic.py`, `_mlr_context.py` or `_profile.py`.
+
+## B2. Construct, never mount
+
+The arm is materialised on the control plane and its declared parts copied in. The repository is
+never exposed. The launcher the DSD protocol requires is staged as a declared input — and checked
+first: `_hermetic.scan(["scripts"])` returns **clean**, so what crosses is orchestration and not
+evidence.
+
+The interpreter is exposed by policy, so `python3` inside the view is the one that compiled the
+bytecode, and the runtime imports without a magic-number error.
+
+## B3. Measured
+
+[`craft-mlr-boundary-integration-probes.json`](../../results/craft-mlr-boundary-integration-probes.json),
+and 31 tests that run the real machinery.
+
+| | |
+|---|---|
+| `contract` staging | preflight **clean**, zero declared, no `third_party`, zero `.py` in the runtime |
+| `full` staging | preflight **clean**, exactly **4** declared exposures, zero undeclared findings |
+| runtime structural identity | `28ba66e1cd49b157`, unchanged from every prior run |
+| contract digest | `af3d3e9be15b51ed`, unchanged |
+| workspace tree | matches the legacy prepared arm file-for-file by digest |
+| visible tests | pass inside the boundary and outside it |
+| environment | `PATH`, `HOME`, `TMPDIR`, `PYTHONPATH`, `OBJECTSTORE_ROOT`, `OPENCODE_DB`, `DSD_OC_RUN_DB` — every value inside the view |
+| host sentinel | absent in the child **and the grandchild** |
+| deepest child reading the repository, the home, the oracle | three refusals |
+| deepest child running the historical search | only the slot's own runtime |
+| executor | **1.18.29**, runs inside on a constructed home |
+| executor session list | empty |
+| executor MCP | none configured |
+| executor credentials | `0 credentials`, read from the constructed home |
+| executor session store | created **inside the slot**, at `OPENCODE_DB` |
+| oracle | same decision on 3 valid and 2 invalid candidates, before and after the round trip |
+| retained session, extracted and read after destruction | 24 model calls, 0 unresolved, 0 uncovered events; profile complete |
+| `full` → `contract` | the second slot finds no source |
+| `contract` → `full` | the second slot finds exactly its own declared source |
+| a stale `full` copy outside the view | unreadable, and the preflight stays clean |
+| a second copy inside `home`, `tmp` or `session` | contaminated, in **both** arms |
+
+## B4. What the integration taught
+
+**`os.environ.copy()` inside the boundary copies constructed state.** `run_worker.py` still calls it,
+and that is now correct rather than a hole: the whole chain begins inside the view, so what it copies
+is what was constructed. The deep sentinel proves it — a host-only variable is absent two levels
+down. No inherited orchestration was rewritten to know about isolation.
+
+**Two environment names appear that were never declared.** `LC_CTYPE` and `__CF_USER_TEXT_ENCODING`
+are set by the platform inside the child. Poisoning both on the host and re-reading them inside shows
+the host values do **not** cross: what appears is `C.UTF-8` and a uid-derived encoding tag, generated
+rather than inherited.
+
+**The executor needs no file staged into its home to start.** It builds `~/.cache/opencode`,
+`~/.config/opencode`, `~/.local/share/opencode` and `~/.local/state/opencode` from nothing, inside the
+view. Credentials remain a declared input for R4-C, staged by the caller and destroyed with the slot —
+tested with a fixture, never a real one.
+
+**Preflight before launch is a control-flow invariant.** `launch()` takes the preflight report as an
+argument and refuses anything but `clean`, so a caller that never ran one cannot call it and a caller
+that ignored one is stopped. Nothing durable records that a slot was ever clean.
+
+## B5. The layer that is not proven
+
+A **model-driven tool call issued by the executor** has not been exercised. Reaching it requires a
+provider call, and this milestone does not buy semantic evidence. Everything beneath it is
+mechanically established: staging, the process tree, the environment, the executor's local lifecycle
+including its session store, and the evidence round trip.
+
+What remains open is narrow and specific: *does a tool call the model asks for inherit the same
+evidence surface as the subprocess tree that was measured?* The architecture says it must — the tool
+runs as a descendant of a process that is already inside — and the architecture has been wrong before.
+R4-C is where that is settled.

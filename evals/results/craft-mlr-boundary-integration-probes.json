@@ -1,0 +1,60 @@
+{
+  "executor": {
+    "name": "opencode",
+    "sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+    "version": "1.18.29"
+  },
+  "full_arm": {
+    "declared_exposures": 4,
+    "preflight": "clean",
+    "undeclared_findings": 0
+  },
+  "kind": "real worker boundary integration \u2014 local probes, no semantic evidence purchased",
+  "layers": [
+    {
+      "arm": "contract",
+      "contract_sha256": "af3d3e9be15b51ed0afce03f5ff9be1a4c2852c29dd7ea721b2d9cff9763a40c",
+      "layer": "1 real staging",
+      "preflight": "clean",
+      "runtime_source_files": 0,
+      "runtime_structure": "28ba66e1cd49b15761ee4ada2b7cc49824f1d125336e2a79110d5853855a97e9"
+    },
+    {
+      "deepest_child_repository_read": "Operation not permitted",
+      "deepest_child_sentinel": "absent",
+      "entry": "one sandbox entry around the inherited launcher; everything below inherits it",
+      "environment_keys": [
+        "DSD_OC_RUN_DB",
+        "HOME",
+        "OBJECTSTORE_ROOT",
+        "OPENCODE_DB",
+        "PATH",
+        "PYTHONPATH",
+        "TMPDIR"
+      ],
+      "layer": "2 worker topology"
+    },
+    {
+      "credentials_seen": "0 credentials, from the constructed home",
+      "layer": "3 executor local lifecycle",
+      "mcp": "No MCP servers configured",
+      "session_list": "(empty)",
+      "session_store_created_in_slot": true,
+      "version": "1.18.29"
+    },
+    {
+      "attribution_changes_required": 0,
+      "layer": "4 evidence round trip",
+      "post_destruction_readability": "verified with a retained session",
+      "profile_changes_required": 0,
+      "session_extraction": "verified",
+      "workspace_extraction": "verified"
+    },
+    {
+      "layer": "5 model-driven tool route",
+      "reason": "reaching it requires a provider call, which this milestone does not buy",
+      "reserved_for": "R4-C field qualification",
+      "status": "not exercised"
+    }
+  ]
+}
