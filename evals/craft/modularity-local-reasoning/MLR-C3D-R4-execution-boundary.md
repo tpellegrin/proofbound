@@ -238,3 +238,121 @@ actually falsified or confirmed.
 
 **R4-C — qualification.** A tiny paired instrumentation qualification, under a new experiment
 identity. Not before A and B are green.
+
+---
+
+# R4-A — substrate implementation status
+
+**Implemented and proven locally. Not integrated.** The design above is unchanged; this records what
+now exists, what it demonstrates, and — as precisely as the rest — what it does not.
+
+## A1. What was built
+
+`evals/_semantic_view.py`. A slot is constructed, used and destroyed:
+
+```python
+with semantic_view(policy) as view:
+    view.stage_tree(prepared, "workspace")
+    report = _hermetic.scan(view.roots(), sensitive)
+    done = view.run([interpreter, "-c", "..."])
+    view.collect("workspace", destination)
+```
+
+`Policy` is what kind of boundary this is — staged tools by digest, the environment allowlist, the
+exposed system paths, the network decision, the declared exposures. `View` is one instance of it. The
+identity is taken over the policy and never over the slot, so two slots of one experiment are the
+same boundary and a slot that exposes one more root is a different one.
+
+The substrate names no experiment. What is sensitive, what a workspace contains, which runtime to
+stage and which interpreter to expose are all supplied by the caller, and a test asserts the module
+mentions none of them.
+
+## A2. What the probes establish
+
+Recorded in
+[`craft-mlr-semantic-view-probes.json`](../../results/craft-mlr-semantic-view-probes.json) and held
+by 51 tests that execute real commands rather than inspect path arithmetic.
+
+| | |
+|---|---|
+| repository read | `Operation not permitted` |
+| host home listing | `Operation not permitted` |
+| host per-user temp listing | `Operation not permitted` |
+| a controlled-source copy planted outside the view | unreachable, and does not contaminate the view |
+| the same copy planted inside `tmp`, `home` or `workspace` | **contaminated**, and clean again once removed |
+| `find / -name "objectstore*"` | the view's own runtime, and nothing else |
+| `find` for the hidden oracle | no results |
+| environment keys in the child | `HOME`, `PATH`, `TMPDIR` — nothing inherited |
+| a host-only sentinel variable | absent inside, intact outside |
+| `$HOME`, `$TMPDIR`, `tempfile.gettempdir()` | all inside the view |
+| compiled runtime | imports and executes, on each of 3.9, 3.10 and 3.14 |
+| task-local `git init`/`add`/`commit`/`status`/`diff` | works, and does not discover the evaluator's repository |
+| two sequential slots | the second finds nothing the first produced, in any area |
+| exception, failing child, aborted construction | the slot is destroyed in every case |
+
+**The deepest test passes.** Two slots run ordinary shell, Python and filesystem discovery in
+sequence on this host; each receives only constructed state; neither reaches the control plane; and
+the second finds no marker from the first in `workspace`, `home`, `tmp`, `session` or `data`.
+
+## A3. What the implementation taught that the design did not know
+
+**A copied system binary will not run.** macOS validates code signatures and a copy carries none; the
+kernel kills the process, measured as `SIGKILL` with no output. Staging is therefore by hard link,
+and a source on another volume is refused loudly rather than copied into something that dies on exec.
+System tools are not staged at all — they are reached where they already live, which the policy
+allows.
+
+**A staged link must never be `chmod`-ed.** It shares an inode with the control plane's own file, so
+setting its mode sets that file's mode. Write is refused by the policy instead, which is where a rule
+about what the subject may do belongs. This was in the code for an hour and is now a test.
+
+**An exposure implies its ancestors.** Path resolution reads every directory on the way down, so a
+policy that exposed an interpreter under a denied parent could not launch it — `realpath: Operation
+not permitted` on a binary that was explicitly allowed. Exposing a subpath now implies traversable
+ancestors.
+
+**`ignore_errors=True` hid a leak.** A broken cleanup path left forty-five empty tool directories
+before anything noticed, because destruction swallowed its own failure and the one test that checked
+compared before against after — invisible to a leak that happens every time. Destruction is now
+verified, retried once, and what still survives is remembered; the assertion runs over the whole test
+module and asks the substrate what *it* failed to remove rather than sweeping a shared directory.
+
+**Sibling names are visible; contents are not.** The view's parent must stay listable for a subject
+to walk down to its own workspace, so a name beside a view is discoverable even though its bytes are
+refused. `parent_is_clear` measures that rather than hiding it, and a stale runtime dump left in
+`/private/tmp` by the paired run — recorded in the R4 probe evidence first — was removed under that
+rule.
+
+## A4. Hermeticity, rescoped rather than weakened
+
+`_hermetic.py` is unchanged. What changed is what it is pointed at.
+
+The old condition was *the host must not contain the controlled evidence*, which the host cannot
+satisfy while it holds the repository. The new condition is *the semantic view must not expose
+undeclared controlled evidence*. A repository full of source outside the boundary is now expected,
+and a test asserts a clean result in its presence. A copy inside `home`, `tmp` or `workspace` still
+fails, which is the property that matters: isolation must not make the checker blind.
+
+`home` is in the scanned roots, closing the gap R4 identified.
+
+**Pre-launch hermeticity and runtime attribution stay separate.** If an agent disassembles the runtime
+after launch and writes it into its own scratch, that is allowed, it is attribution's business, and
+the next slot's preflight is what ensures it does not survive.
+
+## A5. What R4-A does not prove
+
+It does not prove that the real OpenCode semantic session works inside the boundary. `--version`
+runs; a session was not started, because that would cost a semantic sample. It does not integrate the
+MLR worker, and the existing `run_attempt` path is untouched. No model was called and no credential
+was staged.
+
+The residual risks from the design stand: `sandbox-exec` is deprecated, sibling names under the
+view's parent remain listable, and the boundary is macOS-only.
+
+## A6. The seam R4-B consumes
+
+`Policy(tools=…, env=…, extra_reads=…, network=True, declared=…)` and `semantic_view(policy)`, then
+`stage_tree` for the prepared arm, `stage_file` for the contract and credentials, `run` for the
+executor, `roots()` for the preflight, `collect` for the workspace and session database, and
+destruction on the way out. R4-B supplies the arm, the executor, a narrow credential home, the
+session location and the declared exposure for `full`; it changes nothing in this module.

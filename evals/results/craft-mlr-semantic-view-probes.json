@@ -1,0 +1,93 @@
+{
+  "claim_not_made": "not a security boundary: no claim about malicious code, kernel isolation, /proc or side channels; discovery commands are not blocked",
+  "kind": "semantic execution boundary \u2014 substrate probe report (R4-A)",
+  "mechanism": "macOS sandbox profile (sandbox-exec); the concept is a constructed evidence surface and the mechanism is platform-specific",
+  "platform": {
+    "interpreter": "3.9.6",
+    "system": "macOS 15.7.8 arm64"
+  },
+  "probes": [
+    {
+      "expected": "denied",
+      "observed": "cat: /Users/thiago/Projects/personal/deepseek-and-destroy/README.md: Operation not permitt",
+      "probe": "A host repository read"
+    },
+    {
+      "expected": "denied",
+      "observed": "ls: /Users/thiago: Operation not permitted",
+      "probe": "B host home listing"
+    },
+    {
+      "expected": "denied",
+      "observed": "ls: /var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T: Operation not permitted",
+      "probe": "C host per-user temp listing"
+    },
+    {
+      "expected": "clean",
+      "observed": "clean",
+      "probe": "F clean view preflight"
+    },
+    {
+      "expected": "absent",
+      "observed": "absent",
+      "probe": "M host sentinel in child environment"
+    },
+    {
+      "expected": "/private/tmp/pb-sem-t6g2j95y/home",
+      "observed": "/private/tmp/pb-sem-t6g2j95y/home",
+      "probe": "N HOME is constructed"
+    },
+    {
+      "expected": "/private/tmp/pb-sem-t6g2j95y/tmp",
+      "observed": "/private/tmp/pb-sem-t6g2j95y/tmp",
+      "probe": "O temp resolves inside the view"
+    },
+    {
+      "expected": "PATH, HOME, TMPDIR only",
+      "observed": [
+        "HOME",
+        "PATH",
+        "TMPDIR"
+      ],
+      "probe": "environment keys"
+    },
+    {
+      "expected": "only the view's own runtime",
+      "observed": [
+        "/System/Volumes/Data/private/tmp/pb-sem-t6g2j95y/runtime/objectstore",
+        "/private/tmp/pb-sem-t6g2j95y/runtime/objectstore"
+      ],
+      "probe": "Q historical objectstore search"
+    },
+    {
+      "expected": "0 results",
+      "observed": "(none)",
+      "probe": "R oracle search"
+    },
+    {
+      "expected": "contaminated",
+      "observed": "contaminated",
+      "probe": "E planted copy inside the view"
+    },
+    {
+      "expected": "clean",
+      "observed": "clean",
+      "probe": "E' after removal"
+    },
+    {
+      "expected": "stable across slots",
+      "observed": "01c3c8bae0948920",
+      "probe": "policy identity"
+    },
+    {
+      "expected": "no experiment artefact beside the views",
+      "observed": true,
+      "probe": "parent clearance"
+    },
+    {
+      "expected": "none",
+      "observed": 0,
+      "probe": "residue after probes"
+    }
+  ]
+}

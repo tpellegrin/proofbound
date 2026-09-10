@@ -86,6 +86,10 @@ must not silently reinterpret evidence gathered before it moved.
 - Execution-boundary design check — a per-slot constructed view selected, **not implemented**:
   [`MLR-C3D-R4-execution-boundary.md`](../craft/modularity-local-reasoning/MLR-C3D-R4-execution-boundary.md),
   [feasibility probes](../results/craft-mlr-boundary-feasibility-probes.json)
+- Execution-boundary substrate — constructed per-slot views, implemented and proven locally, **not
+  yet integrated with the worker**:
+  [`_semantic_view.py`](../_semantic_view.py),
+  [substrate probes](../results/craft-mlr-semantic-view-probes.json)
 
 ---
 
@@ -125,7 +129,7 @@ load-bearing.
 | MLR paired (`full` vs `contract`) | attempted, invalid — provider outage | executed, invalid — attribution escape |
 | MLR attribution qualification | not run | executed, does not pass — search route, host filesystem |
 | MLR hermeticity precondition | not run | not met — the host holds reachable copies of the controlled evidence |
-| MLR execution boundary | not run | designed, not implemented — a per-slot constructed view |
+| MLR execution boundary | not run | substrate built and locally proven; worker integration pending |
 
 An empty cell means *not run*, never *worse*.
 
