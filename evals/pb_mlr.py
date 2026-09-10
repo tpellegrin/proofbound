@@ -412,6 +412,89 @@ def paired_analysis(record: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def retrospect(record: dict[str, Any], *, evidence_root: Path | None = None) -> dict[str, Any]:
+    """Re-attribute a completed series' retained sessions under the attribution in force today.
+
+    **This is diagnosis, not a result.** The record it reads is not modified and the numbers it
+    returns are not that experiment's numbers: they were produced by a later classifier under a
+    later telemetry version, and both versions are stated so the two can never be conflated. A
+    series' reported outcome is whatever it reported when it ran.
+
+    It exists because a repaired instrument has to be shown to explain the trajectories that broke
+    the last one before another is bought. Every retained session is walked, every item is
+    classified, and anything the instrument cannot account for is returned rather than summarised
+    away.
+    """
+    out: list[dict[str, Any]] = []
+    for measurement in record.get("measurements") or []:
+        kept = Path(measurement.get("evidence") or "")
+        # Retained sessions outlive the directory they were written to. When they have been moved,
+        # they are found by the name the record already carries rather than by a second index.
+        root = Path(evidence_root) / kept.name if evidence_root else kept
+        db = root / "worker.db"
+        built = _rebuilt(measurement)
+        if not db.is_file() or built is None:
+            out.append({**_slot_identity(measurement), "available": False})
+            continue
+        led = _mlr_context.consumed(db, built)
+        forms = {}
+        for item in led["items"]:
+            for form, size in item["form_bytes"].items():
+                forms[form] = forms.get(form, 0) + size
+        out.append({
+            **_slot_identity(measurement),
+            "available": True,
+            "session": root.name,
+            "direct_source_unique_bytes": led["implementation_source_unique_bytes"],
+            "runtime_unique_bytes": led["implementation_runtime_unique_bytes"],
+            "source_equivalent_reconstruction": led["source_equivalent_reconstruction"],
+            "metadata_references": led["implementation_metadata"]["references"],
+            "by_provenance": {k: v["unique_bytes"] for k, v in led["by_provenance"].items()},
+            "by_form_bytes": dict(sorted(forms.items())),
+            "by_basis": led["by_basis"],
+            "unresolved": led["unresolved"],
+            "contradictions": led["contradictions"],
+            "items": len(led["items"]),
+        })
+    clean = all(r.get("available") and not r["contradictions"] and not r["unresolved"]["items"]
+                for r in out)
+    return {
+        "kind": "retrospective diagnostic analysis — not the recorded experiment result",
+        "source_record": {"experiment": record.get("experiment"),
+                          "frozen_identity": record.get("frozen_identity"),
+                          "telemetry_version": record.get("telemetry_version")},
+        "recomputed_under": {"telemetry_version": configuration(
+            model=record.get("model") or "", samples=1,
+            arms=record.get("arms") or [_mlr.FULL])["telemetry_version"]},
+        "evidence_root": str(evidence_root) if evidence_root else None,
+        "trajectories": out,
+        "explained": clean,
+        "unavailable": [r for r in out if not r.get("available")],
+    }
+
+
+def _slot_identity(measurement: dict[str, Any]) -> dict[str, Any]:
+    return {"arm": measurement.get("arm"), "repeat": measurement.get("repeat"),
+            "attempt": measurement.get("attempt"), "validity": measurement.get("validity"),
+            "correct": (measurement.get("outcome") or {}).get("correct")}
+
+
+def _rebuilt(measurement: dict[str, Any]) -> dict[str, Any] | None:
+    """The arm layout a retained session ran under, recovered from what the record already holds.
+
+    Path classification needs to know where the workspace and the runtime were. Both are prefixes of
+    the attempt directory the record kept, so nothing has to be stored twice to make an old session
+    readable again.
+    """
+    event_dir = measurement.get("event_dir") or ""
+    marker = "/arm/workspace/"
+    if marker not in event_dir:
+        return None
+    root = event_dir.split(marker)[0]
+    return {"arm": measurement.get("arm"), "workspace": f"{root}/arm/workspace",
+            "runtime": f"{root}/arm/runtime"}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="command", required=True)
@@ -437,6 +520,13 @@ def main(argv: list[str] | None = None) -> int:
     a.add_argument("--record", type=Path, required=True)
     a.add_argument("--paired", action="store_true", help="report the paired comparison")
 
+    r = sub.add_parser("retrospect",
+                       help="re-attribute a completed series' retained sessions for diagnosis")
+    r.add_argument("--record", type=Path, required=True)
+    r.add_argument("--out", type=Path, default=None)
+    r.add_argument("--evidence-root", type=Path, default=None,
+                   help="directory holding the retained sessions, if they have been moved")
+
     args = ap.parse_args(argv)
     if args.command == "pilot":
         record = run_series(args.out, model=args.model, samples=args.samples,
@@ -453,6 +543,14 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(paired_analysis({**record["config"], **record}),
                          indent=2, sort_keys=True))
         return 0
+    if args.command == "retrospect":
+        record = json.loads(Path(args.record).read_text(encoding="utf-8"))
+        report = retrospect(record, evidence_root=getattr(args, "evidence_root", None))
+        text = json.dumps(report, indent=2, sort_keys=True)
+        if args.out:
+            Path(args.out).write_text(text + "\n", encoding="utf-8")
+        print(text)
+        return 0 if report["explained"] else 1
     record = json.loads(Path(args.record).read_text(encoding="utf-8"))
     reporter = paired_analysis if args.paired else analyse
     print(json.dumps(reporter(record), indent=2, sort_keys=True))

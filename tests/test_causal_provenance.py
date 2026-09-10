@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -517,6 +518,91 @@ class RetainedTrajectoryTest(unittest.TestCase):
         item = [i for i in led["items"] if i["kind"] == "tool:bash"][0]
         self.assertEqual(item["origin"], _mlr_context.IMPLEMENTATION_RUNTIME)
         self.assertEqual(led["implementation_source_unique_bytes"], 0)
+
+
+SCHEMA = """
+CREATE TABLE message (id text PRIMARY KEY, session_id text, time_created integer,
+                      time_updated integer, data text);
+CREATE TABLE part (id text PRIMARY KEY, message_id text, session_id text, time_created integer,
+                   time_updated integer, data text);
+"""
+
+
+class RetrospectiveDiagnosisTest(unittest.TestCase):
+    """Re-attributing a finished series is diagnosis of the instrument, never a new result. §50, §84.
+    """
+
+    maxDiff = None
+
+    def series(self, arm, deliveries):
+        """A minimal completed record, with one retained session it can be re-read from."""
+        evidence = arm.tmp / "evidence" / "full-1"
+        evidence.mkdir(parents=True)
+        conn = sqlite3.connect(evidence / "worker.db")
+        conn.executescript(SCHEMA)
+        conn.execute("INSERT INTO message VALUES ('m1','s',1,1,?)",
+                     (json.dumps({"role": "assistant"}),))
+        for n, data in enumerate(deliveries, start=1):
+            conn.execute("INSERT INTO part VALUES (?,?,?,?,?,?)",
+                         (f"p{n:03d}", "m1", "s", n, n, json.dumps(data)))
+        conn.commit()
+        conn.close()
+        return {
+            "experiment": "series-under-test",
+            "frozen_identity": "0" * 64,
+            "telemetry_version": "an-earlier-version",
+            "model": "provider/model",
+            "arms": [_mlr.FULL],
+            "measurements": [{
+                "arm": _mlr.FULL, "repeat": 1, "attempt": 1, "validity": "valid",
+                "outcome": {"correct": True},
+                "evidence": str(evidence),
+                "event_dir": f"{arm.built['workspace']}/plans/x/attempts/implementer-1",
+            }],
+        }
+
+    def test_the_report_says_it_is_not_the_experiment_result(self):
+        import pb_mlr
+        with Arm() as arm:
+            record = self.series(arm, [{"type": "step-start"},
+                                       {"type": "tool", "tool": "read",
+                                        "state": {"status": "completed",
+                                                  "input": {"filePath": arm.vendored()},
+                                                  "output": arm.source(), "metadata": {}}},
+                                       {"type": "step-start"}])
+            report = pb_mlr.retrospect(record)
+            self.assertIn("not the recorded experiment result", report["kind"])
+            self.assertEqual(report["source_record"]["telemetry_version"], "an-earlier-version")
+            self.assertNotEqual(report["recomputed_under"]["telemetry_version"],
+                                report["source_record"]["telemetry_version"])
+
+    def test_the_source_record_is_not_modified(self):
+        import pb_mlr
+        with Arm() as arm:
+            record = self.series(arm, [{"type": "step-start"}])
+            before = json.dumps(record, sort_keys=True)
+            pb_mlr.retrospect(record)
+            self.assertEqual(json.dumps(record, sort_keys=True), before)
+
+    def test_a_session_that_is_gone_is_reported_and_not_counted_as_clean(self):
+        """Missing evidence is missing, never a clean pass."""
+        import pb_mlr
+        with Arm() as arm:
+            record = self.series(arm, [{"type": "step-start"}])
+            shutil.rmtree(Path(record["measurements"][0]["evidence"]))
+            report = pb_mlr.retrospect(record)
+            self.assertFalse(report["explained"])
+            self.assertEqual(len(report["unavailable"]), 1)
+
+    def test_relocated_sessions_are_found_by_the_name_the_record_carries(self):
+        import pb_mlr
+        with Arm() as arm:
+            record = self.series(arm, [{"type": "step-start"}])
+            moved = arm.tmp / "moved"
+            moved.mkdir()
+            shutil.move(str(Path(record["measurements"][0]["evidence"])), str(moved / "full-1"))
+            self.assertFalse(pb_mlr.retrospect(record)["explained"])
+            self.assertTrue(pb_mlr.retrospect(record, evidence_root=moved)["explained"])
 
 
 class GenericityTest(unittest.TestCase):
