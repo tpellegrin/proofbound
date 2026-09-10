@@ -60,7 +60,13 @@ must not silently reinterpret evidence gathered before it moved.
 - Repaired-instrument requalification — 3/3 correct, zero attribution escapes, **requalified**:
   [`MLR-C3D-R.md`](../craft/modularity-local-reasoning/MLR-C3D-R.md),
   [record](../results/craft-mlr-deepseek-v4-flash-high-requalification.json)
-- Paired experiment: [frozen, not executed](../craft/modularity-local-reasoning/MLR-deepseek-paired-preregistration.md)
+- Paired experiment pre-registration:
+  [`MLR-deepseek-paired-preregistration.md`](../craft/modularity-local-reasoning/MLR-deepseek-paired-preregistration.md)
+- MLR paired calibration — 12/12 slots correct, treatment held, **invalid**: a `contract` run
+  laundered 29,499 bytes of runtime disassembly through a temporary file and the attribution
+  classified it as `other`:
+  [`MLR-deepseek-paired-run.md`](../craft/modularity-local-reasoning/MLR-deepseek-paired-run.md),
+  [record](../results/craft-mlr-deepseek-v4-flash-high-paired.json)
 
 ---
 
@@ -97,7 +103,7 @@ load-bearing.
 | experiment | Nemotron 3 Ultra Free | DeepSeek V4 Flash · high |
 |---|---|---|
 | MLR headroom (`full` only) | MLR-C3, MLR-C3R | MLR-C3D, MLR-C3D-R — requalified |
-| MLR paired (`full` vs `contract`) | attempted, invalid — provider outage | frozen, not executed |
+| MLR paired (`full` vs `contract`) | attempted, invalid — provider outage | executed, invalid — attribution escape |
 
 An empty cell means *not run*, never *worse*.
 
