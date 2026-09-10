@@ -154,7 +154,8 @@ def grade(built: dict[str, Any], root: Path, *,
         "correct": gate.returncode == 0 and regression.returncode == 0,
         "contract_unchanged": contract_now == built["contract_sha256"],
         "vendored_unchanged": vendored_now == built["vendored_digest"],
-        "runtime_unchanged": _mlr.digest_tree(Path(built["runtime"])) == built["runtime_digest"],
+        "runtime_unchanged": (_mlr.runtime_structure(Path(built["runtime"]))
+                              == built["runtime_structure"]),
         "verification_seconds": verification_seconds,
     }
 
@@ -197,6 +198,7 @@ def run_attempt(arm: str, *, model: str, task: Path | None = None, keep: Path | 
     try:
         built = _mlr.materialise(arm, root / "arm", fixture=fixture)
         result.update({"runtime_digest": built["runtime_digest"],
+                       "runtime_structure": built["runtime_structure"],
                        "source_digest": built["source_digest"],
                        "contract_sha256": built["contract_sha256"],
                        "workspace_digest": built["workspace_digest"]})

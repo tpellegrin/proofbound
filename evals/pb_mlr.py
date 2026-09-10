@@ -50,22 +50,35 @@ def _model_slug(model: str, variant: str | None) -> str:
     return f"{slug}-{variant}" if variant else slug
 
 
-def _experiment_id(model: str, variant: str | None, arms: list[str]) -> str:
+def _experiment_id(model: str, variant: str | None, arms: list[str],
+                   revision: str | None = None) -> str:
+    """The series name. A revision is part of it, so a repaired instrument cannot inherit a name.
+
+    The first paired series under this model was invalidated by its attribution, and a re-run must be
+    a different experiment rather than a continuation of that one. Sharing the name would invite a
+    later reader to pool the two, which is the thing the naming exists to prevent.
+    """
     shape = "full-headroom" if arms == [_mlr.FULL] else "paired"
-    return f"mlr-{_model_slug(model, variant)}-{shape}"
+    tail = f"-{revision}" if revision else ""
+    return f"mlr-{_model_slug(model, variant)}-{shape}{tail}"
 
 
 def configuration(*, model: str, samples: int, arms: list[str], variant: str | None = None,
-                  thinking: str = "enabled") -> dict[str, Any]:
+                  thinking: str = "enabled", revision: str | None = None,
+                  purpose: str | None = None) -> dict[str, Any]:
     """Everything that must not vary within one series."""
     fixture = _mlr.FIXTURE
     return {
         # The model is part of the experiment's name, not only of its configuration hash. Two
         # series that differ by model are different experiments, and a name that hid that would
         # let a later reader pool them by reading the file listing.
-        "experiment": _experiment_id(model, variant, arms),
-        "purpose": ("headroom: whether unrestricted `full` executions consume implementation "
-                    "source often enough for a paired source-visibility experiment to measure"),
+        "experiment": _experiment_id(model, variant, arms, revision),
+        "purpose": purpose or (
+            "headroom: whether unrestricted `full` executions consume implementation source often "
+            "enough for a paired source-visibility experiment to measure"
+            if arms == [_mlr.FULL] else
+            "paired: what happens to correctness and to implementation representation when direct "
+            "source visibility is removed"),
         "evidence_class": "development",
         "model": model,
         "harness": "opencode-cli",
@@ -77,7 +90,10 @@ def configuration(*, model: str, samples: int, arms: list[str], variant: str | N
         "source_digest": _mlr.digest_tree(fixture / "runtime" / "objectstore"),
         "contract_sha256": _mlr.digest_file(fixture / "base" / "docs" / "storage-contract.md"),
         "task_sha256": _mlr.digest_file(fixture / "tasks" / "external.md"),
-        "gate_sha256": _mlr.digest_file(fixture / "hidden" / "external_test.py"),
+        # The oracle actually used, not the one that came first. This bound `external_test.py`
+        # while `_mlr_run.ORACLE` had moved to the second oracle, so a change to the oracle in force
+        # would not have moved the frozen identity.
+        "gate_sha256": _mlr.digest_file(fixture / "hidden" / _mlr_run.ORACLE),
         "oracle": _mlr_run.ORACLE,
         # Model controls are part of the frozen configuration, not incidental runtime detail: a
         # provider that changes its default effort would otherwise alter a frozen experiment with
@@ -85,10 +101,18 @@ def configuration(*, model: str, samples: int, arms: list[str], variant: str | N
         "variant": variant,
         "thinking": thinking,
         "price_id": _pricing.DEEPSEEK_2026_09_09["id"],
-        "telemetry_version": "mlr-context-3",
+        # Bytecode is version-specific, so the interpreter is part of what makes two arms the same
+        # compiled system. The structural identity itself is recorded per execution, because it is a
+        # property of the materialisation rather than of the fixture on disk.
+        "interpreter": _mlr.interpreter_identity(),
+        # Bumped whenever what an origin *means* changes. A record carries the version its numbers
+        # were produced under, so a later classifier cannot silently reinterpret an earlier result.
+        "telemetry_version": "mlr-context-4",
         "profile_version": "profile-1",
-        "attribution": ("origin decided by content lineage, delivery route recorded separately; "
-                        "source, runtime-derived and structural metadata kept in distinct units"),
+        "attribution": ("origin follows the strongest available evidence — linked ancestry, then "
+                        "artifact identity, then request family, then delivered content; "
+                        "representation form and delivery route recorded separately; source, "
+                        "runtime-derived, reconstructed and structural units never summed"),
         "consumed_definition": ("text appearing in a part OpenCode places in the message history "
                                 "before a later model call"),
         "measurand": ("unique bytes of direct implementation-source representation consumed on "

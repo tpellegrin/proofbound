@@ -30,7 +30,11 @@ with it is a later milestone.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
+import json
+import marshal
 import os
+import platform
 import py_compile
 import shutil
 import subprocess
@@ -75,6 +79,72 @@ def digest_file(path: Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def _normalise_const(value: Any) -> Any:
+    """One constant, rendered so that equal constants render equally.
+
+    Sets are rendered sorted because their iteration order is not part of what they mean, and nested
+    code objects are recursed rather than repr'd because a repr carries a memory address.
+    """
+    if hasattr(value, "co_code"):
+        return ("code", _normalise_code(value))
+    if isinstance(value, (frozenset, set)):
+        return ("set", tuple(sorted(repr(v) for v in value)))
+    if isinstance(value, tuple):
+        return ("tuple", tuple(_normalise_const(v) for v in value))
+    return (type(value).__name__, repr(value))
+
+
+def _normalise_code(code: Any) -> tuple:
+    """One code object as its structure: what it does, over what names, with what constants."""
+    return (
+        code.co_name, code.co_argcount, getattr(code, "co_posonlyargcount", 0),
+        code.co_kwonlyargcount, code.co_nlocals, code.co_stacksize, code.co_flags,
+        code.co_code.hex(), tuple(code.co_names), tuple(code.co_varnames),
+        tuple(code.co_freevars), tuple(code.co_cellvars), code.co_filename,
+        code.co_firstlineno, tuple(_normalise_const(c) for c in code.co_consts),
+    )
+
+
+def runtime_structure(runtime: Path) -> str:
+    """Structural identity of the compiled runtime, invariant under serialisation noise.
+
+    `digest_tree` hashes the bytes, and MLR-C3D-R2 found that those bytes are not reproducible: one
+    slot of a twelve-slot paired run produced a different runtime digest from the other eleven, and
+    the cause was `marshal`'s interned-string flag for a single name and the reference indices that
+    shift behind it. The compiled objects were structurally identical — the same opcodes, names,
+    constants and nested code — and the experiment had nonetheless recorded two runtimes.
+
+    Two arms must be able to prove they executed the same implementation, so the identity has to be
+    of the implementation and not of one serialisation of it. This walks each compiled object and
+    every code object nested inside it, and hashes what the interpreter will actually execute.
+
+    **What it claims.** That the compiled objects have the same structure, for the normalisation
+    written above, under one interpreter. **What it does not claim.** Semantic equivalence in any
+    wider sense, or identity across interpreters — bytecode is version-specific, so the magic number
+    is part of the identity and a digest from one Python is not comparable with another's.
+    """
+    h = hashlib.sha256()
+    h.update(importlib.util.MAGIC_NUMBER)
+    h.update(b"\0")
+    for pyc in sorted(Path(runtime).rglob("*.pyc")):
+        if "__pycache__" in pyc.parts:
+            continue
+        h.update(pyc.relative_to(runtime).as_posix().encode("utf-8"))
+        h.update(b"\0")
+        code = marshal.loads(pyc.read_bytes()[16:])
+        h.update(json.dumps(_normalise_code(code), default=str).encode("utf-8"))
+        h.update(b"\0")
+    return h.hexdigest()
+
+
+def interpreter_identity() -> dict[str, str]:
+    """The interpreter the runtime was compiled by, and therefore the one it is valid under."""
+    return {"version": platform.python_version(),
+            "implementation": sys.implementation.name,
+            "cache_tag": sys.implementation.cache_tag,
+            "bytecode_magic": importlib.util.MAGIC_NUMBER.hex()}
+
+
 def materialise(arm: str, into: Path, *, fixture: Path = FIXTURE) -> dict[str, Any]:
     """Build one arm's workspace and the runtime the workspace imports.
 
@@ -100,6 +170,8 @@ def materialise(arm: str, into: Path, *, fixture: Path = FIXTURE) -> dict[str, A
         "runtime": runtime,
         "workspace_digest": digest_tree(workspace),
         "runtime_digest": digest_tree(runtime),
+        "runtime_structure": runtime_structure(runtime),
+        "interpreter": interpreter_identity(),
         "source_digest": digest_tree(source),
         "contract_sha256": digest_file(workspace / "docs" / "storage-contract.md"),
         "vendored_digest": (digest_tree(workspace / VENDORED / "objectstore")
