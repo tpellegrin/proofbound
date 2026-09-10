@@ -53,7 +53,9 @@ must not silently reinterpret evidence gathered before it moved.
 
 - Compatibility qualification and headroom pre-registration:
   [`MLR-C3D-headroom-preregistration.md`](../craft/modularity-local-reasoning/MLR-C3D-headroom-preregistration.md)
-- MLR headroom qualification: pre-registered, not yet run.
+- MLR headroom qualification — 5/5 correct, strong source headroom, **attribution requires
+  revision**: [`MLR-C3D.md`](../craft/modularity-local-reasoning/MLR-C3D.md),
+  [record](../results/craft-mlr-deepseek-v4-flash-high-headroom.json)
 
 ---
 
@@ -89,8 +91,8 @@ load-bearing.
 
 | experiment | Nemotron 3 Ultra Free | DeepSeek V4 Flash · high |
 |---|---|---|
-| MLR headroom (`full` only) | MLR-C3, MLR-C3R | MLR-C3D — pre-registered |
-| MLR paired (`full` vs `contract`) | attempted, invalid — provider outage | not designed; requires headroom first |
+| MLR headroom (`full` only) | MLR-C3, MLR-C3R | MLR-C3D — headroom found, instrument not ready |
+| MLR paired (`full` vs `contract`) | attempted, invalid — provider outage | not designed; blocked on attribution |
 
 An empty cell means *not run*, never *worse*.
 

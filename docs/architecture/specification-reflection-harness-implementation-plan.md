@@ -2005,6 +2005,36 @@ that consumed no implementation: 0.
 **Status: incomplete, not invalid in instrument.** A re-run needs a new experiment identity, because
 resuming a partially consumed frozen series would splice two runs.
 
+### 7P.6 MLR-C3D — DeepSeek qualifies the phenomenon and disqualifies the instrument
+
+Records: [`MLR-C3D.md`](../../evals/craft/modularity-local-reasoning/MLR-C3D.md),
+[`§E59`](proofbound/evidence/evaluation-runs.md), model index
+[`evals/models/README.md`](../../evals/models/README.md).
+
+**Model became an experimental condition that can be found, priced, and refused.** The experiment id
+carries the model configuration, the configuration hash binds thinking mode and reasoning effort, and
+a moving alias is recorded as three separate facts — request, documented version, provider-observed
+identity. Sampling could not be frozen, and that is stated rather than faked: the provider ignores
+`temperature` and `top_p` in thinking mode. A spend ceiling is enforced before a slot starts, never
+by truncating one; a health probe runs before a series so a dead endpoint cannot consume twenty-five
+launches as it did under Nemotron.
+
+**Five runs, 5/5 correct, 5/5 consuming 5,822 bytes of implementation source — strong headroom** for
+$0.171 against a $2.00 ceiling. DeepSeek explores quite differently: it reads the contract every
+time, introspects the runtime up to 35,796 bytes even with source available, and uses roughly a
+seventh of Nemotron's input tokens.
+
+**And the instrument failed.** Three of five runs read **their own `worker.log`**, whose path maps to
+`harness`, delivering 5,962–8,154 bytes of echoed implementation text that implementation accounting
+cannot see; a fourth disclosed the same internals through `git ls-files`. Both appeared in the `full`
+arm, so neither is a `contract` compensation route — which is exactly why they block a paired run,
+where the same channel would return an introspected interior as harness bytes and score the arm as
+having consumed less than it did.
+
+**No paired experiment was designed or bought.** Strong headroom authorises a paired design only with
+a clean attribution audit. A second model was an adversarial test of an instrument that had only met
+one agent's habits, and it found two disclosure routes for seventeen cents.
+
 ## 7B. Threat mitigation status
 
 RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC

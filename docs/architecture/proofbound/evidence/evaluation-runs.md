@@ -1171,3 +1171,73 @@ minutes of session span: the workload stays **model-latency-bound**, as
 The instrument is sound, the treatment held, and the experiment is **incomplete**. A re-run requires a
 new experiment identity, since resuming a partially consumed frozen series would splice two runs. No
 execution here may become a sample of it.
+
+## E59. A second model qualifies the phenomenon and disqualifies the instrument
+
+MLR-C3D. Five `full`-only runs under a frozen DeepSeek V4 Flash configuration, pre-registered before
+the first fixture call, to answer one question: does *this* model naturally read the implementation,
+and does the instrument that survived Nemotron survive it too.
+
+Record: [`craft-mlr-deepseek-v4-flash-high-headroom.json`](../../../../evals/results/craft-mlr-deepseek-v4-flash-high-headroom.json).
+Pre-registration: [`MLR-C3D-headroom-preregistration.md`](../../../../evals/craft/modularity-local-reasoning/MLR-C3D-headroom-preregistration.md).
+Analysis: [`MLR-C3D.md`](../../../../evals/craft/modularity-local-reasoning/MLR-C3D.md).
+Model index: [`evals/models/README.md`](../../../../evals/models/README.md).
+
+### Model is a condition, not a detail
+
+Nothing Nemotron established applies to DeepSeek. The experiment id carries the model configuration,
+the configuration hash binds thinking mode and reasoning effort, and no execution from either series
+may become a sample of the other. `deepseek-v4-flash` is a moving alias: request, documented version
+`DeepSeek-V4-Flash-0731` and provider-observed identity are recorded separately, and all five runs
+reported one model and one variant.
+
+Sampling parameters could not be frozen and this is recorded rather than faked — the provider
+documents that thinking mode ignores `temperature`, `top_p`, `presence_penalty` and
+`frequency_penalty` entirely.
+
+### The pilot
+
+| run | correct | impl. source | impl. runtime | contract | calls | input | output | cost |
+|---|---|---|---|---|---|---|---|---|
+| 1 | yes | 5,822 | 12,746 | 2,994 | 23 | 30,645 | 7,559 | $0.0330 |
+| 2 | yes | 5,822 | 1,885 | 2,994 | 25 | 22,277 | 8,934 | $0.0304 |
+| 3 | yes | 5,822 | 14,668 | 3,069 | 32 | 33,364 | 11,215 | $0.0464 |
+| 4 | yes | 5,822 | 35,796 | 2,994 | 22 | 31,761 | 7,995 | $0.0337 |
+| 5 | yes | 5,822 | 1,805 | 2,994 | 22 | 21,426 | 7,593 | $0.0272 |
+
+5/5 correct, 5/5 consuming source, median 5,822 bytes — **strong headroom** under the pre-registered
+categories. Total $0.171 derived at peak rates, against a $2.00 ceiling.
+
+**A different agent.** DeepSeek reads the contract every time, where five of six Nemotron runs never
+opened it; introspects the runtime up to 35,796 bytes even with source available, where Nemotron's
+`full` arm peaked at 1,383; and uses roughly a seventh of the input tokens in a third of the time.
+This is observation, not comparison — the two series answer questions within their own model.
+
+### The instrument did not survive
+
+**Four material inbound escapes.** Three of five runs read **their own `worker.log`** — 5,962, 6,218
+and 8,154 bytes naming `_backend`, `_errors` and `_store`, each classified `harness` because the log
+sits on a `DeepSeekAndDestroy/` path. It is a verbatim echo of the agent's own tool outputs, so
+implementation text arriving through it is invisible to implementation accounting. A fourth run's
+`git status && git ls-files` disclosed the same three internals as `behaviour`.
+
+Both appeared in the `full` arm, so neither is a `contract` compensation route. That is exactly why
+they block a paired run: in `contract`, an agent that introspected and then re-read its own log would
+have that interior returned to it as *harness* bytes, and the arm would score as consuming less
+implementation representation than it did — the fake zero the design exists to prevent.
+
+Model-side disclosure was clean: sixteen items where the model's own text named internals, each in a
+run that had consumed 18,568–41,618 attributed implementation bytes, and **zero** in a run that
+consumed none.
+
+No run was incorrect, so oracle v2 rejected nothing and is not implicated.
+
+### Verdict and what it cost
+
+Strong headroom authorises a paired design **only with a clean attribution audit**. The audit is not
+clean, so no paired experiment was designed and no `contract` sample was bought.
+
+A second model was an adversarial test of an instrument that had only met one agent's habits, and it
+found two disclosure routes in five runs for seventeen cents — before paired money was spent, and
+before a result could be published that the instrument could not support. Cost is not what stops the
+paired experiment; the instrument is.
