@@ -159,7 +159,8 @@ MAX_ATTEMPTS_PER_SLOT = 3
 
 def run_series(out: Path, *, model: str, samples: int, arms: list[str],
                keep: Path | None, variant: str | None = None,
-               thinking: str = "enabled", budget: float | None = None) -> dict[str, Any]:
+               thinking: str = "enabled", budget: float | None = None,
+               revision: str | None = None, purpose: str | None = None) -> dict[str, Any]:
     """Fill every preallocated slot exactly once with a *valid* attempt, checkpointing each.
 
     Only valid attempts close a slot. An invalid one is retained beside the slot it failed and the
@@ -168,7 +169,7 @@ def run_series(out: Path, *, model: str, samples: int, arms: list[str],
     become "the agent consumed no implementation".
     """
     config = configuration(model=model, samples=samples, arms=arms, variant=variant,
-                           thinking=thinking)
+                           thinking=thinking, revision=revision, purpose=purpose)
     measurements = _repeat.load_series(out, config)
     done = {(m["item"], m["repeat"]) for m in measurements
             if m.get("validity") == _mlr_run.VALID}
@@ -515,6 +516,9 @@ def main(argv: list[str] | None = None) -> int:
     q.add_argument("--keep", type=Path, default=None)
     q.add_argument("--variant", default=None, help="provider reasoning effort, frozen per series")
     q.add_argument("--budget", type=float, default=None, help="hard spend ceiling in USD")
+    q.add_argument("--revision", default=None,
+                   help="series revision, so a repaired instrument does not inherit a name")
+    q.add_argument("--purpose", default=None, help="what this series is for, recorded verbatim")
 
     a = sub.add_parser("analyse", help="classify a completed series")
     a.add_argument("--record", type=Path, required=True)
@@ -538,6 +542,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "paired":
         record = run_series(args.out, model=args.model, samples=args.samples,
                             arms=list(_mlr.ARMS), keep=args.keep,
+                            revision=getattr(args, "revision", None),
+                            purpose=getattr(args, "purpose", None),
                             variant=getattr(args, "variant", None),
                             budget=getattr(args, "budget", None))
         print(json.dumps(paired_analysis({**record["config"], **record}),
