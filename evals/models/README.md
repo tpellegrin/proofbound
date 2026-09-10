@@ -45,7 +45,7 @@ must not silently reinterpret evidence gathered before it moved.
 | provider-observed identity | `deepseek-v4-flash` / provider `deepseek` |
 | thinking | enabled (provider default, set explicitly) |
 | reasoning effort | `high`, passed as `--variant high` and confirmed in session telemetry |
-| attribution | `mlr-context-4` — origin by causal precedence, with representation form and delivery route recorded separately (`mlr-context-3` for the paired run and everything before it) |
+| attribution | `mlr-context-5` — one normalised inbound boundary, causal precedence, material components (`mlr-context-4` for the R2 qualification, `mlr-context-3` for the paired run and everything before it) |
 | sampling | **not controllable** — the provider documents that thinking mode ignores `temperature`, `top_p`, `presence_penalty` and `frequency_penalty` |
 | context | 1M documented |
 | pricing identity | `deepseek-2026-09-09` |
@@ -77,6 +77,12 @@ must not silently reinterpret evidence gathered before it moved.
   [prereg](../craft/modularity-local-reasoning/MLR-R2-qualification-preregistration.md),
   [`MLR-R2-qualification.md`](../craft/modularity-local-reasoning/MLR-R2-qualification.md),
   [record](../results/craft-mlr-deepseek-v4-flash-high-paired-r2-qualification.json)
+- Attribution and environment repair — one inbound boundary for every transport, material minority
+  components, and a hermeticity preflight the environment does not currently pass:
+  [`MLR-C3D-R3.md`](../craft/modularity-local-reasoning/MLR-C3D-R3.md),
+  [18-session retrospective](../results/craft-mlr-eighteen-session-retrospective.json),
+  [preflight before cleanup](../results/craft-mlr-hermeticity-preflight-contaminated.json),
+  [after cleanup](../results/craft-mlr-hermeticity-preflight-after-cleanup.json)
 
 ---
 
@@ -115,6 +121,7 @@ load-bearing.
 | MLR headroom (`full` only) | MLR-C3, MLR-C3R | MLR-C3D, MLR-C3D-R — requalified |
 | MLR paired (`full` vs `contract`) | attempted, invalid — provider outage | executed, invalid — attribution escape |
 | MLR attribution qualification | not run | executed, does not pass — search route, host filesystem |
+| MLR hermeticity precondition | not run | not met — the host holds reachable copies of the controlled evidence |
 
 An empty cell means *not run*, never *worse*.
 

@@ -1,0 +1,1086 @@
+{
+  "explained": true,
+  "hermeticity_diagnosis_of_the_r2_qualification": {
+    "answer": "yes",
+    "exact_evidence": [
+      {
+        "basis": "byte-identical to the controlled artefact",
+        "category": "controlled-evidence",
+        "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/runtime/objectstore/__init__.py",
+        "root": "temporary-directory"
+      },
+      {
+        "basis": "byte-identical to the controlled artefact",
+        "category": "controlled-evidence",
+        "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/runtime/objectstore/_backend.py",
+        "root": "temporary-directory"
+      },
+      {
+        "basis": "byte-identical to the controlled artefact",
+        "category": "controlled-evidence",
+        "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/runtime/objectstore/_errors.py",
+        "root": "temporary-directory"
+      },
+      {
+        "basis": "byte-identical to the controlled artefact",
+        "category": "controlled-evidence",
+        "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/runtime/objectstore/_store.py",
+        "root": "temporary-directory"
+      },
+      {
+        "basis": "byte-identical to the controlled artefact",
+        "category": "controlled-evidence",
+        "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+        "root": "temporary-directory"
+      },
+      {
+        "basis": "byte-identical to the controlled artefact",
+        "category": "controlled-evidence",
+        "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+        "root": "temporary-directory"
+      },
+      {
+        "basis": "byte-identical to the controlled artefact",
+        "category": "controlled-evidence",
+        "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+        "root": "temporary-directory"
+      },
+      {
+        "basis": "byte-identical to the controlled artefact",
+        "category": "controlled-evidence",
+        "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+        "root": "temporary-directory"
+      },
+      {
+        "basis": "byte-identical to the controlled artefact",
+        "category": "reference-solution",
+        "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/workspace/app/api.py",
+        "root": "temporary-directory"
+      },
+      {
+        "basis": "byte-identical to the controlled artefact",
+        "category": "reference-solution",
+        "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/workspace/app/exports.py",
+        "root": "temporary-directory"
+      }
+    ],
+    "note": "the historical result is unchanged: that qualification failed, for the reasons it recorded. This says only that the environment condition was already violated before its first call, and that the check now exists to say so beforehand",
+    "question": "would the preflight have refused the environment before that run launched?",
+    "reason": "the stale FULL materialisation the CONTRACT agent read was created 2026-09-09 at 14:00 and was still present when the preflight first ran on 2026-09-10; it is a byte-identical copy of the controlled evidence under a scanned root"
+  },
+  "kind": "retrospective diagnostic analysis \u2014 not the recorded experiment results",
+  "note": "Produced by `pb_mlr.py retrospect` after MLR-C3D-R3. The source records are unchanged and their reported numbers stand as what those experiments measured; these were produced by a later classifier under a later attribution version and are diagnosis of the instrument.",
+  "recomputed_under": {
+    "hermeticity_identity": "dcbf34fb63821980e86da6bc4dfd0c1c967fa06f3fedd19a226d4b6ebd87024a",
+    "telemetry_version": "mlr-context-5"
+  },
+  "series": [
+    {
+      "evidence_root": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired",
+      "explained": true,
+      "kind": "retrospective diagnostic analysis \u2014 not the recorded experiment result",
+      "recomputed_under": {
+        "telemetry_version": "mlr-context-5"
+      },
+      "source_record": {
+        "experiment": "mlr-deepseek-v4-flash-high-paired",
+        "frozen_identity": "32a963d591e1cf567156a3602b6ea088695231e82e1467d88673f29d5b004947",
+        "telemetry_version": "mlr-context-3"
+      },
+      "trajectories": [
+        {
+          "arm": "full",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 7,
+            "artifact-path": 5,
+            "author": 28,
+            "command-route": 24,
+            "content": 0,
+            "default": 26
+          },
+          "by_form_bytes": {
+            "disassembly": 0,
+            "other-representation": 92946,
+            "path-metadata": 1174,
+            "runtime-structure": 0,
+            "source-form": 3909
+          },
+          "by_provenance": {
+            "application": 9038,
+            "behaviour": 502,
+            "harness": 11934,
+            "implementation-metadata": 0,
+            "implementation-runtime": 0,
+            "implementation-source": 5822,
+            "model-derived": 59596,
+            "other": 4029,
+            "public-contract": 2994,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 5822,
+          "items": 90,
+          "metadata_references": 5,
+          "repeat": 1,
+          "runtime_unique_bytes": 0,
+          "session": "full-1789010508504",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        },
+        {
+          "arm": "contract",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 8,
+            "artifact-path": 2,
+            "author": 25,
+            "command-route": 29,
+            "content": 0,
+            "default": 30
+          },
+          "by_form_bytes": {
+            "disassembly": 0,
+            "other-representation": 94369,
+            "path-metadata": 547,
+            "runtime-structure": 0,
+            "source-form": 0
+          },
+          "by_provenance": {
+            "application": 9244,
+            "behaviour": 802,
+            "harness": 19494,
+            "implementation-metadata": 623,
+            "implementation-runtime": 0,
+            "implementation-source": 0,
+            "model-derived": 45870,
+            "other": 10811,
+            "public-contract": 2994,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 0,
+          "items": 94,
+          "metadata_references": 2,
+          "repeat": 1,
+          "runtime_unique_bytes": 0,
+          "session": "contract-1789010616991",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        },
+        {
+          "arm": "contract",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 8,
+            "artifact-path": 1,
+            "author": 29,
+            "command-route": 31,
+            "content": 0,
+            "default": 30
+          },
+          "by_form_bytes": {
+            "disassembly": 31633,
+            "other-representation": 98055,
+            "path-metadata": 933,
+            "runtime-structure": 54,
+            "source-form": 0
+          },
+          "by_provenance": {
+            "application": 9777,
+            "behaviour": 2995,
+            "harness": 14503,
+            "implementation-metadata": 110,
+            "implementation-runtime": 32380,
+            "implementation-source": 0,
+            "model-derived": 58837,
+            "other": 5106,
+            "public-contract": 2994,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 0,
+          "items": 99,
+          "metadata_references": 6,
+          "repeat": 2,
+          "runtime_unique_bytes": 31687,
+          "session": "contract-1789010721503",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        },
+        {
+          "arm": "full",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 8,
+            "artifact-path": 5,
+            "author": 26,
+            "command-route": 31,
+            "content": 0,
+            "default": 35
+          },
+          "by_form_bytes": {
+            "disassembly": 0,
+            "other-representation": 111395,
+            "path-metadata": 1901,
+            "runtime-structure": 0,
+            "source-form": 3909
+          },
+          "by_provenance": {
+            "application": 9409,
+            "behaviour": 434,
+            "harness": 22306,
+            "implementation-metadata": 0,
+            "implementation-runtime": 0,
+            "implementation-source": 5822,
+            "model-derived": 61056,
+            "other": 10412,
+            "public-contract": 2994,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 5822,
+          "items": 105,
+          "metadata_references": 7,
+          "repeat": 2,
+          "runtime_unique_bytes": 0,
+          "session": "full-1789010830116",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        },
+        {
+          "arm": "full",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 8,
+            "artifact-path": 5,
+            "author": 24,
+            "command-route": 27,
+            "content": 0,
+            "default": 27
+          },
+          "by_form_bytes": {
+            "disassembly": 11877,
+            "other-representation": 82070,
+            "path-metadata": 2225,
+            "runtime-structure": 0,
+            "source-form": 3909
+          },
+          "by_provenance": {
+            "application": 8749,
+            "behaviour": 320,
+            "harness": 11934,
+            "implementation-metadata": 1597,
+            "implementation-runtime": 12575,
+            "implementation-source": 5822,
+            "model-derived": 47588,
+            "other": 5121,
+            "public-contract": 2994,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 5822,
+          "items": 91,
+          "metadata_references": 9,
+          "repeat": 3,
+          "runtime_unique_bytes": 12317,
+          "session": "full-1789010958794",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        },
+        {
+          "arm": "contract",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 8,
+            "artifact-path": 1,
+            "author": 24,
+            "command-route": 37,
+            "content": 0,
+            "default": 25
+          },
+          "by_form_bytes": {
+            "disassembly": 16278,
+            "other-representation": 92410,
+            "path-metadata": 1242,
+            "runtime-structure": 850,
+            "source-form": 0
+          },
+          "by_provenance": {
+            "application": 9035,
+            "behaviour": 1242,
+            "harness": 10402,
+            "implementation-metadata": 786,
+            "implementation-runtime": 18859,
+            "implementation-source": 0,
+            "model-derived": 60345,
+            "other": 1385,
+            "public-contract": 3850,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 0,
+          "items": 95,
+          "metadata_references": 3,
+          "repeat": 3,
+          "runtime_unique_bytes": 16824,
+          "session": "contract-1789011176038",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        },
+        {
+          "arm": "contract",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 4,
+            "artifact-path": 1,
+            "author": 30,
+            "command-route": 29,
+            "content": 0,
+            "default": 29
+          },
+          "by_form_bytes": {
+            "disassembly": 31633,
+            "other-representation": 92495,
+            "path-metadata": 287,
+            "runtime-structure": 469,
+            "source-form": 0
+          },
+          "by_provenance": {
+            "application": 8644,
+            "behaviour": 855,
+            "harness": 19574,
+            "implementation-metadata": 0,
+            "implementation-runtime": 31984,
+            "implementation-source": 0,
+            "model-derived": 47670,
+            "other": 8300,
+            "public-contract": 3778,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 0,
+          "items": 93,
+          "metadata_references": 3,
+          "repeat": 4,
+          "runtime_unique_bytes": 31735,
+          "session": "contract-1789011297495",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        },
+        {
+          "arm": "full",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 11,
+            "artifact-path": 5,
+            "author": 28,
+            "command-route": 30,
+            "content": 0,
+            "default": 27
+          },
+          "by_form_bytes": {
+            "disassembly": 0,
+            "other-representation": 92615,
+            "path-metadata": 1415,
+            "runtime-structure": 0,
+            "source-form": 3909
+          },
+          "by_provenance": {
+            "application": 8644,
+            "behaviour": 717,
+            "harness": 11934,
+            "implementation-metadata": 364,
+            "implementation-runtime": 0,
+            "implementation-source": 5822,
+            "model-derived": 59097,
+            "other": 3792,
+            "public-contract": 2994,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 5822,
+          "items": 101,
+          "metadata_references": 8,
+          "repeat": 4,
+          "runtime_unique_bytes": 0,
+          "session": "full-1789011401381",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        },
+        {
+          "arm": "full",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 5,
+            "artifact-path": 5,
+            "author": 23,
+            "command-route": 30,
+            "content": 0,
+            "default": 27
+          },
+          "by_form_bytes": {
+            "disassembly": 0,
+            "other-representation": 87002,
+            "path-metadata": 1155,
+            "runtime-structure": 0,
+            "source-form": 3909
+          },
+          "by_provenance": {
+            "application": 7990,
+            "behaviour": 2271,
+            "harness": 11934,
+            "implementation-metadata": 723,
+            "implementation-runtime": 0,
+            "implementation-source": 5822,
+            "model-derived": 45341,
+            "other": 11084,
+            "public-contract": 2994,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 5822,
+          "items": 90,
+          "metadata_references": 7,
+          "repeat": 5,
+          "runtime_unique_bytes": 0,
+          "session": "full-1789011515622",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        },
+        {
+          "arm": "contract",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 8,
+            "artifact-path": 1,
+            "author": 27,
+            "command-route": 31,
+            "content": 0,
+            "default": 34
+          },
+          "by_form_bytes": {
+            "disassembly": 42987,
+            "other-representation": 108078,
+            "path-metadata": 1265,
+            "runtime-structure": 0,
+            "source-form": 0
+          },
+          "by_provenance": {
+            "application": 9632,
+            "behaviour": 502,
+            "harness": 22306,
+            "implementation-metadata": 902,
+            "implementation-runtime": 43820,
+            "implementation-source": 0,
+            "model-derived": 51306,
+            "other": 15864,
+            "public-contract": 3028,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 0,
+          "items": 101,
+          "metadata_references": 7,
+          "repeat": 5,
+          "runtime_unique_bytes": 42987,
+          "session": "contract-1789011613817",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        },
+        {
+          "arm": "contract",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 6,
+            "artifact-path": 1,
+            "author": 23,
+            "command-route": 29,
+            "content": 0,
+            "default": 25
+          },
+          "by_form_bytes": {
+            "disassembly": 31633,
+            "other-representation": 90322,
+            "path-metadata": 1235,
+            "runtime-structure": 563,
+            "source-form": 123
+          },
+          "by_provenance": {
+            "application": 7871,
+            "behaviour": 1404,
+            "harness": 11934,
+            "implementation-metadata": 782,
+            "implementation-runtime": 32664,
+            "implementation-source": 0,
+            "model-derived": 56437,
+            "other": 5837,
+            "public-contract": 2994,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 0,
+          "items": 84,
+          "metadata_references": 4,
+          "repeat": 6,
+          "runtime_unique_bytes": 31879,
+          "session": "contract-1789011726136",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 1,
+            "by_origin": {
+              "model-derived": 1
+            },
+            "delivered_bytes": 1353,
+            "distinct_representations": 1,
+            "items": 1,
+            "unique_bytes": 123
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        },
+        {
+          "arm": "full",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 17,
+            "artifact-path": 5,
+            "author": 35,
+            "command-route": 53,
+            "content": 0,
+            "default": 40
+          },
+          "by_form_bytes": {
+            "disassembly": 27102,
+            "other-representation": 127352,
+            "path-metadata": 2316,
+            "runtime-structure": 0,
+            "source-form": 3909
+          },
+          "by_provenance": {
+            "application": 9472,
+            "behaviour": 206,
+            "harness": 19838,
+            "implementation-metadata": 1347,
+            "implementation-runtime": 27292,
+            "implementation-source": 5822,
+            "model-derived": 68678,
+            "other": 15914,
+            "public-contract": 3982,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 5822,
+          "items": 150,
+          "metadata_references": 11,
+          "repeat": 6,
+          "runtime_unique_bytes": 27102,
+          "session": "full-1789011837371",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        }
+      ],
+      "unavailable": []
+    },
+    {
+      "evidence_root": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification",
+      "explained": true,
+      "kind": "retrospective diagnostic analysis \u2014 not the recorded experiment result",
+      "recomputed_under": {
+        "telemetry_version": "mlr-context-5"
+      },
+      "source_record": {
+        "experiment": "mlr-deepseek-v4-flash-high-paired-r2-qualification",
+        "frozen_identity": "1143cf747a119c10d503e3641ae5e11502987198e26df7c36cc2b150f2aea99d",
+        "telemetry_version": "mlr-context-4"
+      },
+      "trajectories": [
+        {
+          "arm": "full",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 5,
+            "artifact-path": 5,
+            "author": 21,
+            "command-route": 21,
+            "content": 0,
+            "default": 25
+          },
+          "by_form_bytes": {
+            "disassembly": 0,
+            "other-representation": 80938,
+            "path-metadata": 1174,
+            "runtime-structure": 0,
+            "source-form": 3909
+          },
+          "by_provenance": {
+            "application": 8644,
+            "behaviour": 502,
+            "harness": 10402,
+            "implementation-metadata": 0,
+            "implementation-runtime": 0,
+            "implementation-source": 5822,
+            "model-derived": 49601,
+            "other": 4873,
+            "public-contract": 2994,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 5822,
+          "items": 77,
+          "metadata_references": 5,
+          "repeat": 1,
+          "runtime_unique_bytes": 0,
+          "session": "full-1789018216851",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        },
+        {
+          "arm": "contract",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 9,
+            "artifact-path": 1,
+            "author": 27,
+            "command-route": 38,
+            "content": 1,
+            "default": 37
+          },
+          "by_form_bytes": {
+            "disassembly": 33755,
+            "other-representation": 118269,
+            "path-metadata": 1308,
+            "runtime-structure": 0,
+            "source-form": 0
+          },
+          "by_provenance": {
+            "application": 8644,
+            "behaviour": 502,
+            "harness": 14503,
+            "implementation-metadata": 0,
+            "implementation-runtime": 36476,
+            "implementation-source": 0,
+            "model-derived": 67478,
+            "other": 16276,
+            "public-contract": 2994,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 0,
+          "items": 113,
+          "metadata_references": 5,
+          "repeat": 1,
+          "runtime_unique_bytes": 34604,
+          "session": "contract-1789018320236",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        },
+        {
+          "arm": "contract",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 7,
+            "artifact-path": 1,
+            "author": 20,
+            "command-route": 28,
+            "content": 4,
+            "default": 31
+          },
+          "by_form_bytes": {
+            "disassembly": 0,
+            "other-representation": 138188,
+            "path-metadata": 1701,
+            "runtime-structure": 496,
+            "source-form": 3909
+          },
+          "by_provenance": {
+            "application": 8830,
+            "behaviour": 1192,
+            "harness": 27778,
+            "implementation-metadata": 341,
+            "implementation-runtime": 431,
+            "implementation-source": 5790,
+            "model-derived": 82304,
+            "other": 10868,
+            "public-contract": 2994,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 3909,
+          "items": 91,
+          "metadata_references": 9,
+          "repeat": 2,
+          "runtime_unique_bytes": 496,
+          "session": "contract-1789018511448",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        },
+        {
+          "arm": "full",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 9,
+            "artifact-path": 5,
+            "author": 25,
+            "command-route": 36,
+            "content": 0,
+            "default": 29
+          },
+          "by_form_bytes": {
+            "disassembly": 0,
+            "other-representation": 89101,
+            "path-metadata": 1211,
+            "runtime-structure": 0,
+            "source-form": 3909
+          },
+          "by_provenance": {
+            "application": 8256,
+            "behaviour": 2189,
+            "harness": 11934,
+            "implementation-metadata": 114,
+            "implementation-runtime": 0,
+            "implementation-source": 5822,
+            "model-derived": 49340,
+            "other": 8443,
+            "public-contract": 2994,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 5822,
+          "items": 104,
+          "metadata_references": 7,
+          "repeat": 2,
+          "runtime_unique_bytes": 0,
+          "session": "full-1789018712693",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        },
+        {
+          "arm": "full",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 8,
+            "artifact-path": 5,
+            "author": 21,
+            "command-route": 24,
+            "content": 0,
+            "default": 27
+          },
+          "by_form_bytes": {
+            "disassembly": 0,
+            "other-representation": 89588,
+            "path-metadata": 936,
+            "runtime-structure": 0,
+            "source-form": 3909
+          },
+          "by_provenance": {
+            "application": 9076,
+            "behaviour": 219,
+            "harness": 10402,
+            "implementation-metadata": 0,
+            "implementation-runtime": 0,
+            "implementation-source": 5822,
+            "model-derived": 57139,
+            "other": 5076,
+            "public-contract": 2994,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 5822,
+          "items": 85,
+          "metadata_references": 6,
+          "repeat": 3,
+          "runtime_unique_bytes": 0,
+          "session": "full-1789018839354",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        },
+        {
+          "arm": "contract",
+          "attempt": 1,
+          "available": true,
+          "by_basis": {
+            "ancestry": 6,
+            "artifact-path": 1,
+            "author": 31,
+            "command-route": 33,
+            "content": 0,
+            "default": 33
+          },
+          "by_form_bytes": {
+            "disassembly": 39259,
+            "other-representation": 116875,
+            "path-metadata": 719,
+            "runtime-structure": 102,
+            "source-form": 0
+          },
+          "by_provenance": {
+            "application": 8644,
+            "behaviour": 691,
+            "harness": 24875,
+            "implementation-metadata": 0,
+            "implementation-runtime": 36273,
+            "implementation-source": 0,
+            "model-derived": 61469,
+            "other": 17062,
+            "public-contract": 3778,
+            "unresolved": 0
+          },
+          "contradictions": [],
+          "correct": true,
+          "direct_source_unique_bytes": 0,
+          "items": 104,
+          "metadata_references": 6,
+          "repeat": 3,
+          "runtime_unique_bytes": 39361,
+          "session": "contract-1789018948930",
+          "source_equivalent_reconstruction": {
+            "after_implementation_representation": 0,
+            "by_origin": {},
+            "delivered_bytes": 0,
+            "distinct_representations": 0,
+            "items": 0,
+            "unique_bytes": 0
+          },
+          "unresolved": {
+            "bytes": 0,
+            "items": 0,
+            "routes": []
+          },
+          "validity": "valid"
+        }
+      ],
+      "unavailable": []
+    }
+  ],
+  "trajectories_total": 18
+}
