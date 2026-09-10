@@ -45,6 +45,7 @@ must not silently reinterpret evidence gathered before it moved.
 | provider-observed identity | `deepseek-v4-flash` / provider `deepseek` |
 | thinking | enabled (provider default, set explicitly) |
 | reasoning effort | `high`, passed as `--variant high` and confirmed in session telemetry |
+| attribution | `mlr-context-3` — origin by content lineage, delivery route recorded separately |
 | sampling | **not controllable** — the provider documents that thinking mode ignores `temperature`, `top_p`, `presence_penalty` and `frequency_penalty` |
 | context | 1M documented |
 | pricing identity | `deepseek-2026-09-09` |
@@ -53,9 +54,13 @@ must not silently reinterpret evidence gathered before it moved.
 
 - Compatibility qualification and headroom pre-registration:
   [`MLR-C3D-headroom-preregistration.md`](../craft/modularity-local-reasoning/MLR-C3D-headroom-preregistration.md)
-- MLR headroom qualification — 5/5 correct, strong source headroom, **attribution requires
+- MLR headroom qualification — 5/5 correct, strong source headroom, **attribution required
   revision**: [`MLR-C3D.md`](../craft/modularity-local-reasoning/MLR-C3D.md),
   [record](../results/craft-mlr-deepseek-v4-flash-high-headroom.json)
+- Repaired-instrument requalification — 3/3 correct, zero attribution escapes, **requalified**:
+  [`MLR-C3D-R.md`](../craft/modularity-local-reasoning/MLR-C3D-R.md),
+  [record](../results/craft-mlr-deepseek-v4-flash-high-requalification.json)
+- Paired experiment: [frozen, not executed](../craft/modularity-local-reasoning/MLR-deepseek-paired-preregistration.md)
 
 ---
 
@@ -91,8 +96,8 @@ load-bearing.
 
 | experiment | Nemotron 3 Ultra Free | DeepSeek V4 Flash · high |
 |---|---|---|
-| MLR headroom (`full` only) | MLR-C3, MLR-C3R | MLR-C3D — headroom found, instrument not ready |
-| MLR paired (`full` vs `contract`) | attempted, invalid — provider outage | not designed; blocked on attribution |
+| MLR headroom (`full` only) | MLR-C3, MLR-C3R | MLR-C3D, MLR-C3D-R — requalified |
+| MLR paired (`full` vs `contract`) | attempted, invalid — provider outage | frozen, not executed |
 
 An empty cell means *not run*, never *worse*.
 

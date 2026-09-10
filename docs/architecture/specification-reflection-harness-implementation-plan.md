@@ -2035,6 +2035,32 @@ having consumed less than it did.
 a clean attribution audit. A second model was an adversarial test of an instrument that had only met
 one agent's habits, and it found two disclosure routes for seventeen cents.
 
+### 7P.7 MLR-C3D-R — the instrument repaired at the level of the defect
+
+Records: [`MLR-C3D-R.md`](../../evals/craft/modularity-local-reasoning/MLR-C3D-R.md),
+[`§E60`](proofbound/evidence/evaluation-runs.md). Methodology:
+[`§E25.5`](proofbound/evaluation.md#e25-the-instrument-is-part-of-the-experiment).
+
+**Origin and delivery route became two questions.** MLR-C3D counted implementation information as
+harness because the file it arrived in was a harness file. The route now records only the mechanism;
+the origin is settled against the delivered bytes, by content — the module's own fingerprint lines,
+which collide with nothing else in the fixture. That covers copy, log echo, search excerpt and
+`git show` in one rule instead of a special case each. Metadata is its own unit and never source
+bytes; mixed artifacts are decided by share; replay raises delivered and leaves unique alone;
+paraphrase is uncovered and recorded **unresolved rather than zero**.
+
+**Requalified in the field.** 3/3 correct, zero material escapes, zero unresolved, $0.094 of a $0.50
+ceiling. The C3D channel reappeared — a run read its own `worker.log` — and was measured rather than
+lost.
+
+**Observer isolation is partial and says so.** Session database, hidden oracle, reference solution and
+prior samples are out of reach and no artifact names the arm; the worker log stays inside the run root
+because DSD binds it there, so the repair is measurement-side and the threat model states what it does
+not claim.
+
+**The paired DeepSeek experiment is frozen at N = 6 pairs and not executed**, chosen with no treatment
+outcome in view.
+
 ## 7B. Threat mitigation status
 
 RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC

@@ -1241,3 +1241,64 @@ A second model was an adversarial test of an instrument that had only met one ag
 found two disclosure routes in five runs for seventeen cents — before paired money was spent, and
 before a result could be published that the instrument could not support. Cost is not what stops the
 paired experiment; the instrument is.
+
+## E60. Origin and delivery route are two questions
+
+MLR-C3D-R. The MLR-C3D attribution defect repaired at the level of the diagnosis, and the repaired
+instrument field-validated under the unchanged DeepSeek configuration.
+
+Record: [`craft-mlr-deepseek-v4-flash-high-requalification.json`](../../../../evals/results/craft-mlr-deepseek-v4-flash-high-requalification.json).
+Pre-registration: [`MLR-C3D-R-preregistration.md`](../../../../evals/craft/modularity-local-reasoning/MLR-C3D-R-preregistration.md).
+Analysis: [`MLR-C3D-R.md`](../../../../evals/craft/modularity-local-reasoning/MLR-C3D-R.md).
+Methodology: [`§E25.5`](../evaluation.md#e25-the-instrument-is-part-of-the-experiment).
+
+### The defect, not the symptoms
+
+MLR-C3D counted implementation information as harness because the file it arrived in was a harness
+file, and a module's file names as behaviour because a shell command produced them. Patching
+`worker.log` and `git ls-files` would have left the defect for the next route. **Origin and delivery
+route are now separate**: the route records the mechanism, the origin is settled against the bytes.
+
+Source is recognised by content — the module's 68 fingerprint lines, sharing nothing with the
+application, tests, contract, task, reference solution, hidden oracle or worker protocol — so text
+reproducing them verbatim carries their origin however it travelled, through a copy, a log echo, a
+search hit or a `git show`. Lineage supplements the path rather than overruling it. Metadata is its
+own unit and never source bytes. Mixed artifacts are decided by share. Replay raises delivered and
+leaves unique alone. Paraphrase is uncovered and is recorded **unresolved rather than zero**.
+
+### The requalification
+
+| run | correct | source unique | source delivered | runtime | metadata refs | calls | input | cost |
+|---|---|---|---|---|---|---|---|---|
+| 1 | yes | 5,822 | 93,152 | 62,940 | 7 | 21 | 35,410 | $0.0353 |
+| 2 | yes | 5,822 | 87,330 | 1,003 | 10 | 22 | 25,328 | $0.0321 |
+| 3 | yes | 5,822 | 75,686 | 1,461 | 7 | 19 | 21,707 | $0.0266 |
+
+3/3 correct, every profile complete, identity and variant stable. **Zero material attribution
+escapes, zero unresolved items, no oracle rejection.** $0.094 derived against a $0.50 ceiling.
+
+The C3D channel reappeared and was measured: run 2 read its own `worker.log`, 5,836 bytes naming
+three internals, and the item now carries 433 bytes of recorded metadata references instead of
+vanishing into harness. Source delivered — 76–93 KB against 5,822 unique — is the replay volume the
+old accounting could not see.
+
+### Observer isolation, honestly bounded
+
+The session database, hidden oracle, reference solution and prior samples are out of the agent's
+reach, and no harness artifact names the arm or the experiment, so treatment blindness holds. The
+worker log is not: DSD binds it into the run root and the gate reads it from the reservation, so
+relocating it means changing the attempt layout. The repair is measurement-side and a test pins the
+channel. This preserves conditions against ordinary tooling and claims nothing against a process that
+inspects its own environment.
+
+### Retrospective, not recomputation
+
+Re-read under the repaired model, the C3D escapes carried **no verbatim source** — the log echoed the
+*paths* read, not their contents, so the leak was structural metadata. C3D's numbers are unchanged
+and its verdict stands.
+
+### What it does not establish
+
+No treatment effect: no `contract` run exists under any model. The paired experiment is
+[frozen and unexecuted](../../../../evals/craft/modularity-local-reasoning/MLR-deepseek-paired-preregistration.md)
+at N = 6 pairs, chosen with no treatment outcome in view.
