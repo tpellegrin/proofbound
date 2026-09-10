@@ -16,13 +16,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import statistics
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import _hermetic       # noqa: E402
 import _mlr            # noqa: E402
 import _mlr_context    # noqa: E402
 import _mlr_run        # noqa: E402
@@ -105,6 +107,10 @@ def configuration(*, model: str, samples: int, arms: list[str], variant: str | N
         # compiled system. The structural identity itself is recorded per execution, because it is a
         # property of the materialisation rather than of the fixture on disk.
         "interpreter": _mlr.interpreter_identity(),
+        # What "no unintended copy is reachable" meant for this series: which categories were
+        # checked, by which identities, over which roots. Widening the roots or declaring an
+        # exposure changes the rule, and therefore changes the experiment.
+        "hermeticity_identity": _mlr.preflight_identity(),
         # Bumped whenever what an origin *means* changes. A record carries the version its numbers
         # were produced under, so a later classifier cannot silently reinterpret an earlier result.
         "telemetry_version": "mlr-context-5",
@@ -162,7 +168,9 @@ MAX_ATTEMPTS_PER_SLOT = 3
 def run_series(out: Path, *, model: str, samples: int, arms: list[str],
                keep: Path | None, variant: str | None = None,
                thinking: str = "enabled", budget: float | None = None,
-               revision: str | None = None, purpose: str | None = None) -> dict[str, Any]:
+               revision: str | None = None, purpose: str | None = None,
+               hermetic_roots: list[Path] | None = None,
+               preflight: "Callable[..., dict[str, Any]] | None" = None) -> dict[str, Any]:
     """Fill every preallocated slot exactly once with a *valid* attempt, checkpointing each.
 
     Only valid attempts close a slot. An invalid one is retained beside the slot it failed and the
@@ -190,8 +198,29 @@ def run_series(out: Path, *, model: str, samples: int, arms: list[str],
                 _repeat.write_series(out, config, measurements)
                 return {"config": config, "measurements": measurements,
                         "stopped": "budget-ceiling"}
+            # Hermeticity is a precondition of the slot, not a property of the series: the previous
+            # slot is one of the things that could have left a copy of the controlled evidence
+            # behind, so every slot establishes its own environment before a call is made. A failure
+            # here is an infrastructure precondition failure and not a semantic one — the slot stays
+            # open under the existing resume semantics and no sample is consumed.
+            check = preflight or _mlr.preflight
+            environment = check(evidence_roots=hermetic_roots or [])
+            if environment["status"] != _hermetic.CLEAN:
+                measurements.append({
+                    **slot, "attempt": tried + 1, "validity": _mlr_run.SETUP_FAILURE,
+                    "reason": "hermeticity preflight refused the environment",
+                    "hermeticity": {k: environment[k] for k in
+                                    ("status", "hermeticity_identity", "scanned_roots",
+                                     "excluded_roots", "claim", "unreadable")},
+                    "hermeticity_findings": environment["findings"][:200]})
+                _repeat.write_series(out, config, measurements)
+                return {"config": config, "measurements": measurements,
+                        "stopped": "hermeticity"}
             attempt = _mlr_run.run_attempt(slot["item"], model=model, keep=keep,
                                            variant=variant)
+            attempt["hermeticity"] = {"status": environment["status"],
+                                      "hermeticity_identity": environment["hermeticity_identity"],
+                                      "scanned_roots": environment["scanned_roots"]}
             measurements.append({**slot, "attempt": tried + 1, **attempt})
             _repeat.write_series(out, config, measurements)
             tried += 1
@@ -521,10 +550,20 @@ def main(argv: list[str] | None = None) -> int:
     q.add_argument("--revision", default=None,
                    help="series revision, so a repaired instrument does not inherit a name")
     q.add_argument("--purpose", default=None, help="what this series is for, recorded verbatim")
+    q.add_argument("--evidence-root", type=Path, action="append", default=[],
+                   help="an evidence archive to include in the per-slot hermeticity scan")
 
     a = sub.add_parser("analyse", help="classify a completed series")
     a.add_argument("--record", type=Path, required=True)
     a.add_argument("--paired", action="store_true", help="report the paired comparison")
+
+    h = sub.add_parser("preflight",
+                       help="check that no unintended copy of the controlled evidence is reachable")
+    h.add_argument("--evidence-root", type=Path, action="append", default=[],
+                   help="an evidence archive to include in the scanned roots")
+    h.add_argument("--clean", action="store_true",
+                   help="remove ephemeral arm materialisations found under the scanned roots")
+    h.add_argument("--out", type=Path, default=None)
 
     r = sub.add_parser("retrospect",
                        help="re-attribute a completed series' retained sessions for diagnosis")
@@ -546,11 +585,28 @@ def main(argv: list[str] | None = None) -> int:
                             arms=list(_mlr.ARMS), keep=args.keep,
                             revision=getattr(args, "revision", None),
                             purpose=getattr(args, "purpose", None),
+                            hermetic_roots=list(getattr(args, "evidence_root", []) or []),
                             variant=getattr(args, "variant", None),
                             budget=getattr(args, "budget", None))
         print(json.dumps(paired_analysis({**record["config"], **record}),
                          indent=2, sort_keys=True))
         return 0
+    if args.command == "preflight":
+        roots = [Path(p) for p in (args.evidence_root or [])]
+        removed = []
+        if args.clean:
+            import tempfile as _tempfile
+            for stale in _mlr.ephemeral_materialisations(
+                    [Path(_tempfile.gettempdir()), Path("/tmp"), *roots]):
+                shutil.rmtree(stale, ignore_errors=True)
+                removed.append(str(stale))
+        report = _mlr.preflight(evidence_roots=roots)
+        report["removed_materialisations"] = removed
+        text = json.dumps(report, indent=2, sort_keys=True)
+        if args.out:
+            Path(args.out).write_text(text + "\n", encoding="utf-8")
+        print(text)
+        return 0 if report["status"] == _hermetic.CLEAN else 1
     if args.command == "retrospect":
         record = json.loads(Path(args.record).read_text(encoding="utf-8"))
         report = retrospect(record, evidence_root=getattr(args, "evidence_root", None))

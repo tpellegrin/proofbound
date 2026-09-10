@@ -29,6 +29,7 @@ with it is a later milestone.
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import importlib.util
 import json
@@ -39,8 +40,12 @@ import py_compile
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
+
+import _hermetic
+import _lineage
 
 FIXTURE = Path(__file__).resolve().parent / "craft" / "modularity-local-reasoning" / "fixture"
 
@@ -195,6 +200,139 @@ def compile_runtime(source: Path, runtime: Path) -> Path:
             dfile=f"objectstore/{module.name}", doraise=True,
             invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH)
     return Path(runtime)
+
+
+def hermeticity(*, fixture: Path = FIXTURE, evidence_roots: Iterable[Path] = (),
+                declared: Iterable[Path] = ()) -> dict[str, Any]:
+    """What must not be reachable, where to look for it, and what is already known to be there.
+
+    The generic checker knows nothing about this fixture. This is the configuration that tells it:
+    the module's own files by digest and by fingerprint, the hidden oracle and the reference
+    solution by digest, prior sessions and result records by the experiment markers they carry.
+
+    The roots are the places this experiment's artefacts are created — the system temporary
+    directory, where every materialisation lives, and any evidence archive it has been given. The
+    host is larger than that and the agent can read further, which is why the result reports what it
+    scanned rather than pronouncing on the machine.
+    """
+    source = fixture / "runtime" / "objectstore"
+    hidden = fixture / "hidden"
+    reference = fixture / "reference"
+    marks = _lineage.source_fingerprint(source)
+    controlled = _hermetic.Sensitive(
+        _hermetic.CONTROLLED_EVIDENCE,
+        stems=[p.name for p in sorted(source.glob("*.py"))],
+        digests=[digest_file(p) for p in sorted(source.glob("*.py"))],
+        marks=marks)
+    oracle = _hermetic.Sensitive(
+        _hermetic.ORACLE,
+        stems=[p.name for p in sorted(hidden.glob("*.py"))],
+        digests=[digest_file(p) for p in sorted(hidden.glob("*.py"))])
+    solution = _hermetic.Sensitive(
+        _hermetic.REFERENCE,
+        stems=[p.name for p in sorted(reference.rglob("*.py"))],
+        digests=[digest_file(p) for p in sorted(reference.rglob("*.py"))])
+    prior = _hermetic.Sensitive(
+        _hermetic.PRIOR_SAMPLE, stems=["worker.db"],
+        contains=[b"MLR-external"])
+    results = _hermetic.Sensitive(
+        _hermetic.RESULT_RECORD, path_markers=["craft-mlr-"],
+        contains=[b'"frozen_identity"'])
+
+    # The repository is a root and not an exception. It holds the canonical copy of everything the
+    # treatment withholds, an agent that searches the host reaches it by the same command that
+    # reached a stale workspace, and leaving it out of the scan would be choosing not to know.
+    repository = Path(__file__).resolve().parents[1]
+    temp = Path(tempfile.gettempdir())
+    roots = [temp, Path("/tmp"), repository, *[Path(r) for r in evidence_roots]]
+    return {
+        "sensitive": [controlled, oracle, solution, prior, results],
+        "roots": roots,
+        "declared": [str(Path(d)) for d in declared],
+        "excluded": [
+            ("the rest of the host filesystem",
+             "not where this experiment's artefacts are created; the agent can read further, and "
+             "the scan reports its roots rather than claiming the machine"),
+        ],
+    }
+
+
+def preflight(*, fixture: Path = FIXTURE, evidence_roots: Iterable[Path] = (),
+              declared: Iterable[Path] = ()) -> dict[str, Any]:
+    """Run the hermeticity scan for this fixture and return its report."""
+    config = hermeticity(fixture=fixture, evidence_roots=evidence_roots, declared=declared)
+    report = _hermetic.scan(config["roots"], config["sensitive"],
+                            declared=config["declared"], excluded=config["excluded"])
+    report["hermeticity_identity"] = _hermetic.identity(config["sensitive"], config["roots"],
+                                                        config["declared"])
+    return report
+
+
+def ephemeral_materialisations(roots: Iterable[Path]) -> tuple[Path, ...]:
+    """Directories that are an arm materialisation and nothing else.
+
+    Recognised by shape rather than by name, because the ones that leaked were not named by the
+    runner: they came from ad-hoc materialisations during fixture development, which is precisely
+    the class a name-based rule would miss. A directory qualifies when it holds a workspace beside a
+    compiled runtime — the pair `materialise` produces and nothing else does.
+
+    Evidence is never in this set. A run's retained evidence is a different thing in a different
+    place, and the point of separating them is that one can be deleted freely and the other cannot.
+    """
+    found: list[Path] = []
+    for root in roots:
+        root = Path(root)
+        if not root.is_dir():
+            continue
+        try:
+            entries = sorted(root.iterdir())
+        except OSError:                                     # pragma: no cover - unreadable root
+            continue
+        for entry in entries:
+            if not entry.is_dir() or entry.is_symlink():
+                continue
+            # The directory itself, or any immediate child of it. The leaked materialisations were
+            # named by whoever made them — `arm`, `full`, `contract`, `c`, `f`, `again` — so the
+            # shape is looked for one level down rather than under a name the runner happens to use.
+            try:
+                candidates = [entry] + [c for c in entry.iterdir() if c.is_dir()]
+            except OSError:
+                continue
+            for base in candidates:
+                try:
+                    shaped = ((base / "workspace").is_dir()
+                              and (base / "runtime" / "objectstore").is_dir())
+                except OSError:
+                    # Unreadable is not the same as absent. It is left alone and left to the scan,
+                    # which reports what it could not read rather than calling it clean.
+                    continue
+                if shaped:
+                    found.append(entry)
+                    break
+    return tuple(found)
+
+
+@contextlib.contextmanager
+def materialised(arm: str, *, fixture: Path = FIXTURE, prefix: str = "pb-mlr-"):
+    """One arm, built somewhere temporary and removed afterwards however the block ends.
+
+    The leak this closes was not a bug in any single call site: `materialise` takes a destination and
+    has no opinion about who owns it, so an exploratory script that made one and exited left a
+    readable copy of the implementation on the host for a day. Twelve of them were still there when
+    the preflight went looking. Cleanup belongs with creation, and this is where it now lives.
+    """
+    holder = Path(tempfile.mkdtemp(prefix=prefix))
+    try:
+        yield materialise(arm, holder / "arm", fixture=fixture)
+    finally:
+        shutil.rmtree(holder, ignore_errors=True)
+
+
+def preflight_identity(*, fixture: Path = FIXTURE, evidence_roots: Iterable[Path] = (),
+                       declared: Iterable[Path] = ()) -> str:
+    """The hermeticity rule this experiment runs under, as one digest."""
+    config = hermeticity(fixture=fixture, evidence_roots=evidence_roots, declared=declared)
+    return _hermetic.identity(config["sensitive"], config["roots"], config["declared"])
 
 
 def environment(built: dict[str, Any], *, data_root: Path | None = None) -> dict[str, str]:

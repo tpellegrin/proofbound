@@ -1,0 +1,948 @@
+{
+  "claim": "no unintended copy of the controlled evidence was found under the scanned roots; nothing is claimed about roots that were excluded or could not be read",
+  "distinct_temporary_materialisations": [
+    "tmp7kg6ehh0",
+    "tmpde3iaqsh",
+    "tmpf2yq_upz",
+    "tmphmwojhjk",
+    "tmpm3ce5f7o",
+    "tmpnn22kkvy",
+    "tmpqr4sr0n1",
+    "tmpskc2ihes",
+    "tmpwz_nk96m",
+    "tmpx4hzh79l",
+    "tmpxvc99yx7",
+    "tmpz5b7tg7k"
+  ],
+  "excluded_roots": [
+    {
+      "path": "the rest of the host filesystem",
+      "reason": "not where this experiment's artefacts are created; the agent can read further, and the scan reports its roots rather than claiming the machine"
+    }
+  ],
+  "findings": [
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/craft/modularity-local-reasoning/fixture/runtime/objectstore/__init__.py",
+      "root": "repository"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/craft/modularity-local-reasoning/fixture/runtime/objectstore/_backend.py",
+      "root": "repository"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/craft/modularity-local-reasoning/fixture/runtime/objectstore/_errors.py",
+      "root": "repository"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/craft/modularity-local-reasoning/fixture/runtime/objectstore/_store.py",
+      "root": "repository"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018216851/arm/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018216851/arm/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018216851/arm/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018216851/arm/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018712693/arm/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018712693/arm/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018712693/arm/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018712693/arm/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018839354/arm/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018839354/arm/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018839354/arm/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018839354/arm/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010508504/arm/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010508504/arm/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010508504/arm/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010508504/arm/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010830116/arm/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010830116/arm/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010830116/arm/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010830116/arm/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010958794/arm/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010958794/arm/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010958794/arm/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010958794/arm/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011401381/arm/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011401381/arm/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011401381/arm/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011401381/arm/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011515622/arm/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011515622/arm/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011515622/arm/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011515622/arm/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011837371/arm/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011837371/arm/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011837371/arm/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011837371/arm/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmp7kg6ehh0/runtime/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmp7kg6ehh0/runtime/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmp7kg6ehh0/runtime/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmp7kg6ehh0/runtime/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmp7kg6ehh0/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmp7kg6ehh0/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmp7kg6ehh0/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmp7kg6ehh0/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpde3iaqsh/full/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpde3iaqsh/full/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpde3iaqsh/full/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpde3iaqsh/full/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpf2yq_upz/f/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpf2yq_upz/f/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpf2yq_upz/f/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpf2yq_upz/f/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmphmwojhjk/c/runtime/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmphmwojhjk/c/runtime/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmphmwojhjk/c/runtime/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmphmwojhjk/c/runtime/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmphmwojhjk/f/runtime/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmphmwojhjk/f/runtime/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmphmwojhjk/f/runtime/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmphmwojhjk/f/runtime/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmphmwojhjk/f/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmphmwojhjk/f/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmphmwojhjk/f/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmphmwojhjk/f/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpm3ce5f7o/runtime/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpm3ce5f7o/runtime/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpm3ce5f7o/runtime/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpm3ce5f7o/runtime/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpnn22kkvy/runtime/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpnn22kkvy/runtime/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpnn22kkvy/runtime/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpnn22kkvy/runtime/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpqr4sr0n1/runtime/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpqr4sr0n1/runtime/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpqr4sr0n1/runtime/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpqr4sr0n1/runtime/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpqr4sr0n1/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpqr4sr0n1/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpqr4sr0n1/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "carries 33 distinctive lines of the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpqr4sr0n1/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpskc2ihes/runtime/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpskc2ihes/runtime/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpskc2ihes/runtime/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpskc2ihes/runtime/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/runtime/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/runtime/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/runtime/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/runtime/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpx4hzh79l/runtime/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpx4hzh79l/runtime/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpx4hzh79l/runtime/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpx4hzh79l/runtime/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpxvc99yx7/full/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpxvc99yx7/full/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpxvc99yx7/full/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpxvc99yx7/full/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpz5b7tg7k/runtime/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpz5b7tg7k/runtime/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpz5b7tg7k/runtime/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpz5b7tg7k/runtime/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpz5b7tg7k/workspace/third_party/objectstore-1.4.0/objectstore/__init__.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpz5b7tg7k/workspace/third_party/objectstore-1.4.0/objectstore/_backend.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpz5b7tg7k/workspace/third_party/objectstore-1.4.0/objectstore/_errors.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpz5b7tg7k/workspace/third_party/objectstore-1.4.0/objectstore/_store.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "contains the experiment marker '\"frozen_identity\"'",
+      "category": "experiment-result",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/results/craft-mlr-c3-full-headroom-pilot.json",
+      "root": "repository"
+    },
+    {
+      "basis": "contains the experiment marker '\"frozen_identity\"'",
+      "category": "experiment-result",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/results/craft-mlr-c3r-full-headroom-pilot.json",
+      "root": "repository"
+    },
+    {
+      "basis": "contains the experiment marker '\"frozen_identity\"'",
+      "category": "experiment-result",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/results/craft-mlr-deepseek-v4-flash-high-headroom.json",
+      "root": "repository"
+    },
+    {
+      "basis": "contains the experiment marker '\"frozen_identity\"'",
+      "category": "experiment-result",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/results/craft-mlr-deepseek-v4-flash-high-paired-r2-qualification.json",
+      "root": "repository"
+    },
+    {
+      "basis": "contains the experiment marker '\"frozen_identity\"'",
+      "category": "experiment-result",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/results/craft-mlr-deepseek-v4-flash-high-paired-retrospective.json",
+      "root": "repository"
+    },
+    {
+      "basis": "contains the experiment marker '\"frozen_identity\"'",
+      "category": "experiment-result",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/results/craft-mlr-deepseek-v4-flash-high-paired.json",
+      "root": "repository"
+    },
+    {
+      "basis": "contains the experiment marker '\"frozen_identity\"'",
+      "category": "experiment-result",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/results/craft-mlr-deepseek-v4-flash-high-requalification.json",
+      "root": "repository"
+    },
+    {
+      "basis": "contains the experiment marker '\"frozen_identity\"'",
+      "category": "experiment-result",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/results/craft-mlr-paired-calibration.json",
+      "root": "repository"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "oracle",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/craft/modularity-local-reasoning/fixture/hidden/external_test.py",
+      "root": "repository"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "oracle",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/craft/modularity-local-reasoning/fixture/hidden/external_test_v2.py",
+      "root": "repository"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/contract-1789018320236/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/contract-1789018511448/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/contract-1789018948930/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018216851/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018712693/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018839354/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/contract-1789010616991/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/contract-1789010721503/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/contract-1789011176038/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/contract-1789011297495/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/contract-1789011613817/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/contract-1789011726136/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010508504/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010830116/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010958794/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011401381/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011515622/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011837371/worker.db",
+      "root": "evidence-archive"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "reference-solution",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/craft/modularity-local-reasoning/fixture/reference/external/app/api.py",
+      "root": "repository"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "reference-solution",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/craft/modularity-local-reasoning/fixture/reference/external/app/exports.py",
+      "root": "repository"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "reference-solution",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmp7kg6ehh0/workspace/app/api.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "reference-solution",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmp7kg6ehh0/workspace/app/exports.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "reference-solution",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpm3ce5f7o/workspace/app/api.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "reference-solution",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpm3ce5f7o/workspace/app/exports.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "reference-solution",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpnn22kkvy/workspace/app/api.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "reference-solution",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpnn22kkvy/workspace/app/exports.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "reference-solution",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/workspace/app/api.py",
+      "root": "temporary-directory"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "reference-solution",
+      "path": "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T/tmpwz_nk96m/workspace/app/exports.py",
+      "root": "temporary-directory"
+    }
+  ],
+  "findings_by_root_and_category": {
+    "evidence-archive/controlled-evidence": 36,
+    "evidence-archive/prior-sample": 18,
+    "repository/controlled-evidence": 4,
+    "repository/experiment-result": 8,
+    "repository/oracle": 2,
+    "repository/reference-solution": 2,
+    "temporary-directory/controlled-evidence": 72,
+    "temporary-directory/reference-solution": 8
+  },
+  "findings_total": 150,
+  "hermeticity_identity": "ec190d70befc8399ddeae395397b7589c8b6a1a3555d6945c9e176ca63eba937",
+  "kind": "hermeticity preflight \u2014 contaminated environment, recorded before any cleanup",
+  "note": "Produced by `pb_mlr.py preflight` before anything was removed, so the checker is shown failing on the environment that produced the R2 qualification's source exposure rather than on a fixture built afterwards. The stale FULL materialisation the CONTRACT agent actually read is among the findings.",
+  "scanned_roots": [
+    "~/Projects/personal/deepseek-and-destroy",
+    "~/proofbound-evidence",
+    "/private/tmp",
+    "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T"
+  ],
+  "status": "contaminated",
+  "unreadable_paths": 50,
+  "when": "2026-09-10, before the MLR-C3D-R3 cleanup"
+}

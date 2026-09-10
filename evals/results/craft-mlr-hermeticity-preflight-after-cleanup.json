@@ -1,0 +1,208 @@
+{
+  "claim": "no unintended copy of the controlled evidence was found under the scanned roots; nothing is claimed about roots that were excluded or could not be read",
+  "excluded_roots": [
+    {
+      "path": "the rest of the host filesystem",
+      "reason": "not where this experiment's artefacts are created; the agent can read further, and the scan reports its roots rather than claiming the machine"
+    }
+  ],
+  "findings_after": 34,
+  "findings_before": 150,
+  "hermeticity_identity": "ec190d70befc8399ddeae395397b7589c8b6a1a3555d6945c9e176ca63eba937",
+  "kind": "hermeticity preflight \u2014 after cleanup and lifecycle repair",
+  "note": "The temporary directory is clean and stays clean, because materialisation and cleanup now live together. What remains is structural: the repository holds the canonical copy of everything the treatment withholds, and the retained sessions of eighteen paid trajectories cannot be deleted. Both are reachable by the same ordinary search that already reached a stale workspace once, so the environment is not hermetic and no paid call was made.",
+  "removed": {
+    "ephemeral_materialisations": 12,
+    "note": "every arm materialisation left in the system temporary directory; eight matched the first shape recogniser and four were named by whoever made them, which is why the recogniser now looks one level down rather than for a name",
+    "redundant_archived_source_files": 36,
+    "redundant_archived_source_trees": 9,
+    "redundant_note": "vendored source preserved inside archived FULL workspaces, byte-identical to the fixture and therefore carrying nothing the repository does not already hold; session databases, logs, compiled runtimes and the agents' own edits were kept"
+  },
+  "residual": [
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/craft/modularity-local-reasoning/fixture/runtime/objectstore/__init__.py"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/craft/modularity-local-reasoning/fixture/runtime/objectstore/_backend.py"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/craft/modularity-local-reasoning/fixture/runtime/objectstore/_errors.py"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "controlled-evidence",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/craft/modularity-local-reasoning/fixture/runtime/objectstore/_store.py"
+    },
+    {
+      "basis": "contains the experiment marker '\"frozen_identity\"'",
+      "category": "experiment-result",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/results/craft-mlr-c3-full-headroom-pilot.json"
+    },
+    {
+      "basis": "contains the experiment marker '\"frozen_identity\"'",
+      "category": "experiment-result",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/results/craft-mlr-c3r-full-headroom-pilot.json"
+    },
+    {
+      "basis": "contains the experiment marker '\"frozen_identity\"'",
+      "category": "experiment-result",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/results/craft-mlr-deepseek-v4-flash-high-headroom.json"
+    },
+    {
+      "basis": "contains the experiment marker '\"frozen_identity\"'",
+      "category": "experiment-result",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/results/craft-mlr-deepseek-v4-flash-high-paired-r2-qualification.json"
+    },
+    {
+      "basis": "contains the experiment marker '\"frozen_identity\"'",
+      "category": "experiment-result",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/results/craft-mlr-deepseek-v4-flash-high-paired-retrospective.json"
+    },
+    {
+      "basis": "contains the experiment marker '\"frozen_identity\"'",
+      "category": "experiment-result",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/results/craft-mlr-deepseek-v4-flash-high-paired.json"
+    },
+    {
+      "basis": "contains the experiment marker '\"frozen_identity\"'",
+      "category": "experiment-result",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/results/craft-mlr-deepseek-v4-flash-high-requalification.json"
+    },
+    {
+      "basis": "contains the experiment marker '\"frozen_identity\"'",
+      "category": "experiment-result",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/results/craft-mlr-paired-calibration.json"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "oracle",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/craft/modularity-local-reasoning/fixture/hidden/external_test.py"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "oracle",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/craft/modularity-local-reasoning/fixture/hidden/external_test_v2.py"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/contract-1789018320236/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/contract-1789018511448/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/contract-1789018948930/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018216851/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018712693/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired-r2-qualification/full-1789018839354/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/contract-1789010616991/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/contract-1789010721503/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/contract-1789011176038/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/contract-1789011297495/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/contract-1789011613817/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/contract-1789011726136/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010508504/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010830116/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789010958794/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011401381/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011515622/worker.db"
+    },
+    {
+      "basis": "contains the experiment marker 'MLR-external'",
+      "category": "prior-sample",
+      "path": "~/proofbound-evidence/mlr-deepseek-v4-flash-high-paired/full-1789011837371/worker.db"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "reference-solution",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/craft/modularity-local-reasoning/fixture/reference/external/app/api.py"
+    },
+    {
+      "basis": "byte-identical to the controlled artefact",
+      "category": "reference-solution",
+      "path": "~/Projects/personal/deepseek-and-destroy/evals/craft/modularity-local-reasoning/fixture/reference/external/app/exports.py"
+    }
+  ],
+  "residual_summary": {
+    "controlled-evidence (repository)": 4,
+    "experiment-result (repository)": 8,
+    "oracle (repository)": 2,
+    "prior-sample (evidence archive)": 18,
+    "reference-solution (repository)": 2
+  },
+  "scanned_roots": [
+    "~/Projects/personal/deepseek-and-destroy",
+    "~/proofbound-evidence",
+    "/private/tmp",
+    "/private/var/folders/9r/dx96gz9j4jb_521jx9ybdf100000gn/T"
+  ],
+  "status": "contaminated",
+  "unreadable_paths": 50
+}

@@ -38,6 +38,13 @@ CREATE TABLE part (id text PRIMARY KEY, message_id text NOT NULL, session_id tex
 """
 
 
+def _clean_environment(**_kw):
+    """A hermetic environment, so a unit test of the series machinery does not depend on the state of
+    the host it happens to run on. The real preflight is exercised in its own suite."""
+    return {"status": "clean", "hermeticity_identity": "test", "findings": [],
+            "scanned_roots": [], "excluded_roots": [], "claim": "test", "unreadable": []}
+
+
 class Session:
     """A synthetic OpenCode session in the real schema, built one part at a time."""
 
@@ -589,7 +596,7 @@ class SeriesTest(unittest.TestCase):
             _mlr_run.run_attempt = fake
             try:
                 record = self.pb.run_series(out, model="m", samples=2, arms=[_mlr.FULL],
-                                            keep=None)
+                                            keep=None, preflight=_clean_environment)
             finally:
                 _mlr_run.run_attempt = original
             rows = record["measurements"]

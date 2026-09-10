@@ -29,6 +29,13 @@ import _provider   # noqa: E402
 MODELS_INDEX = ROOT / "evals" / "models" / "README.md"
 
 
+def _clean_environment(**_kw):
+    """A hermetic environment, so a unit test of the series machinery does not depend on the state of
+    the host it happens to run on. The real preflight is exercised in its own suite."""
+    return {"status": "clean", "hermeticity_identity": "test", "findings": [],
+            "scanned_roots": [], "excluded_roots": [], "claim": "test", "unreadable": []}
+
+
 class PriceTableTest(unittest.TestCase):
     """A cost figure without a price identity is an assertion, not evidence."""
 
@@ -342,7 +349,8 @@ class BudgetGateTest(unittest.TestCase):
             try:
                 record = self.pb.run_series(tmp / "s.json", model="deepseek/deepseek-v4-flash",
                                             samples=5, arms=[_mlr.FULL], keep=None,
-                                            variant="high", budget=1.0)
+                                            variant="high", budget=1.0,
+                                            preflight=_clean_environment)
             finally:
                 _mlr_run.run_attempt = original
             # 0.50 a run against a 1.00 ceiling with a 0.20 reserve: the third is refused.
