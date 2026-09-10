@@ -1973,6 +1973,38 @@ untested until it does. No generic compare command, schema, dashboard, leaderboa
 score exists, and `§E25.3` records why the last of those cannot: nothing supplies exchange rates
 between quality and cost.
 
+### 7P.5 MLR paired calibration — run as frozen, incomplete by outage
+
+Records: [`MLR-paired-run.md`](../../evals/craft/modularity-local-reasoning/MLR-paired-run.md),
+[`§E58`](proofbound/evidence/evaluation-runs.md).
+
+The frozen `full`/`contract` comparison executed exactly as declared — N = 8 pairs, oracle v2,
+attribution `mlr-context-2`, identity `0eabff2091f486c7`. **Three pairs completed.** From roughly
+20:14 the frozen model began returning `Upstream request failed: [404]`, confirmed independently
+outside the fixture. Each affected slot took its three bounded attempts and no more: 33 records, 8
+valid executions, 25 failed attempts, 1.7 hours.
+
+**Nothing was changed to rescue it.** The model is frozen and was not substituted; N was not
+extended; no pair replaced a lost one; the driver ran to exhaustion so the outage's extent is
+evidence. Pairs 6 and 7 hold a valid `full` run with no partner and are recorded `pair-invalid` — an
+unpaired execution is not a result for its arm.
+
+**The three complete pairs are all both-correct.** The treatment held exactly: `contract` consumed
+zero direct implementation source in every run, compensating with 975–2,154 bytes of runtime
+introspection against `full`'s 2,538–7,205 bytes of source — reduction with partial reconstruction.
+`help(objectstore)` appeared and was classified correctly, the first field confirmation that the
+MLR-C3 attribution defect is closed. **It is not reported as a result:** three pairs is not the
+pre-registered experiment, and the N = 8 budget existed because correctness has the least resolution.
+
+**Audits clean.** No incorrect run occurred, so oracle v2 rejected nothing. Three inbound items
+carried internal names while classified `behaviour` — one in the `full` arm — all the same 103-byte
+traceback naming the module file, a line number and a *public* exception's qualified name, a
+treatment MLR-C2 accepted and the MLR-C3R pre-registration declared. Model-side disclosure in runs
+that consumed no implementation: 0.
+
+**Status: incomplete, not invalid in instrument.** A re-run needs a new experiment identity, because
+resuming a partially consumed frozen series would splice two runs.
+
 ## 7B. Threat mitigation status
 
 RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC

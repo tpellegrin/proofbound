@@ -1112,3 +1112,62 @@ observation, and the `contract` arm — where the source is gone — is what wil
 
 No treatment effect, no local substitution, no modularity benefit, nothing about a second domain, and
 nothing about the boundary being the cause: the internal control remains unbuilt.
+
+## E58. The paired comparison ran as frozen and lost five pairs to a provider outage
+
+Record: [`craft-mlr-paired-calibration.json`](../../../../evals/results/craft-mlr-paired-calibration.json).
+Pre-registration: [`MLR-paired-preregistration.md`](../../../../evals/craft/modularity-local-reasoning/MLR-paired-preregistration.md).
+Analysis: [`MLR-paired-run.md`](../../../../evals/craft/modularity-local-reasoning/MLR-paired-run.md).
+
+The frozen `full`/`contract` comparison — N = 8 pairs, oracle v2, attribution `mlr-context-2`,
+identity `0eabff2091f486c7` — executed exactly as declared. Three pairs completed. From roughly 20:14
+the frozen model began returning `Upstream request failed: [404] Provider returned error`, confirmed
+independently outside the fixture at two separate times. Each affected slot took its three bounded
+attempts and no more; 33 records, 8 valid executions, 25 failed attempts, 1.7 hours.
+
+**Nothing was changed to rescue it.** The model is a frozen component and was not substituted; N was
+not extended; no pair replaced a lost one; the driver ran to exhaustion so the outage's extent is
+recorded. Pairs 6 and 7 hold a valid `full` run whose partner never completed and are recorded
+`pair-invalid` — an unpaired execution is not a result for its arm.
+
+### The three complete pairs
+
+| pair | F source | C source | F runtime | C runtime | both correct |
+|---|---|---|---|---|---|
+| 1 | 5,822 | 0 | 1,383 | 2,154 | yes |
+| 2 | 2,538 | 0 | 0 | 1,351 | yes |
+| 3 | 5,458 | 0 | 0 | 975 | yes |
+
+The treatment held exactly: `contract` consumed **zero** direct implementation source in every run,
+and compensated with runtime introspection that was smaller than what it replaced. `help(objectstore)`
+appeared and was classified correctly — the first field confirmation that the
+[§E56](#e56-the-modularity-pilot-finds-material-headroom-and-two-defects-in-the-instrument-that-found-it)
+attribution defect is closed.
+
+**This is not reported as a result.** Three pairs is not the pre-registered experiment, and the
+budget reasoning behind N = 8 was that correctness is the quantity with the least resolution — 3/3
+concordance carries almost none. A "substitution supported" conclusion from the pairs that survived an
+outage would be fitting the claim to the data that happened to arrive.
+
+### Audits
+
+No incorrect run occurred, so oracle v2 rejected nothing that ran. Three inbound items carried
+module-internal names while classified `behaviour` — **one of them in the `full` arm** — and all three
+are the same 103–105 byte traceback naming `objectstore/_store.py`, a line number, and the qualified
+name of a *public* exception. `co_filename` was accepted as reachable in MLR-C2, and
+[`MLR-C3R-pilot-preregistration.md`](../../../../evals/craft/modularity-local-reasoning/MLR-C3R-pilot-preregistration.md)
+pre-declared this treatment. Its appearance in `full` confirms it is a property of probing absence, not
+a `contract` compensation route. Model-side disclosure in runs that consumed no implementation: 0.
+
+### Cost and shape
+
+`full` 1,054,507 input / 36,023 output tokens over 5 valid runs; `contract` 662,997 / 17,675 over 3.
+$0 on this model. Verification time ~0.09 s and tool time under two seconds against three to six
+minutes of session span: the workload stays **model-latency-bound**, as
+[§E57](#e57-the-repaired-instrument-measures-what-e56-could-not) found.
+
+### Status
+
+The instrument is sound, the treatment held, and the experiment is **incomplete**. A re-run requires a
+new experiment identity, since resuming a partially consumed frozen series would splice two runs. No
+execution here may become a sample of it.

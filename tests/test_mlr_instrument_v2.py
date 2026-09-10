@@ -481,3 +481,120 @@ class LedgerV2Test(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PairedAnalysisTest(unittest.TestCase):
+    """The paired comparison: correctness first, representations kept apart, absence never zero."""
+
+    maxDiff = None
+
+    def setUp(self):
+        sys.path.insert(0, str(ROOT / "evals"))
+        import pb_mlr
+        self.pb = pb_mlr
+
+    def run_row(self, arm, repeat, *, correct=True, source=0, runtime=0, tokens=1000,
+                calls=10, complete=True, validity="valid"):
+        return {
+            "item": arm, "repeat": repeat, "validity": validity,
+            "outcome": {"correct": correct, "gate_passed": correct, "regression_passed": True},
+            "context": {
+                "implementation_source_unique_bytes": source,
+                "implementation_runtime_unique_bytes": runtime,
+                "disclosure": {"unique_bytes": runtime},
+                "by_provenance": {"public-contract": {"unique_bytes": 0},
+                                  "application": {"unique_bytes": 5000},
+                                  "behaviour": {"unique_bytes": 100}},
+                "by_route": {"source-file": {"items": 1}},
+                "model_calls": calls,
+            },
+            "profile": {"complete": complete, "stages": [{
+                "usage": {"input": tokens, "output": 100, "cache_read": 0, "reasoning": 0,
+                          "cost": 0.0},
+                "tools": {"calls": 12, "failed_calls": 0, "by_tool": {"read": 12}, "seconds": 1.0},
+                "time": {"session_span_seconds": 200.0, "model_seconds_derived": 199.0,
+                         "verification_seconds": 0.1},
+            }]},
+            "elapsed_seconds": 210.0,
+        }
+
+    def record(self, rows):
+        return {"experiment": "mlr-c3r-paired", "arms": list(_mlr.ARMS), "measurements": rows}
+
+    def test_it_classifies_every_paired_correctness_pattern(self):
+        rows = [
+            self.run_row(_mlr.FULL, 1, correct=True), self.run_row(_mlr.CONTRACT, 1, correct=True),
+            self.run_row(_mlr.FULL, 2, correct=True), self.run_row(_mlr.CONTRACT, 2, correct=False),
+            self.run_row(_mlr.FULL, 3, correct=False), self.run_row(_mlr.CONTRACT, 3, correct=True),
+            self.run_row(_mlr.FULL, 4, correct=False), self.run_row(_mlr.CONTRACT, 4, correct=False),
+        ]
+        counts = self.pb.paired_analysis(self.record(rows))["pattern_counts"]
+        self.assertEqual(counts[self.pb.BOTH], 1)
+        self.assertEqual(counts[self.pb.FULL_ONLY], 1)
+        self.assertEqual(counts[self.pb.CONTRACT_ONLY], 1)
+        self.assertEqual(counts[self.pb.NEITHER], 1)
+
+    def test_a_pair_missing_an_arm_is_invalid_not_a_win_for_the_other(self):
+        rows = [self.run_row(_mlr.FULL, 1, correct=True)]
+        result = self.pb.paired_analysis(self.record(rows))
+        self.assertEqual(result["pattern_counts"][self.pb.PAIR_INVALID], 1)
+        self.assertEqual(result["pattern_counts"][self.pb.FULL_ONLY], 0)
+
+    def test_an_incomplete_profile_makes_a_run_invalid_and_never_a_cheap_one(self):
+        """Absence of telemetry must not read as absence of consumption."""
+        rows = [self.run_row(_mlr.FULL, 1, source=5000),
+                self.run_row(_mlr.CONTRACT, 1, source=0, complete=False)]
+        result = self.pb.paired_analysis(self.record(rows))
+        self.assertEqual(result["incomplete_profiles"], [{"arm": _mlr.CONTRACT, "repeat": 1}])
+        self.assertEqual(result["arms"][_mlr.CONTRACT]["valid"], 0)
+        self.assertEqual(result["arms"][_mlr.CONTRACT]["correct"], 0)
+        self.assertEqual(result["arms"][_mlr.CONTRACT]["on_correct"]["source"]["n"], 0)
+        self.assertEqual(result["pattern_counts"][self.pb.PAIR_INVALID], 1)
+
+    def test_the_context_comparison_is_defined_on_correct_runs(self):
+        """A failed run that read nothing must not make the arm look context-efficient."""
+        rows = [self.run_row(_mlr.FULL, 1, correct=True, source=6000),
+                self.run_row(_mlr.CONTRACT, 1, correct=False, source=0),
+                self.run_row(_mlr.FULL, 2, correct=True, source=4000),
+                self.run_row(_mlr.CONTRACT, 2, correct=True, source=0)]
+        arms = self.pb.paired_analysis(self.record(rows))["arms"]
+        self.assertEqual(arms[_mlr.CONTRACT]["on_correct"]["source"]["n"], 1)
+        self.assertEqual(arms[_mlr.CONTRACT]["on_all_valid"]["source"]["n"], 2)
+        self.assertEqual(arms[_mlr.FULL]["on_correct"]["source"]["median"], 5000)
+
+    def test_source_reaching_the_contract_arm_is_a_treatment_failure(self):
+        rows = [self.run_row(_mlr.FULL, 1, source=5000),
+                self.run_row(_mlr.CONTRACT, 1, source=42)]
+        integrity = self.pb.paired_analysis(self.record(rows))["treatment_integrity"]
+        self.assertFalse(integrity["contract_source_is_zero"])
+        self.assertIn(42, integrity["contract_source_bytes"])
+
+    def test_source_and_runtime_representation_stay_separate_columns(self):
+        """Removed and rebuilt must be distinguishable; summing them would hide the shift."""
+        rows = [self.run_row(_mlr.FULL, 1, source=5000, runtime=0),
+                self.run_row(_mlr.CONTRACT, 1, source=0, runtime=7000)]
+        arms = self.pb.paired_analysis(self.record(rows))["arms"]
+        self.assertEqual(arms[_mlr.CONTRACT]["on_correct"]["source"]["median"], 0)
+        self.assertEqual(arms[_mlr.CONTRACT]["on_correct"]["runtime_repr"]["median"], 7000)
+        self.assertEqual(arms[_mlr.FULL]["on_correct"]["runtime_repr"]["median"], 0)
+
+    def test_dispersion_is_reported_without_inventing_independence(self):
+        spread = self.pb._spread([3, 1, 2])
+        self.assertEqual((spread["n"], spread["median"], spread["min"], spread["max"]),
+                         (3, 2, 1, 3))
+        for forbidden in ("ci", "confidence", "pvalue", "p_value", "stderr"):
+            self.assertNotIn(forbidden, spread)
+
+    def test_slots_alternate_which_arm_leads(self):
+        pairs = self.pb.slots(list(_mlr.ARMS), 8)
+        self.assertEqual(len(pairs), 16)
+        leaders = [pairs[i]["item"] for i in range(0, 16, 2)]
+        self.assertEqual(leaders.count(_mlr.FULL), 4)
+        self.assertEqual(leaders.count(_mlr.CONTRACT), 4)
+
+    def test_the_paired_series_is_a_different_experiment_from_either_pilot(self):
+        import _repeat
+        paired = self.pb.configuration(model="m", samples=8, arms=list(_mlr.ARMS))
+        pilot = self.pb.configuration(model="m", samples=6, arms=[_mlr.FULL])
+        self.assertNotEqual(paired["experiment"], pilot["experiment"])
+        self.assertNotEqual(_repeat.frozen_identity(paired), _repeat.frozen_identity(pilot))

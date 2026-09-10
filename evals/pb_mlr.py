@@ -189,6 +189,154 @@ def analyse(record: dict[str, Any]) -> dict[str, Any]:
             "missing_telemetry": missing_telemetry, "headroom": verdict}
 
 
+def _ctx(measurement: dict[str, Any], *path: str, default: Any = None) -> Any:
+    node: Any = measurement.get("context") or {}
+    for key in path:
+        if not isinstance(node, dict):
+            return default
+        node = node.get(key)
+    return default if node is None else node
+
+
+def _stage(measurement: dict[str, Any]) -> dict[str, Any]:
+    stages = ((measurement.get("profile") or {}).get("stages") or [{}])
+    return stages[0] if stages else {}
+
+
+def _row(measurement: dict[str, Any]) -> dict[str, Any]:
+    """One execution, flattened into the fields the paired report compares.
+
+    Missing telemetry stays missing. A run whose profile is incomplete keeps `None` in every derived
+    field rather than a zero, because the primary measurand is a byte count where zero is a
+    meaningful answer and an outage must never be able to impersonate one.
+    """
+    stage = _stage(measurement)
+    complete = bool((measurement.get("profile") or {}).get("complete"))
+    valid = measurement.get("validity") == _mlr_run.VALID and complete
+    usage = stage.get("usage") or {}
+    tools = stage.get("tools") or {}
+    timing = stage.get("time") or {}
+    provenance = _ctx(measurement, "by_provenance", default={})
+    return {
+        "arm": measurement.get("item"),
+        "repeat": measurement.get("repeat"),
+        "attempt": measurement.get("attempt", 1),
+        "validity": measurement.get("validity"),
+        "complete": complete,
+        "valid": valid,
+        "correct": (measurement.get("outcome") or {}).get("correct") if valid else None,
+        "gate": (measurement.get("outcome") or {}).get("gate_passed") if valid else None,
+        "regression": (measurement.get("outcome") or {}).get("regression_passed") if valid else None,
+        "source": _ctx(measurement, "implementation_source_unique_bytes") if valid else None,
+        "runtime_repr": _ctx(measurement, "implementation_runtime_unique_bytes") if valid else None,
+        "disclosure": _ctx(measurement, "disclosure", "unique_bytes") if valid else None,
+        "contract_doc": (provenance.get("public-contract") or {}).get("unique_bytes")
+                        if valid else None,
+        "application": (provenance.get("application") or {}).get("unique_bytes") if valid else None,
+        "behaviour": (provenance.get("behaviour") or {}).get("unique_bytes") if valid else None,
+        "routes": sorted((_ctx(measurement, "by_route", default={}) or {}).keys()) if valid else [],
+        "calls": _ctx(measurement, "model_calls") if valid else None,
+        "input_tokens": usage.get("input") if valid else None,
+        "output_tokens": usage.get("output") if valid else None,
+        "cache_read": usage.get("cache_read") if valid else None,
+        "reasoning_tokens": usage.get("reasoning") if valid else None,
+        "cost": usage.get("cost") if valid else None,
+        "tool_calls": tools.get("calls") if valid else None,
+        "failed_tool_calls": tools.get("failed_calls") if valid else None,
+        "by_tool": tools.get("by_tool") if valid else None,
+        "tool_seconds": tools.get("seconds") if valid else None,
+        "session_seconds": timing.get("session_span_seconds") if valid else None,
+        "model_seconds": timing.get("model_seconds_derived") if valid else None,
+        "verification_seconds": timing.get("verification_seconds") if valid else None,
+        "elapsed_seconds": measurement.get("elapsed_seconds"),
+        "reason": measurement.get("reason"),
+    }
+
+
+def _spread(values: list[Any]) -> dict[str, Any]:
+    """Counts, median and range. No confidence interval: these are paired, not independent draws."""
+    numbers = sorted(v for v in values if isinstance(v, (int, float)))
+    if not numbers:
+        return {"n": 0, "median": None, "min": None, "max": None, "values": []}
+    return {"n": len(numbers), "median": statistics.median(numbers),
+            "min": numbers[0], "max": numbers[-1], "values": numbers}
+
+
+BOTH, FULL_ONLY, CONTRACT_ONLY, NEITHER, PAIR_INVALID = (
+    "both-correct", "full-only", "contract-only", "neither-correct", "pair-invalid")
+
+
+def paired_analysis(record: dict[str, Any]) -> dict[str, Any]:
+    """The paired comparison, reported as pairs and distributions rather than as a score.
+
+    Correctness is resolved first and gates everything else: the context comparison is defined on
+    runs that did the task, so a `contract` trajectory that failed quickly after reading nothing is
+    never allowed to look efficient. Source and runtime-derived representation stay separate columns
+    because they are not commensurable, and the shift they can express — source removed, interior
+    rebuilt another way — is the outcome the whole design exists to be able to see.
+    """
+    rows = [_row(m) for m in record.get("measurements") or []]
+    valid = [r for r in rows if r["valid"]]
+    by_arm = {arm: [r for r in valid if r["arm"] == arm] for arm in _mlr.ARMS}
+
+    pairs: list[dict[str, Any]] = []
+    for repeat in sorted({r["repeat"] for r in rows}):
+        full = next((r for r in by_arm[_mlr.FULL] if r["repeat"] == repeat), None)
+        contract = next((r for r in by_arm[_mlr.CONTRACT] if r["repeat"] == repeat), None)
+        if full is None or contract is None:
+            pattern = PAIR_INVALID
+        elif full["correct"] and contract["correct"]:
+            pattern = BOTH
+        elif full["correct"]:
+            pattern = FULL_ONLY
+        elif contract["correct"]:
+            pattern = CONTRACT_ONLY
+        else:
+            pattern = NEITHER
+        pairs.append({"repeat": repeat, "pattern": pattern,
+                      "full": full, "contract": contract})
+
+    def spread(arm: str, field: str, correct_only: bool = True) -> dict[str, Any]:
+        rows_ = [r for r in by_arm[arm] if (r["correct"] if correct_only else True)]
+        return _spread([r[field] for r in rows_])
+
+    fields = ("source", "runtime_repr", "disclosure", "contract_doc", "application", "behaviour",
+              "calls", "input_tokens", "output_tokens", "cache_read", "reasoning_tokens",
+              "tool_calls", "failed_tool_calls", "tool_seconds", "session_seconds",
+              "model_seconds", "verification_seconds", "elapsed_seconds", "cost")
+    arms = {}
+    for arm in _mlr.ARMS:
+        correct = [r for r in by_arm[arm] if r["correct"]]
+        arms[arm] = {
+            "executions": sum(1 for r in rows if r["arm"] == arm),
+            "valid": len(by_arm[arm]),
+            "invalid": [{"repeat": r["repeat"], "validity": r["validity"],
+                         "complete": r["complete"], "reason": r["reason"]}
+                        for r in rows if r["arm"] == arm and not r["valid"]],
+            "correct": len(correct),
+            "on_correct": {f: spread(arm, f) for f in fields},
+            "on_all_valid": {f: spread(arm, f, correct_only=False) for f in fields},
+        }
+
+    contract_source = [r["source"] for r in by_arm[_mlr.CONTRACT] if r["source"] is not None]
+    return {
+        "experiment": record.get("experiment"),
+        "pairs": pairs,
+        "pattern_counts": {p: sum(1 for x in pairs if x["pattern"] == p)
+                           for p in (BOTH, FULL_ONLY, CONTRACT_ONLY, NEITHER, PAIR_INVALID)},
+        "arms": arms,
+        # Direct source must be structurally zero in `contract`. Anything else is a treatment
+        # failure, not ordinary variation, and is surfaced rather than averaged away.
+        "treatment_integrity": {
+            "contract_source_bytes": contract_source,
+            "contract_source_is_zero": all(v == 0 for v in contract_source),
+        },
+        "incomplete_profiles": [{"arm": r["arm"], "repeat": r["repeat"]}
+                                for r in rows if r["validity"] == _mlr_run.VALID
+                                and not r["complete"]],
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="command", required=True)
@@ -199,8 +347,15 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--samples", type=int, default=6)
     p.add_argument("--keep", type=Path, default=None)
 
+    q = sub.add_parser("paired", help="run the pre-registered paired full/contract comparison")
+    q.add_argument("--out", type=Path, required=True)
+    q.add_argument("--model", default="opencode/nemotron-3-ultra-free")
+    q.add_argument("--samples", type=int, default=8)
+    q.add_argument("--keep", type=Path, default=None)
+
     a = sub.add_parser("analyse", help="classify a completed series")
     a.add_argument("--record", type=Path, required=True)
+    a.add_argument("--paired", action="store_true", help="report the paired comparison")
 
     args = ap.parse_args(argv)
     if args.command == "pilot":
@@ -208,8 +363,15 @@ def main(argv: list[str] | None = None) -> int:
                             arms=[_mlr.FULL], keep=args.keep)
         print(json.dumps(analyse({**record["config"], **record}), indent=2, sort_keys=True))
         return 0
+    if args.command == "paired":
+        record = run_series(args.out, model=args.model, samples=args.samples,
+                            arms=list(_mlr.ARMS), keep=args.keep)
+        print(json.dumps(paired_analysis({**record["config"], **record}),
+                         indent=2, sort_keys=True))
+        return 0
     record = json.loads(Path(args.record).read_text(encoding="utf-8"))
-    print(json.dumps(analyse(record), indent=2, sort_keys=True))
+    reporter = paired_analysis if args.paired else analyse
+    print(json.dumps(reporter(record), indent=2, sort_keys=True))
     return 0
 
 
