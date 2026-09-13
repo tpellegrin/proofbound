@@ -105,7 +105,9 @@ must not silently reinterpret evidence gathered before it moved.
   [route readiness](../results/craft-mlr-r4c3-route-readiness.json),
   [record](../results/craft-mlr-r4c3-field-requalification.json)
 - Paired experiment — **frozen, not executed**, on the qualified stack:
-  [preregistration](../craft/modularity-local-reasoning/MLR-paired-r4-preregistration.md)
+  [preregistration](../craft/modularity-local-reasoning/MLR-paired-r4-preregistration.md),
+  [N audit](../craft/modularity-local-reasoning/MLR-paired-r4-N-audit.md) — N independently
+  justified, with two corrections to the rationale that do not bear on it
 
 ---
 
