@@ -83,8 +83,13 @@ def policy(*, executor: Path | None = None, network: bool = True,
     """
     tools = [_semantic_view.Tool("opencode", executor)] if executor else []
     exposure = interpreter_exposure(executable)
+    # No file-change notification. It was added while a hang was being chased, and the hang has
+    # since been explained by an outbound firewall on the host interrupting the executor's provider
+    # connection. The Field Test settles it against the evidence rather than against the intuition:
+    # two real trajectories — 27 calls over 49 tools, and 26 over 53 — started and ran to completion
+    # without it. Nothing required it, so it is not carried.
     return _semantic_view.Policy(
-        tools=tools, network=network, notifications=True, declared=tuple(declared),
+        tools=tools, network=network, notifications=False, declared=tuple(declared),
         extra_reads=exposure,
         system_execs=(*_semantic_view.SYSTEM_EXECS, *exposure))
 

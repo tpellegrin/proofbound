@@ -1,0 +1,40 @@
+{
+  "external_cause": {
+    "operator_report": "an outbound application firewall on the host prompted for and blocked the executor's provider connections during the previous series, and was to be configured to permit them",
+    "what_this_repository_can_check": "not the firewall's configuration \u2014 only whether the route works from the same executable, provider, model and credential the qualification will use"
+  },
+  "health_probes": [
+    {
+      "calls": 1,
+      "elapsed_seconds": 2.8,
+      "observed": null,
+      "probe": 1,
+      "reply": "ready",
+      "returncode": 0,
+      "stderr": "> build \u00b7 deepseek-v4-flash"
+    },
+    {
+      "calls": 1,
+      "elapsed_seconds": 2.87,
+      "observed": null,
+      "probe": 2,
+      "reply": "ready",
+      "returncode": 0,
+      "stderr": "> build \u00b7 deepseek-v4-flash"
+    }
+  ],
+  "kind": "boundary reassessment and provider-route readiness, before the requalification",
+  "notification_allowance": {
+    "answer": "none that the evidence shows. Two real trajectories \u2014 27 model calls over 49 tool calls, and 26 over 53 \u2014 started and ran to completion under the boundary that did not have it. The allowance was introduced while a hang was being chased, and the hang appeared under the boundary that already had it.",
+    "decision": "not carried",
+    "field_test": "what required capability becomes impossible without it?",
+    "identity_note": "the selected policy expresses the same enforced profile as the boundary those trajectories ran under; its digest differs only because the rule's payload gained a field, which is off"
+  },
+  "route_ready": true,
+  "selected_boundary_identity": "b88bd43109184459ea7c840cf78f4fdab7b8e0db0ec8e940df70c938752c2052",
+  "transient_hang": {
+    "not_concluded": "that the firewall was definitely the cause on any particular attempt; the repository cannot see it, and says only what it measured",
+    "observed": "one in-boundary probe timed out at 240 s; a host-side probe with the same executor, model and effort then succeeded in 3.9 s, and three in-boundary probes immediately afterwards \u2014 with and without a working directory, with and without a staged arm \u2014 each succeeded in about 3 s",
+    "reading": "transient, and consistent with intermittent external interruption rather than with a boundary defect: the same boundary succeeds seconds later under the same configuration"
+  }
+}
