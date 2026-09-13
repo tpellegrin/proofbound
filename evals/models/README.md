@@ -99,6 +99,13 @@ must not silently reinterpret evidence gathered before it moved.
   [first freeze](../craft/modularity-local-reasoning/MLR-R4C-qualification-preregistration.md),
   [second freeze and outcome](../craft/modularity-local-reasoning/MLR-R4C2-qualification-preregistration.md),
   [record](../results/craft-mlr-r4c-field-qualification.json)
+- Clean-route requalification — **complete measurement path field-qualified**: 4/4 valid, 4/4 correct,
+  zero unresolved, contradictions or uncovered events, `contract` direct source zero:
+  [freeze and outcome](../craft/modularity-local-reasoning/MLR-R4C3-requalification-preregistration.md),
+  [route readiness](../results/craft-mlr-r4c3-route-readiness.json),
+  [record](../results/craft-mlr-r4c3-field-requalification.json)
+- Paired experiment — **frozen, not executed**, on the qualified stack:
+  [preregistration](../craft/modularity-local-reasoning/MLR-paired-r4-preregistration.md)
 
 ---
 
@@ -138,7 +145,9 @@ load-bearing.
 | MLR paired (`full` vs `contract`) | attempted, invalid — provider outage | executed, invalid — attribution escape |
 | MLR attribution qualification | not run | executed, does not pass — search route, host filesystem |
 | MLR hermeticity precondition | not run | not met — the host holds reachable copies of the controlled evidence |
-| MLR execution boundary | 2 trajectories, 0 slots | one model-driven trajectory ran and was explainable; the path is not yet reliable |
+| MLR execution boundary | 2 trajectories, 0 slots | superseded by the clean-route requalification |
+| MLR field requalification | not run | 4/4 valid and correct — complete path field-qualified |
+| MLR paired (`full` vs `contract`) | attempted, invalid — provider outage | frozen on the qualified stack, not executed |
 
 An empty cell means *not run*, never *worse*.
 
