@@ -84,7 +84,7 @@ def policy(*, executor: Path | None = None, network: bool = True,
     tools = [_semantic_view.Tool("opencode", executor)] if executor else []
     exposure = interpreter_exposure(executable)
     return _semantic_view.Policy(
-        tools=tools, network=network, declared=tuple(declared),
+        tools=tools, network=network, notifications=True, declared=tuple(declared),
         extra_reads=exposure,
         system_execs=(*_semantic_view.SYSTEM_EXECS, *exposure))
 

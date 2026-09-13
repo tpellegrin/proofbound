@@ -124,7 +124,7 @@ class Policy:
                  system_execs: Sequence[str] = SYSTEM_EXECS,
                  traversal: Sequence[str] = TRAVERSAL,
                  extra_reads: Sequence[str] = (), network: bool = False,
-                 declared: Sequence[str] = ()):
+                 notifications: bool = False, declared: Sequence[str] = ()):
         self.tools = tuple(tools)
         self.env = dict(env or {})
         self.system_reads = tuple(system_reads)
@@ -132,6 +132,7 @@ class Policy:
         self.traversal = tuple(traversal)
         self.extra_reads = tuple(extra_reads)
         self.network = bool(network)
+        self.notifications = bool(notifications)
         self.declared = tuple(declared)
 
     def identity(self) -> str:
@@ -144,6 +145,7 @@ class Policy:
             "traversal": sorted(self.traversal),
             "extra_reads": sorted(self.extra_reads),
             "network": self.network,
+            "notifications": self.notifications,
             "declared": sorted(self.declared),
         }
         return hashlib.sha256(
@@ -184,6 +186,13 @@ def _profile(root: Path, tools: Path, policy: Policy) -> str:
         "(allow process-exec " + " ".join(f'(subpath "{p}")' for p in policy.system_execs)
         + f' (subpath "{root}") (subpath "{tools}"))',
     ]
+    if policy.notifications:
+        # File-change notification. An executor that watches its own working directory cannot start
+        # without it — measured, as `Error starting FSEvents stream` and an immediate exit. It is a
+        # capability question rather than an evidence one: notification reports changes to paths the
+        # subject can already read, and grants no read it did not have.
+        lines.append('(allow mach-lookup (global-name "com.apple.FSEvents"))')
+        lines.append('(allow file-read* file-write-data (literal "/dev/fsevents"))')
     lines.append("(allow network*)" if policy.network else "(deny network*)")
     return "\n".join(lines) + "\n"
 
@@ -302,6 +311,7 @@ class View:
             "areas": {area: str(getattr(self, area)) for area in self.AREAS},
             "declared": list(self.policy.declared),
             "network": self.policy.network,
+            "notifications": self.policy.notifications,
             "tools": [t.describe() for t in self.policy.tools],
         }
 
