@@ -1,0 +1,29 @@
+{
+  "attempts": [
+    {
+      "arm": "full",
+      "attempt": 1,
+      "reason": "KeyError: 'hermeticity_identity'",
+      "slot": 1,
+      "validity": "harness-failure"
+    },
+    {
+      "arm": "full",
+      "attempt": 2,
+      "reason": "KeyError: 'hermeticity_identity'",
+      "slot": 1,
+      "validity": "harness-failure"
+    },
+    {
+      "arm": "full",
+      "attempt": 3,
+      "reason": "KeyError: 'hermeticity_identity'",
+      "slot": 1,
+      "validity": "harness-failure"
+    }
+  ],
+  "kind": "pre-series integration defect \u2014 no provider call was made, no slot consumed",
+  "note": "The driver read a field the preflight report did not carry. Three bounded infrastructure attempts failed before launch, each costing nothing. The hermeticity rule identity the preregistration bound is unchanged \u2014 the repair records it on the report rather than altering it.",
+  "qualification": "mlr-r4c-deepseek-field-qualification",
+  "spent": 0.0
+}

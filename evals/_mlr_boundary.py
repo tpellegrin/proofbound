@@ -173,6 +173,9 @@ def preflight(view: _semantic_view.View, arm: str, *,
     report = _hermetic.scan(view.roots(), sensitive(fixture=fixture), declared=declared)
     report["arm"] = arm
     report["declared"] = declared
+    # The rule this slot was judged under, recorded beside the judgement. `_hermetic.scan` reports
+    # what it found; which rule it was applying is the caller's to say.
+    report["hermeticity_identity"] = _mlr.preflight_identity(fixture=fixture)
     return report
 
 
