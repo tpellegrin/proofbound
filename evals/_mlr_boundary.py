@@ -28,12 +28,17 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
 import _hermetic
 import _mlr
+import _mlr_context
 import _mlr_run
+import _pricing
+import _profile
 import _semantic_view
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -225,6 +230,132 @@ def extract(view: _semantic_view.View, destination: Path, staged: dict[str, Any]
         out["session"] = str(view.collect(staged["db"].relative_to(view.root),
                                           destination / "worker.db"))
     return out
+
+
+def run_bounded_attempt(arm: str, *, model: str, variant: str | None, executor: Path,
+                        credentials: dict[str, Path] | None = None, keep: Path | None = None,
+                        fixture: Path = _mlr.FIXTURE, task: Path | None = None,
+                        timeout: int = _mlr_run.ATTEMPT_TIMEOUT_SECONDS) -> dict[str, Any]:
+    """One arm, one execution, inside a constructed evidence surface.
+
+    The same shape `run_attempt` has always produced — validity, outcome, context ledger, profile,
+    cost — assembled from the same machinery. What changed is where the worker ran and what it could
+    see while running. Grading happens after the view is gone, on the extracted workspace, so the
+    hidden gate is never a file the subject could have found.
+    """
+    started = time.time()
+    result: dict[str, Any] = {
+        "arm": arm, "model": model, "harness": "opencode-cli", "role": _mlr_run.ROLE,
+        "auto_flag": _mlr_run.AUTO_FLAG, "variant": variant, "oracle": _mlr_run.ORACLE,
+        "validity": _mlr_run.HARNESS_FAILURE, "reason": None,
+        "executor": executor_identity(executor),
+        "interpreter": sys.version.split()[0],
+    }
+    extraction = Path(tempfile.mkdtemp(prefix="pb-mlr-out-"))
+    try:
+        view_policy = policy(executor=executor)
+        result["boundary_identity"] = view_policy.identity()
+        with _semantic_view.semantic_view(view_policy) as view:
+            staged = stage(view, arm, fixture=fixture, task=task, model=model,
+                           home_files=credentials or {})
+            built = staged["built"]
+            result.update({
+                "task_sha256": _mlr.digest_file(staged["task"]),
+                "runtime_digest": built["runtime_digest"],
+                "runtime_structure": built["runtime_structure"],
+                "source_digest": built["source_digest"],
+                "contract_sha256": built["contract_sha256"],
+                "workspace_digest": built["workspace_digest"],
+            })
+
+            cleared = preflight(view, arm, fixture=fixture)
+            result["hermeticity"] = {k: cleared[k] for k in
+                                     ("status", "hermeticity_identity", "scanned_roots",
+                                      "declared", "claim")}
+            result["hermeticity"]["declared_exposures"] = len(cleared["declared_exposures"])
+            result["hermeticity"]["findings"] = cleared["findings"][:50]
+            if cleared["status"] != _hermetic.CLEAN:
+                result["validity"] = _mlr_run.SETUP_FAILURE
+                result["reason"] = "hermeticity preflight refused the environment"
+                return result
+
+            launched = launch(view, staged, variant=variant, cleared=cleared, timeout=timeout)
+            result["launch_returncode"] = launched.returncode
+            if launched.returncode != 0:
+                blob = (launched.stdout + launched.stderr).lower()
+                result["validity"] = _mlr_run.SETUP_FAILURE if (
+                    "not found" in blob or "auth" in blob or "credential" in blob
+                    or "rate" in blob) else _mlr_run.HARNESS_FAILURE
+                result["reason"] = (launched.stderr or launched.stdout).strip()[:400]
+                return result
+            try:
+                event_dir = Path(json.loads(launched.stdout)["event_dir"])
+            except (ValueError, KeyError) as exc:
+                result["reason"] = f"launcher produced no event directory: {exc}"
+                return result
+
+            gate(view, staged, timeout=timeout)
+            gate_path = event_dir / "evidence-gate.json"
+            evidence = (json.loads(gate_path.read_text(encoding="utf-8"))
+                        if gate_path.is_file() else None)
+            if evidence is None:
+                result["reason"] = "gate produced no evidence artifact"
+                return result
+            if evidence.get("report_state") == "launcher-skeleton" or evidence.get(
+                    "needs_report_recovery"):
+                result["validity"] = _mlr_run.SETUP_FAILURE
+                result["reason"] = "worker produced no usable report"
+                return result
+
+            result["event_dir"] = str(event_dir.relative_to(view.root))
+            result["evidence_gate"] = evidence
+            prompt = event_dir / "launch-prompt.txt"
+            result["prompt_bytes"] = len(prompt.read_bytes()) if prompt.is_file() else None
+            collected = extract(view, extraction, staged)
+            result["extraction"] = {k: Path(v).name for k, v in collected.items()}
+            session = Path(collected["session"]) if "session" in collected else None
+            workspace = Path(collected["workspace"])
+            view_root = view.root
+            # Attribution reads the session while the view's own paths are still meaningful, so a
+            # path class is resolved against the arm it was produced under rather than a directory
+            # that no longer exists.
+            result["context"] = (_mlr_context.consumed(session, built) if session else None)
+        result["view_destroyed"] = not view_root.exists()
+
+        graded_root = Path(tempfile.mkdtemp(prefix="pb-mlr-grade-"))
+        try:
+            regraded = _mlr.materialise(arm, graded_root / "arm", fixture=fixture)
+            shutil.rmtree(regraded["workspace"])
+            shutil.copytree(workspace, regraded["workspace"])
+            result["outcome"] = _mlr_run.grade(regraded, graded_root)
+        finally:
+            shutil.rmtree(graded_root, ignore_errors=True)
+
+        if session and session.is_file():
+            stage_profile = _profile.profile(
+                session, stage=_mlr_run.ROLE, model=model, variant=variant,
+                elapsed_seconds=round(time.time() - started, 3),
+                verification_seconds=result["outcome"]["verification_seconds"])
+            result["profile"] = _profile.pipeline([stage_profile], outcome={
+                "correct": result["outcome"]["correct"],
+                "gate_passed": result["outcome"]["gate_passed"],
+                "regression_passed": result["outcome"]["regression_passed"],
+                "oracle": result["outcome"]["oracle"]})
+            result["cost"] = _pricing.cost(
+                stage_profile["usage"], model=model.split("/", 1)[-1],
+                when=datetime.fromtimestamp(started, tz=timezone.utc))
+        result["validity"] = _mlr_run.VALID
+        return result
+    except Exception as exc:                              # noqa: BLE001 - reported, never raised
+        result["reason"] = f"{type(exc).__name__}: {exc}"[:400]
+        return result
+    finally:
+        result["elapsed_seconds"] = round(time.time() - started, 3)
+        if keep is not None and extraction.is_dir():
+            target = Path(keep) / f"{arm}-{int(started * 1000)}"
+            shutil.copytree(extraction, target, dirs_exist_ok=True)
+            result["evidence"] = str(target)
+        shutil.rmtree(extraction, ignore_errors=True)
 
 
 def harness_is_clean(*, fixture: Path = _mlr.FIXTURE) -> dict[str, Any]:
