@@ -46,3 +46,56 @@ against the same **$0.40** ceiling, which is not raised to accommodate it.
 ## 4. What a pass still licenses
 
 Freezing a new full paired experiment. Not running it.
+
+---
+
+# Outcome — stopped before completion
+
+**No slot completed.** Four attempts reached the provider, $0.0321 of $0.40 was spent, and the series
+was stopped rather than continued by tuning the boundary under spend. Full record:
+[`craft-mlr-r4c-field-qualification.json`](../../results/craft-mlr-r4c-field-qualification.json).
+
+## What was observed
+
+**The field path can work.** Under the first boundary identity, one real DeepSeek-driven OpenCode
+trajectory ran to completion inside the view: **27 model calls, 49 tool calls**, $0.0155. Its session
+was recovered and read under `mlr-context-5` — 102 items, **zero unresolved, zero contradictions,
+zero uncovered events**, tool kinds confined to `bash`, `edit`, `read` and `write`, and 3,909 bytes of
+direct implementation source in a `full` arm that was entitled to it. That is the central R4-C
+question answered in the affirmative for one trajectory: a model-driven tool route does execute inside
+the constructed evidence surface and is explainable by the held attribution model.
+
+**It does not yet work reliably.** Three defects were found and two repaired:
+
+1. **Extraction.** The executor leaves its database in write-ahead mode; a copy of the file alone is
+   not a database. Repaired — extraction now folds the log back in first. This is what invalidated
+   the trajectory above.
+2. **Cost accounting.** Usage was computed only on the fully successful path, so a provider call that
+   happened could be a provider call nobody paid for on paper. Repaired.
+3. **The watcher.** `opencode` starts a file-change watcher before anything else and it failed —
+   *intermittently*, under the identity where another attempt had already succeeded. The allowance
+   that fixes it moved the boundary identity, which forced this second freeze; and **under the
+   repaired boundary `opencode run` hangs to its timeout**. Network, DNS and TLS to the provider were
+   all verified working from inside, so the cause is not connectivity. Not repaired.
+
+The executor's local lifecycle is unaffected throughout: version, model listing, session listing, MCP
+listing, credential reporting and session-store creation all work inside the view.
+
+## Why the series was stopped
+
+Continuing would have meant changing the boundary in response to what happened while paying for
+trajectories under an identity that had already been superseded once for exactly that reason. The
+programme's own rule applies: a configuration defect stops a qualification; it does not authorise
+tuning inside it.
+
+## What this does not say
+
+Nothing about the treatment. No arm was compared, no effect estimated, no correctness claimed. The
+two trajectories that ran are instrument evidence and nothing else.
+
+## What the next milestone must settle
+
+Why `opencode run` completes under one boundary and hangs under the same boundary plus a
+notification allowance — and whether the watcher failure was ever caused by the boundary at all, given
+it appeared intermittently under a configuration that had already produced a complete trajectory. A
+reliability question, answerable with a small number of attempts, before any further freeze.

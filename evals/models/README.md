@@ -94,6 +94,11 @@ must not silently reinterpret evidence gathered before it moved.
   with the model-driven tool route reserved for field qualification:
   [`_mlr_boundary.py`](../_mlr_boundary.py),
   [integration probes](../results/craft-mlr-boundary-integration-probes.json)
+- Field qualification — **stopped before completion**: one real model-driven trajectory ran inside the
+  boundary and was fully explainable, but the path is not yet reliable:
+  [first freeze](../craft/modularity-local-reasoning/MLR-R4C-qualification-preregistration.md),
+  [second freeze and outcome](../craft/modularity-local-reasoning/MLR-R4C2-qualification-preregistration.md),
+  [record](../results/craft-mlr-r4c-field-qualification.json)
 
 ---
 
@@ -133,7 +138,7 @@ load-bearing.
 | MLR paired (`full` vs `contract`) | attempted, invalid — provider outage | executed, invalid — attribution escape |
 | MLR attribution qualification | not run | executed, does not pass — search route, host filesystem |
 | MLR hermeticity precondition | not run | not met — the host holds reachable copies of the controlled evidence |
-| MLR execution boundary | not run | worker integrated and locally proven; model-driven tool route pending |
+| MLR execution boundary | 2 trajectories, 0 slots | one model-driven trajectory ran and was explainable; the path is not yet reliable |
 
 An empty cell means *not run*, never *worse*.
 

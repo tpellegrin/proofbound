@@ -1,0 +1,101 @@
+{
+  "attempts_reaching_the_provider": 4,
+  "ceiling": 0.4,
+  "kind": "field qualification \u2014 stopped before completion, instrument evidence only",
+  "observed": {
+    "after_the_notification_allowance": "`opencode run` hangs to the 300 s timeout inside the view; network, DNS and TLS to the provider all verified working from inside, so the cause is not connectivity",
+    "complete_trajectory_under_boundary_d8bbe1ce9941d217": {
+      "attribution": {
+        "contradictions": 0,
+        "direct_source_unique_bytes": 3909,
+        "items": 102,
+        "reconstruction_unique_bytes": 0,
+        "runtime_unique_bytes": 0,
+        "tool_kinds": [
+          "tool:bash",
+          "tool:edit",
+          "tool:read",
+          "tool:write"
+        ],
+        "uncovered_events": 0,
+        "unresolved": 0
+      },
+      "derived_cost": 0.015534,
+      "model_calls": 27,
+      "note": "a real DeepSeek-driven OpenCode trajectory did run to completion inside the boundary and was fully explainable under mlr-context-5; it failed only at extraction, which is now repaired",
+      "tool_calls": 49
+    },
+    "executor_local_lifecycle": "version, models, session list, mcp list, providers list, session-store creation all work inside the view",
+    "fsevents_failure": "intermittent under the same boundary identity: one attempt started the watcher and completed, a later one did not",
+    "second_trajectory_interrupted": {
+      "derived_cost": 0.016493,
+      "model_calls": 26,
+      "tool_calls": 53
+    }
+  },
+  "outcome": "G-adjacent: the boundary cannot yet host a complete model-driven trajectory reliably",
+  "qualification": "mlr-r4c2-deepseek-field-qualification",
+  "series_attempts": [
+    {
+      "arm": "full",
+      "attempt": 1,
+      "launch_returncode": 1,
+      "pair": 1,
+      "reason": "{\"attempt\":\"implementer-1\",\"event_dir\":\"/private/tmp/pb-sem-o3ovq_ny/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/phases/build/tasks/MLR-external/attempts/implementer-1\",\"exit_code\":1,\"status\":\"process-error\",\"terminal_event\":\"/private/tmp/pb-sem-o3ovq_ny/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/phases/build/tasks/MLR-external/attempts/implementer-1/terminal.json\"}",
+      "slot": 1,
+      "validity": "harness-failure"
+    }
+  ],
+  "slots_completed": 0,
+  "spend_detail": [
+    {
+      "arm": "full",
+      "attempt": 1,
+      "reason": "KeyError: 'hermeticity_identity'",
+      "slot": 1,
+      "validity": "harness-failure"
+    },
+    {
+      "arm": "full",
+      "attempt": 2,
+      "reason": "KeyError: 'hermeticity_identity'",
+      "slot": 1,
+      "validity": "harness-failure"
+    },
+    {
+      "arm": "full",
+      "attempt": 3,
+      "reason": "KeyError: 'hermeticity_identity'",
+      "slot": 1,
+      "validity": "harness-failure"
+    },
+    {
+      "arm": "full",
+      "attempt": 1,
+      "derived_cost": 0.015534,
+      "executor_cost": 0.00970767,
+      "model_calls": 27,
+      "reason": "OperationalError: unable to open database file",
+      "slot": 1,
+      "tool_calls": 49,
+      "validity": "harness-failure"
+    },
+    {
+      "derived_cost": 0.01652,
+      "executor_cost": 0.01130994,
+      "model_calls": 26,
+      "tool_calls": 53,
+      "view": "pb-sem-7e8z9dvt"
+    },
+    {
+      "derived_cost": 0.0,
+      "executor_cost": 0.0,
+      "model_calls": 0,
+      "tool_calls": 0,
+      "view": "pb-sem-qzjlfwr1"
+    }
+  ],
+  "spent_derived": 0.032054,
+  "stopped_because": "no valid semantic trajectory could be produced under the frozen identity, and continuing would have meant tuning the boundary under spend",
+  "superseded": "mlr-r4c-deepseek-field-qualification"
+}
