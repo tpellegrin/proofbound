@@ -528,9 +528,26 @@ class IntegrationCleanupTest(unittest.TestCase):
 
 
 class EnvironmentPolicyTest(unittest.TestCase):
-    """What the worker is given, and what it is not. §11, §13, §14."""
+    """What the worker is given, and what it is not. §11, §13, §14.
+
+    Deliberately not skipped on other platforms. The invariant it holds — that the worker's
+    environment is assembled rather than inherited, and that no value points back at the control
+    plane — is a property of the integration layer, not of the macOS mechanism that enforces the
+    boundary. So it builds its view under a temporary root passed in rather than the production one,
+    which lives beneath `/private` and cannot be created on Linux. Nothing about the qualified
+    boundary changes: the production default is untouched and every test that genuinely needs
+    Seatbelt is still skipped where Seatbelt is absent.
+    """
 
     maxDiff = None
+
+    def view(self):
+        """A slot under a temporary root, so this test says nothing about where slots normally live."""
+        parent = Path(tempfile.mkdtemp(prefix="pb-env-policy-"))
+        self.addCleanup(shutil.rmtree, parent, True)
+        context = _semantic_view.semantic_view(_mlr_boundary.policy(network=False), parent=parent)
+        self.addCleanup(context.__exit__, None, None, None)
+        return parent, context.__enter__()
 
     def test_no_layer_of_the_integration_copies_the_host_environment(self):
         for module in ("_mlr_boundary.py", "_semantic_view.py"):
@@ -539,17 +556,23 @@ class EnvironmentPolicyTest(unittest.TestCase):
                 self.assertNotIn("os.environ.copy()", text)
 
     def test_no_declared_variable_points_at_the_control_plane(self):
-        with _semantic_view.semantic_view(_mlr_boundary.policy(network=False)) as view:
-            staged = _mlr_boundary.stage(view, _mlr.CONTRACT, model="provider/model")
-            env = view.environment(_mlr_boundary.environment(view, staged))
-            self.assertEqual(set(env), {"PATH", "HOME", "TMPDIR", "PYTHONPATH",
-                                        "OBJECTSTORE_ROOT", "OPENCODE_DB", "DSD_OC_RUN_DB"})
-            for name, value in env.items():
-                with self.subTest(variable=name):
-                    self.assertNotIn(str(ROOT), value)
-                    self.assertNotIn(str(Path.home() / "proofbound-evidence"), value)
-                    if name != "PATH":
-                        self.assertTrue(value.startswith(str(view.root)), value)
+        parent, view = self.view()
+        staged = _mlr_boundary.stage(view, _mlr.CONTRACT, model="provider/model")
+        env = view.environment(_mlr_boundary.environment(view, staged))
+        self.assertEqual(set(env), {"PATH", "HOME", "TMPDIR", "PYTHONPATH",
+                                    "OBJECTSTORE_ROOT", "OPENCODE_DB", "DSD_OC_RUN_DB"})
+        for name, value in env.items():
+            with self.subTest(variable=name):
+                self.assertNotIn(str(ROOT), value)
+                self.assertNotIn(str(Path.home() / "proofbound-evidence"), value)
+                if name != "PATH":
+                    self.assertTrue(value.startswith(str(view.root)), value)
+
+    def test_this_case_does_not_depend_on_the_production_root(self):
+        """The guard on the repair: a portable invariant must not reach for a macOS-only path."""
+        parent, view = self.view()
+        self.assertTrue(str(view.root).startswith(str(parent)))
+        self.assertFalse(str(view.root).startswith(str(_semantic_view.DEFAULT_PARENT)))
 
 
 if __name__ == "__main__":                                  # pragma: no cover
