@@ -33,8 +33,24 @@
       "validity": "harness-failure"
     }
   ],
+  "interrupted_attempts": [
+    {
+      "derived_cost": 0.01652,
+      "executor_cost": 0.01130994,
+      "model_calls": 26,
+      "tool_calls": 53,
+      "view": "pb-sem-7e8z9dvt"
+    },
+    {
+      "derived_cost": 0.0,
+      "executor_cost": 0.0,
+      "model_calls": 0,
+      "tool_calls": 0,
+      "view": "pb-sem-qzjlfwr1"
+    }
+  ],
   "kind": "pre-series integration defect \u2014 no provider call was made, no slot consumed",
-  "note": "The driver read a field the preflight report did not carry. Three bounded infrastructure attempts failed before launch, each costing nothing. The hermeticity rule identity the preregistration bound is unchanged \u2014 the repair records it on the report rather than altering it. A second defect then appeared in the field: the executor leaves its database in write-ahead mode, so the extracted copy could not be opened without the log left behind. That attempt did reach the provider \u2014 27 model calls and 49 tool calls \u2014 and its $0.0155 is counted against the qualification ceiling. Extraction now checkpoints before copying, and usage is recorded whenever a session exists so a later failure cannot lose what was spent.",
+  "note": "The driver read a field the preflight report did not carry. Three bounded infrastructure attempts failed before launch, each costing nothing. The hermeticity rule identity the preregistration bound is unchanged \u2014 the repair records it on the report rather than altering it. A second defect then appeared in the field: the executor leaves its database in write-ahead mode, so the extracted copy could not be opened without the log left behind. That attempt did reach the provider \u2014 27 model calls and 49 tool calls \u2014 and its $0.0155 is counted against the qualification ceiling. Extraction now checkpoints before copying, and usage is recorded whenever a session exists so a later failure cannot lose what was spent. A third and fourth attempt were interrupted by a SIGTERM sent to the driver while diagnosing the extraction defect. A signal ends the process rather than the block, so the context manager's cleanup did not run and two views survived \u2014 found by the substrate's own stale-view sweep, their spend recovered from the databases they left, and removed. Cleanup covers how a block ends; it does not cover a process that is killed, and the next slot's preflight is what actually establishes validity.",
   "qualification": "mlr-r4c-deepseek-field-qualification",
-  "spent": 0.015534
+  "spent": 0.032054
 }
