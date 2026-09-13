@@ -25,6 +25,7 @@ import hashlib
 import json
 import os
 import shutil
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -230,9 +231,30 @@ def extract(view: _semantic_view.View, destination: Path, staged: dict[str, Any]
     out: dict[str, str] = {}
     out["workspace"] = str(view.collect("workspace", destination / "workspace"))
     if staged["db"].is_file():
+        # The executor leaves the database in write-ahead mode, where the file on its own is not a
+        # database: opening the copy read-only fails with `unable to open database file` because the
+        # log it needs was left behind. Checkpointing first makes the copy self-contained, which is
+        # what a durable piece of evidence has to be.
+        _checkpoint(staged["db"])
         out["session"] = str(view.collect(staged["db"].relative_to(view.root),
                                           destination / "worker.db"))
     return out
+
+
+def _checkpoint(database: Path) -> None:
+    """Fold a write-ahead log back into its database, so one file is the whole of it."""
+    try:
+        connection = sqlite3.connect(str(database))
+    except sqlite3.Error:                                   # pragma: no cover - unopenable database
+        return
+    try:
+        connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        connection.execute("PRAGMA journal_mode=DELETE")
+        connection.commit()
+    except sqlite3.Error:                                   # pragma: no cover - nothing to fold
+        pass
+    finally:
+        connection.close()
 
 
 def run_bounded_attempt(arm: str, *, model: str, variant: str | None, executor: Path,
@@ -322,6 +344,15 @@ def run_bounded_attempt(arm: str, *, model: str, variant: str | None, executor: 
             # Attribution reads the session while the view's own paths are still meaningful, so a
             # path class is resolved against the arm it was produced under rather than a directory
             # that no longer exists.
+            if session and session.is_file():
+                # Usage first, so an attempt that fails afterwards still accounts for what it spent.
+                # A provider call that happened is a provider call that was paid for.
+                usage = _profile.profile(
+                    session, stage=_mlr_run.ROLE, model=model, variant=variant,
+                    elapsed_seconds=round(time.time() - started, 3), verification_seconds=0.0)
+                result["cost"] = _pricing.cost(
+                    usage["usage"], model=model.split("/", 1)[-1],
+                    when=datetime.fromtimestamp(started, tz=timezone.utc))
             result["context"] = (_mlr_context.consumed(session, built) if session else None)
         result["view_destroyed"] = not view_root.exists()
 

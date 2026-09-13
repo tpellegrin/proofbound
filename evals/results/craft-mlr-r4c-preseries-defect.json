@@ -20,10 +20,21 @@
       "reason": "KeyError: 'hermeticity_identity'",
       "slot": 1,
       "validity": "harness-failure"
+    },
+    {
+      "arm": "full",
+      "attempt": 1,
+      "derived_cost": 0.015534,
+      "executor_cost": 0.00970767,
+      "model_calls": 27,
+      "reason": "OperationalError: unable to open database file",
+      "slot": 1,
+      "tool_calls": 49,
+      "validity": "harness-failure"
     }
   ],
   "kind": "pre-series integration defect \u2014 no provider call was made, no slot consumed",
-  "note": "The driver read a field the preflight report did not carry. Three bounded infrastructure attempts failed before launch, each costing nothing. The hermeticity rule identity the preregistration bound is unchanged \u2014 the repair records it on the report rather than altering it.",
+  "note": "The driver read a field the preflight report did not carry. Three bounded infrastructure attempts failed before launch, each costing nothing. The hermeticity rule identity the preregistration bound is unchanged \u2014 the repair records it on the report rather than altering it. A second defect then appeared in the field: the executor leaves its database in write-ahead mode, so the extracted copy could not be opened without the log left behind. That attempt did reach the provider \u2014 27 model calls and 49 tool calls \u2014 and its $0.0155 is counted against the qualification ceiling. Extraction now checkpoints before copying, and usage is recorded whenever a session exists so a later failure cannot lose what was spent.",
   "qualification": "mlr-r4c-deepseek-field-qualification",
-  "spent": 0.0
+  "spent": 0.015534
 }
