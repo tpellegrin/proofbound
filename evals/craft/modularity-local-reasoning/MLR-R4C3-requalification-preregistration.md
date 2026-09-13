@@ -124,3 +124,71 @@ can support one.
 ## 12. What a pass licenses
 
 Freezing the measurement stack and preregistering the paired experiment. Not running it.
+
+---
+
+# Outcome — the complete path is field-qualified
+
+**Four slots, four valid trajectories, four correct, one attempt each, $0.0563 of $0.40.** Record:
+[`craft-mlr-r4c3-field-requalification.json`](../../results/craft-mlr-r4c3-field-requalification.json).
+
+## Diagnostics — not treatment-effect evidence
+
+| slot | pair | arm | correct | preflight | direct source | reconstruction | runtime | metadata | calls | tools | session | derived | unresolved | contradictions | uncovered |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 1 | full | yes | clean, 4 declared | 5,630 | 0 | 0 | 5 | 22 | 45 | 98 s | $0.0144 | 0 | 0 | 0 |
+| 2 | 1 | contract | yes | clean, 0 declared | **0** | 0 | 1,121 | 3 | 25 | 45 | 114 s | $0.0143 | 0 | 0 | 0 |
+| 3 | 2 | contract | yes | clean, 0 declared | **0** | 0 | 418 | 4 | 15 | 34 | 82 s | $0.0108 | 0 | 0 | 0 |
+| 4 | 2 | full | yes | clean, 4 declared | 5,630 | 0 | 0 | 9 | 25 | 50 | 139 s | $0.0168 | 0 | 0 | 0 |
+
+**This table is qualification diagnostics and not treatment-effect evidence.** Two trajectories per
+arm at an N chosen to observe the path, not to measure a difference. No paired difference is
+computed, no effect is estimated, and the fact that all four satisfied the oracle says only that the
+model retains competence under the stack — not that either arm caused anything.
+
+## The central question, answered
+
+Real model-driven tool activity occurred inside the boundary in **every** slot: `bash`, `read`,
+`edit`, `write`, `todowrite` throughout, plus `grep` in slot 1 and `glob` in slot 3 — the search
+routes repaired in R3, exercised naturally in the field for the first time and attributed without
+incident. 87 model calls and 174 tool calls in total, no failed tool call.
+
+## Availability
+
+`full` consumed 5,630 bytes of direct source in both slots, every byte with `artifact-path` ancestry
+on the `source-file` route into `third_party/objectstore-1.4.0/` — its declared exposure and nothing
+else. Four declared exposures, zero undeclared findings.
+
+`contract` consumed **zero** direct implementation source in both slots — and more than that, zero
+source-*form* bytes anywhere in either session. Not a classification that came out zero: no
+source-shaped text arrived at all. It reached the module's interior through runtime introspection
+instead, 1,121 and 418 characters, classified as such.
+
+## Attribution, oracle, round trip
+
+Unresolved **0**, contradictions **0**, uncovered model-visible events **0**, in all four sessions
+under an unchanged `mlr-context-5`. Every extracted database re-read cleanly after its view was
+destroyed — 94, 65, 88 and 103 items — and `profile-1` reported complete for each. The hidden oracle
+ran control-side on every extracted workspace; contract, runtime and vendored copy were unchanged in
+all four.
+
+## Environment
+
+Every preflight clean before launch. Every view destroyed; zero stale views, zero the substrate could
+not remove. **Zero files in the host executor store modified during or after the series** — the
+executor built its state inside each slot and left the evaluator's alone. No `auth.json` in any
+extracted artefact and no credential bytes anywhere in the retained evidence.
+
+Boundary identity `b88bd43109184459`, runtime structural identity `28ba66e1cd49b157`, contract
+`af3d3e9be15b51ed`, observed model `deepseek-v4-flash` and variant `high` — each single-valued across
+all four slots.
+
+## Result family
+
+**A — complete path field-qualified.** All fourteen criteria hold.
+
+One measurement note, recorded rather than smoothed: `full` direct source reads 5,630 bytes here
+against 5,822 in the paired series. That is a difference between attribution versions — the whole
+delivered rendering is counted under `mlr-context-5` as it was under `mlr-context-3`, but the
+components it is taken over changed — and not a change in the fixture, whose source digest is
+unmoved. It is not used for anything.
