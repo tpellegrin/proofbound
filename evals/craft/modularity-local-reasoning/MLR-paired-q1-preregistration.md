@@ -74,7 +74,7 @@ not elimination of implementation knowledge.
 | attribution | **`mlr-context-6`** |
 | profile | `profile-1` |
 | semantic boundary | `b88bd43109184459` — as constructed by the frozen launcher below; the policy exposes the interpreter that launches a slot, so the digest belongs to CPython 3.9.6 with the executor bound |
-| hermeticity rule | `dcbf34fb63821980` |
+| hermeticity rule | `dcbf34fb63821980` — as computed on the execution host; the rule's identity includes its scan roots, which are host paths |
 | executor | `opencode` 1.18.29, `2f24593f1b8e578d` |
 | provider · model | `deepseek` · `deepseek/deepseek-v4-flash` |
 | thinking · effort | enabled · `high` |
@@ -82,6 +82,14 @@ not elimination of implementation knowledge.
 | credential | provider auth file staged into the constructed home, destroyed with the view |
 | extraction | checkpoint-aware session copy plus workspace, after destruction |
 | price identity | `deepseek-2026-09-09` |
+
+**Three of these identities are properties of the execution host, not repository constants.** The
+interpreter is whatever launches a slot; the semantic boundary exposes that interpreter; the
+hermeticity rule's identity includes its scan roots, which are absolute host paths. The values above
+are the ones this host produces, they are what every qualifying trajectory recorded, and each is
+recorded again per measurement in the result. A run on another machine would legitimately carry
+different digests for the same rule, and comparing the two would be comparing hosts rather than
+experiments.
 
 **The R6 calibration tasks are not part of this experiment.** `calibration-source-read.md` and
 `calibration-runtime-doc.md` exist to move a known mass across a known boundary and are never used

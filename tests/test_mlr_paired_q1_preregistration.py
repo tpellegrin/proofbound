@@ -17,6 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "evals"))
 
+import _hermetic      # noqa: E402
 import _mlr           # noqa: E402
 import _mlr_run       # noqa: E402
 import pb_mlr         # noqa: E402
@@ -107,8 +108,32 @@ class FrozenDesignTest(unittest.TestCase):
             "af3d3e9be15b51ed")
         self.assertEqual(_mlr.digest_file(_mlr.FIXTURE / "hidden" / _mlr_run.ORACLE)[:16],
                          "86f17eaf2685ac22")
-        self.assertEqual(config["hermeticity_identity"][:16], "dcbf34fb63821980")
         self.assertEqual(config["price_id"], "deepseek-2026-09-09")
+
+    def test_the_hermeticity_rule_covers_what_the_fixture_withholds(self):
+        """The rule's identity includes its scan roots, which are host paths.
+
+        So the frozen digest belongs to the execution host, and what is portable is the rule's
+        shape: the categories it checks and the fixture digests it checks them by. Asserting the
+        digest would be asserting which machine ran the test — the same mistake as asserting which
+        Python did.
+        """
+        rule = _mlr.hermeticity()
+        categories = {kind.category for kind in rule["sensitive"]}
+        self.assertEqual(len(categories), 5)
+        controlled = next(k for k in rule["sensitive"] if k.category == _hermetic.CONTROLLED_EVIDENCE)
+        source = sorted((_mlr.FIXTURE / "runtime" / "objectstore").glob("*.py"))
+        self.assertEqual(sorted(controlled.digests), sorted(_mlr.digest_file(p) for p in source))
+        self.assertEqual(sorted(controlled.stems), sorted(p.name for p in source))
+        self.assertTrue(controlled.marks, "the source fingerprint is part of the rule")
+        self.assertEqual(rule["declared"], [], "nothing is declared exposed before a run")
+
+    def test_widening_the_rule_changes_its_identity(self):
+        """A run that declares an exposure is running a different rule and must say so."""
+        base = _mlr.preflight_identity()
+        self.assertEqual(base, _mlr.preflight_identity(), "the identity is of the rule")
+        widened = _mlr.preflight_identity(declared=[Path("/nowhere/in/particular")])
+        self.assertNotEqual(base, widened)
 
     def test_the_interpreter_is_recorded_from_whatever_launches_the_attempt(self):
         """The frozen stack names CPython 3.9.6 because that is what launches a slot here.
