@@ -117,6 +117,11 @@ must not silently reinterpret evidence gathered before it moved.
   two of fifty-four retained sessions reclassify, both false `contract` source:
   [`MLR-C3D-R5-attribution-precision.md`](../craft/modularity-local-reasoning/MLR-C3D-R5-attribution-precision.md),
   [replay](../results/craft-mlr-attribution-precision-replay.json)
+- Live qualification of `mlr-context-6` — **incomplete**: real source ancestry recognised and a
+  48 KB mixed worker-log read kept component-scoped, but neither `contract` trajectory delivered any
+  source-form text, so live specificity against the repaired defect was not exercised:
+  [freeze and outcome](../craft/modularity-local-reasoning/MLR-R5-attribution-field-qualification.md),
+  [record](../results/craft-mlr-r5-attribution-field-qualification.json)
 
 ---
 
