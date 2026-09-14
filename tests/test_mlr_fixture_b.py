@@ -76,8 +76,26 @@ class FixtureAIsUnchangedTest(unittest.TestCase):
                 if platform.python_version().startswith("3.9."):
                     self.assertEqual(built["runtime_structure"][:16], "28ba66e1cd49b157")
 
-    def test_the_q1_hermeticity_rule_is_unchanged(self):
-        self.assertEqual(_mlr.preflight_identity()[:16], "dcbf34fb63821980")
+    def test_the_q1_hermeticity_rule_still_checks_exactly_what_it_did(self):
+        """By content, not by digest.
+
+        The rule's identity includes its scan roots, and those are absolute host paths, so the
+        frozen `dcbf34fb63821980` belongs to the execution host rather than to the repository. What
+        is portable is what the rule checks: the same five categories, by the same fixture digests.
+        """
+        rule = _mlr.hermeticity()
+        self.assertEqual({k.category for k in rule["sensitive"]},
+                         {k.category for k in _mlr.hermeticity(fixture=_mlr.OBJECTSTORE.root)["sensitive"]})
+        self.assertEqual(len(rule["sensitive"]), 5)
+        controlled = next(k for k in rule["sensitive"] if k.category == "controlled-evidence")
+        source = sorted(_mlr.OBJECTSTORE.source.glob("*.py"))
+        self.assertEqual(sorted(controlled.digests), sorted(_mlr.digest_file(p) for p in source))
+        self.assertEqual(sorted(controlled.stems), sorted(p.name for p in source))
+
+    def test_each_fixture_gets_its_own_hermeticity_rule(self):
+        """Different modules to protect means a different rule, and it must say so."""
+        self.assertNotEqual(_mlr.preflight_identity(fixture=_mlr.OBJECTSTORE.root),
+                            _mlr.preflight_identity(fixture=_mlr.EVENTBUS.root))
 
 
 class TreatmentTest(unittest.TestCase):
