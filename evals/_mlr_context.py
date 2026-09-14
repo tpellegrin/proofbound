@@ -35,6 +35,7 @@ representation by a different route, which is exactly the outcome the experiment
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import re
@@ -127,7 +128,7 @@ def internal_names(source: Path | None = None) -> tuple[str, ...]:
     handed to the model is evidence the interior was disclosed, whichever route asked for it.
     """
     import ast
-    root = Path(source) if source is not None else _mlr.FIXTURE / "runtime" / "objectstore"
+    root = Path(source) if source is not None else _ACTIVE.source
     found: set[str] = set()
     for module in sorted(Path(root).glob("*.py")):
         if module.stem.startswith("_") and not module.stem.startswith("__"):
@@ -159,7 +160,7 @@ _PATHLIKE = re.compile(r"[A-Za-z0-9_./\-]*[/.][A-Za-z0-9_./\-]*")
 
 
 def _mentions_module(text: str) -> bool:
-    return "objectstore" in text
+    return _ACTIVE.package in text
 
 
 def command_route(command: str, built: dict[str, Any]) -> str:
@@ -351,17 +352,11 @@ def classify_file(path: str, built: dict[str, Any]) -> str:
     return OTHER
 
 
-_INTERNAL_NAMES = None
-_INTERNAL_RE = None
-
-
 def _internal_hits(text: str) -> list[str]:
     """Which module-internal names the delivered text disclosed."""
-    global _INTERNAL_NAMES, _INTERNAL_RE
-    if _INTERNAL_RE is None:
-        _INTERNAL_NAMES = internal_names()
-        _INTERNAL_RE = _name_pattern(_INTERNAL_NAMES)
-    return sorted(set(_INTERNAL_RE.findall(text or "")))
+    if _ACTIVE.package not in _INTERNAL:
+        _INTERNAL[_ACTIVE.package] = _name_pattern(internal_names(_ACTIVE.source))
+    return sorted(set(_INTERNAL[_ACTIVE.package].findall(text or "")))
 
 
 class _Session:
@@ -559,28 +554,51 @@ def _route_hint(route: str) -> str | None:
 def attribute(event: dict[str, Any], built: dict[str, Any],
               session: "_Session | None" = None) -> dict[str, Any] | None:
     """One transcript part, as a representation with a route, forms and origins."""
-    inbound = normalise(event, built)
-    if inbound is None:
-        return None
-    return _resolve(event, inbound, session if session is not None else _Session(built), built)
+    with _reading(built):
+        inbound = normalise(event, built)
+        if inbound is None:
+            return None
+        return _resolve(event, inbound, session if session is not None else _Session(built), built)
 
 
-_MARKS = None
-_MODULE_FILES = None
+# Which fixture's module is being attributed. The attribution semantics are fixture-agnostic —
+# `_lineage` names no module anywhere — so a second fixture selects its own marks rather than
+# changing what any of them mean. `mlr-context-6` is unchanged by this.
+_ACTIVE = _mlr.OBJECTSTORE
+_MARKS: dict = {}
+_MODULE_FILES: dict = {}
+_INTERNAL: dict = {}
+
+
+@contextlib.contextmanager
+def _reading(built: "dict[str, Any] | None"):
+    """Point the module fingerprints at the fixture being attributed, for this pass only.
+
+    Scoped rather than global. A module-level selection that outlived the call would make a later
+    reader answer about whichever module happened to be read first — a classifier being confidently
+    wrong about which module it is looking at, which is the class of defect this programme has
+    already paid for twice. Outside a pass the selection is the original fixture, as it always was.
+    """
+    global _ACTIVE
+    package = (built or {}).get("package")
+    previous = _ACTIVE
+    _ACTIVE = next((f for f in _mlr.FIXTURES if f.package == package), _mlr.OBJECTSTORE)
+    try:
+        yield
+    finally:
+        _ACTIVE = previous
 
 
 def _fingerprint() -> "frozenset[str]":
-    global _MARKS
-    if _MARKS is None:
-        _MARKS = _lineage.source_fingerprint(_mlr.FIXTURE / "runtime" / "objectstore")
-    return _MARKS
+    if _ACTIVE.package not in _MARKS:
+        _MARKS[_ACTIVE.package] = _lineage.source_fingerprint(_ACTIVE.source)
+    return _MARKS[_ACTIVE.package]
 
 
 def _module_files() -> tuple[str, ...]:
-    global _MODULE_FILES
-    if _MODULE_FILES is None:
-        _MODULE_FILES = _lineage.module_paths(_mlr.FIXTURE / "runtime" / "objectstore")
-    return _MODULE_FILES
+    if _ACTIVE.package not in _MODULE_FILES:
+        _MODULE_FILES[_ACTIVE.package] = _lineage.module_paths(_ACTIVE.source)
+    return _MODULE_FILES[_ACTIVE.package]
 
 
 def _source_file_names() -> tuple[str, ...]:
@@ -591,10 +609,9 @@ def _source_file_names() -> tuple[str, ...]:
 
 def _components(text: str) -> dict[str, Any]:
     """This delivered text, split into disjoint representation components."""
-    if _INTERNAL_RE is None:
-        _internal_hits("")
-    return _lineage.components(text or "", _fingerprint(), _module_files(), _INTERNAL_RE,
-                               "objectstore")
+    _internal_hits("")
+    return _lineage.components(text or "", _fingerprint(), _module_files(),
+                               _INTERNAL[_ACTIVE.package], _ACTIVE.package)
 
 
 # What each representation form is, when nothing stronger says where it came from. A form is not an
@@ -690,7 +707,7 @@ def resolve_origin(route: str, requested: str, text: str, *, basis: str = BASIS_
     material = _lineage.material_forms(comp)
     dominant = _lineage.dominant_form(comp)
     form = _lineage.form_of(comp)
-    metadata = _lineage.metadata_in(text, _module_files(), "objectstore")
+    metadata = _lineage.metadata_in(text, _module_files(), _ACTIVE.package)
     # Does this payload name one of the module's own source files? A rendering that carries its
     # subject's name beside its subject's lines is evidence about what it is a rendering of.
     names_source_file = any(name in _source_file_names() for name in metadata["names"])
@@ -1017,7 +1034,8 @@ def ledger(events: list[dict[str, Any]], built: dict[str, Any]) -> dict[str, Any
     session = _Session(built)
     items: list[dict[str, Any]] = []
     for event in events:
-        item = attribute(event, built, session)
+        with _reading(built):
+            item = attribute(event, built, session)
         if item is not None:
             item["delivered_to_calls"] = sum(1 for c in calls if c > item["ordinal"])
             item["delivered_bytes"] = item["bytes"] * item["delivered_to_calls"]

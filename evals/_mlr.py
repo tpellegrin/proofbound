@@ -47,15 +47,62 @@ from typing import Any, Iterable
 import _hermetic
 import _lineage
 
-FIXTURE = Path(__file__).resolve().parent / "craft" / "modularity-local-reasoning" / "fixture"
+_CRAFT = Path(__file__).resolve().parent / "craft" / "modularity-local-reasoning"
 
 FULL = "full"
 CONTRACT = "contract"
 ARMS = (FULL, CONTRACT)
 
+
+class Fixture:
+    """One MLR fixture: a module to hide, a workspace that uses it, and a contract to keep.
+
+    The measurement machinery was written around a single fixture and named it in a dozen places.
+    A second fixture is a replication of the question, not a change to it, so the layout facts move
+    into a descriptor and every function keeps the signature it already had: a caller selects a
+    fixture by passing its root, exactly as it always passed `FIXTURE`.
+    """
+
+    __slots__ = ("root", "package", "vendored", "contract")
+
+    def __init__(self, root: Path, package: str, vendored: Path, contract: str):
+        self.root = Path(root)
+        self.package = package
+        self.vendored = Path(vendored)
+        self.contract = contract
+
+    @property
+    def source(self) -> Path:
+        """The readable implementation source, which `full` gets and `contract` does not."""
+        return self.root / "runtime" / self.package
+
+    def __repr__(self):
+        return f"Fixture({self.package!r})"
+
+
 # Where the vendored, readable copy sits in the `full` workspace. Deliberately not on `sys.path`:
 # a readable copy that could also be imported would let the two arms execute different files.
-VENDORED = Path("third_party") / "objectstore-1.4.0"
+OBJECTSTORE = Fixture(root=_CRAFT / "fixture", package="objectstore",
+                      vendored=Path("third_party") / "objectstore-1.4.0",
+                      contract="docs/storage-contract.md")
+EVENTBUS = Fixture(root=_CRAFT / "fixture-b", package="eventbus",
+                   vendored=Path("third_party") / "eventbus-2.1.0",
+                   contract="docs/eventbus-contract.md")
+FIXTURES = (OBJECTSTORE, EVENTBUS)
+
+FIXTURE = OBJECTSTORE.root
+VENDORED = OBJECTSTORE.vendored
+
+
+def fixture_for(root: Path | str | None = None) -> Fixture:
+    """The descriptor for a fixture root. Unknown roots fall back to the original fixture."""
+    if isinstance(root, Fixture):
+        return root
+    resolved = Path(root).resolve() if root is not None else FIXTURE.resolve()
+    for spec in FIXTURES:
+        if spec.root.resolve() == resolved:
+            return spec
+    return OBJECTSTORE
 
 _IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", ".DS_Store")
 
@@ -162,24 +209,27 @@ def materialise(arm: str, into: Path, *, fixture: Path = FIXTURE) -> dict[str, A
     workspace = into / "workspace"
     runtime = into / "runtime"
 
-    shutil.copytree(fixture / "base", workspace, ignore=_IGNORE)
-    source = fixture / "runtime" / "objectstore"
+    spec = fixture_for(fixture)
+    shutil.copytree(spec.root / "base", workspace, ignore=_IGNORE)
+    source = spec.source
     compile_runtime(source, runtime)
 
     if arm == FULL:
-        shutil.copytree(source, workspace / VENDORED / "objectstore", ignore=_IGNORE)
+        shutil.copytree(source, workspace / spec.vendored / spec.package, ignore=_IGNORE)
 
     return {
         "arm": arm,
         "workspace": workspace,
         "runtime": runtime,
+        "package": spec.package,
+        "vendored": spec.vendored,
         "workspace_digest": digest_tree(workspace),
         "runtime_digest": digest_tree(runtime),
         "runtime_structure": runtime_structure(runtime),
         "interpreter": interpreter_identity(),
         "source_digest": digest_tree(source),
-        "contract_sha256": digest_file(workspace / "docs" / "storage-contract.md"),
-        "vendored_digest": (digest_tree(workspace / VENDORED / "objectstore")
+        "contract_sha256": digest_file(workspace / spec.contract),
+        "vendored_digest": (digest_tree(workspace / spec.vendored / spec.package)
                             if arm == FULL else None),
     }
 
@@ -192,12 +242,12 @@ def compile_runtime(source: Path, runtime: Path) -> Path:
     timestamp — together they make two materialisations of the same source produce the same bytes,
     which is what lets the arms be compared at all.
     """
-    package = Path(runtime) / "objectstore"
+    package = Path(runtime) / Path(source).name
     package.mkdir(parents=True, exist_ok=True)
     for module in sorted(Path(source).glob("*.py")):
         py_compile.compile(
             str(module), cfile=str(package / f"{module.stem}.pyc"),
-            dfile=f"objectstore/{module.name}", doraise=True,
+            dfile=f"{Path(source).name}/{module.name}", doraise=True,
             invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH)
     return Path(runtime)
 
@@ -215,9 +265,10 @@ def hermeticity(*, fixture: Path = FIXTURE, evidence_roots: Iterable[Path] = (),
     host is larger than that and the agent can read further, which is why the result reports what it
     scanned rather than pronouncing on the machine.
     """
-    source = fixture / "runtime" / "objectstore"
-    hidden = fixture / "hidden"
-    reference = fixture / "reference"
+    spec = fixture_for(fixture)
+    source = spec.source
+    hidden = spec.root / "hidden"
+    reference = spec.root / "reference"
     marks = _lineage.source_fingerprint(source)
     controlled = _hermetic.Sensitive(
         _hermetic.CONTROLLED_EVIDENCE,
@@ -301,7 +352,7 @@ def ephemeral_materialisations(roots: Iterable[Path]) -> tuple[Path, ...]:
             for base in candidates:
                 try:
                     shaped = ((base / "workspace").is_dir()
-                              and (base / "runtime" / "objectstore").is_dir())
+                              and any((base / "runtime").glob("*/")))
                 except OSError:
                     # Unreadable is not the same as absent. It is left alone and left to the scan,
                     # which reports what it could not read rather than calling it clean.
@@ -388,7 +439,7 @@ def arm_difference(full: dict[str, Any], contract: dict[str, Any]) -> dict[str, 
 
     only_full = paths(full) - paths(contract)
     only_contract = paths(contract) - paths(full)
-    vendored = VENDORED.as_posix() + "/"
+    vendored = _vendored(full).as_posix() + "/"
     return {
         "only_full": sorted(only_full),
         "only_contract": sorted(only_contract),
@@ -423,7 +474,7 @@ def classify_path(path: str | Path, built: dict[str, Any]) -> str:
         return OUTSIDE
     workspace = Path(built["workspace"]).resolve()
     runtime = Path(built["runtime"]).resolve()
-    vendored = (workspace / VENDORED).resolve()
+    vendored = (workspace / _vendored(built)).resolve()
     if resolved == vendored or vendored in resolved.parents:
         return VENDORED_IMPLEMENTATION
     if resolved == workspace or workspace in resolved.parents:
@@ -463,7 +514,8 @@ def executed_module_is_not_the_readable_copy(built: dict[str, Any], *,
     discovered from a failed experiment.
     """
     probe = subprocess.run(
-        [python or sys.executable, "-B", "-c", "import objectstore; print(objectstore.__file__)"],
+        [python or sys.executable, "-B", "-c",
+         f"import {_package(built)} as m; print(m.__file__)"],
         cwd=Path(built["workspace"]), env=environment(built), capture_output=True, text=True,
         check=False)
     loaded = Path(probe.stdout.strip()) if probe.returncode == 0 else None
@@ -476,4 +528,13 @@ def executed_module_is_not_the_readable_copy(built: dict[str, Any], *,
 
 
 def arm_has_readable_copy(built: dict[str, Any]) -> bool:
-    return (Path(built["workspace"]) / VENDORED / "objectstore").is_dir()
+    return (Path(built["workspace"]) / _vendored(built) / _package(built)).is_dir()
+
+
+def _package(built: dict[str, Any]) -> str:
+    """Which module this workspace hides. Older records predate the field and are objectstore."""
+    return built.get("package") or OBJECTSTORE.package
+
+
+def _vendored(built: dict[str, Any]) -> Path:
+    return Path(built.get("vendored") or OBJECTSTORE.vendored)

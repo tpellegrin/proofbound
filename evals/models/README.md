@@ -134,6 +134,11 @@ must not silently reinterpret evidence gathered before it moved.
   [preregistration](../craft/modularity-local-reasoning/MLR-paired-q1-preregistration.md),
   [run](../craft/modularity-local-reasoning/MLR-paired-q1-run.md),
   [record](../results/craft-mlr-deepseek-v4-flash-high-paired-q1.json)
+- Cross-fixture replication substrate — **frozen, not preregistered and not run**. A second module
+  boundary, `eventbus`, chosen to differ from object storage on the axes that would let q1 explain
+  it: inverted control flow, one-to-many fan-out and partial failure. Fixture A is unchanged and
+  `mlr-context-6` is unchanged:
+  [design and substrate](../craft/modularity-local-reasoning/MLR-B-cross-fixture-design.md)
 
 ---
 
