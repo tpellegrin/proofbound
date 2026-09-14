@@ -139,6 +139,10 @@ must not silently reinterpret evidence gathered before it moved.
   it: inverted control flow, one-to-many fan-out and partial failure. Fixture A is unchanged and
   `mlr-context-6` is unchanged:
   [design and substrate](../craft/modularity-local-reasoning/MLR-B-cross-fixture-design.md)
+- Cross-fixture replication — **frozen, not executed**. Same model, same measurement system, same
+  N and slot order as q1; the fixture is the one changed dimension. N justified from replication
+  design and the fixture-independent half of the pre-q1 rationale, never from q1's outcome:
+  [preregistration](../craft/modularity-local-reasoning/MLR-eventbus-b1-preregistration.md)
 
 ---
 
