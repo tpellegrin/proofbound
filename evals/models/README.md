@@ -127,10 +127,13 @@ must not silently reinterpret evidence gathered before it moved.
   activity actually opened the source file. Completes the live evidence `mlr-context-6` was missing:
   [freeze and outcome](../craft/modularity-local-reasoning/MLR-R6-provenance-calibration.md),
   [record](../results/craft-mlr-r6-provenance-calibration.json)
-- Paired experiment on the qualified stack — **frozen, not executed**. New identity, starting at
-  pair 1; the invalid r4 series is history and not a sample. N = 6 pairs, justified only from
-  evidence predating the first qualification trajectory:
-  [preregistration](../craft/modularity-local-reasoning/MLR-paired-q1-preregistration.md)
+- Paired experiment on the qualified stack — **executed, family E · Heterogeneous**. Twelve valid
+  trajectories, one attempt each, 6/6 pairs both correct; `full` consumed 5,630-6,170 bytes of
+  direct implementation source and `contract` zero in every pair, but the compensating runtime
+  channel spans 102 to 39,231 bytes and is not arm-determined:
+  [preregistration](../craft/modularity-local-reasoning/MLR-paired-q1-preregistration.md),
+  [run](../craft/modularity-local-reasoning/MLR-paired-q1-run.md),
+  [record](../results/craft-mlr-deepseek-v4-flash-high-paired-q1.json)
 
 ---
 
