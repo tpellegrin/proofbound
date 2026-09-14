@@ -122,6 +122,11 @@ must not silently reinterpret evidence gathered before it moved.
   source-form text, so live specificity against the repaired defect was not exercised:
   [freeze and outcome](../craft/modularity-local-reasoning/MLR-R5-attribution-field-qualification.md),
   [record](../results/craft-mlr-r5-attribution-field-qualification.json)
+- Known-answer provenance calibration — **pass**: the same 169-byte docstring span delivered by
+  three causal routes took three origins, with direct implementation source above zero only where an
+  activity actually opened the source file. Completes the live evidence `mlr-context-6` was missing:
+  [freeze and outcome](../craft/modularity-local-reasoning/MLR-R6-provenance-calibration.md),
+  [record](../results/craft-mlr-r6-provenance-calibration.json)
 
 ---
 

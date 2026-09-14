@@ -193,3 +193,84 @@ this bounded MLR environment.
 
 No treatment effect, arm comparison, resource comparison or sample-size guidance may be derived from
 anything in this milestone. The two trajectories exist to move a known mass across a known boundary.
+
+---
+
+# Outcome — PASS
+
+**Two trajectories, both instructed routes occurred on the first attempt, no retry used,
+$0.0074 of $0.20.** Record:
+[`craft-mlr-r6-provenance-calibration.json`](../../results/craft-mlr-r6-provenance-calibration.json).
+
+## The relation, measured
+
+The same 169-byte span — sha256 `861091367488b766`, **the identical digest the r4 slot-3 docstring
+item carried when `mlr-context-5` recorded it as direct implementation source** — arrived by three
+causal routes, one of them unprompted:
+
+| route | arm | basis | causal origin | form | direct source | later model calls |
+|---|---|---|---|---|---|---|
+| `read` of `objectstore/__init__.py` | full | `artifact-path` | `implementation-source` | `source-form` | **670** | 4 |
+| `python3 -c "… print(objectstore.__doc__)"` | contract | `command-route` | `public-contract` | `source-form` | **0** | 4 |
+| the model quoting it back in its reasoning | contract | `author` | `model-derived` | `source-form` | **0** | 2 |
+
+Identical bytes. Three origins. **Direct implementation source above zero only on the route that
+actually opened the source file.** Representation form is `source-form` on all three, which is the
+point: form and origin are separate axes, and this calibration would have failed had they collapsed.
+
+The third route was not designed. The model quoted the documentation it had just been shown, and the
+instrument called that the model's own text rather than the module's.
+
+## Criteria
+
+**Stimulus B** — the missing dimension. The span entered model-visible history through the
+documentation route and four model calls began after it. The delivering activity read no source;
+`contract` declared no exposure and found none, and its runtime directory holds only `.pyc` files.
+The span is legitimately `source-form`. Direct implementation source is **zero** for the span and
+for the session. Fingerprint equality did not promote it. Unresolved items 0, unresolved components
+0, contradictions 0, uncovered model-visible events 0.
+
+**Stimulus A** — the sensitivity control that keeps specificity honest. The source artifact was
+opened, basis `artifact-path`, origin `implementation-source`, **670 bytes** — the whole delivered
+rendering, the same figure R5 recorded for this file. No fingerprint was needed to manufacture the
+origin. Same clean audit.
+
+**Both.** Preflight clean, views destroyed, extraction coherent after destruction, profiles complete,
+zero failed tool calls, single model and variant, boundary `b88bd43109184459`, hermeticity
+`dcbf34fb63821980`, executor `2f24593f1b8e578d`, source and runtime identities unchanged. Workspace
+digests `9053040a` (full) and `c93d39f6` (contract) — the historical values, different between arms.
+No credential in any retained artefact, no executor state outside any view.
+
+## What the MLR oracle said, and why it does not matter
+
+False in both slots. These are calibration stimuli, not the MLR task; neither agent was asked to
+change the service and neither did. Correctness here is not MLR evidence, and the stimuli's resource
+behaviour is not either.
+
+## One observation for later
+
+Slot 2 reported 170 bytes in the `source_equivalent_reconstruction` channel, because the model quoted
+the public docstring and that text is source-form. The causal origin is `model-derived` and direct
+source is zero, so no criterion here is touched — but the channel's stated reading, *how completely an
+agent rebuilt an interior it could not read*, does not fit quoted public surface. It arose because
+this calibration instructed the quote. Worth remembering when that secondary channel is read in the
+paired experiment. It is not a defect, and nothing was changed for it.
+
+## Not re-exercised
+
+Neither agent read a worker log, so container replay did not recur. It was not the missing dimension
+and R5 already supplied live evidence for it. Nothing was forced to make it happen.
+
+## What now stands
+
+`mlr-context-6` now has deterministic adversarial coverage, retrospective replay across 54 retained
+sessions, live sensitivity to genuine source ancestry, live component-scoped mixed-container
+behaviour, and — as of this calibration — live specificity against source-shaped text delivered by a
+non-source activity, all under the qualified boundary with clean audits.
+
+That is a statement about this instrument in this bounded MLR environment. It is not a claim that
+attribution is universally correct.
+
+Absent a concrete new defect, instrument work should stop here. The next scientific action is a newly
+preregistered paired experiment under a new identity — not designed here, not run here, and with its
+N justified without reference to anything observed in this calibration.
