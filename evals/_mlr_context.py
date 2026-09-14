@@ -771,10 +771,16 @@ def resolve_origin(route: str, requested: str, text: str, *, basis: str = BASIS_
         identity = _lineage.source_identity(comp["matched"]) if comp["matched"] else \
             hashlib.sha256((text or "").encode("utf-8")).hexdigest()
 
-    # Source-shaped text the model itself produced. Its own channel: it is evidence about the
-    # treatment — how completely an agent rebuilt an interior it could not read — and not evidence
-    # that the boundary leaked. Source-shaped text that arrived from anywhere else is neither source
-    # nor reconstruction; it is whatever its own origin says, counted in that channel.
+    # Source-shaped text the model itself produced. Its own channel, and not evidence that the
+    # boundary leaked. Source-shaped text that arrived from anywhere else is neither source nor
+    # reconstruction; it is whatever its own origin says, counted in that channel.
+    #
+    # **What it does and does not say.** It measures model-authored text that is source-equivalent.
+    # It does *not* establish that an interior the agent could not read was recovered: the same
+    # bytes may have been legitimately visible through the public surface and simply quoted back.
+    # The R6 calibration produced exactly that — 170 bytes of public docstring, quoted, landing
+    # here. Whether such text followed implementation representation into the session is answered
+    # separately by `after_implementation_representation`, as observable order and nothing more.
     reconstruction = 0
     reconstruction_identity = None
     recon_component = next((c for c in components
@@ -1098,6 +1104,8 @@ def ledger(events: list[dict[str, Any]], built: dict[str, Any]) -> dict[str, Any
     # Source-shaped text that did not come from source. Counted in its own channel and never added
     # to the primary measurand: an agent that rebuilds the interior it was not allowed to read has
     # produced a treatment outcome, not a boundary failure, and the two must not share a number.
+    # A non-zero figure is not by itself evidence of such a rebuild — public surface quoted back is
+    # source-equivalent too — so the channel is descriptive and an interpretation must say which.
     # Whether the reconstruction followed implementation representation entering the session is a
     # question about observable order, and is answered as such — no claim is made about what the
     # model inferred, only about what it had already been shown.
