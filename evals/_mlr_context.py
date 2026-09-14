@@ -381,6 +381,11 @@ class _Session:
         self.built = built
         self._artifacts: dict[str, str] = {}
         self._content: dict[tuple[str, str], str] = {}
+        # Source lines are indexed individually as well as by component digest. A log rarely
+        # replays a whole read: it replays part of one, and a digest of the part matches nothing.
+        # Lines are distinctive by construction — the fingerprint admits nothing under
+        # `MIN_FINGERPRINT` characters — so they can be recognised one at a time.
+        self._source_lines: dict[str, str] = {}
 
     def _key(self, path: str) -> str:
         resolved = Path(path)
@@ -397,20 +402,50 @@ class _Session:
     def artifact(self, path: str) -> str | None:
         return self._artifacts.get(self._key(path))
 
-    def note_content(self, identities: dict[str, str | None], origin: str) -> None:
-        if origin in (OTHER, _lineage.UNRESOLVED):
-            return
-        for form, identity in identities.items():
-            if identity:
-                self._content.setdefault((form, identity), origin)
+    def note_content(self, components: list[dict[str, Any]], fallback: str) -> None:
+        """Remember what each material component was, so a later replay of it keeps its history.
 
-    def echo(self, identities: dict[str, str | None]) -> str | None:
-        """The origin this exact content was first seen carrying, if it has been seen before."""
+        Recorded per component rather than per item. An item is a container; what can legitimately
+        be recognised again is the content it carried, and only that content.
+        """
+        for part in components:
+            identity = part.get("identity")
+            origin = part.get("origin") or fallback
+            if origin in (OTHER, _lineage.UNRESOLVED):
+                continue
+            if identity:
+                self._content.setdefault((part["form"], identity), origin)
+            for line in part.get("source_lines") or ():
+                self._source_lines.setdefault(line, origin)
+
+    def echoes(self, identities: dict[str, str | None],
+               source_lines: "list[str] | None" = None) -> dict[str, str]:
+        """Which of this item's components are replays, and what each of them was.
+
+        A map rather than a single origin, because a container may echo several things at once and
+        carry material that is not a replay of anything. Returning one origin for the whole item is
+        what let two echoed lines of a docstring relabel a forty-kilobyte log, and what let the
+        disassembly inside that log stop being a disassembly.
+
+        Source-form is additionally matched line by line, and takes the origin that accounts for
+        most of the lines it replays. A partial replay is the normal case — a log carries a few
+        lines of an earlier read, not the whole of it — and a component digest recognises none of
+        them.
+        """
+        found: dict[str, str] = {}
         for form in _lineage.SUBSTANTIVE_FORMS:
             identity = identities.get(form)
             if identity and (form, identity) in self._content:
-                return self._content[(form, identity)]
-        return None
+                found[form] = self._content[(form, identity)]
+        if _lineage.SOURCE_FORM not in found and source_lines:
+            tally: dict[str, int] = {}
+            for line in source_lines:
+                seen = self._source_lines.get(line)
+                if seen:
+                    tally[seen] = tally.get(seen, 0) + 1
+            if tally:
+                found[_lineage.SOURCE_FORM] = max(tally, key=lambda o: (tally[o], o))
+        return found
 
 
 # Classifications that identify the artifact itself rather than the container it sits in. A read of
@@ -455,20 +490,22 @@ def normalise(event: dict[str, Any], built: dict[str, Any]) -> dict[str, Any] | 
         metadata = state.get("metadata") or {}
         base = {"kind": f"tool:{tool}", "text": payload, "author": False,
                 "truncated": bool(metadata.get("truncated")), "status": state.get("status"),
-                "artifact": None, "referenced": (), "produces": (), "route_hint": None,
-                "hint": None, "covered": tool in INBOUND_TOOLS}
+                "artifact": None, "referenced": (), "opened": (), "produces": (),
+                "route_hint": None, "hint": None, "covered": tool in INBOUND_TOOLS}
         if tool in ("read", "edit", "write") and isinstance(arguments.get("filePath"), str):
             path = arguments["filePath"]
             produces = () if tool == "read" else ((path, MODEL_DERIVED),)
             return {**base, "route": EDIT if tool in ("edit", "write") else SOURCE_FILE,
-                    "detail": path, "artifact": path, "referenced": (path,), "produces": produces}
+                    "detail": path, "artifact": path, "referenced": (path,), "opened": (path,),
+                    "produces": produces}
         if tool == "bash" and isinstance(arguments.get("command"), str):
             command = arguments["command"]
             route = command_route(command, built)
             written = produced_artifacts(command)
             origin = artifact_origin(route, command, built)
+            asked = tuple(p for p in referenced_paths(command) if p not in written)
             return {**base, "route": route, "detail": command,
-                    "referenced": tuple(p for p in referenced_paths(command) if p not in written),
+                    "referenced": asked, "opened": asked,
                     "produces": tuple((w, origin) for w in written) if origin else (),
                     "hint": "command"}
         if tool in ("grep", "glob"):
@@ -485,13 +522,13 @@ def normalise(event: dict[str, Any], built: dict[str, Any]) -> dict[str, Any] | 
         if not text:
             return None
         return {"kind": f"{role}:{kind}", "route": UNKNOWN, "detail": "", "text": text,
-                "artifact": None, "referenced": (), "produces": (), "author": role != "user",
+                "artifact": None, "referenced": (), "opened": (), "produces": (), "author": role != "user",
                 "route_hint": None if role != "user" else HARNESS, "truncated": False,
                 "status": None, "covered": True}
     if kind == "patch":
         return {"kind": "patch", "route": EDIT, "detail": "",
                 "text": json.dumps(part.get("files") or [], sort_keys=True),
-                "artifact": None, "referenced": (), "produces": (), "author": False,
+                "artifact": None, "referenced": (), "opened": (), "produces": (), "author": False,
                 "route_hint": APPLICATION, "truncated": False, "status": None, "covered": True}
     if kind in ("step-start", "step-finish"):
         return None
@@ -501,7 +538,7 @@ def normalise(event: dict[str, Any], built: dict[str, Any]) -> dict[str, Any] | 
     # A textual part of a kind nothing here knows about. Recorded rather than dropped, so the
     # coverage test has something to fail on.
     return {"kind": f"{kind}:unknown", "route": UNKNOWN, "detail": "", "text": text,
-            "artifact": None, "referenced": (), "produces": (), "author": False,
+            "artifact": None, "referenced": (), "opened": (), "produces": (), "author": False,
             "route_hint": None, "truncated": False, "status": None, "covered": False}
 
 
@@ -528,47 +565,6 @@ def attribute(event: dict[str, Any], built: dict[str, Any],
     return _resolve(event, inbound, session if session is not None else _Session(built), built)
 
 
-def _command_provenance(route: str, output: str, built: dict[str, Any]) -> str:
-    """Where a shell command's output came from, once both channels have spoken.
-
-    The route says what was asked for; the output says what came back. Neither alone is enough, and
-    the previous version let the route win outright for `source-file` — so a command that merely
-    *named* the module's directory turned its own listing into implementation source.
-
-    Now the route only says which origins are available, and the delivered bytes choose among them.
-    A command that names a module source file and returns source lines is source. A command that
-    renders the interior returns runtime representation. A command that returns nothing but the
-    module's file names returns metadata. A command that asked to introspect and got back only a
-    public surface got back a public surface.
-    """
-    comp = _components(output)
-    forms = comp["bytes"]
-    if route == SOURCE_FILE:
-        if forms[_lineage.SOURCE_FORM] >= _lineage.MATERIAL_BYTES:
-            return IMPLEMENTATION_SOURCE
-        if forms[_lineage.DISASSEMBLY] + forms[_lineage.RUNTIME_STRUCTURE] >= _lineage.MATERIAL_BYTES:
-            return IMPLEMENTATION_RUNTIME
-        if forms[_lineage.PATH_METADATA] >= _lineage.MATERIAL_BYTES:
-            return _lineage.IMPLEMENTATION_METADATA
-        return OTHER
-    if route in (DOCUMENTATION, INTROSPECTION):
-        return IMPLEMENTATION_RUNTIME if _internal_hits(output) else PUBLIC_CONTRACT
-    if route == RUN:
-        return BEHAVIOUR
-    # Nothing about the request narrows the answer, so the delivered representation decides. It is
-    # asked as a decomposition rather than as a name match, because a name match cannot tell a
-    # rendering of the interior from a listing that only names its files — `git ls-files` and a
-    # `find` over the compiled package are the cases that prove it, and both used to be charged to
-    # the runtime channel for containing the word `_store`.
-    if forms[_lineage.SOURCE_FORM] >= _lineage.MATERIAL_BYTES:
-        return IMPLEMENTATION_SOURCE
-    if forms[_lineage.DISASSEMBLY] + forms[_lineage.RUNTIME_STRUCTURE] >= _lineage.MATERIAL_BYTES:
-        return IMPLEMENTATION_RUNTIME
-    if forms[_lineage.PATH_METADATA] >= _lineage.MATERIAL_BYTES:
-        return _lineage.IMPLEMENTATION_METADATA
-    return OTHER
-
-
 _MARKS = None
 _MODULE_FILES = None
 
@@ -585,6 +581,12 @@ def _module_files() -> tuple[str, ...]:
     if _MODULE_FILES is None:
         _MODULE_FILES = _lineage.module_paths(_mlr.FIXTURE / "runtime" / "objectstore")
     return _MODULE_FILES
+
+
+def _source_file_names() -> tuple[str, ...]:
+    """The module's source file names. A compiled file is not one of them: a `.pyc` named beside a
+    disassembly says the runtime was reached, which the disassembly already said."""
+    return tuple(n for n in _module_files() if n.endswith(".py"))
 
 
 def _components(text: str) -> dict[str, Any]:
@@ -604,106 +606,180 @@ def _components(text: str) -> dict[str, Any]:
 # about the size of the snippet than about what it is.
 CONTENT_FORMS = (_lineage.SOURCE_FORM, _lineage.DISASSEMBLY, _lineage.RUNTIME_STRUCTURE)
 
+# What each representation form is evidence *of*, when nothing causal has spoken. Three of the four
+# are self-evidencing: a rendering of opcodes is a rendering of this module's compiled code, a
+# rendering of its namespace is a rendering of its live objects, and a line naming its files names
+# its files. None of those texts exists unless the thing it renders was reached.
+#
+# `source-form` is not in this table, and that absence is the repair. Source-shaped text is the one
+# form that can be produced without reaching what it depicts: the module's own public docstring is
+# source-shaped, a model reconstructing a line it never saw is source-shaped, and a test failure
+# quoting a line is source-shaped. What it *is* depends on the activity that delivered it, so it is
+# answered by `_form_origin` from that activity rather than from the bytes.
 FORM_ORIGIN = {
-    _lineage.SOURCE_FORM: IMPLEMENTATION_SOURCE,
     _lineage.DISASSEMBLY: IMPLEMENTATION_RUNTIME,
     _lineage.RUNTIME_STRUCTURE: IMPLEMENTATION_RUNTIME,
     _lineage.PATH_METADATA: _lineage.IMPLEMENTATION_METADATA,
 }
 
 
+# Classifications that describe where bytes were sitting rather than what they are. An agent may put
+# anything into the workspace, a log records whatever ran, and `other` is the absence of an answer —
+# so none of them may lend its label to source-shaped content it happens to carry. This is the same
+# judgement `_SETTLING_LOCATIONS` already makes about which paths settle, applied to components.
+CONTAINER_ORIGINS = (APPLICATION, HARNESS)
+
+
+def _form_origin(form: str, requested: str, *, names_source_file: bool = False) -> str:
+    """The origin of one component, given its form and the activity that delivered it.
+
+    Three forms evidence themselves: opcodes, live-object renderings and file names cannot exist
+    unless the thing they render was reached. Source-shaped text cannot, so it takes the origin of
+    the activity that produced it — a documentation call returns public surface, an introspection
+    call returns the runtime interior, a command that opened a module source file returns source.
+
+    **A rendering that names its own subject.** A diff, a `git show`, a search hit and a compiler
+    diagnostic all carry the module's file name beside the module's lines. That pairing is a
+    structural fact about the payload, not a resemblance: the representation asserts what it is a
+    rendering of. It is accepted as source evidence, and only where the delivering activity is not
+    itself a container — a log that mentions a file name is not a rendering of that file.
+
+    **Otherwise an open question.** Source-shaped text inside a container, with nothing saying where
+    it came from, is recorded as `unresolved` rather than attributed to the container or quietly
+    dropped. A clean zero is the one answer an audit cannot act on.
+    """
+    if form in FORM_ORIGIN:
+        return FORM_ORIGIN[form]
+    if requested in CONTAINER_ORIGINS:
+        return _lineage.UNRESOLVED
+    if requested in (OTHER, None, _lineage.UNRESOLVED):
+        return IMPLEMENTATION_SOURCE if names_source_file else _lineage.UNRESOLVED
+    if names_source_file:
+        return IMPLEMENTATION_SOURCE
+    return requested
+
+
 def resolve_origin(route: str, requested: str, text: str, *, basis: str = BASIS_ROUTE,
-                   ancestry: str | None = None,
+                   ancestry: str | None = None, echoed: "dict[str, str] | None" = None,
                    comp: dict[str, Any] | None = None) -> dict[str, Any]:
     """What this delivered text is, and where the strongest available evidence says it came from.
 
     Three questions, kept apart. **Form** is what the bytes encode, and is decided by the bytes
-    alone. **Origin** is where the information came from, and is decided by the strongest evidence
-    there is. **Route** is how it arrived, and is the caller's to record.
+    alone. **Origin** is where the information came from, and is decided by the strongest *causal*
+    evidence there is. **Route** is how it arrived, and is the caller's to record.
 
-    The precedence is the whole of the repair. Linked ancestry outranks a classified path; a
-    classified path outranks authorship of the text; all of those outrank what the text looks like;
-    and what the text looks like outranks the family of request, which is the weakest evidence in the
-    table and has now twice turned a listing of file paths into implementation source.
+    **Content describes; it does not originate.** Text that looks like the module's source is
+    `source-form`, and that is all content can settle. Whether it *is* implementation source depends
+    on whether the activity that delivered it read the module's source — an opened source file, a
+    command or search that named one, or a replay of something that did. A public docstring returned
+    by `__doc__` is byte-identical to two lines of the source file and did not come from it; calling
+    it source because the bytes match is how `mlr-context-5` charged a `contract` run for reading an
+    implementation it never opened.
 
-    **Components carry their own origins.** An item is not one thing. A log that echoes a namespace
-    dump is a log containing a namespace dump, and calling the whole thing harness loses 249 bytes of
-    the module's interior while calling the whole thing runtime overstates thirteen kilobytes. Each
-    material component is attributed; the item's headline origin describes only what the container
-    mostly is.
+    **Scope follows the kind of ancestry.** Ancestry *of the artifact* — this file is the module's
+    source, this file was written by a known activity, the model wrote this text — covers everything
+    the artifact delivered. Ancestry *of the content* — these exact lines were delivered before —
+    covers those lines and nothing else. A worker log that replays two lines of a docstring is a
+    worker log containing two replayed lines, not forty kilobytes of implementation source, and the
+    disassembly beside them is still a disassembly.
     """
     comp = comp if comp is not None else _components(text)
+    echoed = echoed or {}
     forms = comp["bytes"]
     total = comp["total"]
     material = _lineage.material_forms(comp)
     dominant = _lineage.dominant_form(comp)
     form = _lineage.form_of(comp)
     metadata = _lineage.metadata_in(text, _module_files(), "objectstore")
+    # Does this payload name one of the module's own source files? A rendering that carries its
+    # subject's name beside its subject's lines is evidence about what it is a rendering of.
+    names_source_file = any(name in _source_file_names() for name in metadata["names"])
+    # Ancestry of the artifact itself, which covers whatever that artifact delivered. Content echo
+    # is deliberately not here: it establishes the history of lines, not of the container.
     settled = basis in SETTLED_BASES
+    item_origin = (ancestry or requested) if settled else None
 
-    if settled:
-        origin = ancestry or requested
-    elif dominant in CONTENT_FORMS:
-        origin = FORM_ORIGIN[dominant]
-    elif requested not in (OTHER, None):
-        origin = requested
-    elif dominant is not None:
-        origin = FORM_ORIGIN[dominant]
-    else:
-        origin = OTHER
-
-    # Every material component, with the origin the evidence gives it. Under a settled basis they all
-    # inherit that history — a model's own sentence is the model's however exactly it reproduces
-    # something, and a module source file is source throughout. Otherwise each component takes the
-    # origin its form implies, which is what lets a minority body be counted without promoting the
-    # container it arrived in.
+    # Every material component, with the origin its own evidence gives it. Under artifact-scoped
+    # ancestry all of them inherit it — a module source file is source throughout, and a model's own
+    # sentence is the model's however exactly it reproduces something. Otherwise each component is
+    # answered on its own: a replay keeps what it was, and everything else is what its form implies
+    # once form has been forbidden from inventing a source it cannot evidence.
     components = []
     for candidate in material:
+        if settled:
+            origin_of = item_origin
+        elif candidate in echoed:
+            origin_of = echoed[candidate]
+        else:
+            origin_of = _form_origin(candidate, requested,
+                                     names_source_file=names_source_file)
         components.append({
             "form": candidate,
             "bytes": forms[candidate],
             "lines": len(comp["lines"][candidate]),
-            "origin": origin if settled else FORM_ORIGIN[candidate],
+            "origin": origin_of,
             "identity": _lineage.component_identity(comp, candidate),
+            "replayed": (not settled) and candidate in echoed,
+            "source_lines": (list(comp["lines"][candidate])
+                             if candidate == _lineage.SOURCE_FORM else []),
         })
+
+    # What the container as a whole should be called: what most of it is, by the origins its parts
+    # were just given. A container is never more than its contents — the rule MLR-C3D-R2 stated and
+    # the echo index then broke by letting one replayed component speak for the whole item.
+    if settled:
+        origin = item_origin
+    else:
+        # Only a form that is *of* the module may speak for the container. MLR-C3D-R3 settled this
+        # for file names — a test run that prints one module path is a test run — and the same holds
+        # for everything else path-metadata appears in. The rule is about the label only: whichever
+        # way it falls, each component keeps the origin its own evidence gave it and the counted
+        # bytes never move.
+        leading = next((c for c in components
+                        if c["form"] == dominant and dominant in CONTENT_FORMS), None)
+        if leading is not None:
+            origin = leading["origin"]
+        elif requested not in (OTHER, None):
+            origin = requested
+        elif dominant is not None:
+            origin = next(c["origin"] for c in components if c["form"] == dominant)
+        else:
+            origin = OTHER
 
     if origin in _lineage.IMPLEMENTATION_ORIGINS and \
             not any(c["origin"] == origin for c in components):
         # Attributed as a whole and recognised in no part: a `vars()` dump too small to be a
         # rendering, a help page that names two private modules. The item is the component.
         components.append({"form": form, "bytes": total, "lines": 0, "origin": origin,
-                           "identity": hashlib.sha256((text or "").encode("utf-8")).hexdigest()})
+                           "identity": hashlib.sha256((text or "").encode("utf-8")).hexdigest(),
+                           "replayed": False, "source_lines": []})
 
-    # How much of this is *direct* implementation source. When ancestry or the artifact's own path
-    # asserted source, the whole delivered rendering counts — a line-numbered read of a 2,200-byte
-    # file delivered 2,697 bytes of that file. Everywhere else only the lines demonstrably verbatim
-    # from the module are claimed, so a listing that merely lives under the module contributes
-    # nothing, and a reconstruction that matches byte for byte contributes nothing either.
-    asserted = (ancestry or requested) == _lineage.IMPLEMENTATION_SOURCE
-    source_component = next((c for c in components
-                             if c["form"] == _lineage.SOURCE_FORM
-                             and c["origin"] == _lineage.IMPLEMENTATION_SOURCE), None)
+    # How much of this is *direct* implementation source. When the artifact itself is the module's
+    # source — opened by path, or produced by an activity that read it — the whole delivered
+    # rendering counts: a line-numbered read of a 2,200-byte file delivered 2,697 bytes of that
+    # file. Everywhere else only the source-derived spans count, so a log that replays four lines is
+    # charged four lines and not the log.
+    from_artifact = settled and item_origin == _lineage.IMPLEMENTATION_SOURCE
+    source_parts = [c for c in components if c["origin"] == _lineage.IMPLEMENTATION_SOURCE]
     source_bytes = 0
     identity = None
-    if source_component is not None:
-        source_bytes = len((text or "").encode("utf-8")) if asserted else source_component["bytes"]
-        identity = _lineage.source_identity(comp["matched"]) if comp["matched"] else \
-            hashlib.sha256((text or "").encode("utf-8")).hexdigest()
-    elif asserted and origin == _lineage.IMPLEMENTATION_SOURCE:
-        # The artifact opened is one of the module's own files. What came back is that file, whether
-        # or not enough of its lines were long enough to be recognised on their own.
+    if from_artifact:
         source_bytes = len((text or "").encode("utf-8"))
+    elif source_parts:
+        source_bytes = sum(c["bytes"] for c in source_parts)
+    if source_bytes:
         identity = _lineage.source_identity(comp["matched"]) if comp["matched"] else \
             hashlib.sha256((text or "").encode("utf-8")).hexdigest()
 
-    # Source-shaped text that did not come from source. Its own channel: it is evidence about the
+    # Source-shaped text the model itself produced. Its own channel: it is evidence about the
     # treatment — how completely an agent rebuilt an interior it could not read — and not evidence
-    # that the boundary leaked.
+    # that the boundary leaked. Source-shaped text that arrived from anywhere else is neither source
+    # nor reconstruction; it is whatever its own origin says, counted in that channel.
     reconstruction = 0
     reconstruction_identity = None
     recon_component = next((c for c in components
                             if c["form"] == _lineage.SOURCE_FORM
-                            and c["origin"] != _lineage.IMPLEMENTATION_SOURCE), None)
+                            and c["origin"] == MODEL_DERIVED), None)
     if recon_component is not None:
         reconstruction = recon_component["bytes"]
         reconstruction_identity = recon_component["identity"]
@@ -728,24 +804,41 @@ def resolve_origin(route: str, requested: str, text: str, *, basis: str = BASIS_
     }
 
 
-def _command_provenance(route: str, output: str, built: dict[str, Any]) -> str:
-    """Where a shell command's output came from, once both channels have spoken.
+def _command_provenance(route: str, output: str, *, opened_source: bool) -> str:
+    """Where one activity's output came from, once the request and the answer have both spoken.
 
-    Kept as its own entry point because a command is the case where route and content most often
-    disagree. The answer is the same one the common resolver gives: the delivered bytes first, the
-    family of request only when the bytes say nothing.
+    The request is asked first, because it is the causal question: what did this activity reach?
+    The answer is asked second, to narrow among the origins that activity makes available.
+
+    That ordering is the repair. `mlr-context-5` asked the answer first, so a public docstring
+    printed by `__doc__` outranked the documentation call that produced it, and a `contract` run was
+    charged with reading an implementation it never opened. Content still narrows — a command that
+    opened a source file and returned only file names returned metadata — but it no longer promotes.
     """
     comp = _components(output)
-    dominant = _lineage.dominant_form(comp)
-    if dominant in CONTENT_FORMS:
-        return FORM_ORIGIN[dominant]
+    forms = comp["bytes"]
+    if opened_source:
+        # The activity opened one of the module's own source files. Whatever came back came from
+        # there, and which of its channels it belongs to is decided by what actually arrived.
+        if forms[_lineage.SOURCE_FORM] >= _lineage.MATERIAL_BYTES:
+            return IMPLEMENTATION_SOURCE
+        if forms[_lineage.DISASSEMBLY] + forms[_lineage.RUNTIME_STRUCTURE] >= _lineage.MATERIAL_BYTES:
+            return IMPLEMENTATION_RUNTIME
+        if forms[_lineage.PATH_METADATA] >= _lineage.MATERIAL_BYTES:
+            return _lineage.IMPLEMENTATION_METADATA
+        return OTHER
     if route in (DOCUMENTATION, INTROSPECTION):
         return IMPLEMENTATION_RUNTIME if _internal_hits(output) else PUBLIC_CONTRACT
-    hint = _route_hint(route)
-    if hint:
-        return hint
-    if dominant is not None:
-        return FORM_ORIGIN[dominant]
+    if route == RUN:
+        return BEHAVIOUR
+    # Nothing about the request narrows the answer, so the delivered representation decides what it
+    # is able to: a rendering of the compiled module or of its live objects is of the module however
+    # it was asked for, and a line naming its files names them. Source-shaped text is deliberately
+    # not decided here — matching bytes are not evidence that anything read the source.
+    if forms[_lineage.DISASSEMBLY] + forms[_lineage.RUNTIME_STRUCTURE] >= _lineage.MATERIAL_BYTES:
+        return IMPLEMENTATION_RUNTIME
+    if forms[_lineage.PATH_METADATA] >= _lineage.MATERIAL_BYTES:
+        return _lineage.IMPLEMENTATION_METADATA
     return OTHER
 
 
@@ -760,6 +853,15 @@ def _resolve(event: dict[str, Any], inbound: dict[str, Any], session: "_Session"
     ancestry = None
     basis = BASIS_DEFAULT
     requested = OTHER
+
+    # Did this activity actually open one of the module's source files? That is the causal question
+    # behind the primary measurand, and it is answered from the paths the activity names — the file
+    # it opened, or the files a search reported hits in — never from what the bytes look like.
+    # Only paths the *request* named count. A search reporting which files its hits came from is
+    # describing its answer, not asserting what it opened, and charging it for whole files is the
+    # same container error in a different costume.
+    opened_source = any(is_module_source_file(path, built)
+                        for path in inbound.get("opened") or ())
 
     artifact = inbound.get("artifact")
     if artifact:
@@ -777,31 +879,34 @@ def _resolve(event: dict[str, Any], inbound: dict[str, Any], session: "_Session"
                 break
     if ancestry is None and inbound.get("author"):
         requested, basis = MODEL_DERIVED, BASIS_AUTHOR
-    if ancestry is None and basis == BASIS_DEFAULT:
-        # This exact content has been delivered before. Whatever it was then, it still is: a log that
-        # echoes a source read echoes source, a log that echoes a disassembly echoes a disassembly,
-        # and a log that echoes the model's own sentence echoes the model. The log is a route.
-        seen = session.echo(identities)
-        if seen:
-            ancestry, basis = seen, BASIS_ANCESTRY
     if basis == BASIS_DEFAULT and requested == OTHER:
-        # The request family, which is the weakest evidence in the table and is consulted last. For a
-        # shell command the family is worth asking properly, because a documentation call that
-        # returned the interior and one that returned a signature are the same request with
-        # different answers.
-        hint = (_command_provenance(inbound["route"], payload, built)
-                if inbound.get("hint") == "command" else inbound.get("route_hint"))
+        # The request family, asked properly: a documentation call that returned the interior and one
+        # that returned a signature are the same request with different answers, and an activity that
+        # opened a source file is a different activity from one that did not.
+        hint = (_command_provenance(inbound["route"], payload, opened_source=opened_source)
+                if inbound.get("hint") == "command" or inbound["route"] == SEARCH
+                else inbound.get("route_hint"))
         if hint and hint != OTHER:
-            requested, basis = hint, BASIS_ROUTE
+            requested = hint
+            # Opening the module's own source file is a fact about the artifact reached, not about
+            # the family of request, and it is evidenced exactly as a direct read of that file is.
+            basis = BASIS_ARTIFACT if opened_source else BASIS_ROUTE
+
+    # Which of this item's components are replays of something already delivered, and what each of
+    # them was. Scoped to the components that actually match: a log echoing two lines of a docstring
+    # echoes two lines, and the forty kilobytes around them are not a replay of anything.
+    echoed = ({} if basis in SETTLED_BASES
+              else session.echoes(identities, comp["lines"][_lineage.SOURCE_FORM]))
 
     for path, origin in inbound.get("produces") or ():
         session.note_artifact(path, origin)
 
     lineage = resolve_origin(inbound["route"], requested, payload, basis=basis, ancestry=ancestry,
-                             comp=comp)
+                             echoed=echoed, comp=comp)
     origin = lineage["origin"]
-    if basis not in SETTLED_BASES and origin != (ancestry or requested):
-        basis = BASIS_CONTENT
+    if basis not in SETTLED_BASES and origin != requested:
+        basis = BASIS_ANCESTRY if any(c.get("replayed") for c in lineage["components"]
+                                      if c["origin"] == origin) else BASIS_CONTENT
 
     # An item that plainly discloses the interior but resolves to no implementation origin, in no
     # material component, is not quietly filed as harmless. It is marked unresolved, so the audit
@@ -814,7 +919,7 @@ def _resolve(event: dict[str, Any], inbound: dict[str, Any], session: "_Session"
             and origin not in _lineage.IMPLEMENTATION_ORIGINS \
             and not implementation_components and not lineage["metadata"]["references"]:
         origin = _lineage.UNRESOLVED
-    session.note_content(identities, origin)
+    session.note_content(lineage["components"], origin)
     return {
         "ordinal": event["ordinal"],
         "kind": inbound["kind"],
@@ -1032,6 +1137,8 @@ def ledger(events: list[dict[str, Any]], built: dict[str, Any]) -> dict[str, Any
                                    "bytes": item["bytes"], "reason": reason})
 
     unresolved = [i for i in items if i["origin"] == _lineage.UNRESOLVED]
+    unresolved_components = [c for i in items for c in (i.get("components") or [])
+                             if c["origin"] == _lineage.UNRESOLVED]
     runtime = component_origin.get(IMPLEMENTATION_RUNTIME,
                                    {"unique_bytes": 0, "delivered_bytes": 0, "components": 0})
     return {
@@ -1081,10 +1188,17 @@ def ledger(events: list[dict[str, Any]], built: dict[str, Any]) -> dict[str, Any
             "items": sum(1 for i in items if i["internal_names"]),
             "names": sorted(disclosed),
         },
+        # Open questions, at both granularities. An item whose whole provenance is unknown, and a
+        # component inside an explained item whose provenance is not: source-shaped lines sitting in
+        # a container that nothing links to a source read are exactly the evidence an audit must
+        # act on, and counting only whole items would report them as a clean zero.
         "unresolved": {
             "items": len(unresolved),
             "bytes": sum(i["bytes"] for i in unresolved),
             "routes": sorted({i["route"] for i in unresolved}),
+            "components": len(unresolved_components),
+            "component_bytes": sum(c["bytes"] for c in unresolved_components),
+            "component_forms": sorted({c["form"] for c in unresolved_components}),
         },
         "attributed_by_lineage": sum(1 for i in items if i["by_lineage"]),
         "items_carrying_internal_names": sum(1 for i in items if i["internal_names"]),

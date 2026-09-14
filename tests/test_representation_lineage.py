@@ -46,11 +46,44 @@ class Arm:
     def source(self, name="_store.py") -> str:
         return (self.workspace / _mlr.VENDORED / "objectstore" / name).read_text(encoding="utf-8")
 
+    def vendored(self, name="_store.py") -> str:
+        return str(self.workspace / _mlr.VENDORED / "objectstore" / name)
+
     def application(self) -> str:
         return (self.workspace / "app" / "exports.py").read_text(encoding="utf-8")
 
     def __exit__(self, *exc):
         shutil.rmtree(self.tmp, ignore_errors=True)
+
+
+def call():
+    return {"type": "step-start"}
+
+
+def bash(command, output, status="completed"):
+    return {"type": "tool", "tool": "bash",
+            "state": {"input": {"command": command}, "output": output, "status": status}}
+
+
+def read(path, output):
+    return {"type": "tool", "tool": "read",
+            "state": {"input": {"filePath": str(path)}, "output": output, "status": "completed"}}
+
+
+def events(parts, role="assistant"):
+    return [{"ordinal": n, "part_id": f"p{n}", "message_id": "m", "time_created": n,
+             "role": role, "summary": False, "part": part, "message": {}}
+            for n, part in enumerate(parts)]
+
+
+def ledger(parts, built):
+    return _mlr_context.ledger(events(parts), built)
+
+
+def only(led, kind_prefix="tool:"):
+    items = [i for i in led["items"] if i["kind"].startswith(kind_prefix)]
+    assert len(items) == 1, [i["kind"] for i in items]
+    return items[0]
 
 
 class FingerprintTest(unittest.TestCase):
@@ -98,23 +131,32 @@ class AdversarialProvenanceTest(unittest.TestCase):
 
     maxDiff = None
 
-    def resolve(self, arm, route, requested, text):
-        return _mlr_context.resolve_origin(route, requested, text)
+    def resolve(self, arm, route, requested, text, **evidence):
+        return _mlr_context.resolve_origin(route, requested, text, **evidence)
 
     def test_a_direct_source_read_counts_the_whole_delivered_rendering(self):
+        """The artifact opened *is* the module's source, so the whole rendering is that file."""
         with Arm() as arm:
             src = arm.source()
             got = self.resolve(arm, _mlr_context.SOURCE_FILE,
-                               _lineage.IMPLEMENTATION_SOURCE, src)
+                               _lineage.IMPLEMENTATION_SOURCE, src,
+                               basis=_mlr_context.BASIS_ARTIFACT)
             self.assertEqual(got["origin"], _lineage.IMPLEMENTATION_SOURCE)
             self.assertEqual(got["source_bytes"], len(src.encode("utf-8")))
             self.assertFalse(got["by_lineage"], "the path already knew this one")
 
     def test_source_echoed_through_a_harness_log_is_still_source(self):
-        """The MLR-C3D defect. Three of five DeepSeek runs read their own worker log."""
+        """The MLR-C3D defect. Three of five DeepSeek runs read their own worker log.
+
+        Replay keeps its history, and the history has to exist: it comes from the read that
+        happened, not from the bytes resembling a file nothing opened.
+        """
         with Arm() as arm:
-            got = self.resolve(arm, _mlr_context.SOURCE_FILE, _mlr_context.HARNESS,
-                               "> Read _store.py\n" + arm.source() + "\n> done")
+            log = arm.workspace / "DeepSeekAndDestroy" / "worker.log"
+            led = ledger([call(), read(arm.vendored(), arm.source()), call(),
+                          read(log, "> Read _store.py\n" + arm.source() + "\n> done"), call()],
+                         arm.built)
+            got = [i for i in led["items"] if str(log) in i["detail"]][0]
             self.assertEqual(got["origin"], _lineage.IMPLEMENTATION_SOURCE)
             self.assertGreater(got["source_bytes"], 1000)
             self.assertTrue(got["by_lineage"])
@@ -127,17 +169,30 @@ class AdversarialProvenanceTest(unittest.TestCase):
             self.assertEqual(got["source_bytes"], 0)
 
     def test_a_mixed_log_charges_only_the_source_lines(self):
+        """A log replaying part of a read is charged that part, and a partial replay is recognised.
+
+        The log carries six hundred bytes of a file that was genuinely read, so those lines keep
+        their source history; the preamble and the application text around them do not become
+        source by sitting beside them.
+        """
         with Arm() as arm:
             src = arm.source()
             mixed = "harness preamble\n" + src[:600] + "\n" + arm.application()[:300]
-            got = self.resolve(arm, _mlr_context.SOURCE_FILE, _mlr_context.HARNESS, mixed)
+            log = arm.workspace / "DeepSeekAndDestroy" / "worker.log"
+            led = ledger([call(), read(arm.vendored(), src), call(),
+                          read(log, mixed), call()], arm.built)
+            got = [i for i in led["items"] if str(log) in i["detail"]][0]
             self.assertEqual(got["origin"], _lineage.IMPLEMENTATION_SOURCE)
             self.assertGreater(got["source_bytes"], 0)
             self.assertLess(got["source_bytes"], len(mixed.encode("utf-8")))
 
     def test_a_copy_through_a_scratch_file_keeps_its_ancestry(self):
+        """The scratch file was written by an activity that read source, and that link is the
+        evidence — not the fact that what came back looks like the file."""
         with Arm() as arm:
-            got = self.resolve(arm, _mlr_context.SOURCE_FILE, _mlr_context.OTHER, arm.source())
+            got = self.resolve(arm, _mlr_context.SOURCE_FILE, _mlr_context.OTHER, arm.source(),
+                               basis=_mlr_context.BASIS_ANCESTRY,
+                               ancestry=_lineage.IMPLEMENTATION_SOURCE)
             self.assertEqual(got["origin"], _lineage.IMPLEMENTATION_SOURCE)
             self.assertTrue(got["by_lineage"])
 
@@ -168,10 +223,12 @@ class AdversarialProvenanceTest(unittest.TestCase):
             self.assertIn("_store.py", got["metadata"]["names"])
 
     def test_git_show_that_returns_source_is_source(self):
+        """The command names the module's source file, which is what makes its output source."""
         with Arm() as arm:
-            got = self.resolve(arm, _mlr_context.RUN, _mlr_context.BEHAVIOUR, arm.source())
-            self.assertEqual(got["origin"], _lineage.IMPLEMENTATION_SOURCE)
-            self.assertTrue(got["by_lineage"])
+            command = f"git show HEAD:{_mlr.VENDORED}/objectstore/_store.py"
+            item = only(ledger([call(), bash(command, arm.source()), call()], arm.built))
+            self.assertEqual(item["origin"], _lineage.IMPLEMENTATION_SOURCE)
+            self.assertGreater(item["source_bytes"], 1000)
 
     def test_a_test_run_whose_traceback_names_a_file_stays_a_test_run(self):
         """Mixed provenance is decided by share, not by the smallest part of the artifact."""

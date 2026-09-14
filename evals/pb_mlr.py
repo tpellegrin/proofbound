@@ -113,14 +113,17 @@ def configuration(*, model: str, samples: int, arms: list[str], variant: str | N
         "hermeticity_identity": _mlr.preflight_identity(),
         # Bumped whenever what an origin *means* changes. A record carries the version its numbers
         # were produced under, so a later classifier cannot silently reinterpret an earlier result.
-        "telemetry_version": "mlr-context-5",
+        "telemetry_version": "mlr-context-6",
         "profile_version": "profile-1",
         "attribution": ("every inbound representation normalised before attribution, whichever tool "
-                        "carried it; origin follows the strongest available evidence — linked "
-                        "ancestry, then artifact identity, then authorship, then delivered content, "
-                        "then request family; material components attributed individually whatever "
-                        "their share; representation form and delivery route recorded separately; "
-                        "source, runtime-derived, reconstructed and structural units never summed"),
+                        "carried it; origin follows causal evidence — linked ancestry, then artifact "
+                        "identity, then authorship, then the activity that delivered the bytes; "
+                        "content establishes representation form and never establishes that source "
+                        "was read; ancestry of an artifact covers what that artifact delivered while "
+                        "ancestry of content covers only the spans that replay it; material "
+                        "components attributed individually whatever their share; representation "
+                        "form and delivery route recorded separately; source, runtime-derived, "
+                        "reconstructed and structural units never summed"),
         "consumed_definition": ("text appearing in a part OpenCode places in the message history "
                                 "before a later model call"),
         "measurand": ("unique bytes of direct implementation-source representation consumed on "
@@ -520,11 +523,18 @@ def _rebuilt(measurement: dict[str, Any]) -> dict[str, Any] | None:
     """
     event_dir = measurement.get("event_dir") or ""
     marker = "/arm/workspace/"
-    if marker not in event_dir:
-        return None
-    root = event_dir.split(marker)[0]
-    return {"arm": measurement.get("arm"), "workspace": f"{root}/arm/workspace",
-            "runtime": f"{root}/arm/runtime"}
+    if marker in event_dir:
+        root = event_dir.split(marker)[0]
+        return {"arm": measurement.get("arm"), "workspace": f"{root}/arm/workspace",
+                "runtime": f"{root}/arm/runtime"}
+    # Attempts run inside a constructed semantic view record the attempt directory relative to the
+    # view, so the layout comes from the absolute path the evidence gate already kept.
+    log = (measurement.get("evidence_gate") or {}).get("log") or ""
+    if "/workspace/" in log:
+        view = log.split("/workspace/")[0]
+        return {"arm": measurement.get("arm"), "workspace": f"{view}/workspace",
+                "runtime": f"{view}/runtime"}
+    return None
 
 
 def main(argv: list[str] | None = None) -> int:

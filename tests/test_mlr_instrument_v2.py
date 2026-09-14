@@ -231,7 +231,7 @@ class PythonSurfaceAttributionTest(unittest.TestCase):
                                     f"{label} did not disclose an internal name")
                     route = _mlr_context.command_route(f"python3 -c 'objectstore {code}'", arm.built)
                     self.assertEqual(
-                        _mlr_context._command_provenance(route, output, arm.built),
+                        _mlr_context._command_provenance(route, output, opened_source=False),
                         _mlr_context.IMPLEMENTATION_RUNTIME, label)
 
     def test_the_public_surface_is_not_charged_as_implementation(self):
@@ -244,7 +244,7 @@ class PythonSurfaceAttributionTest(unittest.TestCase):
                     self.assertEqual(_mlr_context._internal_hits(output), [], label)
                     route = _mlr_context.command_route(f"python3 -c 'objectstore {code}'", arm.built)
                     self.assertEqual(
-                        _mlr_context._command_provenance(route, output, arm.built),
+                        _mlr_context._command_provenance(route, output, opened_source=False),
                         _mlr_context.PUBLIC_CONTRACT, label)
 
     def test_source_recovery_routes_are_still_refused(self):
@@ -266,7 +266,7 @@ class PythonSurfaceAttributionTest(unittest.TestCase):
         with Arm() as arm:
             output = 'FAILED\n  File "objectstore/_store.py", in _with_retries\nRan 5 tests'
             self.assertEqual(
-                _mlr_context._command_provenance(_mlr_context.RUN, output, arm.built),
+                _mlr_context._command_provenance(_mlr_context.RUN, output, opened_source=False),
                 _mlr_context.BEHAVIOUR)
             self.assertIn("_with_retries", _mlr_context._internal_hits(output))
 

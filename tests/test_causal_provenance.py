@@ -753,13 +753,24 @@ class MaterialComponentTest(unittest.TestCase):
             self.assertTrue([c for c in item["components"]
                              if c["origin"] == _mlr_context.IMPLEMENTATION_RUNTIME])
 
-    def test_one_source_line_in_a_large_container_is_counted(self):
+    def test_one_source_line_in_a_large_container_is_recognised_and_left_open(self):
+        """A minority source component is never lost — and never invented either.
+
+        Nothing in this session read the module's source, so a line of it sitting in a workspace
+        file is an open question rather than direct source consumption. Under `mlr-context-5` the
+        matching bytes alone made it source, which is the defect that invalidated the r4 paired
+        experiment. It is still seen, in its own component and in the audit's unresolved count.
+        """
         with Arm() as arm:
             line = sorted(_lineage.source_fingerprint(MODULE), key=len)[-1]
             filler = "\n".join(f"unrelated line {n}" for n in range(300))
             led = ledger([call(), read(arm.workspace / "notes.txt", filler + "\n" + line), call()],
                          arm.built)
-            self.assertGreater(led["implementation_source_unique_bytes"], 0)
+            self.assertEqual(led["implementation_source_unique_bytes"], 0)
+            component = only(led)["components"][0]
+            self.assertEqual(component["form"], _lineage.SOURCE_FORM)
+            self.assertEqual(component["origin"], _lineage.UNRESOLVED)
+            self.assertGreater(led["unresolved"]["component_bytes"], 0)
 
     def test_floors_are_per_form_and_not_a_share(self):
         self.assertEqual(_lineage.MATERIAL_LINES[_lineage.SOURCE_FORM], 1)

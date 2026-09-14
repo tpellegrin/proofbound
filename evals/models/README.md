@@ -104,10 +104,19 @@ must not silently reinterpret evidence gathered before it moved.
   [freeze and outcome](../craft/modularity-local-reasoning/MLR-R4C3-requalification-preregistration.md),
   [route readiness](../results/craft-mlr-r4c3-route-readiness.json),
   [record](../results/craft-mlr-r4c3-field-requalification.json)
-- Paired experiment — **frozen, not executed**, on the qualified stack:
+- Paired experiment — **executed and invalid**: four of twelve slots ran, all correct, before a
+  material attribution defect stopped the series. A public docstring reached through runtime
+  introspection was classified as direct implementation source in a `contract` slot, and the
+  misclassification propagated through the content-echo index into a 42,915-byte worker-log read:
   [preregistration](../craft/modularity-local-reasoning/MLR-paired-r4-preregistration.md),
-  [N audit](../craft/modularity-local-reasoning/MLR-paired-r4-N-audit.md) — N independently
-  justified, with two corrections to the rationale that do not bear on it
+  [N audit](../craft/modularity-local-reasoning/MLR-paired-r4-N-audit.md),
+  [run and defect](../craft/modularity-local-reasoning/MLR-paired-r4-run.md),
+  [record](../results/craft-mlr-deepseek-v4-flash-high-paired-r4.json)
+- Causal attribution precision repair — content no longer establishes that source was read, and
+  ancestry of content covers only the spans that replay it. Attribution version `mlr-context-6`;
+  two of fifty-four retained sessions reclassify, both false `contract` source:
+  [`MLR-C3D-R5-attribution-precision.md`](../craft/modularity-local-reasoning/MLR-C3D-R5-attribution-precision.md),
+  [replay](../results/craft-mlr-attribution-precision-replay.json)
 
 ---
 

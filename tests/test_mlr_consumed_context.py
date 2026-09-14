@@ -660,7 +660,8 @@ class RepairedDefectsTest(unittest.TestCase):
                                      _mlr_context.DOCUMENTATION)
             self.assertEqual(
                 _mlr_context._command_provenance(
-                    _mlr_context.DOCUMENTATION, "PACKAGE CONTENTS _store _backend", built),
+                    _mlr_context.DOCUMENTATION, "PACKAGE CONTENTS _store _backend",
+                    opened_source=False),
                 _mlr_context.IMPLEMENTATION_RUNTIME)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)

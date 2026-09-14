@@ -1,0 +1,1925 @@
+{
+  "changed_classifications": [
+    {
+      "changed": {
+        "runtime": {
+          "mlr-context-5": 102,
+          "mlr-context-6": 35056
+        },
+        "source": {
+          "mlr-context-5": 340,
+          "mlr-context-6": 0
+        },
+        "source_delivered": {
+          "mlr-context-5": 823885,
+          "mlr-context-6": 0
+        }
+      },
+      "session": "craft-mlr-deepseek-v4-flash-high-paired-r4#2:contract"
+    },
+    {
+      "changed": {
+        "runtime": {
+          "mlr-context-5": 2154,
+          "mlr-context-6": 647
+        },
+        "source": {
+          "mlr-context-5": 178,
+          "mlr-context-6": 0
+        },
+        "source_delivered": {
+          "mlr-context-5": 3382,
+          "mlr-context-6": 0
+        }
+      },
+      "session": "craft-mlr-paired-calibration#1:contract"
+    }
+  ],
+  "compared": {
+    "from": "mlr-context-5",
+    "to": "mlr-context-6"
+  },
+  "corpus": "every retained session with a recoverable arm layout: Nemotron calibration, C3 and C3R headroom pilots, DeepSeek headroom, requalification, the earlier invalid paired series, R4-C3 field requalification, and the four completed slots of the invalid mlr-deepseek-v4-flash-high-paired-r4 experiment",
+  "interpretation_limit": "this replays recorded executions under a later classifier. It is diagnosis of the instrument and is not, for any experiment here, a treatment result",
+  "kind": "retrospective diagnostic replay \u2014 not any experiment's recorded result",
+  "not_replayed": "25 harness-failure attempts in craft-mlr-paired-calibration that never recorded an arm layout; 22 of them carry an empty two-part session",
+  "per_session": {
+    "craft-mlr-c3-full-headroom-pilot#0:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 4,
+        "mlr-context-6": 4
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 4076,
+        "mlr-context-6": 4076
+      },
+      "source_delivered": {
+        "mlr-context-5": 45554,
+        "mlr-context-6": 45554
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-c3-full-headroom-pilot#1:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 3,
+        "mlr-context-6": 3
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 3358,
+        "mlr-context-6": 3358
+      },
+      "source_delivered": {
+        "mlr-context-5": 70518,
+        "mlr-context-6": 70518
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-c3-full-headroom-pilot#2:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 4,
+        "mlr-context-6": 4
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 4076,
+        "mlr-context-6": 4076
+      },
+      "source_delivered": {
+        "mlr-context-5": 58443,
+        "mlr-context-6": 58443
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-c3-full-headroom-pilot#3:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 5,
+        "mlr-context-6": 5
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 169428,
+        "mlr-context-6": 169428
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-c3-full-headroom-pilot#4:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 1,
+        "mlr-context-6": 1
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 5397,
+        "mlr-context-6": 5397
+      },
+      "source": {
+        "mlr-context-5": 178,
+        "mlr-context-6": 178
+      },
+      "source_delivered": {
+        "mlr-context-5": 2314,
+        "mlr-context-6": 2314
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-c3-full-headroom-pilot#5:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 4,
+        "mlr-context-6": 4
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 4525,
+        "mlr-context-6": 4525
+      },
+      "source_delivered": {
+        "mlr-context-5": 89599,
+        "mlr-context-6": 89599
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-c3r-full-headroom-pilot#0:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 5,
+        "mlr-context-6": 5
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 154881,
+        "mlr-context-6": 154881
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-c3r-full-headroom-pilot#1:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 5,
+        "mlr-context-6": 5
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 130169,
+        "mlr-context-6": 130169
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-c3r-full-headroom-pilot#2:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 3,
+        "mlr-context-6": 3
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 3415,
+        "mlr-context-6": 3415
+      },
+      "source_delivered": {
+        "mlr-context-5": 48528,
+        "mlr-context-6": 48528
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-c3r-full-headroom-pilot#3:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 4,
+        "mlr-context-6": 4
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 3415,
+        "mlr-context-6": 3415
+      },
+      "source_delivered": {
+        "mlr-context-5": 62906,
+        "mlr-context-6": 62906
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-c3r-full-headroom-pilot#4:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 3,
+        "mlr-context-6": 3
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 1379,
+        "mlr-context-6": 1379
+      },
+      "source_delivered": {
+        "mlr-context-5": 24822,
+        "mlr-context-6": 24822
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-c3r-full-headroom-pilot#5:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 4,
+        "mlr-context-6": 4
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5161,
+        "mlr-context-6": 5161
+      },
+      "source_delivered": {
+        "mlr-context-5": 84809,
+        "mlr-context-6": 84809
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-headroom#0:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 12,
+        "mlr-context-6": 12
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 10186,
+        "mlr-context-6": 10186
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 104796,
+        "mlr-context-6": 104796
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-headroom#1:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 7,
+        "mlr-context-6": 7
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 110618,
+        "mlr-context-6": 110618
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-headroom#2:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 11,
+        "mlr-context-6": 11
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 11509,
+        "mlr-context-6": 11509
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 145550,
+        "mlr-context-6": 145550
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-headroom#3:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 11,
+        "mlr-context-6": 11
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 31633,
+        "mlr-context-6": 31633
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 93152,
+        "mlr-context-6": 93152
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-headroom#4:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 7,
+        "mlr-context-6": 7
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 93152,
+        "mlr-context-6": 93152
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired#0:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 5,
+        "mlr-context-6": 5
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 93152,
+        "mlr-context-6": 93152
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired#10:contract": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 4,
+        "mlr-context-6": 4
+      },
+      "recon": {
+        "mlr-context-5": 123,
+        "mlr-context-6": 123
+      },
+      "runtime": {
+        "mlr-context-5": 31879,
+        "mlr-context-6": 31879
+      },
+      "source": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source_delivered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired#11:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 11,
+        "mlr-context-6": 11
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 27102,
+        "mlr-context-6": 27102
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 221236,
+        "mlr-context-6": 221236
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired#1:contract": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 2,
+        "mlr-context-6": 2
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source_delivered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired#2:contract": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 6,
+        "mlr-context-6": 6
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 31687,
+        "mlr-context-6": 31687
+      },
+      "source": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source_delivered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired#3:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 7,
+        "mlr-context-6": 7
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 133906,
+        "mlr-context-6": 133906
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired#4:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 9,
+        "mlr-context-6": 9
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 12317,
+        "mlr-context-6": 12317
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 81508,
+        "mlr-context-6": 81508
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired#5:contract": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 3,
+        "mlr-context-6": 3
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 16824,
+        "mlr-context-6": 16824
+      },
+      "source": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source_delivered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired#6:contract": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 3,
+        "mlr-context-6": 3
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 31735,
+        "mlr-context-6": 31735
+      },
+      "source": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source_delivered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired#7:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 8,
+        "mlr-context-6": 8
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 122262,
+        "mlr-context-6": 122262
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired#8:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 7,
+        "mlr-context-6": 7
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 104796,
+        "mlr-context-6": 104796
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired#9:contract": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 7,
+        "mlr-context-6": 7
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 42987,
+        "mlr-context-6": 42987
+      },
+      "source": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source_delivered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired-r2-qualification#0:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 5,
+        "mlr-context-6": 5
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 87330,
+        "mlr-context-6": 87330
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired-r2-qualification#1:contract": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 5,
+        "mlr-context-6": 5
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 34604,
+        "mlr-context-6": 34604
+      },
+      "source": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source_delivered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired-r2-qualification#2:contract": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 9,
+        "mlr-context-6": 9
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 496,
+        "mlr-context-6": 496
+      },
+      "source": {
+        "mlr-context-5": 3909,
+        "mlr-context-6": 3909
+      },
+      "source_delivered": {
+        "mlr-context-5": 50817,
+        "mlr-context-6": 50817
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired-r2-qualification#3:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 7,
+        "mlr-context-6": 7
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 145550,
+        "mlr-context-6": 145550
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired-r2-qualification#4:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 6,
+        "mlr-context-6": 6
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 75686,
+        "mlr-context-6": 75686
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired-r2-qualification#5:contract": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 6,
+        "mlr-context-6": 6
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 39361,
+        "mlr-context-6": 39361
+      },
+      "source": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source_delivered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired-r4#0:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 8,
+        "mlr-context-6": 8
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5630,
+        "mlr-context-6": 5630
+      },
+      "source_delivered": {
+        "mlr-context-5": 106970,
+        "mlr-context-6": 106970
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired-r4#1:contract": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 3,
+        "mlr-context-6": 3
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 13513,
+        "mlr-context-6": 13513
+      },
+      "source": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source_delivered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired-r4#2:contract": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 6,
+        "mlr-context-6": 6
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 102,
+        "mlr-context-6": 35056
+      },
+      "source": {
+        "mlr-context-5": 340,
+        "mlr-context-6": 0
+      },
+      "source_delivered": {
+        "mlr-context-5": 823885,
+        "mlr-context-6": 0
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-paired-r4#3:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 8,
+        "mlr-context-6": 8
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5630,
+        "mlr-context-6": 5630
+      },
+      "source_delivered": {
+        "mlr-context-5": 101340,
+        "mlr-context-6": 101340
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-requalification#0:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 11,
+        "mlr-context-6": 11
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 61186,
+        "mlr-context-6": 61186
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 93152,
+        "mlr-context-6": 93152
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-requalification#1:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 10,
+        "mlr-context-6": 10
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 87330,
+        "mlr-context-6": 87330
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-deepseek-v4-flash-high-requalification#2:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 8,
+        "mlr-context-6": 8
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 75686,
+        "mlr-context-6": 75686
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-paired-calibration#0:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 5,
+        "mlr-context-6": 5
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 90133,
+        "mlr-context-6": 90133
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-paired-calibration#1:contract": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 3,
+        "mlr-context-6": 3
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 2154,
+        "mlr-context-6": 647
+      },
+      "source": {
+        "mlr-context-5": 178,
+        "mlr-context-6": 0
+      },
+      "source_delivered": {
+        "mlr-context-5": 3382,
+        "mlr-context-6": 0
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-paired-calibration#22:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 6,
+        "mlr-context-6": 6
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5822,
+        "mlr-context-6": 5822
+      },
+      "source_delivered": {
+        "mlr-context-5": 102132,
+        "mlr-context-6": 102132
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-paired-calibration#23:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 4,
+        "mlr-context-6": 4
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 1379,
+        "mlr-context-6": 1379
+      },
+      "source_delivered": {
+        "mlr-context-5": 16605,
+        "mlr-context-6": 16605
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-paired-calibration#2:contract": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 2,
+        "mlr-context-6": 2
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 865,
+        "mlr-context-6": 865
+      },
+      "source": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source_delivered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 1,
+        "mlr-context-6": 1
+      }
+    },
+    "craft-mlr-paired-calibration#3:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 3,
+        "mlr-context-6": 3
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 1828,
+        "mlr-context-6": 1828
+      },
+      "source_delivered": {
+        "mlr-context-5": 37009,
+        "mlr-context-6": 37009
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-paired-calibration#4:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 4,
+        "mlr-context-6": 4
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 4076,
+        "mlr-context-6": 4076
+      },
+      "source_delivered": {
+        "mlr-context-5": 51670,
+        "mlr-context-6": 51670
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-paired-calibration#5:contract": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 2,
+        "mlr-context-6": 2
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 630,
+        "mlr-context-6": 630
+      },
+      "source": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source_delivered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-r4c3-field-requalification#0:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 5,
+        "mlr-context-6": 5
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5630,
+        "mlr-context-6": 5630
+      },
+      "source_delivered": {
+        "mlr-context-5": 95710,
+        "mlr-context-6": 95710
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-r4c3-field-requalification#1:contract": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 3,
+        "mlr-context-6": 3
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 1121,
+        "mlr-context-6": 1121
+      },
+      "source": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source_delivered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-r4c3-field-requalification#2:contract": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 4,
+        "mlr-context-6": 4
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 418,
+        "mlr-context-6": 418
+      },
+      "source": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source_delivered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    },
+    "craft-mlr-r4c3-field-requalification#3:full": {
+      "contradictions": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "metadata": {
+        "mlr-context-5": 9,
+        "mlr-context-6": 9
+      },
+      "recon": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "runtime": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "source": {
+        "mlr-context-5": 5630,
+        "mlr-context-6": 5630
+      },
+      "source_delivered": {
+        "mlr-context-5": 112600,
+        "mlr-context-6": 112600
+      },
+      "uncovered": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      },
+      "unresolved_items": {
+        "mlr-context-5": 0,
+        "mlr-context-6": 0
+      }
+    }
+  },
+  "question": "does the repaired causal attribution explain every retained trajectory, and which classifications does it change",
+  "sessions_changed": 2,
+  "sessions_replayed": 54,
+  "totals": {
+    "contradictions": {
+      "mlr-context-5": 0,
+      "mlr-context-6": 0
+    },
+    "metadata": {
+      "mlr-context-5": 307,
+      "mlr-context-6": 307
+    },
+    "recon": {
+      "mlr-context-5": 123,
+      "mlr-context-6": 123
+    },
+    "runtime": {
+      "mlr-context-5": 407706,
+      "mlr-context-6": 441153
+    },
+    "source": {
+      "mlr-context-5": 191897,
+      "mlr-context-6": 191379
+    },
+    "source_delivered": {
+      "mlr-context-5": 4403086,
+      "mlr-context-6": 3575819
+    },
+    "uncovered": {
+      "mlr-context-5": 0,
+      "mlr-context-6": 0
+    },
+    "unresolved_items": {
+      "mlr-context-5": 1,
+      "mlr-context-6": 1
+    }
+  },
+  "unresolved_components_new": {
+    "bytes": 0,
+    "components": 0
+  }
+}
