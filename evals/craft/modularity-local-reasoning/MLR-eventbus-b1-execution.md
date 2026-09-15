@@ -24,16 +24,23 @@ the preregistration. It is not claimed to be equivalent to whatever ran q1.
 ## 2. The two commands
 
 ```bash
+OC=$HOME/.proofbound/executors/opencode-1.18.29-darwin-arm64/opencode
+
 # Dry run. Resolves and validates the exact configuration b1 would execute.
 # Contacts no provider, consumes no slot, writes no experimental record. Exit 0 iff launchable.
-python3 evals/pb_mlr.py b1-preflight [--executor PATH] [--evidence-root DIR] [--out report.json]
+/usr/bin/python3 evals/pb_mlr.py b1-preflight --executor "$OC" [--clear-stale-views] [--out report.json]
 
 # Execution. Spends money.
-python3 evals/pb_mlr.py b1 --out evals/results/craft-mlr-deepseek-v4-flash-high-paired-eventbus-b1.json \
-  --executor /path/to/opencode-1.18.29 \
+/usr/bin/python3 evals/pb_mlr.py b1 \
+  --out evals/results/craft-mlr-deepseek-v4-flash-high-paired-eventbus-b1.json \
+  --executor "$OC" \
   --credential .local/share/opencode/auth.json=$HOME/.local/share/opencode/auth.json \
   --keep /path/outside/the/repository
 ```
+
+`/usr/bin/python3` is CPython 3.9.6 on this host, which is what §5 records for the frozen host and
+what reproduces the frozen boundary identity. Any ≥3.10 interpreter also runs the runner; it produces
+a different boundary digest, which §5 permits as a host fact.
 
 `--credential NAME=PATH` copies `PATH` to `NAME` inside the view's constructed home, which is the
 only `HOME` anything inside the boundary sees; it is destroyed with the view. The name above is the
@@ -51,16 +58,56 @@ commits only the small summary record, and retained sessions are raw local mater
 | requirement | why | state on the authoring host |
 |---|---|---|
 | macOS with `/usr/bin/sandbox-exec` | the semantic boundary is a macOS sandbox profile; b1 must run inside it | present |
-| `opencode` whose SHA-256 begins `2f24593f1b8e578d` | §5 freezes the executor by content, and the boundary binds its tools by digest | **not met** — this host has 1.18.30, `c9621a0cac01d7fc` |
+| `opencode` whose SHA-256 is the frozen one | §5 freezes the executor by content, and the boundary binds its tools by digest | **met** — acquired in isolation, see below |
 | a provider credential file for `deepseek` | staged into the constructed home, destroyed with the view | supplied at run time |
 | the launching interpreter | compiles the runtime both arms import; §5 records it per slot as a host fact | `/usr/bin/python3` is CPython 3.9.6 here, which is what the frozen host used |
 
-The executor is the one hard blocker. It is **not** waived and b1 is **not** amended to accept this
-host: §5 freezes the executor in the stack table, not among the host-derived identities, and §11 H
-stops the series on executor drift. Pass `--executor` pointing at an isolated installation whose
-digest matches; the normal host installation is left alone. Eligibility is decided on content, never
-on a reported version string, because two builds calling themselves the same version are two
-different boundaries.
+The executor is **not** waived and b1 is **not** amended to accept a different build: §5 freezes it in
+the stack table, not among the host-derived identities, and §11 H stops the series on executor drift.
+Eligibility is decided on content, never on a reported version string, because two builds calling
+themselves the same version are two different boundaries.
+
+### The executor, and how it was obtained
+
+The host's own installation is Homebrew `opencode 1.18.30_1`, `c9621a0cac01d7fc…` — not the frozen
+build. It is left exactly where it is; the frozen build is selected explicitly with `--executor`.
+
+**The full 64-character digest survives in committed evidence**, not merely the 16-character prefix
+§5 prints: six retained result records carry
+`2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669` under `executor.sha256`. So the
+acquisition could be checked against the whole digest rather than against a prefix.
+
+| | |
+|---|---|
+| source | GitHub release `v1.18.29`, repository `anomalyco/opencode` (the `sst/opencode` path redirects there) |
+| asset | `opencode-darwin-arm64.zip`, 46,205,298 bytes, published 2026-09-04 |
+| archive sha256 | `fe764f7f360c584a83e18dd5f23fb1a6b2725f5ee8854b0252fe558f7798e946` |
+| **extracted executable sha256** | **`2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669`** — exact match to the historical digest |
+| binary | Mach-O 64-bit arm64, 144,107,234 bytes, reports `1.18.29` |
+| held at | `~/.proofbound/executors/opencode-1.18.29-darwin-arm64/opencode`, outside the repository |
+
+The digest verified is the **extracted executable's**, never the archive's or a release label's.
+
+**A correction.** An earlier assessment inferred the frozen binary was a Homebrew bottle, because the
+host's current one is. No committed record names any package manager, path or distribution channel —
+that inference had no evidence behind it, and the digest match now shows it was wrong: the frozen
+executor is the upstream release build.
+
+### The boundary reproduces under the frozen host's interpreter
+
+Launched with `/usr/bin/python3` (CPython 3.9.6, what §5 records for the frozen host), the semantic
+boundary identity comes out as **`b88bd43109184459`** — the value the preregistration recorded.
+Launched with Homebrew's CPython 3.14.7 it is `ea507fcde13b58d4`, because the boundary exposes the
+launching interpreter's install path. Both are permitted; the first is closer to the frozen stack and
+is what the commands below use.
+
+The hermeticity rule digest is `e86a9147867ceb7f` against the frozen host's `23a6e8001a46b70f` under
+either interpreter. That rule's identity includes its absolute scan roots and this is a fresh clone
+at a different path, so the difference is positional. What the rule *checks* — five categories,
+eventbus's own source by digest and fingerprint, the hidden gate, the reference solution, prior
+sessions, result records, nothing declared exposed — is pinned directly by
+`tests/test_mlr_b1_execution_path.py::SubstantiveFrozenPropertyTest`, because a digest cannot say
+*why* it moved and "reported, never compared" must not be a place for a substantive change to hide.
 
 ### Host-derived identities are reported, never compared
 

@@ -147,9 +147,14 @@ must not silently reinterpret evidence gathered before it moved.
   The frozen design could not be executed: grading resolved fixture A's oracle, contract and
   vendored package by name, and the series loop drove the unbounded attempt path with a blanket
   retry that §11 C forbids. Both repaired, with a committed bounded runner and a preflight that
-  buys nothing. The one remaining blocker is the executor: §5 freezes `2f24593f1b8e578d` and the
-  authoring host has 1.18.30, `c9621a0cac01d7fc`:
+  buys nothing:
   [execution record](../craft/modularity-local-reasoning/MLR-eventbus-b1-execution.md)
+- Cross-fixture replication, executor prerequisite — **resolved; b1 not yet run**. The frozen
+  executor was acquired in isolation from the upstream `v1.18.29` release and its extracted binary
+  matches the full 64-character historical digest, not merely the prefix §5 prints; under the frozen
+  host's CPython 3.9.6 the semantic boundary identity reproduces `b88bd43109184459`. Preflight is
+  launchable. An earlier inference that the frozen build was a Homebrew bottle was wrong and is
+  withdrawn — no committed record names any distribution channel
 
 ---
 
@@ -192,7 +197,7 @@ load-bearing.
 | MLR execution boundary | 2 trajectories, 0 slots | superseded by the clean-route requalification |
 | MLR field requalification | not run | 4/4 valid and correct — complete path field-qualified |
 | MLR paired `q1`, on the qualified stack | not run | executed, valid — family E · Heterogeneous, 12/12 |
-| MLR cross-fixture `eventbus-b1` | not run | frozen and executable; not run — executor not available |
+| MLR cross-fixture `eventbus-b1` | not run | frozen, executable, preflight launchable; not run |
 
 An empty cell means *not run*, never *worse*.
 
