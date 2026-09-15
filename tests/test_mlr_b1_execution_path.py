@@ -28,6 +28,7 @@ import _mlr            # noqa: E402
 import _mlr_boundary   # noqa: E402
 import _mlr_run        # noqa: E402
 import _mlr_series     # noqa: E402
+import _semantic_view  # noqa: E402
 import _repeat         # noqa: E402
 import pb_mlr          # noqa: E402
 
@@ -557,6 +558,47 @@ class SeriesProcedureTest(unittest.TestCase):
         self.assertEqual(record["stop_condition"], "C")
         self.assertEqual(len(attempts.calls), 1)
 
+    def test_an_attempt_that_reached_the_executor_unpriced_is_not_counted_as_free(self):
+        """Cost is derived from the extracted session, so an attempt that failed before extraction
+        carries none. Adding nothing for it would read an unknown as zero — the one direction a
+        budget must never round.
+        """
+        lost = interrupted_after_launch()
+        lost.pop("cost")
+        record = self.run_series(self.attempts(lost), samples=1)
+        self.assertEqual(record["stop_condition"], "C")
+        account = record["spend"]
+        self.assertEqual(account["derived"], 0.0)
+        self.assertFalse(account["complete"])
+        self.assertEqual(len(account["unpriced"]), 1)
+        self.assertEqual(account["unpriced"][0]["stage"], _mlr_series.WORKER_EXECUTED)
+        self.assertIn("unknown, not zero", account["claim"])
+
+    def test_an_attempt_that_never_reached_the_executor_genuinely_cost_nothing(self):
+        record = self.run_series(self.attempts(failed_before_launch(), self.valid(_mlr.FULL)),
+                                 samples=1)
+        self.assertTrue(record["spend"]["complete"])
+        self.assertEqual(record["spend"]["unpriced"], [])
+        self.assertIn("whole of what this series spent", record["spend"]["claim"])
+
+    def test_the_ceiling_gate_refuses_rather_than_launch_on_a_spend_it_cannot_establish(self):
+        """A gate that read an unknown as zero would keep buying slots on an incomplete figure."""
+        lost = valid_attempt(_mlr.FULL, executor_sha256=self.digest)
+        lost.pop("cost")
+        record = self.run_series(self.attempts(lost), samples=2, budget=0.50, reserve=0.10)
+        self.assertEqual(record["stop_condition"], "J")
+        self.assertEqual(record["stop_detail"]["reason"], "unpriced-attempt")
+        self.assertFalse(record["stop_detail"]["spend"]["complete"])
+        self.assertIn("spend cannot be established", record["measurements"][-1]["reason"])
+
+    def test_a_complete_spend_still_reports_the_ceiling_reason_when_it_is_the_ceiling(self):
+        attempts = self.attempts(*[self.valid(a, cost={"amount": 0.11})
+                                   for a in ("full", "contract", "contract", "full")])
+        record = self.run_series(attempts, budget=0.50, reserve=0.10)
+        self.assertEqual(record["stop_condition"], "J")
+        self.assertEqual(record["stop_detail"]["reason"], "ceiling")
+        self.assertTrue(record["stop_detail"]["spend"]["complete"])
+
     def test_checkpointing_writes_after_every_attempt(self):
         attempts = self.attempts(self.valid("full"), interrupted_after_launch())
         self.run_series(attempts, samples=1)
@@ -709,6 +751,116 @@ class RetrospectLayoutTest(unittest.TestCase):
         without = {k: v for k, v in layout.items() if k not in ("package", "vendored")}
         self.assertEqual(_mlr.classify_path(inside, without), _mlr.WORKSPACE,
                          "which is exactly the misreading the carried fields prevent")
+
+
+class SubstantiveFrozenPropertyTest(unittest.TestCase):
+    """What the host-derived digests are permitted to hide, and what must be checked anyway.
+
+    §5 records the interpreter, the semantic boundary digest and the hermeticity rule digest per
+    slot as execution facts, because each legitimately varies with the machine — the rule's identity
+    includes its absolute scan roots and the boundary exposes the launching interpreter's install
+    path. So a difference in those digests is a host difference and is reported, never compared.
+
+    A digest cannot say *why* it moved. A repository at another path and a rule that quietly stopped
+    controlling the oracle produce equally different digests, so "reported, never compared" would
+    hide the second along with the first. These pin the substantive properties directly, so that the
+    permitted difference cannot conceal a change to what the rule checks or what the boundary
+    exposes. Fixture A's shape was already pinned by q1's freeze test; fixture B's was not.
+    """
+
+    maxDiff = None
+
+    def setUp(self):
+        self.rule = _mlr.hermeticity(fixture=B.root)
+        self.by = {k.category: k for k in self.rule["sensitive"]}
+
+    def test_the_rule_checks_all_five_categories(self):
+        import _hermetic
+        self.assertEqual(sorted(self.by), sorted(_hermetic.CATEGORIES))
+
+    def test_controlled_evidence_is_the_eventbus_source_by_content_and_by_name(self):
+        source = sorted(B.source.glob("*.py"))
+        self.assertTrue(source)
+        controlled = self.by["controlled-evidence"]
+        self.assertEqual(sorted(controlled.digests),
+                         sorted(_mlr.digest_file(p) for p in source))
+        self.assertEqual(sorted(controlled.stems), sorted(p.name for p in source))
+        self.assertTrue(controlled.marks, "the source fingerprint is part of the rule")
+
+    def test_the_oracle_reference_prior_sample_and_results_stay_controlled(self):
+        self.assertEqual(sorted(self.by["oracle"].digests), [_mlr.digest_file(B.gate)])
+        self.assertTrue(self.by["reference-solution"].digests)
+        self.assertEqual(self.by["prior-sample"].contains, (b"MLR-external",))
+        self.assertEqual(self.by["experiment-result"].path_markers, ("craft-mlr-",))
+
+    def test_nothing_is_declared_exposed_before_a_run(self):
+        self.assertEqual(self.rule["declared"], [])
+
+    def test_the_scan_roots_keep_their_meaning(self):
+        """Which places are searched is policy. Where they are on this machine is not."""
+        import tempfile as _tempfile
+        roots = [str(r) for r in self.rule["roots"]]
+        self.assertEqual(len(roots), 3)
+        self.assertEqual(roots[0], _tempfile.gettempdir())
+        self.assertEqual(roots[1], "/tmp")
+        self.assertEqual(Path(roots[2]), Path(__file__).resolve().parents[1],
+                         "the repository is a scanned root and not an exception")
+
+    def test_a_substantive_change_and_a_moved_repository_are_indistinguishable_by_digest(self):
+        """Why the properties above are pinned directly rather than through the identity."""
+        import _hermetic
+        base = _hermetic.identity(self.rule["sensitive"], self.rule["roots"], [])
+        moved = _hermetic.identity(self.rule["sensitive"],
+                                   [*self.rule["roots"][:2], "/elsewhere/proofbound"], [])
+        without_oracle = _hermetic.identity(
+            [k for k in self.rule["sensitive"] if k.category != "oracle"], self.rule["roots"], [])
+        declared = _hermetic.identity(self.rule["sensitive"], self.rule["roots"], ["/an/exposure"])
+        self.assertNotEqual(base, moved, "a moved repository is a permitted host difference")
+        self.assertNotEqual(base, without_oracle, "so is losing a category, to the digest")
+        self.assertNotEqual(base, declared)
+        self.assertEqual(len({moved, without_oracle, declared}), 3,
+                         "three different digests, and the digest cannot say which is which")
+
+    def test_the_boundary_exposes_only_what_the_treatment_requires(self):
+        """The policy's substantive fields, independent of the digest they produce."""
+        policy = _mlr_boundary.policy(executor=None)
+        self.assertIs(policy.network, True, "the executor must reach its provider")
+        self.assertIs(policy.notifications, False)
+        self.assertEqual(policy.declared, ())
+        self.assertEqual(policy.tools, (), "no tool is bound when no executor is selected")
+        self.assertEqual(policy.system_reads, _semantic_view.SYSTEM_READS)
+        self.assertEqual(policy.traversal, _semantic_view.TRAVERSAL)
+        exposure = _mlr_boundary.interpreter_exposure()
+        self.assertEqual(set(policy.extra_reads), set(exposure),
+                         "the only extra readable root is the launching interpreter's install")
+        self.assertEqual(set(policy.system_execs),
+                         set(_semantic_view.SYSTEM_EXECS) | set(exposure))
+
+    def test_the_boundary_binds_its_executor_by_content(self):
+        tmp = Path(tempfile.mkdtemp(prefix="pb-b1-policy-"))
+        self.addCleanup(shutil.rmtree, tmp, True)
+        one, two = tmp / "a", tmp / "b"
+        one.write_bytes(b"one")
+        two.write_bytes(b"two")
+        self.assertEqual(len(_mlr_boundary.policy(executor=one).tools), 1)
+        self.assertNotEqual(_mlr_boundary.policy(executor=one).identity(),
+                            _mlr_boundary.policy(executor=two).identity())
+
+    def test_the_interpreter_requirement_is_enforced_by_the_runtime_not_by_a_digest(self):
+        """Both arms must execute the same compiled module, whatever interpreter compiled it."""
+        full = _mlr.materialise(_mlr.FULL, Path(tempfile.mkdtemp(prefix="pb-b1-i1-")) / "arm",
+                                fixture=B.root)
+        contract = _mlr.materialise(_mlr.CONTRACT,
+                                    Path(tempfile.mkdtemp(prefix="pb-b1-i2-")) / "arm",
+                                    fixture=B.root)
+        for built in (full, contract):
+            self.addCleanup(shutil.rmtree, Path(built["workspace"]).parents[1], True)
+        self.assertEqual(full["runtime_structure"], contract["runtime_structure"],
+                         "the two arms execute the same compiled implementation")
+        self.assertEqual(full["interpreter"], _mlr.interpreter_identity())
+        loaded = _mlr.executed_module_is_not_the_readable_copy(full)
+        self.assertTrue(loaded["from_runtime"], "the module that executes is the compiled one")
+        self.assertTrue(loaded["readable_copy_is_editable"], "and `full` still carries a copy")
 
 
 class BoundedExecutionTest(unittest.TestCase):

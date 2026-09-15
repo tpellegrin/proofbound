@@ -92,15 +92,28 @@ executor, and which does not spend one of the slot's three), `before-launch`, `l
 so resuming re-applies §11 D–I to every attempt already on disk: a series stopped for a leak stays
 stopped, and a restart cannot turn it into a record that reads as clean and complete.
 
-**A known operational cost, accepted deliberately.** When the launcher is entered and then refuses —
-an absent executable, an expired credential, a provider rate limit — the failure very probably
-preceded semantic execution and §11 A would permit a retry. The runner still halts. The launcher's
-classification is a substring match over its own log text, not evidence, and the brief this work was
-done under is explicit that where existing evidence cannot establish whether a retry is permitted,
-automatic continuation is refused and the evidence preserved. The hint is surfaced
-(`launcher_classified_as_pre_semantic`) so a person can resolve the slot quickly; the runner will not
-resolve it for them. The cost is that an expired token on slot 1 stops a twelve-slot series until
-someone looks.
+### An undecided deviation from §11 A, disclosed rather than accepted
+
+When the launcher is entered and then refuses — an absent executable, an expired credential, a
+provider rate limit — the failure very probably preceded semantic execution, and **§11 A would
+permit up to three retries**. This runner halts instead, and once halted `_unfinished_trajectory`
+refuses every later resume of that slot.
+
+That is stricter than the frozen rules, and it is a **deviation, not a policy anyone has ratified**.
+An earlier revision of this document called it "accepted deliberately"; nothing had accepted it but
+the author, and the claim is withdrawn here. What can be said for it: the launcher's classification
+is a substring match over its own log text rather than evidence, so treating it as permission could
+buy a second trajectory for a slot §11 C says is spent — and that is the one error the design most
+needs to avoid. What must be said against it: an expired token on slot 1 stops a twelve-slot series
+and leaves a record that cannot be resumed without a person editing it.
+
+The direction matters. The deviation can only **stop a series early**; it can never add a sample,
+re-roll one, or change a measurement. So a series it halts is an incomplete experiment honestly
+reported, not a corrupted one. The hint is recorded (`launcher_classified_as_pre_semantic`) so a
+person can see immediately which side of the boundary the failure fell on. **If this fires during
+b1, the run stops and is reported as stopped** — it is not to be worked around, and whether §11 A
+should have been followed instead is a decision for a separate review, not for the runner and not
+for whoever is mid-series.
 
 The retry decision turns on one recorded fact — `trajectory_began`, set the instant the launcher is
 entered and never cleared. Everything below that call is the executor and its provider, so no later
@@ -108,6 +121,14 @@ failure (a lost extraction, a grading crash, a killed process) is read as eviden
 happened, and none of them authorises a second trajectory. **A grading failure is never assumed to
 have consumed no tokens**: usage is recorded from the session whenever one exists, and spend counts
 failed and interrupted attempts as well as successful ones.
+
+**Unknown spend is reported as unknown, not as zero.** Cost is derived from the extracted session, so
+an attempt that reached the executor and failed before extraction carries none. Those attempts are
+counted and named in `spend.unpriced`, `spend.complete` says whether the derived figure is the whole
+of it, and the ceiling gate refuses to launch a further slot on a spend it cannot establish rather
+than treating the gap as nothing. An attempt that never reached the executor — a ceiling refusal, a
+residue refusal, a failure before the launcher — genuinely cost nothing and is not counted as
+unpriced.
 
 The runner names the §11 condition that stopped a series and records the evidence. **It does not
 assign a result family.** A family is a reading of an experiment; that is a person's to write.

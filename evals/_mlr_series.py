@@ -284,19 +284,39 @@ def launchable(*, fixture: Path, executor: Path | None, stack: dict[str, Any],
             "blocked_by": [c["check"] for c in blocking]}
 
 
-def _spent(measurements: list[dict[str, Any]]) -> float:
-    """Money actually derived so far, over every attempt that recorded usage.
+def spend(measurements: list[dict[str, Any]]) -> dict[str, Any]:
+    """What the series has spent, and what it cannot say it has spent.
 
-    Failed and interrupted attempts are included, deliberately. An attempt that reached the
-    provider and then lost its extraction spent what it spent, and a ceiling that only counted
-    successes would be a ceiling the series could exceed by failing.
+    Failed and interrupted attempts are priced, deliberately: an attempt that reached the provider
+    and then lost its extraction spent what it spent, and a ceiling that only counted successes
+    would be a ceiling the series could exceed by failing.
+
+    **An attempt that reached the executor and recorded no usage is unpriced, not free.** Cost is
+    derived from the extracted session, so an attempt that failed before extraction — a launcher
+    refusal, a lost database, a killed process — carries no `cost` at all. Adding nothing to the
+    total for it would read an unknown quantity as zero, which is the one direction a budget must
+    never round. Those attempts are counted and named instead, and `complete` says whether the
+    derived figure is the whole of it.
+
+    An attempt that never reached the executor is a different thing and genuinely cost nothing: a
+    ceiling refusal, a residue refusal, or a failure before the launcher was entered.
     """
-    total = 0.0
+    derived, unpriced = 0.0, []
     for m in measurements:
         amount = (m.get("cost") or {}).get("amount")
         if isinstance(amount, (int, float)):
-            total += float(amount)
-    return round(total, 6)
+            derived += float(amount)
+        elif execution_stage(m) in (LAUNCHER_REFUSED, WORKER_EXECUTED):
+            unpriced.append({k: m.get(k) for k in ("item", "repeat", "slot", "attempt", "stage")})
+    return {"derived": round(derived, 6), "unpriced": unpriced, "complete": not unpriced,
+            "claim": ("the derived figure is the whole of what this series spent" if not unpriced
+                      else f"the derived figure omits {len(unpriced)} attempt(s) that reached the "
+                           "executor and recorded no usage; what they spent is unknown, not zero")}
+
+
+def _spent(measurements: list[dict[str, Any]]) -> float:
+    """The derived total alone. Only for callers that also read `spend` for what it omits."""
+    return spend(measurements)["derived"]
 
 
 #: How far an attempt got. The four stages the retry rule has to tell apart, recorded rather than
@@ -391,7 +411,7 @@ def run_bounded_series(out: Path, *, config: dict[str, Any], stack: dict[str, An
                 "stop_condition": condition,
                 "stop_reason": STOP_CONDITIONS.get(condition, condition),
                 "stop_detail": detail, "spent": _spent(measurements),
-                "completed_slots": sorted(done)}
+                "spend": spend(measurements), "completed_slots": sorted(done)}
 
     # A stop is a property of the evidence, not of the process that noticed it. `done` is therefore
     # rebuilt by re-applying §11 D–I to every attempt already on disk, not by trusting `validity`
@@ -436,14 +456,24 @@ def run_bounded_series(out: Path, *, config: dict[str, Any], stack: dict[str, An
         while key not in done and tried < max_attempts_per_slot:
             # Budget before launching, never by cutting one short: a trajectory truncated for money
             # would change the correctness distribution everything else is gated on (§19).
-            if budget is not None and _spent(measurements) + reserve > budget:
+            #
+            # An unpriced attempt stops the gate rather than passing through it. The ceiling is a
+            # promise about money actually spent, and a gate that read an unknown as zero would
+            # keep launching slots on the strength of a figure it knows to be incomplete.
+            account = spend(measurements)
+            if budget is not None and (not account["complete"]
+                                       or account["derived"] + reserve > budget):
+                exceeded = account["derived"] + reserve > budget
                 measurements.append({**slot, "attempt": tried + 1,
                                      "validity": _mlr_run.SETUP_FAILURE,
                                      "trajectory_began": False, "stage": NOT_OFFERED,
-                                     "reason": f"ceiling {budget} would be exceeded "
-                                               f"(spent {_spent(measurements)}, reserve {reserve})"})
-                return stop("J", {"slot": slot, "spent": _spent(measurements),
-                                  "ceiling": budget, "reserve": reserve})
+                                     "reason": (f"ceiling {budget} would be exceeded "
+                                                f"(derived {account['derived']}, reserve {reserve})"
+                                                if exceeded else
+                                                "spend cannot be established: " + account["claim"])})
+                return stop("J", {"slot": slot, "ceiling": budget, "reserve": reserve,
+                                  "spend": account,
+                                  "reason": "ceiling" if exceeded else "unpriced-attempt"})
 
             # The stack is re-checked before every slot, not once at the start. An executor that
             # was upgraded between slot 4 and slot 5 would otherwise change the boundary mid-series
@@ -513,7 +543,8 @@ def run_bounded_series(out: Path, *, config: dict[str, Any], stack: dict[str, An
 
     _repeat.write_series(out, config, measurements, extra=extra)
     return {"config": config, "measurements": measurements, "stopped": None,
-            "spent": _spent(measurements), "completed_slots": sorted(done)}
+            "spent": _spent(measurements), "spend": spend(measurements),
+            "completed_slots": sorted(done)}
 
 
 def config_fixture(config: dict[str, Any], stack: dict[str, Any]) -> Path:
