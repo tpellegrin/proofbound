@@ -61,20 +61,36 @@ class Fixture:
     A second fixture is a replication of the question, not a change to it, so the layout facts move
     into a descriptor and every function keeps the signature it already had: a caller selects a
     fixture by passing its root, exactly as it always passed `FIXTURE`.
+
+    The oracle belongs here for the same reason the contract does. It is a *property of the
+    fixture*, not a global setting: the two fixtures' hidden gates happen to differ in name as well
+    as in content, and a gate resolved against the wrong fixture either raises or — far worse —
+    silently grades one module's work with another module's tests.
     """
 
-    __slots__ = ("root", "package", "vendored", "contract")
+    __slots__ = ("root", "package", "vendored", "contract", "oracle")
 
-    def __init__(self, root: Path, package: str, vendored: Path, contract: str):
+    def __init__(self, root: Path, package: str, vendored: Path, contract: str, oracle: str):
         self.root = Path(root)
         self.package = package
         self.vendored = Path(vendored)
         self.contract = contract
+        self.oracle = oracle
 
     @property
     def source(self) -> Path:
         """The readable implementation source, which `full` gets and `contract` does not."""
         return self.root / "runtime" / self.package
+
+    @property
+    def task(self) -> Path:
+        """The engineering task both arms are given."""
+        return self.root / "tasks" / "external.md"
+
+    @property
+    def gate(self) -> Path:
+        """The hidden correctness oracle, which no arm's workspace ever contains."""
+        return self.root / "hidden" / self.oracle
 
     def __repr__(self):
         return f"Fixture({self.package!r})"
@@ -82,12 +98,18 @@ class Fixture:
 
 # Where the vendored, readable copy sits in the `full` workspace. Deliberately not on `sys.path`:
 # a readable copy that could also be imported would let the two arms execute different files.
+#
+# `objectstore` names the second oracle: MLR-C3 ran under v1, which rejected a product-correct
+# restructuring, and v2 asserts the product surface only. `eventbus` was authored against a single
+# gate and names it. Historical evidence keeps whatever oracle it was actually judged by.
 OBJECTSTORE = Fixture(root=_CRAFT / "fixture", package="objectstore",
                       vendored=Path("third_party") / "objectstore-1.4.0",
-                      contract="docs/storage-contract.md")
+                      contract="docs/storage-contract.md",
+                      oracle="external_test_v2.py")
 EVENTBUS = Fixture(root=_CRAFT / "fixture-b", package="eventbus",
                    vendored=Path("third_party") / "eventbus-2.1.0",
-                   contract="docs/eventbus-contract.md")
+                   contract="docs/eventbus-contract.md",
+                   oracle="external_test.py")
 FIXTURES = (OBJECTSTORE, EVENTBUS)
 
 FIXTURE = OBJECTSTORE.root
@@ -95,14 +117,28 @@ VENDORED = OBJECTSTORE.vendored
 
 
 def fixture_for(root: Path | str | None = None) -> Fixture:
-    """The descriptor for a fixture root. Unknown roots fall back to the original fixture."""
+    """The descriptor for a fixture root.
+
+    Two things that used to look alike are now told apart. **Omitting** the fixture selects the
+    original one, because every signature in this package defaults to it and every record written
+    before there was a second fixture means it — that default is legitimate historical behaviour and
+    is preserved exactly. **Naming a root that is not a fixture** is refused, because the failure it
+    used to produce was silent: a caller that asked for one fixture and was handed another would go
+    on to materialise, stage, grade and *label* the wrong module's data under the asking
+    experiment's identity. A wrong answer delivered confidently is the defect class this programme
+    has already paid for; an exception is the cheap version of it.
+    """
     if isinstance(root, Fixture):
         return root
-    resolved = Path(root).resolve() if root is not None else FIXTURE.resolve()
+    if root is None:
+        return OBJECTSTORE
+    resolved = Path(root).resolve()
     for spec in FIXTURES:
         if spec.root.resolve() == resolved:
             return spec
-    return OBJECTSTORE
+    raise FixtureError(
+        f"not a known MLR fixture root: {root!r}; "
+        f"known roots are {', '.join(str(f.root) for f in FIXTURES)}")
 
 _IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", ".DS_Store")
 
@@ -221,6 +257,11 @@ def materialise(arm: str, into: Path, *, fixture: Path = FIXTURE) -> dict[str, A
         "arm": arm,
         "workspace": workspace,
         "runtime": runtime,
+        # Which fixture this is, carried on the build rather than re-derived by every later stage.
+        # Grading needs the hidden gate and the contract path, and both are fixture facts; a stage
+        # that guessed them from a global would grade fixture B with fixture A's oracle. Absent on
+        # mappings built before there was a second fixture, which `fixture_for` reads as objectstore.
+        "fixture": str(spec.root),
         "package": spec.package,
         "vendored": spec.vendored,
         "workspace_digest": digest_tree(workspace),

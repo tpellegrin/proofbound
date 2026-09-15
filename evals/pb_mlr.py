@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 """Run the modularity calibration's pre-registered series, one attempt at a time.
 
-Two subcommands, and the separation between them is the point. `pilot` runs `full` alone to answer
-whether there is anything for the paired treatment to remove; `analyse` reads a completed series and
-classifies it against the categories that were declared before the first call. Neither invents a
-category, and the pilot record carries its own experiment identity so it can never be mistaken for —
-or spliced into — paired calibration evidence.
+`pilot` runs `full` alone to answer whether there is anything for the paired treatment to remove;
+`paired` runs the two arms against each other; `analyse` reads a completed series and classifies it
+against the categories that were declared before the first call. None of them invents a category,
+and each record carries its own experiment identity so one can never be mistaken for — or spliced
+into — another's evidence.
+
+`b1` and `b1-preflight` run the one frozen experiment whose procedure differs from `paired`'s: the
+cross-fixture replication executes inside the semantic boundary and separates a retryable
+infrastructure failure from a semantic trajectory that began, which a blanket retry cannot do. The
+procedure lives in `_mlr_series`; see `MLR-eventbus-b1-execution.md`. `b1-preflight` resolves and
+validates exactly what `b1` would run and buys nothing.
 
 Checkpointing is `_repeat`'s: every attempt is written the moment it finishes, into preallocated
 slots generated before execution, under a frozen configuration hash that refuses to resume across a
@@ -18,21 +24,70 @@ import argparse
 import json
 import shutil
 import statistics
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+ROOT = Path(__file__).resolve().parents[1]
+
 import _hermetic       # noqa: E402
 import _mlr            # noqa: E402
 import _mlr_context    # noqa: E402
 import _mlr_run        # noqa: E402
+import _mlr_series     # noqa: E402
 import _pricing        # noqa: E402
 import _repeat         # noqa: E402
 
 PILOT = "mlr-c3-full-headroom-pilot"
 PILOT_R = "mlr-c3r-full-headroom-pilot"
+
+#: The frozen stack of `MLR-eventbus-b1-preregistration.md`, transcribed from the committed
+#: document. It is held here so the runner can refuse a configuration the document did not freeze,
+#: and `tests/test_mlr_b1_execution_path.py::FrozenStackFidelityTest` asserts that the document is
+#: byte-for-byte the one this was read from and that every value below still appears in it — the
+#: document is the authority and this is a machine-readable copy of it, which is only safe while a
+#: test keeps the two from drifting apart.
+#:
+#: `host_derived` is the set §5 records *per slot as execution facts*. It is carried so preflight can
+#: show a person what this host contributes beside what the frozen host contributed. Nothing compares
+#: against it, and a difference there is not drift.
+B1 = {
+    "revision": "eventbus-b1",
+    "experiment": "mlr-deepseek-v4-flash-high-paired-eventbus-b1",
+    "preregistration": "evals/craft/modularity-local-reasoning/MLR-eventbus-b1-preregistration.md",
+    "preregistration_sha256":
+        "c2dd49a0864d02bb189aed01d84a2f80950605ece42659138bac0c7074c379a5",
+    "fixture": str(_mlr.EVENTBUS.root),
+    "package": "eventbus",
+    "source_digest": "9999cc1365c98e23",
+    "task_sha256": "d0eb34a91a7b0935",
+    "contract_sha256": "0be8e117bbb3050c",
+    "gate_sha256": "542d27df3fff8f52",
+    "oracle": "external_test.py",
+    # §5 freezes `opencode` 1.18.29 by content. The digest, not the version string, is what the
+    # semantic boundary binds and therefore what eligibility is decided on.
+    "executor_sha256": "2f24593f1b8e578d",
+    "model": "deepseek/deepseek-v4-flash",
+    "variant": "high",
+    "thinking": "enabled",
+    "role": "implementer",
+    "permission_flag": "--auto",
+    "price_id": "deepseek-2026-09-09",
+    "telemetry_version": "mlr-context-6",
+    "profile_version": "profile-1",
+    "samples": 6,                       # §8, fixed; no adaptive extension, no sequential stopping
+    "max_attempts_per_slot": 3,         # §10
+    "ceiling": 0.50,                    # §19
+    "reserve": 0.10,                    # §19
+    "host_derived": {                   # §5, as observed on the frozen host — never compared
+        "interpreter": "CPython 3.9.6",
+        "boundary_identity": "b88bd43109184459",
+        "hermeticity_identity": "23a6e8001a46b70f",
+    },
+}
 
 # Declared in MLR-C3-pilot-preregistration.md §12, before the first call, and read from here so the
 # analysis cannot quietly acquire a threshold that suits the numbers it received.
@@ -67,9 +122,18 @@ def _experiment_id(model: str, variant: str | None, arms: list[str],
 
 def configuration(*, model: str, samples: int, arms: list[str], variant: str | None = None,
                   thinking: str = "enabled", revision: str | None = None,
-                  purpose: str | None = None) -> dict[str, Any]:
-    """Everything that must not vary within one series."""
-    fixture = _mlr.FIXTURE
+                  purpose: str | None = None,
+                  fixture: Path = _mlr.FIXTURE) -> dict[str, Any]:
+    """Everything that must not vary within one series.
+
+    The fixture is a parameter and not a constant, but **no key was added for it**. Five of the
+    digests below are already fixture facts, so selecting a different fixture already moves the
+    frozen identity that decides whether two records may be pooled or resumed into one another —
+    adding a sixth name for the same distinction would be persistent state for a fact the record
+    already derives (`P3`). Omitting it keeps every objectstore configuration byte-identical to the
+    one this function produced before there was a second fixture.
+    """
+    spec = _mlr.fixture_for(fixture)
     return {
         # The model is part of the experiment's name, not only of its configuration hash. Two
         # series that differ by model are different experiments, and a name that hid that would
@@ -88,15 +152,16 @@ def configuration(*, model: str, samples: int, arms: list[str], variant: str | N
         "permission_flag": _mlr_run.AUTO_FLAG,
         "arms": arms,
         "samples_per_arm": samples,
-        "fixture_digest": _mlr.digest_tree(fixture),
-        "source_digest": _mlr.digest_tree(fixture / "runtime" / "objectstore"),
-        "contract_sha256": _mlr.digest_file(fixture / "base" / "docs" / "storage-contract.md"),
-        "task_sha256": _mlr.digest_file(fixture / "tasks" / "external.md"),
+        "fixture_digest": _mlr.digest_tree(spec.root),
+        "source_digest": _mlr.digest_tree(spec.source),
+        "contract_sha256": _mlr.digest_file(spec.root / "base" / spec.contract),
+        "task_sha256": _mlr.digest_file(spec.task),
         # The oracle actually used, not the one that came first. This bound `external_test.py`
         # while `_mlr_run.ORACLE` had moved to the second oracle, so a change to the oracle in force
-        # would not have moved the frozen identity.
-        "gate_sha256": _mlr.digest_file(fixture / "hidden" / _mlr_run.ORACLE),
-        "oracle": _mlr_run.ORACLE,
+        # would not have moved the frozen identity. It is now read from the fixture for the same
+        # reason: the gate in force is the one that fixture ships, not a module-wide setting.
+        "gate_sha256": _mlr.digest_file(spec.gate),
+        "oracle": spec.oracle,
         # Model controls are part of the frozen configuration, not incidental runtime detail: a
         # provider that changes its default effort would otherwise alter a frozen experiment with
         # nothing in the record moving.
@@ -110,7 +175,7 @@ def configuration(*, model: str, samples: int, arms: list[str], variant: str | N
         # What "no unintended copy is reachable" meant for this series: which categories were
         # checked, by which identities, over which roots. Widening the roots or declaring an
         # exposure changes the rule, and therefore changes the experiment.
-        "hermeticity_identity": _mlr.preflight_identity(),
+        "hermeticity_identity": _mlr.preflight_identity(fixture=spec.root),
         # Bumped whenever what an origin *means* changes. A record carries the version its numbers
         # were produced under, so a later classifier cannot silently reinterpret an earlier result.
         "telemetry_version": "mlr-context-6",
@@ -230,6 +295,124 @@ def run_series(out: Path, *, model: str, samples: int, arms: list[str],
             if attempt.get("validity") == _mlr_run.VALID:
                 done.add(key)
     return {"config": config, "measurements": measurements}
+
+
+def b1_configuration(stack: dict[str, Any] | None = None) -> dict[str, Any]:
+    """The configuration `MLR-eventbus-b1-preregistration.md` describes, resolved from this host.
+
+    Nothing here is a choice. The model, effort, N, revision and fixture all come from the frozen
+    stack, and the digests come from the fixture the stack names — which is why an edited fixture
+    changes the frozen identity and a resumed record from a different fixture is refused rather than
+    extended.
+    """
+    stack = stack or B1
+    return configuration(model=stack["model"], samples=stack["samples"],
+                         arms=list(_mlr.ARMS), variant=stack["variant"],
+                         thinking=stack["thinking"], revision=stack["revision"],
+                         purpose=("cross-fixture replication: whether withholding direct readable "
+                                  "implementation source changes the amount and kind of "
+                                  "implementation representation entering the agent's reasoning "
+                                  "when the software boundary is structurally different"),
+                         fixture=Path(stack["fixture"]))
+
+
+def _b1_record_extras(stack: dict[str, Any]) -> dict[str, Any]:
+    """What the record carries beyond the configuration: the freeze it was run under.
+
+    `execution_commit` is read at run time and is a fact about *when* the code ran, not a proof of
+    it. It says which tree produced these attempts; it does not establish that a matching tree in
+    anyone else's clone would produce them, and it is not evidence of when a semantic call was made.
+    """
+    head = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+                          capture_output=True, text=True, check=False)
+    return {
+        "preregistration": stack["preregistration"],
+        "preregistration_sha256": stack["preregistration_sha256"],
+        "execution_commit": head.stdout.strip() or None,
+        "ceiling": stack["ceiling"],
+        "reserve": stack["reserve"],
+        "max_attempts_per_slot": stack["max_attempts_per_slot"],
+        "samples_per_arm": stack["samples"],
+        "evidence_class": "experiment",
+        "host_derived_identities": (
+            "interpreter, semantic boundary and hermeticity rule are computed on the execution "
+            "host; recorded per measurement"),
+        "order": [{"slot": i + 1, "pair": s["repeat"], "arm": s["item"]}
+                  for i, s in enumerate(slots(list(_mlr.ARMS), stack["samples"]))],
+    }
+
+
+def b1_preflight(*, executor: Path | None, evidence_roots: list[Path] | None = None,
+                 stack: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Resolve and validate exactly what `b1` would run, without buying anything.
+
+    No provider is contacted, no slot is consumed and no experimental record is written. A green
+    report is a statement about this host and this tree; it is not a qualification, and it is not
+    evidence that any earlier experiment ran.
+    """
+    stack = stack or B1
+    config = b1_configuration(stack)
+    document = ROOT / stack["preregistration"]
+    report = _mlr_series.launchable(fixture=Path(stack["fixture"]), executor=executor,
+                                    stack=stack, evidence_roots=evidence_roots)
+    frozen_document = (document.is_file()
+                       and _mlr.digest_file(document) == stack["preregistration_sha256"])
+    report["checks"].insert(0, {
+        "check": "the preregistration is the committed frozen one", "ok": frozen_document,
+        "detail": {"path": stack["preregistration"],
+                   "frozen": stack["preregistration_sha256"][:16],
+                   "observed": _mlr.digest_file(document)[:16] if document.is_file() else None},
+        "blocking": True})
+    try:
+        _mlr_series.config_fixture(config, stack)
+        agrees, disagreement = True, None
+    except _mlr_series.SeriesRefused as exc:
+        agrees, disagreement = False, str(exc)
+    report["checks"].insert(1, {
+        "check": "the resolved configuration is the frozen stack's fixture", "ok": agrees,
+        "detail": disagreement, "blocking": True})
+    blocking = [c for c in report["checks"] if c["blocking"] and not c["ok"]]
+    report.update({
+        "experiment": config["experiment"],
+        "identity_matches_the_freeze": config["experiment"] == stack["experiment"],
+        "frozen_identity": _repeat.frozen_identity(config),
+        "n_pairs": stack["samples"],
+        "slots": len(slots(list(_mlr.ARMS), stack["samples"])),
+        "order": _b1_record_extras(stack)["order"],
+        "max_attempts_per_slot": stack["max_attempts_per_slot"],
+        "ceiling": stack["ceiling"], "reserve": stack["reserve"],
+        "telemetry_version": config["telemetry_version"],
+        "profile_version": config["profile_version"],
+        "launchable": not blocking,
+        "blocked_by": [c["check"] for c in blocking],
+        "note": ("preflight only: no provider call, no semantic slot, no experimental result. "
+                 "A launchable report does not re-qualify the instrument and does not re-establish "
+                 "any historical run."),
+    })
+    return report
+
+
+def run_b1(out: Path, *, executor: Path, credentials: dict[str, Path] | None = None,
+           keep: Path | None = None, evidence_roots: list[Path] | None = None,
+           stack: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Execute the frozen `eventbus-b1` replication through the semantic boundary.
+
+    Refuses to start unless `b1_preflight` is launchable, so the money is never spent discovering
+    something a digest comparison already knew. There is no unbounded fallback: if the boundary
+    cannot be constructed the series does not run.
+    """
+    stack = stack or B1
+    ready = b1_preflight(executor=executor, evidence_roots=evidence_roots, stack=stack)
+    if not ready["launchable"]:
+        raise _mlr_series.SeriesRefused(
+            "b1 is not launchable on this host: " + "; ".join(ready["blocked_by"]))
+    config = b1_configuration(stack)
+    return _mlr_series.run_bounded_series(
+        out, config=config, stack=stack, arms=list(_mlr.ARMS), samples=stack["samples"],
+        executor=Path(ready["executor"]["path"]), slots=slots, credentials=credentials, keep=keep,
+        budget=stack["ceiling"], reserve=stack["reserve"],
+        max_attempts_per_slot=stack["max_attempts_per_slot"],
+        evidence_roots=evidence_roots, extra=_b1_record_extras(stack))
 
 
 def _source_bytes(measurement: dict[str, Any]) -> int:
@@ -520,21 +703,38 @@ def _rebuilt(measurement: dict[str, Any]) -> dict[str, Any] | None:
     Path classification needs to know where the workspace and the runtime were. Both are prefixes of
     the attempt directory the record kept, so nothing has to be stored twice to make an old session
     readable again.
+
+    Which *fixture* the session belongs to is carried through as well. Attribution selects its
+    module fingerprints from `package` and path classification finds the vendored copy from
+    `vendored`; both fall back to objectstore when absent, which is right for a record written
+    before there was a second fixture and wrong for one that names eventbus. Dropping them here
+    would have re-read an eventbus session with objectstore fingerprints and reported its `full`
+    arm's direct source as zero — the instrument confidently answering about the wrong module,
+    which is the defect class this programme has already paid for twice.
     """
+    layout = {"arm": measurement.get("arm")}
+    for field in ("fixture", "package", "vendored"):
+        if measurement.get(field) is not None:
+            layout[field] = measurement[field]
+
     event_dir = measurement.get("event_dir") or ""
     marker = "/arm/workspace/"
     if marker in event_dir:
         root = event_dir.split(marker)[0]
-        return {"arm": measurement.get("arm"), "workspace": f"{root}/arm/workspace",
-                "runtime": f"{root}/arm/runtime"}
+        return {**layout, "workspace": f"{root}/arm/workspace", "runtime": f"{root}/arm/runtime"}
     # Attempts run inside a constructed semantic view record the attempt directory relative to the
     # view, so the layout comes from the absolute path the evidence gate already kept.
     log = (measurement.get("evidence_gate") or {}).get("log") or ""
     if "/workspace/" in log:
         view = log.split("/workspace/")[0]
-        return {"arm": measurement.get("arm"), "workspace": f"{view}/workspace",
-                "runtime": f"{view}/runtime"}
+        return {**layout, "workspace": f"{view}/workspace", "runtime": f"{view}/runtime"}
     return None
+
+
+def _which_executor() -> Path | None:
+    """The executor this host would use if none was named. Discovery only; eligibility is separate."""
+    found = shutil.which("opencode")
+    return Path(found) if found else None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -562,6 +762,28 @@ def main(argv: list[str] | None = None) -> int:
     q.add_argument("--purpose", default=None, help="what this series is for, recorded verbatim")
     q.add_argument("--evidence-root", type=Path, action="append", default=[],
                    help="an evidence archive to include in the per-slot hermeticity scan")
+
+    b = sub.add_parser("b1-preflight",
+                       help="resolve and validate the frozen eventbus-b1 stack; buys nothing")
+    b.add_argument("--executor", type=Path, default=None,
+                   help="the opencode binary to use; defaults to the one on PATH. Point this at an "
+                        "isolated installation matching the frozen identity rather than changing "
+                        "the one this host normally uses")
+    b.add_argument("--evidence-root", type=Path, action="append", default=[],
+                   help="an evidence archive to include in the hermeticity scan")
+    b.add_argument("--clear-stale-views", action="store_true",
+                   help="remove semantic views a killed process left behind")
+    b.add_argument("--out", type=Path, default=None)
+
+    e = sub.add_parser("b1", help="execute the frozen eventbus-b1 replication (spends money)")
+    e.add_argument("--out", type=Path, required=True)
+    e.add_argument("--executor", type=Path, default=None)
+    e.add_argument("--credential", action="append", default=[], metavar="NAME=PATH",
+                   help="a provider auth file to stage into the constructed home, destroyed with "
+                        "the view")
+    e.add_argument("--keep", type=Path, default=None,
+                   help="directory to retain each slot's extracted evidence in")
+    e.add_argument("--evidence-root", type=Path, action="append", default=[])
 
     a = sub.add_parser("analyse", help="classify a completed series")
     a.add_argument("--record", type=Path, required=True)
@@ -601,6 +823,34 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(paired_analysis({**record["config"], **record}),
                          indent=2, sort_keys=True))
         return 0
+    if args.command in {"b1-preflight", "b1"}:
+        executor = args.executor or _which_executor()
+        roots = [Path(p) for p in (getattr(args, "evidence_root", []) or [])]
+        if getattr(args, "clear_stale_views", False):
+            for removed in _mlr_series.clear_stale_views():
+                print(f"removed stale view {removed}", file=sys.stderr)
+        if args.command == "b1-preflight":
+            report = b1_preflight(executor=executor, evidence_roots=roots)
+            text = json.dumps(report, indent=2, sort_keys=True)
+            if args.out:
+                Path(args.out).write_text(text + "\n", encoding="utf-8")
+            print(text)
+            return 0 if report["launchable"] else 1
+        credentials = {}
+        for pair in args.credential or []:
+            name, _, path = pair.partition("=")
+            if not name or not path:
+                raise SystemExit(f"--credential expects NAME=PATH, got {pair!r}")
+            credentials[name] = Path(path)
+        try:
+            record = run_b1(args.out, executor=executor, credentials=credentials,
+                            keep=args.keep, evidence_roots=roots)
+        except _mlr_series.SeriesRefused as exc:
+            print(json.dumps({"refused": str(exc)}, indent=2), file=sys.stderr)
+            return 2
+        print(json.dumps({k: record[k] for k in record
+                          if k not in ("config", "measurements")}, indent=2, sort_keys=True))
+        return 0 if record.get("stopped") is None else 1
     if args.command == "preflight":
         roots = [Path(p) for p in (args.evidence_root or [])]
         removed = []

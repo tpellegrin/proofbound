@@ -143,6 +143,13 @@ must not silently reinterpret evidence gathered before it moved.
   N and slot order as q1; the fixture is the one changed dimension. N justified from replication
   design and the fixture-independent half of the pre-q1 rationale, never from q1's outcome:
   [preregistration](../craft/modularity-local-reasoning/MLR-eventbus-b1-preregistration.md)
+- Cross-fixture replication, execution path — **committed and deterministically verified; not run**.
+  The frozen design could not be executed: grading resolved fixture A's oracle, contract and
+  vendored package by name, and the series loop drove the unbounded attempt path with a blanket
+  retry that §11 C forbids. Both repaired, with a committed bounded runner and a preflight that
+  buys nothing. The one remaining blocker is the executor: §5 freezes `2f24593f1b8e578d` and the
+  authoring host has 1.18.30, `c9621a0cac01d7fc`:
+  [execution record](../craft/modularity-local-reasoning/MLR-eventbus-b1-execution.md)
 
 ---
 
@@ -184,9 +191,16 @@ load-bearing.
 | MLR hermeticity precondition | not run | not met — the host holds reachable copies of the controlled evidence |
 | MLR execution boundary | 2 trajectories, 0 slots | superseded by the clean-route requalification |
 | MLR field requalification | not run | 4/4 valid and correct — complete path field-qualified |
-| MLR paired (`full` vs `contract`) | attempted, invalid — provider outage | frozen on the qualified stack, not executed |
+| MLR paired `q1`, on the qualified stack | not run | executed, valid — family E · Heterogeneous, 12/12 |
+| MLR cross-fixture `eventbus-b1` | not run | frozen and executable; not run — executor not available |
 
 An empty cell means *not run*, never *worse*.
+
+`MLR paired (full vs contract)` is the earlier attempt under each model — the Nemotron one lost to a
+provider outage, the DeepSeek one to an attribution escape. Both are separate experiments from `q1`
+and are never pooled with it, which is why `q1` keeps its own row rather than replacing theirs. This
+table previously carried two rows with the same name, one of which described `eventbus-b1` while
+`q1`'s executed result appeared nowhere; the rows below it are the correction.
 
 ## How this page is maintained
 

@@ -103,7 +103,7 @@ def stage(view: _semantic_view.View, arm: str, *, fixture: Path = _mlr.FIXTURE,
     inside the view — so `grade`, the attribution ledger and the profile keep working on exactly the
     shapes they were written for.
     """
-    task = Path(task) if task is not None else fixture / "tasks" / "external.md"
+    task = Path(task) if task is not None else _mlr.fixture_for(fixture).task
     holder = Path(tempfile.mkdtemp(prefix="pb-mlr-stage-"))
     try:
         prepared = _mlr.materialise(arm, holder / "arm", fixture=fixture)
@@ -274,12 +274,20 @@ def run_bounded_attempt(arm: str, *, model: str, variant: str | None, executor: 
     hidden gate is never a file the subject could have found.
     """
     started = time.time()
+    spec = _mlr.fixture_for(fixture)
     result: dict[str, Any] = {
         "arm": arm, "model": model, "harness": "opencode-cli", "role": _mlr_run.ROLE,
-        "auto_flag": _mlr_run.AUTO_FLAG, "variant": variant, "oracle": _mlr_run.ORACLE,
+        "auto_flag": _mlr_run.AUTO_FLAG, "variant": variant, "oracle": spec.oracle,
+        "fixture": str(spec.root), "package": spec.package,
         "validity": _mlr_run.HARNESS_FAILURE, "reason": None,
         "executor": executor_identity(executor),
         "interpreter": sys.version.split()[0],
+        # Whether this attempt can still be retried without buying a second semantic trajectory.
+        # Set the instant the launcher is entered and never cleared: everything below that call is
+        # the executor and its provider, so after it nothing downstream — an extraction defect, a
+        # grading crash, a killed process — may be read as "no model call happened". A retry
+        # decision that assumed otherwise would re-roll a trajectory the design says is immutable.
+        "trajectory_began": False,
     }
     extraction = Path(tempfile.mkdtemp(prefix="pb-mlr-out-"))
     try:
@@ -309,6 +317,7 @@ def run_bounded_attempt(arm: str, *, model: str, variant: str | None, executor: 
                 result["reason"] = "hermeticity preflight refused the environment"
                 return result
 
+            result["trajectory_began"] = True
             launched = launch(view, staged, variant=variant, cleared=cleared, timeout=timeout)
             result["launch_returncode"] = launched.returncode
             if launched.returncode != 0:

@@ -126,7 +126,7 @@ def _prepare(built: dict[str, Any], root: Path, *, model: str,
 
 
 def grade(built: dict[str, Any], root: Path, *,
-          oracle: str = ORACLE) -> dict[str, Any]:
+          oracle: str | None = None) -> dict[str, Any]:
     """Deterministic correctness, and whether the attempt stayed on its side of the boundary.
 
     Three independent facts, none of them a judgement: the hidden external gate, the service's own
@@ -135,15 +135,25 @@ def grade(built: dict[str, Any], root: Path, *,
 
     The oracle is named in the result. A correctness number whose gate version is unrecorded cannot
     be compared with anything later, and MLR-C3 is the reason that matters here.
+
+    **Every path comes from the build, not from a module constant.** This function used to name
+    `FIXTURE`, `storage-contract.md` and `objectstore` directly, which made it silently
+    fixture-specific while everything below it had already been parameterised: grading a second
+    fixture raised on a missing contract inside a blanket `except`, so a plumbing omission would
+    have surfaced as twelve infrastructure failures rather than as the configuration error it was.
+    An explicit `oracle` still overrides, because historical evidence keeps the gate version it was
+    actually judged by.
     """
+    spec = _mlr.fixture_for(built.get("fixture"))
+    oracle = oracle or spec.oracle
     started = time.time()
-    gate = _mlr.run_gate(built, _mlr.FIXTURE / "hidden" / oracle,
+    gate = _mlr.run_gate(built, spec.root / "hidden" / oracle,
                          data_root=root / "grade-gate")
     regression = _mlr.run_tests(built, data_root=root / "grade-regression")
     verification_seconds = round(time.time() - started, 3)
     workspace = Path(built["workspace"])
-    contract_now = _mlr.digest_file(workspace / "docs" / "storage-contract.md")
-    vendored_now = (_mlr.digest_tree(workspace / _mlr.VENDORED / "objectstore")
+    contract_now = _mlr.digest_file(workspace / spec.contract)
+    vendored_now = (_mlr.digest_tree(workspace / spec.vendored / spec.package)
                     if _mlr.arm_has_readable_copy(built) else None)
     return {
         "oracle": oracle,
@@ -181,12 +191,14 @@ def pin_interpreter(root: Path, env: dict[str, str]) -> dict[str, str]:
 
 
 def run_attempt(arm: str, *, model: str, task: Path | None = None, keep: Path | None = None,
-                timeout: int = ATTEMPT_TIMEOUT_SECONDS, oracle: str = ORACLE,
+                timeout: int = ATTEMPT_TIMEOUT_SECONDS, oracle: str | None = None,
                 variant: str | None = VARIANT,
                 fixture: Path = _mlr.FIXTURE) -> dict[str, Any]:
     """One arm, one fresh execution, ungraded context accounting plus a deterministic verdict."""
     started = time.time()
-    task = Path(task) if task is not None else fixture / "tasks" / "external.md"
+    spec = _mlr.fixture_for(fixture)
+    oracle = oracle or spec.oracle
+    task = Path(task) if task is not None else spec.task
     holder = tempfile.mkdtemp(prefix="pb-mlr-")
     root = Path(holder)
     result: dict[str, Any] = {"arm": arm, "model": model, "harness": "opencode-cli", "role": ROLE,

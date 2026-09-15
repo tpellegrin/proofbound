@@ -152,22 +152,61 @@ class FrozenDesignTest(unittest.TestCase):
         self.assertEqual(_mlr_run.AUTO_FLAG, "--auto")
 
 
-    def test_the_semantic_boundary_is_the_qualified_one(self):
-        """Only checkable where the executor is: the boundary identity binds its tools by digest."""
-        executor = shutil.which("opencode")
-        if executor is None:                                # pragma: no cover - depends on host
-            self.skipTest("the executor is not installed here")
+    def test_the_semantic_boundary_binds_its_executor_by_content(self):
+        """The property that must hold everywhere: the boundary's identity is of its tools' bytes.
+
+        This used to assert that *this host's* installed `opencode` hashes to `2f24593f1b8e578d`,
+        which is not a property of the repository at all — it is a statement about one machine on
+        one day, and it failed the moment the host upgraded from 1.18.29 to 1.18.30 while CI, which
+        installs no executor at all, silently skipped it. That is the fourth instance of the same
+        mistake in this file's history: a host-derived value frozen as though it were portable.
+
+        What is portable is checked here, with a file this test writes: two executors with different
+        bytes are two different boundaries, and the same executor is the same boundary every time.
+        Whether *this* host may run the frozen experiment is a launch question, not a unit-test
+        question, and it is enforced by `_mlr_series.executor_eligibility` — see
+        `tests/test_mlr_b1_execution_path.py`, which exercises absent, matching and mismatching
+        executors on any platform.
+        """
         import _mlr_boundary
-        # The executor's bytes are the same whoever asks.
-        self.assertEqual(_mlr_boundary.executor_identity(Path(executor))["sha256"][:16],
-                         "2f24593f1b8e578d")
-        identity = _mlr_boundary.policy(executor=Path(executor)).identity()
-        self.assertEqual(identity, _mlr_boundary.policy(executor=Path(executor)).identity(),
+        import _mlr_series
+        tmp = Path(tempfile.mkdtemp(prefix="pb-q1-exec-"))
+        self.addCleanup(shutil.rmtree, tmp, True)
+        one, two = tmp / "one", tmp / "two"
+        one.write_bytes(b"#!/bin/sh\nexit 0\n")
+        two.write_bytes(b"#!/bin/sh\nexit 1\n")
+
+        self.assertEqual(_mlr_boundary.executor_identity(one)["sha256"],
+                         _mlr_boundary.executor_identity(one)["sha256"],
+                         "an executor's identity is of its bytes, not of the moment")
+        self.assertNotEqual(_mlr_boundary.executor_identity(one)["sha256"],
+                            _mlr_boundary.executor_identity(two)["sha256"])
+        self.assertEqual(_mlr_boundary.policy(executor=one).identity(),
+                         _mlr_boundary.policy(executor=one).identity(),
                          "the identity is of the policy, not of the moment")
-        if not platform.python_version().startswith("3.9."):
-            self.skipTest("the boundary exposes the launching interpreter, so the frozen digest "
-                          "belongs to CPython 3.9.6")
-        self.assertEqual(identity[:16], "b88bd43109184459")
+        self.assertNotEqual(_mlr_boundary.policy(executor=one).identity(),
+                            _mlr_boundary.policy(executor=two).identity(),
+                            "a different executor is a different boundary")
+
+        # The launch guard still names the qualified executor, so removing the host assertion above
+        # has not removed the requirement it was standing in for.
+        self.assertEqual(pb_mlr.B1["executor_sha256"], "2f24593f1b8e578d")
+        self.assertIn("2f24593f1b8e578d", PREREGISTRATION.read_text(encoding="utf-8"))
+        self.assertFalse(
+            _mlr_series.executor_eligibility(two, required_sha256="2f24593f1b8e578d")["eligible"])
+
+    def test_the_frozen_boundary_digest_belongs_to_the_host_that_produced_it(self):
+        """`b88bd43109184459` is named in the preregistration as a host-derived execution fact.
+
+        Portable on purpose, with no `skipTest`: what it checks is what the *document* says, and
+        that is the same on every machine. A version guard here would report "skipped" on every
+        host but one, which is the signal that let the executor assertion above stay wrong through
+        four corrections.
+        """
+        text = PREREGISTRATION.read_text(encoding="utf-8")
+        self.assertIn("b88bd43109184459", text)
+        self.assertIn("CPython 3.9.6", text)
+        self.assertIn("interpreter", " ".join(text.split()).lower())
 
     def test_this_experiment_has_its_own_record_and_cannot_touch_an_older_one(self):
         results = Path(__file__).resolve().parents[1] / "evals" / "results"

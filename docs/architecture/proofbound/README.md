@@ -141,7 +141,8 @@ One line each. **The canonical definitions, with their falsifiers, are in
 | Atomic pressure and fresh baseline | **Run**; column repaired — sound states 1/10 and 2/9, degraded 10/10, so the case discriminates but leaves no treatment headroom |
 | System Craft observable | **Decided**; craft returns discovered evolvability consequences, never verdicts — a verdict needs a referent craft is defined not to have |
 | Modularity and local reasoning | **Mechanics validated** (MLR-C2); the C1 treatment was recoverable with one `inspect` call, so the runtime is now compiled and the measurand revised before evidence |
-| Modularity and local reasoning | Deferred research; sequenced after calibration validity is restored |
+| MLR paired `q1`, on the qualified stack | **Run**; family E · Heterogeneous — 12/12 valid, 6/6 pairs both correct, `contract` direct source zero in every pair, and the compensating runtime channel spans 102 to 39,231 bytes and is not arm-determined |
+| MLR cross-fixture `eventbus-b1` | **Frozen and executable; not run.** The design is unchanged; the repository can now execute it, and the remaining blocker is that its frozen stack names the executor by content and the authoring host has a different build |
 | Decision provenance, coherence audit, context telemetry | Direction only; see the plan's dependency graph |
 
 Canonical test command: `python3 -m unittest discover -s tests -t .` (Python ≥3.10).
