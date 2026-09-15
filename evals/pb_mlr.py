@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import statistics
 import subprocess
@@ -343,7 +344,8 @@ def _b1_record_extras(stack: dict[str, Any]) -> dict[str, Any]:
 
 
 def b1_preflight(*, executor: Path | None, evidence_roots: list[Path] | None = None,
-                 stack: dict[str, Any] | None = None) -> dict[str, Any]:
+                 stack: dict[str, Any] | None = None,
+                 keep: Path | None = None) -> dict[str, Any]:
     """Resolve and validate exactly what `b1` would run, without buying anything.
 
     No provider is contacted, no slot is consumed and no experimental record is written. A green
@@ -371,6 +373,14 @@ def b1_preflight(*, executor: Path | None, evidence_roots: list[Path] | None = N
     report["checks"].insert(1, {
         "check": "the resolved configuration is the frozen stack's fixture", "ok": agrees,
         "detail": disagreement, "blocking": True})
+    # Checked here because it is the one launch argument whose mistakes cost money. Retaining a
+    # slot's evidence happens after the trajectory is bought, so a `--keep` that cannot be written
+    # is a paid sample discovered too late; a digest comparison of a path costs nothing.
+    if keep is not None:
+        usable, detail = _retention_usable(Path(keep))
+        report["checks"].insert(2, {
+            "check": "the evidence retention directory can be written", "ok": usable,
+            "detail": detail, "blocking": True})
     blocking = [c for c in report["checks"] if c["blocking"] and not c["ok"]]
     report.update({
         "experiment": config["experiment"],
@@ -392,6 +402,19 @@ def b1_preflight(*, executor: Path | None, evidence_roots: list[Path] | None = N
     return report
 
 
+def _retention_usable(keep: Path) -> tuple[bool, dict[str, Any]]:
+    """Whether `--keep` names somewhere a slot's evidence can actually be copied to."""
+    try:
+        keep.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        return False, {"path": str(keep), "error": f"{type(exc).__name__}: {exc}"}
+    if not keep.is_dir():
+        return False, {"path": str(keep), "error": "not a directory"}
+    if not os.access(keep, os.W_OK):
+        return False, {"path": str(keep), "error": "not writable"}
+    return True, {"path": str(keep)}
+
+
 def run_b1(out: Path, *, executor: Path, credentials: dict[str, Path] | None = None,
            keep: Path | None = None, evidence_roots: list[Path] | None = None,
            stack: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -402,7 +425,7 @@ def run_b1(out: Path, *, executor: Path, credentials: dict[str, Path] | None = N
     cannot be constructed the series does not run.
     """
     stack = stack or B1
-    ready = b1_preflight(executor=executor, evidence_roots=evidence_roots, stack=stack)
+    ready = b1_preflight(executor=executor, evidence_roots=evidence_roots, stack=stack, keep=keep)
     if not ready["launchable"]:
         raise _mlr_series.SeriesRefused(
             "b1 is not launchable on this host: " + "; ".join(ready["blocked_by"]))
@@ -627,6 +650,10 @@ def paired_analysis(record: dict[str, Any]) -> dict[str, Any]:
         "incomplete_profiles": [{"arm": r["arm"], "repeat": r["repeat"]}
                                 for r in rows if r["validity"] == _mlr_run.VALID
                                 and not r["complete"]],
+        # §19 is a promise about money, so the analysis states the figure together with what the
+        # figure omits. Recomputed from the measurements rather than read off the record, so a
+        # record written before the account was persisted is reported to the same standard.
+        "spend": _mlr_series.spend(record.get("measurements") or []),
     }
 
 
@@ -773,6 +800,9 @@ def main(argv: list[str] | None = None) -> int:
                    help="an evidence archive to include in the hermeticity scan")
     b.add_argument("--clear-stale-views", action="store_true",
                    help="remove semantic views a killed process left behind")
+    b.add_argument("--keep", type=Path, default=None,
+                   help="the directory b1 would retain each slot's evidence in; checked here so a "
+                        "path that cannot be written is found before a trajectory is bought")
     b.add_argument("--out", type=Path, default=None)
 
     e = sub.add_parser("b1", help="execute the frozen eventbus-b1 replication (spends money)")
@@ -830,7 +860,8 @@ def main(argv: list[str] | None = None) -> int:
             for removed in _mlr_series.clear_stale_views():
                 print(f"removed stale view {removed}", file=sys.stderr)
         if args.command == "b1-preflight":
-            report = b1_preflight(executor=executor, evidence_roots=roots)
+            report = b1_preflight(executor=executor, evidence_roots=roots,
+                                  keep=Path(args.keep) if getattr(args, "keep", None) else None)
             text = json.dumps(report, indent=2, sort_keys=True)
             if args.out:
                 Path(args.out).write_text(text + "\n", encoding="utf-8")

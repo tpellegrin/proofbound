@@ -53,6 +53,20 @@ constructed, the series does not run.
 `--keep` retains each slot's extracted evidence. Point it outside the repository — `evals/results/`
 commits only the small summary record, and retained sessions are raw local material.
 
+`--keep` is checked by `b1-preflight`, which is why it is now an argument there too. Retaining a
+slot's evidence happens after its trajectory is bought, and the copy used to sit in an unguarded
+`finally` that runs on the success path as well: an unwritable path raised out of the attempt after
+the outcome, the context ledger and the cost had all been computed, so the money was spent, the
+trajectory was lost and the slot was frozen in §11 C by a typo. The copy now reports its failure as
+`evidence_error` instead of raising, and a path that cannot be written blocks the launch for free.
+
+**Nothing else may run on this host during a series.** Cross-slot isolation is checked before every
+slot against the host's temp directories, and it cannot tell one process's scratch directory from a
+previous slot's residue. The test suite materialises arms in `TMPDIR`, so a suite running alongside a
+series will be read as an earlier slot leaving state behind and will stop it under §11 G — observed
+while preparing this milestone, where two concurrent suite runs failed 25 of each other's tests for
+exactly that reason. Run the tests before launching, not during.
+
 ## 3. What this host must provide
 
 | requirement | why | state on the authoring host |
@@ -139,46 +153,141 @@ executor, and which does not spend one of the slot's three), `before-launch`, `l
 so resuming re-applies §11 D–I to every attempt already on disk: a series stopped for a leak stays
 stopped, and a restart cannot turn it into a record that reads as clean and complete.
 
-### An undecided deviation from §11 A, disclosed rather than accepted
+### §11 A, resolved: the halt on a launcher refusal is the frozen rule, not a departure from it
 
-When the launcher is entered and then refuses — an absent executable, an expired credential, a
-provider rate limit — the failure very probably preceded semantic execution, and **§11 A would
-permit up to three retries**. This runner halts instead, and once halted `_unfinished_trajectory`
-refuses every later resume of that slot.
+**Previously recorded here as an undecided deviation.** Two revisions of this document have described
+the runner's handling of a launcher refusal as a departure from §11 A: the first called it "accepted
+deliberately", the second withdrew that and recorded it as "a deviation, not a policy anyone has
+ratified", asserting that "**§11 A would permit up to three retries**". The concern is kept on the
+record because it was raised twice and because the reasoning that resolves it is the reasoning the
+code was already using. The assertion was wrong, and this is what it got wrong.
 
-That is stricter than the frozen rules, and it is a **deviation, not a policy anyone has ratified**.
-An earlier revision of this document called it "accepted deliberately"; nothing had accepted it but
-the author, and the claim is withdrawn here. What can be said for it: the launcher's classification
-is a substring match over its own log text rather than evidence, so treating it as permission could
-buy a second trajectory for a slot §11 C says is spent — and that is the one error the design most
-needs to avoid. What must be said against it: an expired token on slot 1 stops a twelve-slot series
-and leaves a record that cannot be resumed without a person editing it.
+The controlling clauses are three, and two of them are conditioned on a fact:
 
-The direction matters. The deviation can only **stop a series early**; it can never add a sample,
-re-roll one, or change a measurement. So a series it halts is an incomplete experiment honestly
-reported, not a corrupted one. The hint is recorded (`launcher_classified_as_pre_semantic`) so a
-person can see immediately which side of the boundary the failure fell on. **If this fires during
-b1, the run stops and is reported as stopped** — it is not to be worked around, and whether §11 A
-should have been followed instead is a decision for a separate review, not for the runner and not
-for whoever is mid-series.
+> §9 · "A semantic trajectory that has begun is immutable. An infrastructure failure **before**
+> semantic execution begins is not a semantic sample."
+>
+> §10 · "Infrastructure attempts are bounded at **three per slot** and **may** retry the same slot;
+> every attempt is recorded."
+>
+> §11 A · "an infrastructure attempt fails **before** semantic execution | retry the slot, bounded at
+> three; both records retained"
+>
+> §11 C · "a semantic trajectory **begins** and is interrupted | accounted and preserved, contributes
+> no measurement, **not** re-rolled; its pair is incomplete"
 
-The retry decision turns on one recorded fact — `trajectory_began`, set the instant the launcher is
-entered and never cleared. Everything below that call is the executor and its provider, so no later
-failure (a lost extraction, a grading crash, a killed process) is read as evidence that no model call
-happened, and none of them authorises a second trajectory. **A grading failure is never assumed to
-have consumed no tokens**: usage is recorded from the session whenever one exists, and spend counts
-failed and interrupted attempts as well as successful ones.
+**On modality: §11 A permits retries, it does not require them.** §10 carries the operative verb —
+*may* retry — and "bounded at three" in both places is a ceiling rather than a quota. §11 B makes
+that explicit by defining what happens when all three are used, and §11 J establishes that a series
+ending short and reporting how many pairs completed is a defined outcome rather than a failure of
+procedure. How many of the three attempts to use is therefore an operational decision inside the
+ceiling. What the freeze fixes is the maximum, and that every attempt is recorded.
 
-**Unknown spend is reported as unknown, not as zero.** Cost is derived from the extracted session, so
-an attempt that reached the executor and failed before extraction carries none. Those attempts are
-counted and named in `spend.unpriced`, `spend.complete` says whether the derived figure is the whole
-of it, and the ceiling gate refuses to launch a further slot on a spend it cannot establish rather
-than treating the gap as nothing. An attempt that never reached the executor — a ceiling refusal, a
-residue refusal, a failure before the launcher — genuinely cost nothing and is not counted as
-unpriced.
+**On the trigger: the condition is a fact about the world, and the controller does not get to decide
+it.** §11 A attaches only to an attempt that failed *before* semantic execution; §11 C attaches only
+to a trajectory that *began*. So three cases have to be told apart, and only two of them are in the
+table:
 
-The runner names the §11 condition that stopped a series and records the evidence. **It does not
-assign a result family.** A family is a reading of an experiment; that is a person's to write.
+| evidence | frozen disposition |
+|---|---|
+| establishes that no semantic execution began | §11 A · retry permitted, bounded at three, both records retained |
+| establishes that a trajectory began | §11 C · accounted, preserved, no measurement, **never** re-rolled |
+| establishes neither | §11 A's permission is **unavailable**, because its condition is unproven |
+
+The third row is not a gap to be filled by judgement. §11 A grants nothing until its condition is
+established, and the protections that are exposed if it is granted wrongly — §9's immutable
+trajectory, §11 C's "not re-rolled" — are the ones the design exists to hold. The costs are also
+asymmetric: withholding a retry that was in fact permitted ends a series short, which §11 J and §17 F
+both already accommodate, whereas granting one that was not buys a second trajectory for a slot §11 C
+says is spent and corrupts the paired unit §9 declares immutable. Under indeterminacy, not retrying
+is the frozen rule and not merely the cautious choice.
+
+**A launcher refusal is the third row.** The evidence the runner holds is `launch_returncode != 0` —
+the exit status of the process that would have started the worker. That does not establish that the
+worker never started: a launcher can start the worker, the worker can call the provider, and the
+launcher can still exit non-zero afterwards. Nor does it establish the opposite. The only thing that
+points at non-commencement is `_mlr_boundary`'s substring match over the launcher's own log text
+(`"not found"`, `"auth"`, `"credential"`, `"rate"`), and a substring match over prose is not evidence
+about what a provider did or did not charge for. §11 A was therefore never engaged by a launcher
+refusal, so halting is conformant behaviour and there is nothing here for anyone to ratify.
+
+Two things this does **not** say. It does not say the guard is a claim about actual charges: it is a
+spending and retry guard, and where the launcher's classification survives at all it survives as the
+reported hint `launcher_classified_as_pre_semantic`, never as an input to the retry decision —
+`execution_stage` decides on `trajectory_began` and `launch_returncode` alone. And it does not say
+§11 A is unreachable. Everything that fails before the launcher is entered — view construction,
+staging, the view-scoped hermeticity preflight — carries `trajectory_began: False`, is classified
+`before-launch`, and **is** retried, bounded at three. §11 A's permission is exercised wherever its
+condition is actually established; it is withheld only where the record cannot establish it.
+
+**Stopping the series, rather than only the slot — the runner's reading, and labelled as one.**
+§11 C's row does not say "series stops", unlike §11 B and §11 D–I, and §11's closing paragraph
+("incomplete pairs are reported, never replaced") reads as compatible with carrying on through the
+remaining slots. The runner stops. Its reason is that §17 evaluates families in order and **F** is
+"any instrument or execution validity defect under §11", which an interrupted trajectory looks like,
+so continuing would spend more of a $0.50 ceiling on slots that could not change the family — but
+that inference is the runner's, not the document's, because §11 files C under *missingness* rather
+than among the conditions it says stop the series. Raised in review, and recorded here as an open
+reading rather than a settled one.
+
+**This does not carry the §11 A resolution above, and nothing here is load-bearing for it.** That
+argument is about whether a slot may be *offered again*, and it turns only on §11 A's condition being
+unproven by a launcher return code. Whether the series then continues to slot 2 is a separate
+question, it is conservative in the opposite direction — less evidence collected, never more — and it
+is the one an operator can revisit without buying anything back.
+
+### A record that cannot say a slot was entered is not evidence that it was not
+
+Found in review of this milestone, and repaired. `write_series` ran when an attempt *returned*, so a
+process killed inside one — a SIGKILL, a host timeout, a pulled plug — appended nothing at all and
+the slot left no trace. The claim made below in §5, that "the live rule and the resume rule are the
+same rule", did not hold in that window: a resume found no prior attempt on the slot, offered it
+again, and bought a second trajectory for a slot §11 C may already have spent. The stale view the
+kill left behind blocked that resume only until the operator ran `--clear-stale-views`, which §5
+itself tells them to run.
+
+Each attempt is now checkpointed **before** it is made, as stage `in-flight`, and that row is
+replaced by the attempt's outcome a moment later. What survives is therefore exactly the case where
+nothing came back. It carries `trajectory_began: True`, which is the third row of the table above and
+not a guess: before an outcome arrives, where the attempt stopped is unknown, so §11 A's permission
+is unavailable and the slot is not offered again. Its spend is unpriced for the same reason —
+unknown, not zero.
+
+That repair created a second one. A row surviving because the process died and a row surviving
+because the attempt *raised* are indistinguishable, and three statements in `run_bounded_attempt`
+sat outside the block whose whole contract is "reported, never raised": resolving the fixture,
+hashing the executor, and making the extraction directory. Each of them provably precedes the
+launcher — §11 A's case, retryable — but raised from there they escaped the series loop and left the
+checkpoint as the only row, freezing the slot in §11 C for a failure that never reached the executor.
+They are inside the block now, so a pre-launch failure is reported as `before-launch`, replaces the
+checkpoint, and is retried. A signal that cannot be caught still leaves the row, which is the case
+the row is for.
+
+### The spend account is in the record, not only in the process that printed it
+
+`spend` separates `derived` from `unpriced` precisely so a figure is never read without its
+completeness limit, and the runner returned both. It persisted neither: the committed artifact
+carried the measurements and left the account to whoever thought to recompute it. Every checkpoint
+now writes the account into the record — `derived`, `unpriced`, `complete`, and the claim in words —
+and `analyse --paired` reports it too, recomputed from the measurements so a record written before
+this also gets one.
+
+Reporting it on *older* records exposed the same defect one layer up, and review caught it. Every
+branch of `execution_stage` turns on `trajectory_began`, and a record written before that key
+existed has no answer rather than the answer "no" — so its attempts were classified `before-launch`,
+dropped from `unpriced`, and the analysis announced that a 33-attempt series had spent $0.00 and
+that the figure was whole. Absence of the fact is not the fact: such a measurement is now
+`unclassified` and unpriced, and the four reasons an attempt can be unpriced are worded apart
+instead of sharing one sentence that said all of them "reached the executor". Records that do carry
+the vocabulary are untouched — q1 still reproduces its committed `spent_derived` of `0.207932`,
+complete.
+
+A second review round found that fix carrying the defect itself. `unclassified` short-circuited on
+`"stage" not in record`, and the loop writes a stage into every measurement, so the row it had just
+classified re-read from disk as `before-launch` and the unknown became a zero one layer further
+down. The stage the loop wrote is now read back rather than re-derived, the retry gate reads the
+classification instead of one raw key, and the `unclassified` wording says what is known — the two
+keys are absent — rather than inferring *why*, which on a grader-repeat record was simply wrong.
 
 ## 5. Continuation
 
@@ -186,14 +295,32 @@ Re-running `b1` with the same `--out` resumes. `_repeat` refuses to extend a rec
 different frozen configuration, so a resume across a changed fixture, model, effort or N is rejected
 rather than spliced. Completed slots are skipped. A slot whose earlier attempt reached the launcher
 halts the resume exactly as it halted the live loop — the live rule and the resume rule are the same
-rule, so a restart cannot buy a trajectory the loop refused to buy.
+rule, so a restart cannot buy a trajectory the loop refused to buy. That now holds for a killed
+process too, because the attempt is checkpointed before it is made rather than only after it
+returns; see §4.
 
 If a process was killed, `python3 evals/pb_mlr.py b1-preflight --clear-stale-views` removes views the
-context manager's cleanup never ran on. Cleanup covers how a block ends; it does not cover a killed
+context manager's cleanup never ran on. Clearing them does not clear the slot: the `in-flight` row
+the kill left in the record still halts the resume, which is the point of writing it before the
+attempt rather than after. Cleanup covers how a block ends; it does not cover a killed
 process, and the next slot's preflight is what establishes validity.
 
 ## 6. Known limitations
 
+- **Five integration tests were skipping silently.** `tests/test_mlr_boundary.py` gated its
+  real-executor cases on an absolute path into one machine's nvm install — the executor running in
+  the view, building its state only inside the constructed home, seeing no prior session, no host
+  configuration and no credentials, and creating its session store inside the slot. On every other
+  host they skipped, which is what happened here until this milestone. The executor is now located
+  on this host — `PROOFBOUND_EXECUTOR`, then the isolated frozen build, then `PATH`, with a content
+  match preferred over position — and on the authoring host all five ran against the frozen
+  `1.18.29`. Where no candidate matches, they still run against whatever `opencode` the host has and
+  `EXECUTOR_IS_FROZEN` records that it was not the frozen build; the one test whose subject *is* the
+  frozen bytes is gated on that flag rather than on mere presence. That test asks the actual staging
+  mechanism whether the subject can write the staged executable or mutate the inode it shares with
+  the control plane's copy. It cannot: the tools directory is a sibling of the writable root, so the
+  policy's one `file-write*` grant does not reach it. It establishes the deny on a throwaway link
+  first, because every write it then attempts is aimed at the inode of the binary b1 is pinned to.
 - **Deterministic tests are not a field qualification.** `tests/test_mlr_b1_execution_path.py`
   exercises the orchestration with controlled attempts and the grading path with the fixture's own
   known-correct and known-wrong realizations. Nothing there establishes that the instrument measures

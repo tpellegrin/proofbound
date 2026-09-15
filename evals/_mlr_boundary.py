@@ -274,13 +274,10 @@ def run_bounded_attempt(arm: str, *, model: str, variant: str | None, executor: 
     hidden gate is never a file the subject could have found.
     """
     started = time.time()
-    spec = _mlr.fixture_for(fixture)
     result: dict[str, Any] = {
         "arm": arm, "model": model, "harness": "opencode-cli", "role": _mlr_run.ROLE,
-        "auto_flag": _mlr_run.AUTO_FLAG, "variant": variant, "oracle": spec.oracle,
-        "fixture": str(spec.root), "package": spec.package,
+        "auto_flag": _mlr_run.AUTO_FLAG, "variant": variant,
         "validity": _mlr_run.HARNESS_FAILURE, "reason": None,
-        "executor": executor_identity(executor),
         "interpreter": sys.version.split()[0],
         # Whether this attempt can still be retried without buying a second semantic trajectory.
         # Set the instant the launcher is entered and never cleared: everything below that call is
@@ -289,8 +286,18 @@ def run_bounded_attempt(arm: str, *, model: str, variant: str | None, executor: 
         # decision that assumed otherwise would re-roll a trajectory the design says is immutable.
         "trajectory_began": False,
     }
-    extraction = Path(tempfile.mkdtemp(prefix="pb-mlr-out-"))
+    # Nothing above the `try`. Resolving the fixture, hashing the executor and making the extraction
+    # directory can all fail — an unknown fixture root, a binary removed between the eligibility
+    # check and the hash, no temp space — and each of them provably happens before the launcher is
+    # entered, which is §11 A's case and retryable. Raised from here they escaped the series loop
+    # instead, and the loop's pre-attempt checkpoint would then be the only surviving row: a slot
+    # frozen in §11 C, unresumable, for a failure that never reached the executor. Found in review.
+    extraction: Path | None = None
     try:
+        spec = _mlr.fixture_for(fixture)
+        result.update({"oracle": spec.oracle, "fixture": str(spec.root),
+                       "package": spec.package, "executor": executor_identity(executor)})
+        extraction = Path(tempfile.mkdtemp(prefix="pb-mlr-out-"))
         view_policy = policy(executor=executor)
         result["boundary_identity"] = view_policy.identity()
         with _semantic_view.semantic_view(view_policy) as view:
@@ -399,11 +406,23 @@ def run_bounded_attempt(arm: str, *, model: str, variant: str | None, executor: 
         return result
     finally:
         result["elapsed_seconds"] = round(time.time() - started, 3)
-        if keep is not None and extraction.is_dir():
-            target = Path(keep) / f"{arm}-{int(started * 1000)}"
-            shutil.copytree(extraction, target, dirs_exist_ok=True)
-            result["evidence"] = str(target)
-        shutil.rmtree(extraction, ignore_errors=True)
+        if extraction is not None:
+            # Retaining evidence must not be able to destroy the attempt that produced it. This
+            # block runs on the success path too, so an unusable `--keep` raised out of the function
+            # *after* the outcome, the context ledger and the cost had all been computed: the money
+            # was spent, the trajectory was lost, the temp directory below was never removed, and
+            # the series loop's pre-attempt checkpoint became the only surviving row — a slot frozen
+            # in §11 C by a mistyped path. Found in review. Reported like every other failure here,
+            # and it does not invalidate the measurement: `extract` had already succeeded, and §11 D
+            # is about that step rather than about copying its products somewhere convenient.
+            if keep is not None and extraction.is_dir():
+                try:
+                    target = Path(keep) / f"{arm}-{int(started * 1000)}"
+                    shutil.copytree(extraction, target, dirs_exist_ok=True)
+                    result["evidence"] = str(target)
+                except OSError as exc:
+                    result["evidence_error"] = f"{type(exc).__name__}: {exc}"[:400]
+            shutil.rmtree(extraction, ignore_errors=True)
 
 
 def harness_is_clean(*, fixture: Path = _mlr.FIXTURE) -> dict[str, Any]:

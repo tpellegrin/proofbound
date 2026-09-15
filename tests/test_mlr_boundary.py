@@ -32,7 +32,51 @@ import _profile         # noqa: E402
 import _semantic_view   # noqa: E402
 
 FIXTURE = _mlr.FIXTURE
-EXECUTOR = Path("/Users/thiago/.nvm/versions/node/v22.13.1/bin/opencode")
+
+#: What §5 of `MLR-eventbus-b1-preregistration.md` freezes the executor to. Used by
+#: `_locate_executor` to prefer that build and by `EXECUTOR_IS_FROZEN` to say whether it was found.
+FROZEN_EXECUTOR_SHA256 = "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669"
+
+
+def _locate_executor() -> Path | None:
+    """An `opencode` this host actually has, preferring the frozen build, or nothing.
+
+    An earlier revision named one machine's nvm install as an absolute path. Every other machine
+    skipped the integration tests below in silence — the executor being present is exactly what they
+    are gated on — which made them the fifth host-derived value written down as though it were
+    portable, after the interpreter, the boundary digest, the hermeticity digest and the executor
+    assertion in q1's freeze test. Eligibility is a content question everywhere else in this
+    experiment; where it is a *location* question it is asked of this host rather than of a
+    remembered one. `PROOFBOUND_EXECUTOR` wins, then the isolated frozen build, then `PATH`.
+
+    Content decides between them rather than order: a candidate whose bytes are the frozen ones is
+    taken first, so a host that has both 1.18.29 and something newer on `PATH` exercises the build
+    b1 is pinned to. Where none matches, the tests that only need *an* executor still run and
+    `EXECUTOR_IS_FROZEN` records that the one they ran against was not it.
+    """
+    candidates = [Path(os.environ["PROOFBOUND_EXECUTOR"])] if os.environ.get(
+        "PROOFBOUND_EXECUTOR") else []
+    candidates.append(
+        Path.home() / ".proofbound/executors/opencode-1.18.29-darwin-arm64/opencode")
+    found = shutil.which("opencode")
+    if found:
+        candidates.append(Path(found))
+    def is_frozen(candidate: Path) -> bool:
+        try:
+            return _mlr.digest_file(candidate) == FROZEN_EXECUTOR_SHA256
+        except OSError:
+            return False
+
+    present = [c for c in candidates if c.is_file()]
+    return next((c for c in present if is_frozen(c)), present[0] if present else None)
+
+
+EXECUTOR = _locate_executor() or Path("/nonexistent/opencode")
+#: Whether the executor these tests found is the one §5 freezes by content. Reported, and used to
+#: gate the one test whose subject *is* the frozen bytes rather than the staging mechanism.
+EXECUTOR_IS_FROZEN = (EXECUTOR.is_file()
+                      and _mlr.digest_file(EXECUTOR) == FROZEN_EXECUTOR_SHA256)
+
 
 macos_only = unittest.skipUnless(
     sys.platform == "darwin" and Path(_semantic_view.SANDBOX).exists(),
@@ -315,6 +359,74 @@ class ExecutorTest(unittest.TestCase):
         identity = _mlr_boundary.executor_identity(EXECUTOR)
         self.assertEqual(identity["sha256"], _mlr.digest_file(EXECUTOR))
         self.assertNotIn("auth", json.dumps(identity))
+
+    def test_the_frozen_digest_this_file_pins_is_the_one_the_stack_freezes(self):
+        """Two copies of one frozen value drift apart silently; this is the assertion instead."""
+        import pb_mlr  # noqa: PLC0415 - the test's subject, not a module dependency
+        self.assertTrue(
+            FROZEN_EXECUTOR_SHA256.startswith(pb_mlr.B1["executor_sha256"]),
+            "this file's frozen digest and §5's prefix disagree")
+
+    @unittest.skipUnless(EXECUTOR_IS_FROZEN, "the frozen executor is not on this machine")
+    def test_the_worker_cannot_write_the_staged_executor_or_its_shared_inode(self):
+        """Staging is by hard link, so the staged file *is* the control plane's file.
+
+        A copied system binary loses its code signature and is killed on exec, which is why the
+        link exists; the consequence is that one write inside the view would rewrite the frozen
+        executor the whole stack is pinned to by content, and §11 H would then be comparing a
+        digest against bytes the subject had chosen. What keeps that from happening is not the
+        link's mode — changing that would change the original's — but where the link is put: the
+        tools directory is a sibling of the writable root, so the policy's one `file-write*` grant
+        does not reach it and the blanket deny still does. This asks the actual mechanism, with the
+        actual policy and the actual binary, rather than a stand-in under a hand-written profile.
+        """
+        origin = _mlr_boundary.executor_identity(EXECUTOR)["sha256"]
+        before = EXECUTOR.stat()
+        with _semantic_view.semantic_view(_mlr_boundary.policy(executor=EXECUTOR)) as view:
+            staged = view.tools_root / "opencode"
+
+            # The link, and the reason the mode cannot be the thing protecting it.
+            self.assertEqual(staged.stat().st_ino, before.st_ino, "staging is by hard link")
+            self.assertFalse(str(view.tools_root).startswith(str(view.root) + os.sep),
+                             "the tools directory must not sit inside the writable root")
+
+            # The deny is established on a file that does not matter before anything is aimed at
+            # the pinned binary. Every write below shares an inode with the executor b1 is frozen
+            # to, so a policy regression here would corrupt it and make the experiment unlaunchable
+            # — with only this test's own assertions standing between the two. Raised in review.
+            decoy_origin = Path(tempfile.mkdtemp(prefix="pb-decoy-",
+                                                 dir=_semantic_view.DEFAULT_PARENT))
+            self.addCleanup(shutil.rmtree, decoy_origin, True)
+            decoy_source = decoy_origin / "decoy"
+            decoy_source.write_text("decoy\n", encoding="utf-8")
+            decoy = view.tools_root / "decoy"
+            os.link(decoy_source, decoy)
+            probe = view.shell(f"echo broken > '{decoy}'")
+            self.assertNotEqual(probe.returncode, 0,
+                                "the tools directory is writable; refusing to aim writes at the "
+                                "frozen executor's inode")
+            self.assertIn("not permitted", (probe.stdout + probe.stderr).lower())
+            self.assertEqual(decoy_source.read_text(encoding="utf-8"), "decoy\n")
+
+            for label, script in (
+                    ("truncate", f"echo x > '{staged}'"),
+                    ("append", f"echo x >> '{staged}'"),
+                    ("chmod", f"chmod 777 '{staged}'"),
+                    ("unlink", f"rm -f '{staged}'"),
+                    ("replace", f"cp /bin/echo '{staged}'"),
+                    ("write in place", f"dd if=/dev/zero of='{staged}' bs=1 count=1 conv=notrunc"),
+                    ("new sibling", f"touch '{view.tools_root}/anything'")):
+                with self.subTest(attempt=label):
+                    done = view.shell(script)
+                    self.assertNotEqual(done.returncode, 0)
+                    self.assertIn("not permitted", (done.stdout + done.stderr).lower())
+
+            self.assertEqual(_mlr.digest_file(staged), origin, "still the frozen bytes in the view")
+
+        after = EXECUTOR.stat()
+        self.assertEqual(_mlr_boundary.executor_identity(EXECUTOR)["sha256"], origin)
+        self.assertEqual(after.st_mode, before.st_mode)
+        self.assertEqual(after.st_mtime_ns, before.st_mtime_ns)
 
 
 @macos_only

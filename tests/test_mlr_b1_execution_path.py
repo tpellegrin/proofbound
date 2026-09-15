@@ -606,6 +606,274 @@ class SeriesProcedureTest(unittest.TestCase):
         self.assertEqual(len(written["measurements"]), 2)
         self.assertEqual(written["frozen_identity"], _repeat.frozen_identity(self.config))
 
+    def test_an_unpriced_attempt_survives_persistence_and_reload_as_unpriced(self):
+        """The one direction a budget must not round, checked on the reloaded bytes.
+
+        `spend` is computed over `measurements`, and on a resume those measurements come back
+        through JSON. If the round trip dropped `trajectory_began` or `launch_returncode` the same
+        attempt would re-read as a failure before the launcher, and an unknown quantity would
+        become a zero on the way back from disk rather than in the arithmetic.
+        """
+        lost = interrupted_after_launch()
+        lost.pop("cost")
+        live = self.run_series(self.attempts(lost), samples=1)["spend"]
+
+        reloaded = _repeat.load_series(self.out, self.config)
+        self.assertEqual(_mlr_series.spend(reloaded), live)
+        self.assertFalse(_mlr_series.spend(reloaded)["complete"])
+        self.assertEqual(_mlr_series.execution_stage(reloaded[-1]),
+                         _mlr_series.WORKER_EXECUTED)
+
+    def test_the_record_states_the_spend_account_and_not_only_the_total(self):
+        """A committed artifact that states a total leaves its completeness limit to be recomputed.
+
+        `derived` and `unpriced` were separated precisely because the figure must not be read
+        without its limit, so the limit travels in the record rather than only in the stdout of the
+        process that happened to run it.
+        """
+        lost = interrupted_after_launch()
+        lost.pop("cost")
+        self.run_series(self.attempts(lost), samples=1)
+        written = json.loads(self.out.read_text(encoding="utf-8"))
+        self.assertIn("spend", written)
+        self.assertFalse(written["spend"]["complete"])
+        self.assertEqual(written["spend"]["derived"], 0.0)
+        self.assertIn("unknown, not zero", written["spend"]["claim"])
+
+        analysed = pb_mlr.paired_analysis(written)
+        self.assertEqual(analysed["spend"], written["spend"])
+
+    def test_a_record_that_predates_the_stage_vocabulary_is_unknown_not_free(self):
+        """Found in review. `execution_stage` fell through to `before-launch` on a missing
+        `trajectory_began`, so every attempt in a record written before that key existed was
+        classified "never reached the executor" and dropped from `unpriced` — and the analysis then
+        claimed the series spent nothing and that the figure was whole. Absence of the fact is not
+        the fact.
+        """
+        legacy = [{"item": "full", "repeat": 1, "validity": _mlr_run.VALID},
+                  {"item": "contract", "repeat": 1, "validity": "harness-failure"}]
+        account = _mlr_series.spend(legacy)
+        self.assertEqual(account["derived"], 0.0)
+        self.assertFalse(account["complete"])
+        self.assertEqual([r["stage"] for r in account["unpriced"]],
+                         [_mlr_series.UNCLASSIFIED] * 2)
+        self.assertIn("cannot be placed on either side", account["claim"])
+        self.assertNotIn("reached the executor", account["claim"])
+
+        # A committed record with the vocabulary is unaffected: q1 still reproduces its own figure.
+        q1 = json.loads((Path(__file__).resolve().parents[1] / "evals" / "results" /
+                         "craft-mlr-deepseek-v4-flash-high-paired-q1.json"
+                         ).read_text(encoding="utf-8"))
+        priced = _mlr_series.spend(q1["measurements"])
+        self.assertEqual(priced["derived"], q1["spent_derived"])
+        self.assertTrue(priced["complete"])
+
+    def test_the_spend_claim_does_not_say_an_in_flight_attempt_reached_the_executor(self):
+        """Found in review. One sentence covered three different facts, and for an in-flight row it
+        asserted exactly the one its stage exists to say was never established.
+        """
+        in_flight = _mlr_series.spend([{"item": "full", "repeat": 1,
+                                        "stage": _mlr_series.IN_FLIGHT,
+                                        "trajectory_began": True}])
+        self.assertIn("never reported an outcome", in_flight["claim"])
+        self.assertNotIn("reached the executor", in_flight["claim"])
+
+        reached = _mlr_series.spend([{"item": "full", "repeat": 1, "trajectory_began": True,
+                                      "launch_returncode": 1}])
+        self.assertIn("reached the executor", reached["claim"])
+
+        # Mixed, and each reason still stated as its own.
+        both = _mlr_series.spend([{"item": "full", "repeat": 1, "stage": _mlr_series.IN_FLIGHT,
+                                   "trajectory_began": True},
+                                  {"item": "contract", "repeat": 1, "trajectory_began": True,
+                                   "launch_returncode": 1}])
+        self.assertIn("never reported an outcome", both["claim"])
+        self.assertIn("reached the executor", both["claim"])
+        self.assertIn("omits 2 attempt(s)", both["claim"])
+
+    def test_a_failure_before_the_launcher_is_retried_even_when_it_raised(self):
+        """Found in review. Three statements in `run_bounded_attempt` sat outside its "reported,
+        never raised" block — resolving the fixture, hashing the executor, making the extraction
+        directory. Each provably precedes the launcher and is §11 A's case, but raised from there
+        they escaped the series loop, leaving the pre-attempt checkpoint as the only surviving row:
+        a slot frozen in §11 C, unresumable, for a failure that never reached the executor.
+        """
+        for label, kw in (("an unknown fixture root",
+                           {"fixture": self.tmp / "not-a-fixture"}),
+                          ("an executor that vanished after the eligibility check",
+                           {"executor": self.tmp / "gone"})):
+            with self.subTest(case=label):
+                got = _mlr_boundary.run_bounded_attempt(
+                    _mlr.CONTRACT, model="provider/model", variant=None,
+                    executor=kw.get("executor", self.executor),
+                    fixture=kw.get("fixture", Path(pb_mlr.B1["fixture"])))
+                self.assertFalse(got["trajectory_began"])
+                self.assertEqual(_mlr_series.execution_stage(got), _mlr_series.BEFORE_LAUNCH)
+                # The specific failure, not merely some failure: without naming it the test would
+                # also pass on an unrelated error raised from inside the `try`.
+                self.assertRegex(got["reason"], r"^(FixtureError|FileNotFoundError):")
+                self.assertTrue(_mlr_series.spend([got])["complete"],
+                                "it never reached the executor, so it genuinely cost nothing")
+
+    def test_the_unclassified_verdict_survives_its_own_persistence(self):
+        """Found in review. The verdict short-circuited on `"stage" not in record`, but the loop
+        writes a stage into every measurement — so the row it had just classified `unclassified`
+        re-read as `before-launch`, and the unknown became a zero on the way back from disk. The
+        one place this repair could not afford to have the defect is in itself.
+        """
+        row = {"item": "full", "repeat": 1, "validity": _mlr_run.HARNESS_FAILURE}
+        self.assertEqual(_mlr_series.execution_stage(row), _mlr_series.UNCLASSIFIED)
+
+        persisted = {**row, "stage": _mlr_series.execution_stage(row)}
+        self.assertEqual(_mlr_series.execution_stage(persisted), _mlr_series.UNCLASSIFIED)
+        self.assertFalse(_mlr_series.spend([persisted])["complete"])
+
+        # Through the actual file, not only through a dict.
+        _repeat.write_series(self.out, self.config, [persisted])
+        reloaded = _repeat.load_series(self.out, self.config)
+        self.assertEqual(_mlr_series.execution_stage(reloaded[0]), _mlr_series.UNCLASSIFIED)
+        self.assertFalse(_mlr_series.spend(reloaded)["complete"])
+
+    def test_an_attempt_that_cannot_say_where_it_stopped_is_not_retried(self):
+        """The retry gate read one key, so an attempt whose stage is `unclassified` was priced as
+        unknown and retried as free in the same iteration.
+        """
+        mute = {"validity": _mlr_run.HARNESS_FAILURE, "reason": "said nothing about how far it got"}
+        attempts = self.attempts(mute)
+        record = self.run_series(attempts, samples=1)
+        self.assertEqual(record["measurements"][0]["stage"], _mlr_series.UNCLASSIFIED)
+        self.assertEqual(record["stop_condition"], "C")
+        self.assertEqual(len(attempts.calls), 1, "not offered again")
+        self.assertFalse(record["spend"]["complete"])
+
+    def test_the_in_flight_row_does_not_claim_the_launcher_was_entered(self):
+        """Found in review. `trajectory_began` is documented as set the instant the launcher is
+        entered; the row is written before the launcher exists. Its stage carries the same
+        consequence without the record asserting a fact nothing established.
+        """
+        class Killed(BaseException):
+            pass
+
+        def killed(arm, **kw):
+            raise Killed("host killed the process")
+
+        with self.assertRaises(Killed):
+            self.run_series(killed, samples=1)
+        row = json.loads(self.out.read_text(encoding="utf-8"))["measurements"][0]
+        self.assertEqual(row["stage"], _mlr_series.IN_FLIGHT)
+        self.assertNotIn("trajectory_began", row)
+
+        # And the consequence is unchanged: unpriced, and the slot is not offered again.
+        self.assertFalse(_mlr_series.spend([row])["complete"])
+        resumed = self.attempts()
+        again = self.run_series(resumed, samples=1)
+        self.assertEqual(again["stop_condition"], "C")
+        self.assertEqual(again["stop_detail"]["stage"], _mlr_series.IN_FLIGHT)
+        self.assertEqual(len(resumed.calls), 0)
+
+    def test_the_spend_claim_states_each_reason_once(self):
+        """Found in review. Keyed by stage, so two attempts unpriced for the same reason produced a
+        claim that said the identical thing twice.
+        """
+        claim = _mlr_series.spend([
+            {"item": "full", "repeat": 1, "trajectory_began": True, "launch_returncode": 1},
+            {"item": "contract", "repeat": 1, "trajectory_began": True, "launch_returncode": 0},
+        ])["claim"]
+        self.assertIn("omits 2 attempt(s)", claim)
+        self.assertEqual(claim.count("reached the executor"), 1)
+        self.assertIn("2 that reached the executor", claim)
+
+    def test_retention_that_cannot_be_written_does_not_destroy_the_attempt(self):
+        """Found in review. The retention copy sat in an unguarded `finally`, which runs on the
+        success path too: an unusable `--keep` raised out of the attempt *after* the outcome, the
+        context ledger and the cost were computed. The money was spent, the trajectory was lost,
+        and the loop's pre-attempt checkpoint became the only surviving row — a slot frozen in
+        §11 C by a mistyped path.
+        """
+        got = _mlr_boundary.run_bounded_attempt(
+            _mlr.CONTRACT, model="provider/model", variant=None,
+            executor=self.executor, fixture=Path(pb_mlr.B1["fixture"]),
+            keep=Path("/dev/null/not-a-directory"))
+        self.assertIsInstance(got, dict, "reported, never raised")
+        self.assertIn("evidence_error", got, "and the failure is named rather than swallowed")
+        self.assertIn("NotADirectoryError", got["evidence_error"])
+        self.assertNotIn("evidence", got)
+
+    def test_preflight_refuses_an_unwritable_retention_directory_before_spending(self):
+        """A path is checkable for nothing, and §11 has no case for "the evidence was mislaid"."""
+        blocked = pb_mlr.b1_preflight(executor=None, keep=Path("/dev/null/x"))
+        self.assertIn("the evidence retention directory can be written", blocked["blocked_by"])
+        usable = pb_mlr.b1_preflight(executor=None, keep=self.tmp / "evidence")
+        self.assertNotIn("the evidence retention directory can be written",
+                         usable["blocked_by"])
+        self.assertTrue((self.tmp / "evidence").is_dir())
+
+    def test_an_attempt_cannot_declare_its_own_stage(self):
+        """Classification is the loop's, from what the attempt got to, not the attempt's claim.
+
+        `execution_stage` honours a recorded `not-offered`/`in-flight` because the loop writes
+        those, and both mean "this cost nothing" or "this is unknown". An attempt returning either
+        would price a real trajectory at zero and leave all three of the slot's attempts unspent.
+        """
+        lying = interrupted_after_launch(stage=_mlr_series.NOT_OFFERED)
+        lying.pop("cost")
+        record = self.run_series(self.attempts(lying), samples=1)
+        self.assertEqual(record["measurements"][0]["stage"], _mlr_series.WORKER_EXECUTED)
+        self.assertEqual(record["stop_condition"], "C")
+        self.assertFalse(record["spend"]["complete"], "unknown, not free on the attempt's word")
+        self.assertEqual(_mlr_series._offered(record["measurements"], ("full", 1)), 1)
+
+    def test_a_process_killed_inside_an_attempt_leaves_the_slot_recorded(self):
+        """Found in review. `write_series` ran when an attempt *returned*, so a SIGKILL or a host
+        timeout inside one appended nothing: the slot left no trace at all. A resume — which the
+        runbook itself tells the operator to reach after clearing the stale view the kill left
+        behind — then found no prior attempt on the slot, offered it again, and bought a second
+        trajectory for a slot §11 C may already have spent.
+        """
+        class Killed(BaseException):
+            """Not an Exception: `run_bounded_attempt` catches those and reports them."""
+
+        def killed(arm, **kw):
+            raise Killed("the host killed the process mid-attempt")
+
+        with self.assertRaises(Killed):
+            self.run_series(killed, samples=1)
+
+        written = json.loads(self.out.read_text(encoding="utf-8"))
+        self.assertEqual(len(written["measurements"]), 1)
+        row = written["measurements"][0]
+        self.assertEqual(row["stage"], _mlr_series.IN_FLIGHT)
+        self.assertEqual((row["item"], row["repeat"]), ("full", 1))
+        self.assertEqual(_mlr_series.execution_stage(row), _mlr_series.IN_FLIGHT)
+
+        # Unknown, not zero: nothing established that it stopped short of the provider.
+        self.assertFalse(written["spend"]["complete"])
+        self.assertEqual(written["spend"]["derived"], 0.0)
+
+        # And the slot is not offered again.
+        resumed = self.attempts()
+        record = self.run_series(resumed, samples=1)
+        self.assertEqual(record["stop_condition"], "C")
+        self.assertEqual(record["stop_detail"]["stage"], _mlr_series.IN_FLIGHT)
+        self.assertEqual(len(resumed.calls), 0, "no second trajectory for a slot it cannot acquit")
+
+    def test_the_in_flight_row_is_replaced_by_the_outcome_it_was_standing_in_for(self):
+        """It marks the absence of an answer, so it must not survive one arriving.
+
+        A phantom row would count against §11 B's three, invalidate the spend account of every
+        clean series, and read as an interrupted trajectory on the next resume.
+        """
+        attempts = self.attempts(failed_before_launch())
+        record = self.run_series(attempts, samples=1)
+        stages = [m["stage"] for m in record["measurements"]]
+        self.assertEqual(stages, [_mlr_series.BEFORE_LAUNCH, _mlr_series.WORKER_EXECUTED,
+                                  _mlr_series.WORKER_EXECUTED])
+        self.assertNotIn(_mlr_series.IN_FLIGHT, stages)
+        self.assertTrue(record["spend"]["complete"])
+        self.assertIsNone(record["stopped"])
+        self.assertEqual(record["completed_slots"], [("contract", 1), ("full", 1)])
+        self.assertEqual(_mlr_series._offered(record["measurements"], ("full", 1)), 2)
+
 
 class StopConditionTest(unittest.TestCase):
     """§11 D–I on a completed attempt, each from the evidence the attempt already recorded."""

@@ -300,23 +300,42 @@ def spend(measurements: list[dict[str, Any]]) -> dict[str, Any]:
 
     An attempt that never reached the executor is a different thing and genuinely cost nothing: a
     ceiling refusal, a residue refusal, or a failure before the launcher was entered.
+
+    An attempt still marked `in-flight` is unpriced for the same reason and not for the same fact:
+    nothing established where it stopped, so nothing establishes that it stopped short of the
+    provider.
     """
     derived, unpriced = 0.0, []
     for m in measurements:
         amount = (m.get("cost") or {}).get("amount")
         if isinstance(amount, (int, float)):
             derived += float(amount)
-        elif execution_stage(m) in (LAUNCHER_REFUSED, WORKER_EXECUTED):
-            unpriced.append({k: m.get(k) for k in ("item", "repeat", "slot", "attempt", "stage")})
+            continue
+        stage = execution_stage(m)
+        if stage in (LAUNCHER_REFUSED, WORKER_EXECUTED, IN_FLIGHT, UNCLASSIFIED):
+            row = {k: m.get(k) for k in ("item", "repeat", "slot", "attempt")}
+            unpriced.append({**row, "stage": stage})
     return {"derived": round(derived, 6), "unpriced": unpriced, "complete": not unpriced,
-            "claim": ("the derived figure is the whole of what this series spent" if not unpriced
-                      else f"the derived figure omits {len(unpriced)} attempt(s) that reached the "
-                           "executor and recorded no usage; what they spent is unknown, not zero")}
+            "claim": _spend_claim(unpriced)}
 
 
 def _spent(measurements: list[dict[str, Any]]) -> float:
     """The derived total alone. Only for callers that also read `spend` for what it omits."""
     return spend(measurements)["derived"]
+
+
+def _checkpoint(out: Path, config: dict[str, Any], measurements: list[dict[str, Any]],
+                extra: dict[str, Any] | None) -> None:
+    """Persist the series, with the spend account it is claiming at that moment.
+
+    The account travels *in the record*, not only in the return value the process that ran it
+    printed. `spend` is recomputable from the measurements, but a committed artifact that states
+    only a total leaves its completeness limit to whoever thinks to recompute it, and the whole
+    point of separating `derived` from `unpriced` is that the limit must be read together with the
+    figure. A record written mid-series says what that series could establish when it was written.
+    """
+    _repeat.write_series(out, config, measurements,
+                         extra={**(extra or {}), "spend": spend(measurements)})
 
 
 #: How far an attempt got. The four stages the retry rule has to tell apart, recorded rather than
@@ -326,6 +345,13 @@ NOT_OFFERED = "not-offered"          # the slot was never handed to the executor
 BEFORE_LAUNCH = "before-launch"      # attempted; failed before the launcher was entered
 LAUNCHER_REFUSED = "launcher-refused"  # the launcher was entered and refused to start the worker
 WORKER_EXECUTED = "worker-executed"  # the launcher started the worker; a provider call may have run
+#: Written before the attempt is made and replaced by its outcome. What survives is a slot the
+#: process was inside when it stopped reporting — a SIGKILL, a host timeout, a pulled plug. It is
+#: not a fifth place an attempt can fail; it is the absence of an answer about where it failed.
+IN_FLIGHT = "in-flight"
+#: A measurement written before any of the vocabulary above existed. It cannot be placed on either
+#: side of the semantic boundary, which is not the same as being placed on the cheap side.
+UNCLASSIFIED = "unclassified"
 
 
 def execution_stage(record: dict[str, Any]) -> str:
@@ -339,13 +365,57 @@ def execution_stage(record: dict[str, Any]) -> str:
     permission to buy a second trajectory: it is a substring match over log text, and the cost of it
     being wrong is the one thing §11 C exists to prevent.
     """
-    if record.get("stage") == NOT_OFFERED:
-        return NOT_OFFERED
+    # A stage the loop wrote is read back, not re-derived. Every measurement is persisted with one,
+    # so a verdict that did not short-circuit here would be recomputed from keys the verdict itself
+    # says are missing — `unclassified` re-read as `before-launch`, which is the unknown-as-zero
+    # error arriving through the record rather than through the arithmetic. Found in review.
+    if record.get("stage") in (NOT_OFFERED, IN_FLIGHT, UNCLASSIFIED):
+        return str(record["stage"])
+    # Absence of the fact is not the fact. `trajectory_began` is what every branch below turns on,
+    # and a measurement that predates it — every record written before this vocabulary existed —
+    # has no answer rather than the answer "no". Reading a missing key as `before-launch` would
+    # classify a launcher-entered attempt as one that cost nothing, which is the whole error the
+    # spend account exists to refuse, arriving from a record instead of from arithmetic.
+    if "stage" not in record and "trajectory_began" not in record:
+        return UNCLASSIFIED
     if not record.get("trajectory_began"):
         return BEFORE_LAUNCH
     if record.get("launch_returncode") not in (0, None):
         return LAUNCHER_REFUSED
     return WORKER_EXECUTED
+
+
+#: Why an unpriced attempt is unpriced. Three different facts, and none of them is the other two.
+_UNPRICED_BECAUSE = {
+    LAUNCHER_REFUSED: "reached the executor and recorded no usage",
+    WORKER_EXECUTED: "reached the executor and recorded no usage",
+    IN_FLIGHT: "never reported an outcome, so nothing established where they stopped",
+    UNCLASSIFIED: "carry no stage and no `trajectory_began`, so they cannot be placed on either "
+                  "side of the semantic boundary",
+}
+
+
+def _spend_claim(unpriced: list[dict[str, Any]]) -> str:
+    """What the derived figure is, in words, and what it is not.
+
+    The reasons are kept apart on purpose. Saying an in-flight attempt "reached the executor"
+    asserts exactly the fact its own stage exists to say was never established, and a claim written
+    into a committed artifact is the last place to overstate what is known.
+    """
+    if not unpriced:
+        return "the derived figure is the whole of what this series spent"
+    # Grouped by the *reason*, not by the stage. `launcher-refused` and `worker-executed` are
+    # different facts about how far an attempt got and the same fact about why it is unpriced, so
+    # keying on the stage produced a claim that said the identical thing twice.
+    counts: dict[str, int] = {}
+    for row in unpriced:
+        because = _UNPRICED_BECAUSE.get(str(row.get("stage")),
+                                        "are unpriced for a reason this record does not give")
+        counts[because] = counts.get(because, 0) + 1
+    parts = [f"{n} that {because}" for because, n in sorted(counts.items())]
+    return (f"the derived figure omits {len(unpriced)} attempt(s) — "
+            + "; ".join(parts)
+            + ". What they spent is unknown, not zero")
 
 
 def _offered(measurements: list[dict[str, Any]], key: tuple[str, int]) -> int:
@@ -376,7 +446,11 @@ def _unfinished_trajectory(measurements: list[dict[str, Any]],
     for m in measurements:
         if (m.get("item"), m.get("repeat")) != key:
             continue
-        if m.get("validity") != _mlr_run.VALID and m.get("trajectory_began"):
+        if m.get("validity") == _mlr_run.VALID:
+            continue
+        # `in-flight` is matched on its stage rather than on `trajectory_began`, so the row does
+        # not have to assert a fact nothing established in order to be protected by this.
+        if execution_stage(m) == IN_FLIGHT or m.get("trajectory_began"):
             return m
     return None
 
@@ -406,7 +480,7 @@ def run_bounded_series(out: Path, *, config: dict[str, Any], stack: dict[str, An
     done: set[tuple[str, int]] = set()
 
     def stop(condition: str, detail: Any = None) -> dict[str, Any]:
-        _repeat.write_series(out, config, measurements, extra=extra)
+        _checkpoint(out, config, measurements, extra)
         return {"config": config, "measurements": measurements, "stopped": condition,
                 "stop_condition": condition,
                 "stop_reason": STOP_CONDITIONS.get(condition, condition),
@@ -446,11 +520,18 @@ def run_bounded_series(out: Path, *, config: dict[str, Any], stack: dict[str, An
         # restart may not quietly buy it a second trajectory.
         interrupted = _unfinished_trajectory(measurements, key)
         if interrupted is not None:
+            stage_of = execution_stage(interrupted)
             return stop("C", {"slot": slot, "attempt": interrupted.get("attempt"),
                               "validity": interrupted.get("validity"),
+                              "stage": stage_of,
                               "reason": interrupted.get("reason"),
                               "cost": interrupted.get("cost"),
-                              "note": "preserved; resolve deliberately, never automatically"})
+                              "note": ("the attempt never reported an outcome, so where it stopped "
+                                       "was never established and §11 A's permission — which is "
+                                       "conditioned on the failure preceding semantic execution — "
+                                       "is not available for it"
+                                       if stage_of == IN_FLIGHT else
+                                       "preserved; resolve deliberately, never automatically")})
 
         tried = _offered(measurements, key)
         while key not in done and tried < max_attempts_per_slot:
@@ -495,13 +576,42 @@ def run_bounded_series(out: Path, *, config: dict[str, Any], stack: dict[str, An
                     "reason": "an earlier slot left state on the host", "residue": residue})
                 return stop("G", {"slot": slot, "residue": residue})
 
+            # Checkpointed *before* the attempt, not only after it. `write_series` runs when an
+            # attempt returns, so a process killed inside one — a SIGKILL, a host timeout — used to
+            # append nothing at all: the slot left no trace, and a resume that had been told to
+            # clear the stale view it left behind found no prior attempt, offered the slot again and
+            # bought a second trajectory for a slot §11 C may already have spent. A record that
+            # cannot say a slot was entered is not evidence that it was not.
+            #
+            # The row carries no `trajectory_began`, deliberately. An earlier revision set it true
+            # for conservatism, but that field is documented as being set the instant the launcher
+            # is entered, and this row is written before the launcher exists — a committed artifact
+            # asserting a fact nothing established, in a milestone whose whole subject is not doing
+            # that. Found in review. Its `in-flight` stage carries the same consequence without the
+            # claim: unpriced in `spend`, unretryable in `_unfinished_trajectory`, offered in
+            # `_offered`. The row is replaced by the outcome a moment later, so it only survives
+            # when nothing came back.
+            in_flight = len(measurements)
+            measurements.append({**slot, "attempt": tried + 1,
+                                 "validity": _mlr_run.HARNESS_FAILURE, "stage": IN_FLIGHT,
+                                 "reason": "the attempt was in flight when this record was last "
+                                           "written and never reported an outcome"})
+            _checkpoint(out, config, measurements, extra)
+
             record = run_attempt(slot["item"], model=config["model"],
                                  variant=config.get("variant"), executor=executor,
                                  credentials=credentials, keep=keep, fixture=fixture)
             recorded = {**slot, "attempt": tried + 1, **record}
+            # Derived here, never adopted from the attempt. `execution_stage` honours a recorded
+            # `not-offered` or `in-flight` because the loop writes those itself and they mean
+            # things no returned attempt can mean; an attempt that came back claiming either would
+            # otherwise price a trajectory at zero and spend none of the slot's three on its own
+            # say-so. What the attempt is believed about is how far it got: `trajectory_began` and
+            # `launch_returncode`.
+            recorded.pop("stage", None)
             recorded["stage"] = execution_stage(recorded)
-            measurements.append(recorded)
-            _repeat.write_series(out, config, measurements, extra=extra)
+            measurements[in_flight] = recorded
+            _checkpoint(out, config, measurements, extra)
             tried += 1
 
             if record.get("validity") == _mlr_run.VALID:
@@ -515,7 +625,10 @@ def run_bounded_series(out: Path, *, config: dict[str, Any], stack: dict[str, An
             # Invalid. Whether this slot may be offered again is decided by one fact and not by the
             # failure's wording: did anything enter the launcher? Below that call is the executor
             # and its provider, and no downstream failure can prove they were not reached.
-            if record.get("trajectory_began"):
+            # Decided on the classification rather than on one key, so a record that cannot say
+            # where it stopped is not read as having stopped early. Identical to `trajectory_began`
+            # for anything `run_bounded_attempt` returns; it also covers `unclassified`.
+            if recorded["stage"] not in (NOT_OFFERED, BEFORE_LAUNCH):
                 return stop("C", {"slot": slot, "attempt": tried,
                                   "stage": recorded["stage"],
                                   "validity": record.get("validity"),
@@ -541,7 +654,7 @@ def run_bounded_series(out: Path, *, config: dict[str, Any], stack: dict[str, An
         if key not in done:
             return stop("B", {"slot": slot, "attempts": tried})
 
-    _repeat.write_series(out, config, measurements, extra=extra)
+    _checkpoint(out, config, measurements, extra)
     return {"config": config, "measurements": measurements, "stopped": None,
             "spent": _spent(measurements), "spend": spend(measurements),
             "completed_slots": sorted(done)}
