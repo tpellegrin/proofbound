@@ -52,6 +52,26 @@ ROLE = "implementer"
 # worker cannot hold a series open, not to cut off work.
 ATTEMPT_TIMEOUT_SECONDS = 1800
 
+# What that number bounds, stated because it was previously ambiguous enough to be misread.
+#
+# It is **monotonic** seconds, measured by the *controller* around its whole sandboxed launch — view
+# staging, the reservation, the prompt build, the worker, the session lookup and the foreground wait
+# — and acted on by the controller stopping the processes the attempt owns. It is deliberately not
+# enforced by the monitor that owns the worker: the semantic view's profile denies `signal`, so no
+# process inside it can stop anything, measured as `EPERM` for `kill` and `killpg` alike.
+#
+# It is not wall-clock time. A suspended host advances the wall clock without advancing any work,
+# and `elapsed_seconds` on a measurement is wall clock and therefore a different and larger
+# quantity. Both are recorded per attempt so the two can never be confused again; see
+# `MLR-eventbus-b1-timeout-audit.md` for the run where they were.
+#: Seconds between SIGTERM and SIGKILL once the deadline has passed.
+#
+# Teardown, and honestly: a worker that traps SIGTERM does keep running for this long past the
+# deadline, so the effective bound is the deadline plus at most two of these — one wait after
+# SIGTERM and one after SIGKILL. Signals go to the whole owned set at once rather than per process,
+# so the overrun does not multiply with the number of processes.
+TERMINATION_GRACE_SECONDS = 10.0
+
 # The reflector evaluation launches with no permission flag because a reflector only reads. An
 # implementer has to edit files and run tests, so it gets the flag production gives it. Stated as a
 # constant rather than inherited from another script's default, because it is part of the frozen

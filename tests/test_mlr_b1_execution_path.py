@@ -808,6 +808,44 @@ class SeriesProcedureTest(unittest.TestCase):
                          usable["blocked_by"])
         self.assertTrue((self.tmp / "evidence").is_dir())
 
+    def test_a_timed_out_attempt_spends_its_slot_and_survives_a_resume(self):
+        """A deadline is not a reason to buy the slot again.
+
+        The worker was stopped, but it had commenced: §11 C preserves it, contributes no
+        measurement and never re-rolls it. The disposition has to survive the record round trip too,
+        or a restart would read the slot as merely unfinished and offer it a second trajectory.
+        """
+        # The shape the controller really writes: no `launch_returncode`, because the timeout
+        # branch returns before one is assigned. An earlier version of this test supplied one and
+        # so passed for the wrong reason.
+        timed_out = {"validity": _mlr_run.HARNESS_FAILURE, "trajectory_began": True,
+                     "timed_out": True, "terminal_status": "controller-timeout",
+                     "attempt_deadline_seconds": 1800,
+                     "worker_monotonic_seconds": 1800.2, "worker_wall_seconds": 5439.9,
+                     "termination": {"found": 2, "stopped": True, "survivors": []},
+                     "reason": "the controller's 1800s deadline expired"}
+        attempts = self.attempts(timed_out)
+        record = self.run_series(attempts, samples=1)
+        self.assertEqual(record["stop_condition"], "C")
+        self.assertEqual(len(attempts.calls), 1, "the slot was offered again after a timeout")
+        self.assertFalse(record["spend"]["complete"],
+                         "a stopped trajectory with no derived cost is unknown, not free")
+
+        written = json.loads(self.out.read_text(encoding="utf-8"))
+        row = written["measurements"][0]
+        self.assertTrue(row["timed_out"])
+        self.assertEqual(row["terminal_status"], "controller-timeout")
+        self.assertNotIn("launch_returncode", row)
+        self.assertTrue(row["termination"]["stopped"])
+        # Both clocks survive, which is the whole point of recording two of them.
+        self.assertEqual(row["attempt_deadline_seconds"], 1800)
+        self.assertLess(row["worker_monotonic_seconds"], row["worker_wall_seconds"])
+
+        resumed = self.attempts()
+        again = self.run_series(resumed, samples=1)
+        self.assertEqual(again["stop_condition"], "C")
+        self.assertEqual(len(resumed.calls), 0, "a resume bought a trajectory the loop refused")
+
     def test_an_attempt_cannot_declare_its_own_stage(self):
         """Classification is the loop's, from what the attempt got to, not the attempt's claim.
 

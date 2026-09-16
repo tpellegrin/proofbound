@@ -121,6 +121,11 @@ def opencode_runtime(state: dict[str, Any], db_override: str | None, model_overr
     return db.resolve(), str(model)
 
 
+#: Slack added on top of the worker's deadline and teardown grace when sizing the foreground wait.
+#: It exists so the monitor is always the first process to conclude the attempt.
+WAIT_TEARDOWN_MARGIN_SECONDS = 30.0
+
+
 def launch(args: argparse.Namespace) -> int:
     run_root = args.run_root.resolve()
     state_path = run_root / "state.json"
@@ -193,6 +198,13 @@ def launch(args: argparse.Namespace) -> int:
             cmd += [f"--auto-flag={args.auto_flag}"]
         if getattr(args, "variant", None):
             cmd += ["--variant", args.variant]
+        # The deadline travels into the monitor, which is the only process that can act on it: it
+        # holds the worker's handle and its process group. Passing it no further than this launcher
+        # would leave the limit enforced nowhere.
+        if getattr(args, "timeout", None):
+            cmd += ["--timeout", str(args.timeout)]
+        if getattr(args, "termination_grace", None) is not None:
+            cmd += ["--termination-grace", str(args.termination_grace)]
         # Always use the detached low-level monitor so the immutable reservation can
         # be bound into state immediately. Foreground behavior is implemented by a
         # cheap wait *after* state binding, not by hiding a long worker inside launch.
@@ -243,10 +255,17 @@ def launch(args: argparse.Namespace) -> int:
         }
         rc = cp.returncode
         if cp.returncode == 0 and not args.detach:
-            wait_cp = subprocess.run([
-                sys.executable, str(scripts / "wait_worker.py"),
-                "--event-dir", str(event_dir),
-            ], text=True, capture_output=True, check=False)
+            # Sized to outlast the monitor's own deadline plus its teardown, so the *monitor*
+            # decides the attempt's disposition and this wait merely observes it. A wait that
+            # expired first would report "timeout" while the worker was still running, which is
+            # the disagreement between layers that let a deadline go unenforced in the first place.
+            wait_argv = [sys.executable, str(scripts / "wait_worker.py"),
+                         "--event-dir", str(event_dir)]
+            if getattr(args, "timeout", None):
+                grace = args.termination_grace
+                grace = WAIT_TEARDOWN_MARGIN_SECONDS if grace is None else grace
+                wait_argv += ["--timeout", str(args.timeout + grace + WAIT_TEARDOWN_MARGIN_SECONDS)]
+            wait_cp = subprocess.run(wait_argv, text=True, capture_output=True, check=False)
             try:
                 wait_data = json.loads(wait_cp.stdout) if wait_cp.stdout.strip() else {}
             except json.JSONDecodeError:
@@ -491,6 +510,13 @@ def parser() -> argparse.ArgumentParser:
     l.add_argument("--db", help="override state.worker_runtime.opencode.run_db")
     l.add_argument("--model", help="override state.worker_runtime.model")
     l.add_argument("--detach", action="store_true")
+    l.add_argument("--timeout", type=float, default=None,
+                   help="seconds of monotonic time the worker may run; enforced by the monitor that "
+                        "owns it, and the foreground wait is sized to outlast it so the monitor is "
+                        "the process that decides")
+    l.add_argument("--termination-grace", type=float, default=None,
+                   help="seconds between SIGTERM and SIGKILL when the deadline passes; a worker "
+                        "that traps SIGTERM runs this long past the deadline")
     l.add_argument("--wait-kind")
     l.add_argument("--resume-session", help="trustworthy same-role continuation: benign early stop, transport/recovery, or post-DECISION_REQUIRED resume")
     l.add_argument("--auto-flag", default="--auto", help="OpenCode permission flag; pass empty string to omit")

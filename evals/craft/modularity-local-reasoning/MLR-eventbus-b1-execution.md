@@ -305,6 +305,31 @@ the kill left in the record still halts the resume, which is the point of writin
 attempt rather than after. Cleanup covers how a block ends; it does not cover a killed
 process, and the next slot's preflight is what establishes validity.
 
+## 5b. The attempt ceiling, audited and repaired
+
+**2026-09-16.** [`MLR-eventbus-b1-run.md`](MLR-eventbus-b1-run.md) §9 recorded an instrument finding
+that the declared 1,800 s attempt ceiling "does not bound an attempt", on the evidence of two slots
+reporting 5,440 s and 4,779 s. That reading was wrong and is withdrawn by
+[`MLR-eventbus-b1-timeout-audit.md`](MLR-eventbus-b1-timeout-audit.md), which supersedes it. The run
+report is left byte-identical as the record of what was claimed at the time.
+
+In short: the 1,800 s is monotonic and bounds one `subprocess.run` call; `elapsed_seconds` is wall
+clock and bounds the whole attempt. The host was asleep — lid closed — for 5,284 s and 4,597 s of
+those two windows, leaving 156 s and 182 s of awake time, well inside the limit and in line with the
+other ten slots. No frozen requirement was violated, and b1's family R1 stands.
+
+What the audit did find is that no layer could stop a worker at all, and that the view's sandbox
+refuses every signal, so the deadline can only be enforced from the control plane. That is repaired:
+the controller's own wait is the deadline, and on expiry it terminates the pids the attempt recorded
+— worker and monitor — together with their groups and descendants, from outside the sandbox, then
+re-scans to verify they are actually gone rather than merely signalled, extracts
+the evidence, and records the attempt as `harness-failure` with `trajectory_began` true so §11 C
+governs and no retry follows. The boundary policy is unchanged; the staged harness is not.
+
+`ATTEMPT_TIMEOUT_SECONDS` now states what it bounds, and every attempt records
+`attempt_deadline_seconds`, `worker_monotonic_seconds` and `worker_wall_seconds`, so the two clocks
+can never again be read as one.
+
 ## 6. Known limitations
 
 - **Five integration tests were skipping silently.** `tests/test_mlr_boundary.py` gated its
@@ -321,6 +346,12 @@ process, and the next slot's preflight is what establishes validity.
   the control plane's copy. It cannot: the tools directory is a sibling of the writable root, so the
   policy's one `file-write*` grant does not reach it. It establishes the deny on a throwaway link
   first, because every write it then attempts is aimed at the inode of the binary b1 is pinned to.
+- **The series tests are not isolated from the rest of the machine.** Cross-slot isolation is
+  checked against the host's temp directories, and it cannot tell one process's scratch directory
+  from a previous slot's residue. So two test processes running at once fail each other: observed
+  twice while preparing these milestones, 25 and 29 failures respectively, every one of them the
+  §11 G residue stop and none of them a defect. Run the suite once at a time, and never alongside a
+  live series.
 - **Deterministic tests are not a field qualification.** `tests/test_mlr_b1_execution_path.py`
   exercises the orchestration with controlled attempts and the grading path with the fixture's own
   known-correct and known-wrong realizations. Nothing there establishes that the instrument measures

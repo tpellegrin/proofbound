@@ -24,6 +24,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import signal
 import shutil
 import sqlite3
 import subprocess
@@ -48,6 +49,9 @@ HARNESS_SOURCE = ROOT / "scripts"
 #: Where the launcher and its helpers live inside the view. They are orchestration, not evidence,
 #: and are staged as a declared input after being checked for controlled material.
 HARNESS_AREA = "harness"
+#: How far behind the controller's deadline the in-view limits are set. They cannot take effect
+#: inside the sandbox, so they must not conclude an attempt before the controller does.
+INNER_DEADLINE_MARGIN_SECONDS = 120.0
 #: Where the interpreter the fixture was compiled by is made to mean `python3`.
 BIN_AREA = "bin"
 #: The one part of the view that is source by design, in one arm only.
@@ -206,11 +210,25 @@ def launch(view: _semantic_view.View, staged: dict[str, Any], *, variant: str | 
         raise PreflightRefused(
             f"preflight returned {cleared.get('status')!r} with "
             f"{len(cleared.get('findings') or [])} finding(s); no semantic slot was consumed")
+    # **The controller's own wait is the deadline.** Not by preference but by necessity: the view's
+    # sandbox profile denies `signal`, so a process inside it cannot stop even its own direct child
+    # — measured as `EPERM` for both `kill` and `killpg`. The monitor that owns the worker therefore
+    # cannot enforce a limit from where it sits, and this call, which is the view's parent and is
+    # not sandboxed, is the only place that can. `run_bounded_attempt` catches the expiry and stops
+    # the attempt's own pids by hand.
+    #
+    # The in-view limits are still passed, deliberately set *behind* this one. They matter for
+    # callers that do not run inside a sandbox, and sitting behind the controller keeps them from
+    # writing a `terminal.json` that says "timeout" while the worker they could not signal is still
+    # running — a disposition that would read as authoritative and would not be.
+    inner = timeout + _mlr_run.TERMINATION_GRACE_SECONDS + INNER_DEADLINE_MARGIN_SECONDS
     return view.run(
         [str(staged["binaries"] / "python3"), str(staged["harness"] / "dsd_attempt.py"), "launch",
          "--run-root", str(staged["run"]), "--phase-id", _mlr_run.PHASE_ID,
          "--task-id", _mlr_run.TASK_ID, "--role", _mlr_run.ROLE,
-         f"--auto-flag={_mlr_run.AUTO_FLAG}"]
+         f"--auto-flag={_mlr_run.AUTO_FLAG}",
+         "--timeout", str(inner),
+         "--termination-grace", str(_mlr_run.TERMINATION_GRACE_SECONDS)]
         + (["--variant", variant] if variant else []),
         env=environment(view, staged), timeout=timeout)
 
@@ -293,6 +311,11 @@ def run_bounded_attempt(arm: str, *, model: str, variant: str | None, executor: 
     # instead, and the loop's pre-attempt checkpoint would then be the only surviving row: a slot
     # frozen in §11 C, unresumable, for a failure that never reached the executor. Found in review.
     extraction: Path | None = None
+    grace = _mlr_run.TERMINATION_GRACE_SECONDS
+    # Held outside the `with` so an interrupt can still find the view and the run root it has to
+    # clean up after. They are assigned as soon as each exists and are never used for anything else.
+    view_for_teardown: Any = None
+    staged_for_teardown: Any = None
     try:
         spec = _mlr.fixture_for(fixture)
         result.update({"oracle": spec.oracle, "fixture": str(spec.root),
@@ -301,8 +324,10 @@ def run_bounded_attempt(arm: str, *, model: str, variant: str | None, executor: 
         view_policy = policy(executor=executor)
         result["boundary_identity"] = view_policy.identity()
         with _semantic_view.semantic_view(view_policy) as view:
+            view_for_teardown = view
             staged = stage(view, arm, fixture=fixture, task=task, model=model,
                            home_files=credentials or {})
+            staged_for_teardown = staged["run"]
             built = staged["built"]
             result.update({
                 "task_sha256": _mlr.digest_file(staged["task"]),
@@ -325,8 +350,86 @@ def run_bounded_attempt(arm: str, *, model: str, variant: str | None, executor: 
                 return result
 
             result["trajectory_began"] = True
-            launched = launch(view, staged, variant=variant, cleared=cleared, timeout=timeout)
+            result["attempt_deadline_seconds"] = timeout
+            # **One deadline for the attempt, not one per leg.** `launch` and `gate` are both
+            # bounded calls, and giving each the full `timeout` made the real exposure about twice
+            # the number the record reported. They share a single monotonic deadline now, so
+            # `attempt_deadline_seconds` means what it says. Found in review.
+            attempt_deadline = time.monotonic() + timeout
+            try:
+                launched = launch(view, staged, variant=variant, cleared=cleared, timeout=timeout)
+            except subprocess.TimeoutExpired:
+                # The deadline. Killing `sandbox-exec` — all that `subprocess.run` does on expiry —
+                # leaves the detached monitor and the worker running in their own sessions, still
+                # calling a provider, while the `finally` below destroys the view around them. The
+                # work this attempt owns is stopped here instead, by pid, from outside the sandbox,
+                # and the result says whether it actually stopped rather than that a signal was
+                # sent. Provider-side work already dispatched is not ours to cancel and no claim is
+                # made about it.
+                result["validity"] = _mlr_run.HARNESS_FAILURE
+                result["timed_out"] = True
+                result["terminal_status"] = "controller-timeout"
+                result["termination"] = _stop_attempt(view.root, staged["run"], grace=grace)
+                result["reason"] = (f"the controller's {timeout}s deadline expired; "
+                                    + _stop_summary(result["termination"]))
+                result["extraction"] = {k: Path(v).name
+                                        for k, v in extract(view, extraction, staged).items()}
+                return result
             result["launch_returncode"] = launched.returncode
+
+            # The event directory is resolved *before* the return code is judged, because a
+            # deadline that fired is reported as a non-zero launch: `wait_worker` returns 1 for any
+            # terminal status other than "completed". Reading the return code first would send a
+            # timed-out attempt down the generic failure path, where its disposition, both of its
+            # clocks and its evidence were all discarded — which is what an earlier revision of
+            # this repair did.
+            try:
+                event_dir = Path(json.loads(launched.stdout)["event_dir"])
+            except (ValueError, KeyError):
+                event_dir = None
+
+            # The monitor's disposition wins over anything gradeable. A worker stopped at its
+            # deadline can still have left a complete-looking `report.md` behind — written moments
+            # before it was terminated, or by a tool call that outlived the decision — and grading
+            # that would turn a terminated attempt into an ordinary successful slot. The attempt is
+            # accounted and preserved instead: `trajectory_began` is already true, so §11 C governs
+            # and no retry follows from this.
+            terminal = _terminal_disposition(event_dir) if event_dir is not None else {}
+            result["terminal_status"] = terminal.get("status")
+            result["timed_out"] = bool(terminal.get("timed_out"))
+            # Both clocks, always. `worker_wall_seconds` exceeding the deadline while
+            # `worker_monotonic_seconds` sits well under it is a suspended host, not an overrun.
+            for key in ("worker_monotonic_seconds", "worker_wall_seconds"):
+                if key in terminal:
+                    result[key] = terminal[key]
+            if terminal.get("termination") is not None:
+                # Kept under its own name. The controller's `termination` replaces nothing: the
+                # monitor's record is the evidence of what it was *refused*, which is the
+                # measurement the whole design rests on.
+                result["monitor_termination"] = terminal["termination"]
+            if result["timed_out"]:
+                result["validity"] = _mlr_run.HARNESS_FAILURE
+                # `wait_worker` returns non-zero for any terminal status other than "completed",
+                # so a noticed deadline arrives here as a non-zero launch. Left in place it would
+                # make `execution_stage` read `launcher-refused` — "the launcher declined to start
+                # the worker" — about an attempt whose worker demonstrably ran. Dropped, so the
+                # stage derives to `worker-executed`, which is what happened. Found in review.
+                result.pop("launch_returncode", None)
+                # A monitor inside the view can *notice* a deadline but cannot act on one, so its
+                # disposition is not taken as evidence that anything stopped. The controller stops
+                # the attempt's pids itself and reports what it confirmed.
+                result["termination"] = _stop_attempt(view.root, staged["run"], grace=grace)
+                result["reason"] = (
+                    f"the worker exceeded its deadline after "
+                    f"{terminal.get('worker_monotonic_seconds')}s of monotonic execution; "
+                    + _stop_summary(result["termination"]))
+                # Evidence still comes back: the monitor bound the report and froze the scope at
+                # termination, and this is what carries the session and workspace out of a view
+                # that is about to be destroyed.
+                result["extraction"] = {k: Path(v).name
+                                        for k, v in extract(view, extraction, staged).items()}
+                return result
+
             if launched.returncode != 0:
                 blob = (launched.stdout + launched.stderr).lower()
                 result["validity"] = _mlr_run.SETUP_FAILURE if (
@@ -334,13 +437,39 @@ def run_bounded_attempt(arm: str, *, model: str, variant: str | None, executor: 
                     or "rate" in blob) else _mlr_run.HARNESS_FAILURE
                 result["reason"] = (launched.stderr or launched.stdout).strip()[:400]
                 return result
-            try:
-                event_dir = Path(json.loads(launched.stdout)["event_dir"])
-            except (ValueError, KeyError) as exc:
-                result["reason"] = f"launcher produced no event directory: {exc}"
+            if event_dir is None:
+                result["reason"] = "launcher produced no event directory"
                 return result
 
-            gate(view, staged, timeout=timeout)
+            remaining = attempt_deadline - time.monotonic()
+            if remaining <= 0:
+                # The worker finished, but not inside the attempt's budget. Classifying anything
+                # after this point would be grading work the deadline had already disallowed.
+                result["validity"] = _mlr_run.HARNESS_FAILURE
+                result["timed_out"] = True
+                result["terminal_status"] = "controller-timeout"
+                result["termination"] = _stop_attempt(view.root, staged["run"], grace=grace)
+                result["reason"] = (f"the controller's {timeout}s deadline expired before the "
+                                    f"attempt could be classified; "
+                                    + _stop_summary(result["termination"]))
+                result["extraction"] = {k: Path(v).name
+                                        for k, v in extract(view, extraction, staged).items()}
+                return result
+            try:
+                gate(view, staged, timeout=remaining)
+            except subprocess.TimeoutExpired:
+                # Previously this landed in the blanket `except Exception`, which stopped nothing:
+                # the attempt was reported as a harness failure while its processes ran on.
+                result["validity"] = _mlr_run.HARNESS_FAILURE
+                result["timed_out"] = True
+                result["terminal_status"] = "controller-timeout"
+                result["termination"] = _stop_attempt(view.root, staged["run"], grace=grace)
+                result["reason"] = (f"the controller's {timeout}s deadline expired while "
+                                    f"classifying the attempt; "
+                                    + _stop_summary(result["termination"]))
+                result["extraction"] = {k: Path(v).name
+                                        for k, v in extract(view, extraction, staged).items()}
+                return result
             gate_path = event_dir / "evidence-gate.json"
             evidence = (json.loads(gate_path.read_text(encoding="utf-8"))
                         if gate_path.is_file() else None)
@@ -404,6 +533,26 @@ def run_bounded_attempt(arm: str, *, model: str, variant: str | None, executor: 
     except Exception as exc:                              # noqa: BLE001 - reported, never raised
         result["reason"] = f"{type(exc).__name__}: {exc}"[:400]
         return result
+    except BaseException:
+        # Ctrl-C, or anything else that is not an `Exception`. Not swallowed — it is re-raised
+        # immediately — but the attempt's own processes are stopped on the way out, because
+        # everything inside the view would otherwise keep running and keep calling a provider.
+        #
+        # **This runs after the view has already been destroyed**, because a `with` block exits
+        # before an enclosing handler is selected. So `attempt.json` is gone and with it the
+        # recorded pids, which means neither the process-group nor the ancestry test can fire and
+        # ownership rests on the command-line test alone. That still reaches the launcher, the
+        # monitor, the worker and `wait_worker` — each carries a path under the view root in its
+        # argv, and argv outlives the directory — but it does not reach a bare tool subprocess.
+        # Reduced evidence, recorded as such, rather than a claim of clean teardown. Found in
+        # review. A controller that is itself SIGKILLed cannot do even this, and there is no
+        # in-view fallback because nothing inside the view can signal anything.
+        if result.get("trajectory_began") and view_for_teardown is not None:
+            result["interrupted"] = True
+            result["termination"] = _stop_attempt(view_for_teardown.root, staged_for_teardown,
+                                                  grace=grace)
+            result["termination"]["ownership_reduced_to_command_line"] = True
+        raise
     finally:
         result["elapsed_seconds"] = round(time.time() - started, 3)
         if extraction is not None:
@@ -423,6 +572,300 @@ def run_bounded_attempt(arm: str, *, model: str, variant: str | None, executor: 
                 except OSError as exc:
                     result["evidence_error"] = f"{type(exc).__name__}: {exc}"[:400]
             shutil.rmtree(extraction, ignore_errors=True)
+
+
+def _process_table() -> list[dict[str, Any]] | None:
+    """One snapshot of the process table, or `None` if it could not be taken.
+
+    `None` and `[]` are different facts and must not share a representation: an empty table means
+    nothing is running, while no table at all means nothing is *known*. Collapsing them let a
+    failed `ps` report an attempt as cleanly stopped. Found in review.
+
+    `ps` rather than a ppid walk alone. A descendant that calls `setsid` leaves its parent's group,
+    and when its parent dies it is reparented to pid 1 — so for that shape neither the group nor the
+    ancestry chain still recognises it.
+    """
+    try:
+        done = subprocess.run(["/bin/ps", "-Ao", "pid=,ppid=,pgid=,command="],
+                              capture_output=True, text=True, check=False, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if done.returncode != 0:
+        return None
+    rows: list[dict[str, Any]] = []
+    for line in done.stdout.splitlines():
+        parts = line.split(None, 3)
+        if len(parts) < 3:
+            continue
+        try:
+            rows.append({"pid": int(parts[0]), "ppid": int(parts[1]), "pgid": int(parts[2]),
+                         "command": parts[3] if len(parts) > 3 else ""})
+        except ValueError:
+            continue
+    return rows
+
+
+def _owned_processes(view_root: Path, recorded: list[int]) -> dict[str, Any]:
+    """Every live process this attempt owns, and nothing else.
+
+    Returns the owned rows, the groups they lead, the recorded pids that could not be corroborated,
+    and whether the process table was readable at all.
+
+    A recorded pid is trusted only if its own command line still names this view. Between the
+    launcher writing `attempt.json` and a deadline up to half an hour later, a recorded pid can
+    exit and the number be reused by something unrelated; signalling it on the strength of the
+    number alone would reach a process this attempt never owned. Corroborated roots are what the
+    group and ancestry tests extend from, so an uncorroborated number cannot drag a stranger's
+    group in behind it.
+
+    From those roots, four ways a process is recognised, because no one of them is sufficient:
+
+    * it is a corroborated recorded pid — the worker and its monitor;
+    * it is still in the process group one of them leads, which is where the executor's tool
+      subprocesses sit;
+    * it descends from one of them, transitively, over the live snapshot;
+    * its command line names this attempt's view root, which catches the processes the launcher
+      never recorded at all — the in-view launcher itself and the `wait_worker` helper polling
+      inside it, both of which inherit the *controller's* process group.
+
+    The view root is a fresh `mkdtemp` path belonging to this slot alone, which is what makes the
+    command-line test safe rather than reckless: no process outside this attempt can name it. The
+    match is refused for an implausibly short root, so a truncated value cannot select the whole
+    table. The controller and every process it descends from are excluded by pid, so no positive
+    test can select them.
+
+    **Known gap, measured not assumed.** A descendant that leaves the group *and* whose own command
+    line does not name the view — an ordinary `git` or `node` invocation — is unrecognisable by any
+    of the four once the intermediate that links it to a root has exited. `_stop_attempt` re-derives
+    ownership while it works, which catches such a process while its parent still lives, but not
+    after. The gap is stated in `MLR-eventbus-b1-timeout-audit.md` rather than papered over.
+    """
+    marker = str(view_root)
+    rows = _process_table()
+    if rows is None:
+        return {"owned": [], "groups": [], "uncorroborated": sorted(set(recorded)),
+                "table_unavailable": True}
+
+    by_pid = {row["pid"]: row for row in rows}
+    by_parent: dict[int, list[dict[str, Any]]] = {}
+    for row in rows:
+        by_parent.setdefault(row["ppid"], []).append(row)
+
+    # Never the controller, and never anything it hangs from. An earlier revision excluded the
+    # whole of the controller's *process group* instead, which looked equivalent and was not:
+    # `sandbox-exec` is started without a new session, so the in-view launcher and the
+    # `wait_worker` helper inherit the controller's group, and excluding the group excluded exactly
+    # the processes that were being left behind.
+    protected = {0, 1, os.getpid()}
+    walker = os.getpid()
+    while walker in by_pid:
+        walker = by_pid[walker]["ppid"]
+        if walker in protected:
+            break
+        protected.add(walker)
+
+    def names_view(row: dict[str, Any]) -> bool:
+        return len(marker) >= 12 and marker in row["command"]
+
+    roots = {row["pid"] for row in rows
+             if row["pid"] in recorded and row["pid"] not in protected and names_view(row)}
+    uncorroborated = sorted(set(recorded) - roots)
+
+    descendants: set[int] = set()
+    frontier = list(roots)
+    while frontier:
+        for child in by_parent.get(frontier.pop(), []):
+            if child["pid"] not in descendants:
+                descendants.add(child["pid"])
+                frontier.append(child["pid"])
+
+    groups = {row["pgid"] for row in rows if row["pid"] in roots and row["pgid"] == row["pid"]}
+    groups -= protected
+
+    owned: list[dict[str, Any]] = []
+    for row in rows:
+        if row["pid"] in protected:
+            continue
+        if row["pid"] in roots:
+            why = "recorded"
+        elif row["pgid"] in groups:
+            why = "process-group"
+        elif row["pid"] in descendants:
+            why = "descends-from-recorded"
+        elif names_view(row):
+            why = "names-the-view"
+        else:
+            continue
+        owned.append({**row, "owned_because": why})
+    return {"owned": owned, "groups": sorted(groups), "uncorroborated": uncorroborated,
+            "table_unavailable": False}
+
+
+def _attempt_processes(run_root: Path) -> list[int]:
+    """The pids the launcher recorded for this attempt, if it got as far as recording any."""
+    # `rglob`, not a fixed `phases/*/tasks/*/attempts/*` shape. The launcher's event-directory
+    # layout is its own business and does vary — a glob that encoded one arrangement would silently
+    # return no pids under another, and "no pids" is the input that makes everything downstream
+    # conclude there was nothing to stop.
+    pids: list[int] = []
+    for path in sorted(Path(run_root).rglob("attempt.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        for key in ("worker_pid", "launcher_pid"):
+            value = data.get(key)
+            if isinstance(value, int):
+                pids.append(value)
+    return pids
+
+
+def _pid_alive(pid: int) -> bool:
+    """Whether a pid is still running. `EPERM` counts as alive: it is a process we cannot signal,
+    which is the opposite of a process that has stopped."""
+    try:
+        os.kill(pid, 0)
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
+
+
+def _signal_all(pids: Iterable[int], groups: Iterable[int], sig: int) -> list[dict[str, Any]]:
+    """Signal each owned pid, and each group the attempt's roots lead.
+
+    Both, because neither alone is enough. Individual pids reach a descendant that left the group;
+    the group signal reaches a child forked *after* the snapshot was taken, which no list of pids
+    can name. The groups are only those led by a corroborated root, so nothing unowned is in them.
+    """
+    sent: list[dict[str, Any]] = []
+    for scope, target, call in ([("group", g, os.killpg) for g in groups]
+                                + [("process", p, os.kill) for p in pids]):
+        record: dict[str, Any] = {"scope": scope, "target": target}
+        try:
+            call(target, sig)
+            record["delivered"] = True
+        except ProcessLookupError:
+            record["delivered"] = False
+            record["already_exited"] = True
+        except PermissionError as exc:
+            record["delivered"] = False
+            record["refused"] = f"EPERM (errno={exc.errno})"
+        sent.append(record)
+    return sent
+
+
+def _stop_attempt(view_root: Path, run_root: Path, *, grace: float) -> dict[str, Any]:
+    """Stop everything this attempt owns, then look again and say what is still running.
+
+    Signals go to the whole owned set at once and the grace is waited **once**, not per process: a
+    grace paid serially for each pid would multiply the overrun it exists to bound.
+
+    Ownership is re-derived while waiting and **merged** into the watch set, never replaced. Merging
+    is what catches a child forked after the first snapshot — the window is the whole grace, during
+    which the worker is still alive and still driving tool calls. Replacing would lose a `setsid`
+    descendant the moment its parent died, which is why the first version of this refused to
+    re-derive at all and so missed the forked children instead. Found in review, twice.
+
+    Survivors come from a liveness sweep, not from the signals having been delivered. Delivery is
+    not death: a worker can trap `SIGTERM`, the semantic view refuses signals outright with
+    `EPERM`, and a group leader exiting says nothing about the group.
+    """
+    recorded = _attempt_processes(run_root)
+    scan = _owned_processes(view_root, recorded)
+    record: dict[str, Any] = {"recorded_pids": recorded}
+    if scan["uncorroborated"]:
+        # A recorded pid whose command line no longer names this view. Either it exited and the
+        # number was reused, or it exited and was reaped. Reported, and deliberately not signalled.
+        record["uncorroborated_pids"] = scan["uncorroborated"]
+    if scan["table_unavailable"]:
+        # Nothing is known, which is not the same as nothing running. Never reported as stopped.
+        return {**record, "found": 0, "stopped": False, "table_unavailable": True}
+
+    watch: dict[int, dict[str, Any]] = {row["pid"]: row for row in scan["owned"]}
+    groups = set(scan["groups"])
+    record["found"] = len(watch)
+    record["owned"] = [{k: row[k] for k in ("pid", "pgid", "owned_because")}
+                       for row in watch.values()]
+    if not watch and not groups:
+        # Nothing was running. Said plainly, because it is a different fact from having stopped
+        # something, and the two must not share a sentence.
+        return {**record, "stopped": True, "nothing_was_running": True}
+
+    def refresh() -> None:
+        again = _owned_processes(view_root, recorded)
+        if again["table_unavailable"]:
+            return
+        for row in again["owned"]:
+            watch.setdefault(row["pid"], row)
+        groups.update(again["groups"])
+
+    def settle(limit: float) -> list[int]:
+        deadline = time.monotonic() + max(0.0, limit)
+        while time.monotonic() < deadline:
+            refresh()
+            if not [pid for pid in watch if _pid_alive(pid)]:
+                return []
+            time.sleep(0.05)
+        refresh()
+        return [pid for pid in watch if _pid_alive(pid)]
+
+    record["sigterm"] = _signal_all(list(watch), groups, signal.SIGTERM)
+    if not settle(grace):
+        record["found"] = len(watch)
+        return {**record, "stopped": True, "escalated": False, "survivors": []}
+
+    record["escalated"] = True
+    record["sigkill"] = _signal_all([pid for pid in watch if _pid_alive(pid)], groups,
+                                    signal.SIGKILL)
+    left = settle(grace)
+    record["found"] = len(watch)
+    record["owned"] = [{k: row[k] for k in ("pid", "pgid", "owned_because")}
+                       for row in watch.values()]
+    record["survivors"] = [{k: watch[pid][k] for k in ("pid", "pgid", "owned_because")}
+                           for pid in left]
+    record["stopped"] = not left
+    return record
+
+
+def _stop_summary(termination: dict[str, Any]) -> str:
+    """The outcome in words, kept in step with what was actually established.
+
+    Every qualification the structured record carries appears here too. The prose is what reaches a
+    run report, and a reader of the prose must not end up better informed by reading the JSON.
+    """
+    caveat = ""
+    if termination.get("uncorroborated_pids"):
+        caveat = (f"; {len(termination['uncorroborated_pids'])} recorded pid(s) could not be "
+                  "corroborated against this view and were not signalled")
+    if termination.get("table_unavailable"):
+        return ("the process table could not be read, so nothing could be identified or stopped"
+                + caveat)
+    if termination.get("nothing_was_running"):
+        return "no process this attempt owned was still running" + caveat
+    survivors = termination.get("survivors") or []
+    if termination.get("stopped"):
+        return (f"all {termination.get('found')} process(es) this attempt owned were confirmed "
+                f"stopped{caveat}")
+    return (f"{len(survivors)} of {termination.get('found')} process(es) this attempt owned are "
+            f"STILL RUNNING after SIGKILL: {survivors}{caveat}")
+
+
+def _terminal_disposition(event_dir: Path) -> dict[str, Any]:
+    """What the monitor recorded about how the attempt ended, or nothing readable.
+
+    An unreadable or absent `terminal.json` is reported as such rather than as "not a timeout": the
+    caller then proceeds to the evidence gate, which is the check that decides whether there is
+    anything gradeable. Silence here must not be able to assert that a deadline was respected.
+    """
+    path = Path(event_dir) / "terminal.json"
+    if not path.is_file():
+        return {"status": None, "terminal_missing": True}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {"status": None, "terminal_unreadable": f"{type(exc).__name__}: {exc}"}
 
 
 def harness_is_clean(*, fixture: Path = _mlr.FIXTURE) -> dict[str, Any]:

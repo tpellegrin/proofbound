@@ -12,8 +12,10 @@ import hashlib
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -23,6 +25,94 @@ from _roles import ROLE_NAMES
 from _rules_snapshot import sha256_file, verify_snapshot
 
 ROLES = set(ROLE_NAMES)
+
+
+#: How long the worker's own process group gets to exit after SIGTERM before SIGKILL follows.
+#: Teardown, and not free: a worker that traps SIGTERM goes on running for this long past its
+#: deadline, so the effective limit is the deadline plus at most two of these. It is recorded
+#: separately from the interval the worker was given rather than folded into it.
+TERMINATION_GRACE_SECONDS = 10.0
+
+
+def stop_worker(proc: subprocess.Popen, grace: float, *,
+                pgid: int | None = None) -> dict[str, Any]:
+    """Stop the worker this attempt owns, everything it started, and nothing else.
+
+    The worker is spawned in its own session, so its process-group id is its own pid and that group
+    holds exactly its descendants — the executor and every tool subprocess it forked. That is what
+    makes a group signal safe here rather than reckless: a stuck attempt is almost never stuck in
+    the process we launched, it is stuck in something that process started, and signalling only the
+    direct child leaves the rest alive and still talking to a provider.
+
+    **`pgid` is a precondition, passed in by the caller from spawn time.** `os.getpgid` on a reaped
+    pid raises `ProcessLookupError`, so a lookup here would fail exactly when the direct process has
+    gone and its descendants have not — and the group would be unreachable with something still in
+    it to stop. On the only path that calls this today that state cannot arise, because the call is
+    reached from `proc.wait()` timing out, which means the process has *not* exited; so this is a
+    contract kept deliberately rather than a bug observed here.
+
+    Two refusals matter. If the worker is somehow *not* in its own group, this signals the single
+    process rather than the group, because that group would be the monitor's own and killing it
+    would take out the writer of `terminal.json`. And a process that has already exited is not an
+    error: the race between the deadline and a normal exit is expected and is reported, not raised.
+    """
+    record: dict[str, Any] = {"grace_seconds": grace, "sigterm": False, "sigkill": False}
+    if pgid is None:
+        try:
+            pgid = os.getpgid(proc.pid)
+        except (ProcessLookupError, PermissionError) as exc:
+            record["scope"] = f"unavailable: {type(exc).__name__}"
+            return record
+    own = os.getpgid(0)
+    group = pgid != own
+    record["scope"] = "process-group" if group else "process"
+    record["pgid"] = pgid if group else None
+
+    def deliver(sig: int) -> None:
+        if group:
+            os.killpg(pgid, sig)
+        else:
+            proc.send_signal(sig)
+
+    def attempt(sig: int, label: str) -> bool:
+        """Deliver one signal, and say exactly why not if it could not be delivered.
+
+        `ProcessLookupError` and `PermissionError` are kept apart because they mean opposite
+        things. The first is the deadline racing a normal exit — nothing left to stop, and not a
+        problem. The second is *refusal*, and the caller must not read it as a stop: inside the
+        semantic view's sandbox every signal is denied with `EPERM`, so a helper that treated the
+        two alike would report a worker as terminated while it kept running and kept calling a
+        provider. Measured, not assumed; see `MLR-eventbus-b1-timeout-audit.md`.
+        """
+        try:
+            deliver(sig)
+            record[label] = True
+            return True
+        except ProcessLookupError:
+            record["already_exited"] = True
+        except PermissionError as exc:
+            record[f"{label}_refused"] = f"EPERM (errno={exc.errno})"
+        return False
+
+    if not attempt(signal.SIGTERM, "sigterm") and record.get("already_exited"):
+        record["stopped"] = True
+        return record
+    try:
+        proc.wait(timeout=max(0.0, grace))
+        record["stopped"] = True
+        return record
+    except subprocess.TimeoutExpired:
+        pass
+    attempt(signal.SIGKILL, "sigkill")
+    try:
+        proc.wait(timeout=max(0.0, grace))
+        record["stopped"] = True
+    except subprocess.TimeoutExpired:
+        # Reported rather than hidden. An unstopped worker is the one state that must never be
+        # mistaken for a stopped one, because the caller's next move depends on it.
+        record["stopped"] = False
+        record["unreaped"] = True
+    return record
 
 
 def now() -> str:
@@ -325,7 +415,17 @@ def child_run(args: argparse.Namespace, paths: dict[str, Path], reserved_at: str
     out = None
     try:
         out = log.open("xb", buffering=0)
-        proc = subprocess.Popen(cmd, cwd=project_root, env=env, stdout=out, stderr=subprocess.STDOUT)
+        # `start_new_session` makes the worker its own process-group leader, so the attempt can
+        # later stop the worker *and its tool subprocesses* without signalling this monitor — which
+        # is the process that has to survive in order to write `terminal.json`.
+        proc = subprocess.Popen(cmd, cwd=project_root, env=env, stdout=out,
+                                stderr=subprocess.STDOUT, start_new_session=True)
+        # Captured now, while the process exists. After it is reaped its group id is unreadable,
+        # and that is precisely the case where descendants it started may still be running.
+        try:
+            worker_pgid: int | None = os.getpgid(proc.pid)
+        except OSError:                                     # pragma: no cover - immediate exit
+            worker_pgid = None
     except Exception as exc:
         if out:
             out.close()
@@ -352,7 +452,38 @@ def child_run(args: argparse.Namespace, paths: dict[str, Path], reserved_at: str
             "writes_project": bool(json.loads(reservation_path.read_text(encoding="utf-8")).get("writes_project")),
         }
         atomic_json(event_dir / "attempt.json", attempt_data)
-        rc = proc.wait()
+        # The deadline is enforced *here*, in the process that owns the worker. It used to be
+        # `proc.wait()` with no bound at all: the only limit anywhere was the controller's own
+        # `subprocess.run(timeout=...)` on its child, which stops the controller waiting but leaves
+        # this monitor and its worker running — detached, in another session, still calling a
+        # provider, with the view being torn down underneath them.
+        #
+        # Monotonic on purpose, and the wall clock recorded beside it. A suspended host advances
+        # wall time without advancing any work, and charging that against a reasoning budget would
+        # terminate attempts for the machine's sleep rather than for their own behaviour. Both
+        # numbers are written to `terminal.json` so no later reader has to guess which clock a
+        # duration came from.
+        waited_monotonic = time.monotonic()
+        waited_wall = time.time()
+        deadline = waited_monotonic + args.timeout if args.timeout else None
+        timed_out = False
+        termination: dict[str, Any] | None = None
+        if deadline is None:
+            rc = proc.wait()
+        else:
+            try:
+                rc = proc.wait(timeout=max(0.0, deadline - time.monotonic()))
+            except subprocess.TimeoutExpired:
+                timed_out = True
+                termination = stop_worker(proc, args.termination_grace, pgid=worker_pgid)
+                # `None` when the worker is still running, and deliberately not a synthesised
+                # `-SIGKILL`. Writing a signal-shaped exit code for a process that was never
+                # stopped — which is what happens inside the semantic view, where every signal is
+                # refused — would put a claim in the terminal event that the evidence does not
+                # support. The controller checks `termination["stopped"]`, not this number.
+                rc = proc.returncode
+        monotonic_seconds = round(time.monotonic() - waited_monotonic, 3)
+        wall_seconds = round(time.time() - waited_wall, 3)
 
     process_ended_at = now()
     terminal_report, report_error = bind_report_at_terminal(paths)
@@ -363,7 +494,13 @@ def child_run(args: argparse.Namespace, paths: dict[str, Path], reserved_at: str
         session_id, session_error = lookup_session_id(env, title)
     terminal = {
         "format": "dsd-worker-terminal-v3",
-        "status": "completed" if rc == 0 else "process-error",
+        "status": "timeout" if timed_out else ("completed" if rc == 0 else "process-error"),
+        "worker_stopped": None if not timed_out else bool((termination or {}).get("stopped")),
+        "timed_out": timed_out,
+        "timeout_seconds": args.timeout or None,
+        "worker_monotonic_seconds": monotonic_seconds,
+        "worker_wall_seconds": wall_seconds,
+        "termination": termination,
         "task_id": args.task_id,
         "role": args.role,
         "attempt": args.attempt,
@@ -410,6 +547,12 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--force-read-only", action="store_true", help="reserve this attempt as project-read-only regardless of task write scope; used by routine Evidence Clerk interpretation")
     ap.add_argument("--auto-flag", default="--auto", help="OpenCode permission flag; pass empty string to omit")
     ap.add_argument("--variant", default=None, help="OpenCode model variant (provider reasoning effort)")
+    ap.add_argument("--timeout", type=float, default=None,
+                    help="seconds of monotonic time the worker may run before its process group is "
+                         "terminated; omitted or 0 waits without a bound")
+    ap.add_argument("--termination-grace", type=float, default=TERMINATION_GRACE_SECONDS,
+                    help="seconds between SIGTERM and SIGKILL when the deadline passes; a worker "
+                         "that traps SIGTERM keeps running for this long past the deadline")
     ap.add_argument("--detach", action="store_true", help="spawn the monitor in a detached process and return")
     ap.add_argument("--_child", action="store_true", help=argparse.SUPPRESS)
     ap.add_argument("--_reserved-at", help=argparse.SUPPRESS)
