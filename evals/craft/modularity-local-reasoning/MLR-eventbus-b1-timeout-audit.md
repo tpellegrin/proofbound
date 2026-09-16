@@ -274,3 +274,12 @@ Minimum additional verification before any future paid execution, based on what 
 
 Nothing here requires restarting the qualification programme, and no successor study is frozen or
 executed in this milestone.
+
+**Supplied, 2026-09-16.** All three were met by `pb-lifecycle-field-check-1`
+([protocol and outcome](../../../docs/architecture/proofbound/evidence/lifecycle-field-check.md)):
+two real-executor trials at `09a9350`, the second of which stopped a live executor and a live
+blocking tool subprocess at its deadline with every owned process confirmed absent, nothing outside
+the owned set signalled, and no sleep transition in the window. The lifecycle workstream is closed
+on that evidence. What it establishes is operation under those conditions — not universal
+containment, not a reliability rate, and nothing about provider-side billing. The residual
+limitations listed above are unchanged by it.

@@ -1,0 +1,262 @@
+{
+  "aggregate_limit": 0.2,
+  "execution_commit": "09a9350d4a025af6badba963250b9012f7357dde",
+  "executor": {
+    "path": "/Users/thiago/.proofbound/executors/opencode-1.18.29-darwin-arm64/opencode",
+    "sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+    "verified": true
+  },
+  "finished_wall": 1789583348.840936,
+  "identity": "pb-lifecycle-field-check-1",
+  "interpreter": {
+    "bytecode_magic": "610d0d0a",
+    "cache_tag": "cpython-39",
+    "implementation": "cpython",
+    "version": "3.9.6"
+  },
+  "model": "deepseek/deepseek-v4-flash",
+  "protocol": "docs/architecture/proofbound/evidence/lifecycle-field-check.md",
+  "reserve": 0.05,
+  "sleep_transitions_during_run": [],
+  "spend_after_trial_a": {
+    "claim": "the derived figure is the whole of what this series spent",
+    "complete": true,
+    "derived": 0.005745,
+    "unpriced": []
+  },
+  "spend_total": {
+    "claim": "the derived figure omits 1 attempt(s) \u2014 1 that reached the executor and recorded no usage. What they spent is unknown, not zero",
+    "complete": false,
+    "derived": 0.005745,
+    "unpriced": [
+      {
+        "attempt": null,
+        "item": null,
+        "repeat": null,
+        "slot": null,
+        "stage": "worker-executed"
+      }
+    ]
+  },
+  "started_wall": 1789583214.053081,
+  "trials": [
+    {
+      "attempt": {
+        "attempt_deadline_seconds": 300,
+        "cost": {
+          "amount": 0.005745,
+          "basis": "input billed as cache-miss, cache_read billed on top as cache-hit (measured: provider reports input excluding cache)",
+          "billed": {
+            "cache_read": 163840.0,
+            "output": 2899.0,
+            "uncached_input": 12202.0
+          },
+          "currency": "USD",
+          "model": "deepseek-v4-flash",
+          "price_id": "deepseek-2026-09-09",
+          "rates": {
+            "cache_hit": 0.007,
+            "cache_miss": 0.22,
+            "output": 0.66
+          },
+          "retrieved": "2026-09-09",
+          "source": "https://api-docs.deepseek.com/quick_start/pricing",
+          "window": "off-peak"
+        },
+        "elapsed_seconds": 42.917,
+        "evidence": "/Users/thiago/.proofbound/evidence/lifecycle-field-check/contract-1789583214109",
+        "extraction": {
+          "session": "worker.db",
+          "workspace": "workspace"
+        },
+        "launch_returncode": 0,
+        "reason": null,
+        "terminal_status": "completed",
+        "timed_out": false,
+        "trajectory_began": true,
+        "validity": "valid",
+        "view_destroyed": true,
+        "worker_monotonic_seconds": 40.319,
+        "worker_wall_seconds": 40.319
+      },
+      "attempt_signature_before": {},
+      "deadline_seconds": 300,
+      "execution_stage": "worker-executed",
+      "leaked_after_observation": {},
+      "oracle_verdict_ignored": {
+        "correct": false,
+        "gate_passed": false,
+        "regression_passed": true
+      },
+      "residue_after": {
+        "ephemeral_arms": [],
+        "stale_views": []
+      },
+      "residue_before": {
+        "ephemeral_arms": [],
+        "stale_views": []
+      },
+      "spend": {
+        "claim": "the derived figure is the whole of what this series spent",
+        "complete": true,
+        "derived": 0.005745,
+        "unpriced": []
+      },
+      "started_wall": 1789583214.109947,
+      "task_sha256": "f998a0ff6b722513c3658ac23470a4792cd8f1842e2d37d75c0902f86ab668d8",
+      "trial": "trial-a-normal-completion",
+      "wall_seconds": 42.95
+    },
+    {
+      "attempt": {
+        "attempt_deadline_seconds": 90,
+        "elapsed_seconds": 90.745,
+        "evidence": "/Users/thiago/.proofbound/evidence/lifecycle-field-check/contract-1789583257189",
+        "extraction": {
+          "session": "worker.db",
+          "workspace": "workspace"
+        },
+        "reason": "the controller's 90s deadline expired; all 4 process(es) this attempt owned were confirmed stopped",
+        "terminal_status": "controller-timeout",
+        "termination": {
+          "escalated": false,
+          "found": 4,
+          "owned": [
+            {
+              "owned_because": "recorded",
+              "pgid": 97576,
+              "pid": 97576
+            },
+            {
+              "owned_because": "recorded",
+              "pgid": 97578,
+              "pid": 97578
+            },
+            {
+              "owned_because": "names-the-view",
+              "pgid": 97182,
+              "pid": 97579
+            },
+            {
+              "owned_because": "descends-from-recorded",
+              "pgid": 97817,
+              "pid": 97817
+            }
+          ],
+          "recorded_pids": [
+            97578,
+            97576
+          ],
+          "sigterm": [
+            {
+              "delivered": true,
+              "scope": "group",
+              "target": 97576
+            },
+            {
+              "delivered": true,
+              "scope": "group",
+              "target": 97578
+            },
+            {
+              "delivered": true,
+              "scope": "process",
+              "target": 97576
+            },
+            {
+              "delivered": true,
+              "scope": "process",
+              "target": 97578
+            },
+            {
+              "delivered": true,
+              "scope": "process",
+              "target": 97579
+            },
+            {
+              "delivered": true,
+              "scope": "process",
+              "target": 97817
+            }
+          ],
+          "stopped": true,
+          "survivors": []
+        },
+        "timed_out": true,
+        "trajectory_began": true,
+        "validity": "harness-failure"
+      },
+      "attempt_signature_before": {},
+      "deadline_seconds": 90,
+      "execution_stage": "worker-executed",
+      "leaked_after_observation": {},
+      "observation": {
+        "attempt_signature_at_last_sighting": [
+          {
+            "command": "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python /private/tmp/pb-sem-ngp51f9_/harness/dsd_attempt.py launch --run-root /private/tmp/pb-sem-ngp51f9_/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1 --phase-id build --task-id MLR-external --role implementer --auto-flag=--auto --timeout 220.0 --termination-grace 10.0 --variant high",
+            "pgid": 97182,
+            "pid": 97566
+          },
+          {
+            "command": "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python /private/tmp/pb-sem-ngp51f9_/harness/run_worker.py --project-root /private/tmp/pb-sem-ngp51f9_/workspace --run-root /private/tmp/pb-sem-ngp51f9_/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1 --task-id MLR-external --role implementer --attempt 1 --prompt-file /private/tmp/pb-sem-ngp51f9_/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/phases/build/tasks/MLR-external/attempts/implementer-1/launch-prompt.txt --task-contract /private/tmp/pb-sem-ngp51f9_/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/phases/build/tasks/MLR-external/contracts/r0001.md --worker-rules /private/tmp/pb-sem-ngp51f9_/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/worker-rules/r0001/WORKER_RULES.md --scope-baseline /private/tmp/pb-sem-ngp51f9_/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/phases/build/tasks/MLR-external/attempts/implementer-1/scope-baseline.json --report /private/tmp/pb-sem-ngp51f9_/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/phases/build/tasks/MLR-external/attempts/implementer-1/report.md --event-dir /private/tmp/pb-sem-ngp51f9_/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/phases/build/tasks/MLR-external/attempts/implementer-1 --log /private/tmp/pb-sem-ngp51f9_/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/phases/build/tasks/MLR-external/attempts/implementer-1/worker.log --db /private/tmp/pb-sem-ngp51f9_/session/worker.db --model deepseek/deepseek-v4-flash --auto-flag=--auto --variant high --timeout 220.0 --termination-grace 10.0 --_child --_reserved-at 2026-09-16T18:27:37.985321+00:00",
+            "pgid": 97576,
+            "pid": 97576
+          },
+          {
+            "command": "opencode run --model deepseek/deepseek-v4-flash --variant high --auto --title dsd:MLR-external:implementer:1 --dir /private/tmp/pb-sem-ngp51f9_/workspace DSD IMPLEMENTER for MLR-external.\\012Read, in order:\\0121. /private/tmp/pb-sem-ngp51f9_/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/worker-rules/r0001/WORKER_RULES.md\\0122. /private/tmp/pb-sem-ngp51f9_/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/worker-rules/r0001/protocol/COMMON.md\\0123. /private/tmp/pb-sem-ngp51f9_/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/worker-rules/r0001/protocol/roles/dsd-implementer/SKILL.md\\0124. /private/tmp/pb-sem-ngp51f9_/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/phases/build/tasks/MLR-external/contracts/r0001.md\\012Report: /private/tmp/pb-sem-ngp51f9_/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/phases/build/tasks/MLR-external/attempts/implementer-1/report.md\\012This attempt has its own report path. Make that report self-contained; start it early and keep it current.\\012Do the bounded role task from authority. Preserve truthful semantic evidence; report formatting is not a protocol.\\012Final stdout: report path plus at most one short conclusion.\\012",
+            "pgid": 97578,
+            "pid": 97578
+          },
+          {
+            "command": "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python /private/tmp/pb-sem-ngp51f9_/harness/wait_worker.py --event-dir /private/tmp/pb-sem-ngp51f9_/workspace/DeepSeekAndDestroy/plans/mlr/runs/r1/phases/build/tasks/MLR-external/attempts/implementer-1 --timeout 260.0",
+            "pgid": 97182,
+            "pid": 97579
+          },
+          {
+            "command": "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python -c import time; time.sleep(900)",
+            "pgid": 97817,
+            "pid": 97817
+          }
+        ],
+        "executor_seen_running": [],
+        "samples": 287,
+        "stall_child_seen_running": [
+          {
+            "at": 1789583279.3615081,
+            "command": "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python -c import time; time.sleep(900)",
+            "pgid": 97817,
+            "pid": 97817,
+            "ppid": 97578
+          }
+        ]
+      },
+      "residue_after": {
+        "ephemeral_arms": [],
+        "stale_views": []
+      },
+      "residue_before": {
+        "ephemeral_arms": [],
+        "stale_views": []
+      },
+      "spend": {
+        "claim": "the derived figure omits 1 attempt(s) \u2014 1 that reached the executor and recorded no usage. What they spent is unknown, not zero",
+        "complete": false,
+        "derived": 0.0,
+        "unpriced": [
+          {
+            "attempt": null,
+            "item": null,
+            "repeat": null,
+            "slot": null,
+            "stage": "worker-executed"
+          }
+        ]
+      },
+      "started_wall": 1789583257.188877,
+      "task_sha256": "e07c650280675f6b104f58927d14a285cbfc328d875aa07e46ab7ef6a3d5f716",
+      "trial": "trial-b-controlled-stall",
+      "wall_seconds": 90.779
+    }
+  ],
+  "variant": "high"
+}

@@ -167,3 +167,107 @@ retries in this protocol.
 
 A defect found here is preserved as a failed check. It may be repaired and tested, but not by
 changing the implementation between the two trials and calling the combination a pass.
+
+---
+
+# Outcome
+
+**2026-09-16, 15:26:54 → 15:29:08 local (135 s).** Executed at
+`09a9350d4a025af6badba963250b9012f7357dde`, the revision this protocol was committed in. Raw record:
+[`lifecycle-field-check-evidence.json`](lifecycle-field-check-evidence.json).
+
+**Verdict: pass, at the scope declared above and no wider.**
+
+Executor verified by content before launch — `2f24593f…0669`, the frozen build. Interpreter CPython
+3.9.6. No `Sleep`, `Wake` or `DarkWake` transition in the run window ±30 s, checked directly against
+`pmset -g log` and not only by the runner's own scan.
+
+## Trial A — normal completion
+
+Wall 42.95 s against a 300 s deadline. `validity: valid`, `timed_out: false`,
+`terminal_status: completed`. Extraction returned both the workspace and the session; the view was
+destroyed; cost derived at **$0.005745** from real usage (12,202 uncached input tokens, 163,840 cache
+reads, 2,899 output) so spend is **complete**. No attempt-shaped process survived and no residue was
+left. Fixture B's oracle scored the work `correct: false`, which is meaningless here and ignored: the
+worker was never asked to satisfy that oracle.
+
+An ordinary short attempt is unaffected by the repair.
+
+## Trial B — the controlled stall
+
+Wall 90.779 s against a 90 s deadline. `validity: harness-failure`, `timed_out: true`,
+`terminal_status: controller-timeout`, `trajectory_began: true`.
+
+**The real executor was doing real work, and the blocking command really was running.** `worker.log`
+shows it read `WORKER_RULES.md`, `COMMON.md`, the implementer skill and the task contract, listed the
+attempt directory, wrote its report, ran `date -u` (`2026-09-16T18:27:54Z`), then edited the report
+to say *"Command launch: about to execute the exact contract command, blocking"* — and the log ends
+there, mid-command. Across 287 process samples the runner caught the blocking child itself alive at
+18:27:59Z: pid 97817, `python3 -c import time; time.sleep(900)`, in its own process group.
+
+**Termination, observed rather than asserted.** `stopped: true`, `found: 4`, `survivors: []`,
+`escalated: false` — `SIGTERM` was enough. The four owned processes, and why each was owned:
+
+| pid | pgid | recognised as |
+|---|---|---|
+| 97576 | 97576 | `recorded` — the monitor |
+| 97578 | 97578 | `recorded` — the executor |
+| 97579 | 97182 | `names-the-view` — the `wait_worker` helper, sitting in the *controller's* group |
+| 97817 | 97817 | `descends-from-recorded` — the blocking child |
+
+Three of the four ownership tests fired, each on the shape only it reaches. **No collateral
+signalling:** group signals went to `97576` and `97578` only — the two corroborated roots, each its
+own group leader — and the controller's group `97182` was never signalled as a group. The
+`wait_worker` process inside it and the blocking child were signalled individually. Nothing
+attempt-shaped was running before the trial began, and nothing was left running after.
+
+Extraction still returned the workspace and session after termination. No cost was derived, so spend
+is reported **incomplete** with one `unpriced` attempt — the honest outcome for a stopped
+trajectory, not a failure.
+
+**Partial evidence, honestly partial.** `worker_monotonic_seconds`, `worker_wall_seconds` and
+`view_destroyed` are `null` for this trial: the controller stopped the monitor before it wrote its
+own terminal event, and the timeout branch returns before the view-destruction flag is set. The
+residue check independently confirms the view was destroyed. Nothing here is filled in by inference.
+
+## Disposition, reload and no-reroll
+
+Checked afterwards against the real recorded attempt, not a stand-in:
+
+- written to a series record and reloaded, `timed_out`, `terminal_status`, `validity` and the
+  termination record all survive, and `execution_stage` still derives `worker-executed`;
+- resuming the series **bought no further trajectory in any arrangement**. With the timed-out slot
+  first in the frozen order it stops at the preregistration's **interrupted-trajectory** rule — *preserved; resolve
+  deliberately, never automatically* — with and without a budget gate, isolating the rule from the budget. With it
+  later in the order, the unestablished spend refuses the launch of *every* slot at the **ceiling rule**, reason
+  `unpriced-attempt`. Two independent reasons, zero attempts made.
+
+## Spend
+
+Derived **$0.005745** of the $0.20 aggregate limit, from trial A alone. Trial B is unpriced, so the
+total is reported incomplete: what it spent is unknown, not zero. No chargeable probe ran.
+
+**A local timeout is not a billing cap.** Terminating these processes says nothing about work the
+provider had already accepted, and no claim is made that spending stopped when the process did.
+
+## What this establishes, and what it does not
+
+Established, under these conditions: a real executor holding a real provider connection, with a real
+tool subprocess blocking, is terminated when the controller's deadline expires; the absence of every
+process the attempt owned is observed rather than assumed; nothing outside the owned set is
+signalled; the attempt is recorded as timed out, keeps its evidence, and cannot become another
+trajectory.
+
+Not established, and not claimed: universal process containment; any reliability rate — this is one
+observation of each case, not a sample; that provider-side work was cancelled or any charge avoided;
+behaviour on any other platform, across host suspend, or after the controller itself is killed. The
+residual limitations recorded in the timeout audit stand unchanged.
+
+**One instrument limitation worth recording.** The runner's own watcher never matched the executor
+process: it looked for the staged path `/pb-tool-…/opencode` in the command line, and the real
+executor is invoked by name through `PATH`, so its `argv[0]` is just `opencode`. The executor's
+liveness at expiry is therefore established from the termination record instead — a pid is recorded
+as `owned_because: recorded` only if its live command line named the view root, which both recorded
+pids did — together with `worker.log` showing active tool calls seconds earlier. The conclusion
+holds; the watcher pattern was too narrow, and a future check should match on the view root rather
+than the tools path.
