@@ -80,6 +80,7 @@ split.
 | [evidence/evaluation-runs.md](evidence/evaluation-runs.md) | **Historical evidence** | What individual evaluation runs established: the V1 implementation outcome, baseline zero, calibration outcomes. Never protocol. |
 | [evidence/original-rfc.md](evidence/original-rfc.md) | **Historical, superseded** | Pre-implementation design intent. Known wrong in several places. Never authoritative. |
 | [evidence/lifecycle-field-check.md](evidence/lifecycle-field-check.md) | **Historical evidence** | `pb-lifecycle-field-check-1`: the protocol and outcome of the attempt-deadline field check. An engineering validation, never a treatment sample. |
+| [evidence/authority-workflow-demonstration.md](evidence/authority-workflow-demonstration.md) | **Design, not yet run** | `pb-authority-demo-1`: the planned first real-agent run of the full authority chain, and the manual decisions it needs. No paid agent has executed it. |
 | [../specification-reflection-harness-implementation-plan.md](../specification-reflection-harness-implementation-plan.md) | **Roadmap** | Milestone status, acceptance criteria, dependencies, deferrals, threat mitigation status |
 
 **Precedence.** Normative beats rationale beats research beats history. Within normative documents, no
