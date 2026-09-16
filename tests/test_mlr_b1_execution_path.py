@@ -26,6 +26,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "evals"))
 
 import _mlr            # noqa: E402
 import _mlr_boundary   # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _host_serial  # noqa: E402
 import _mlr_run        # noqa: E402
 import _mlr_series     # noqa: E402
 import _semantic_view  # noqa: E402
@@ -1316,3 +1319,12 @@ class FrozenStackFidelityTest(unittest.TestCase):
 
 if __name__ == "__main__":                                  # pragma: no cover
     unittest.main()
+
+
+def setUpModule() -> None:
+    """One host-state suite at a time. asserts cross-slot isolation against host temp state."""
+    _host_serial.serialise(__name__)
+
+
+def tearDownModule() -> None:
+    _host_serial.release()

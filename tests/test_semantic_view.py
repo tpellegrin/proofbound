@@ -27,6 +27,9 @@ import _lineage         # noqa: E402
 import _mlr             # noqa: E402
 import _semantic_view   # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _host_serial  # noqa: E402
+
 MODULE = _mlr.FIXTURE / "runtime" / "objectstore"
 GIT = "/Library/Developer/CommandLineTools/usr/bin/git"
 PYTHON = "/Library/Developer/CommandLineTools/usr/bin/python3"
@@ -632,3 +635,12 @@ class GenericityTest(unittest.TestCase):
 
 if __name__ == "__main__":                                  # pragma: no cover
     unittest.main()
+
+
+def setUpModule() -> None:
+    """One host-state suite at a time. constructs semantic views."""
+    _host_serial.serialise(__name__)
+
+
+def tearDownModule() -> None:
+    _host_serial.release()

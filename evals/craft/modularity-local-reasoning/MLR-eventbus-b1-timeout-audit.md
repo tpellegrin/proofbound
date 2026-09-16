@@ -170,10 +170,14 @@ future-execution hazard, and it is repaired in the same commit as this audit:
   outside the sandbox: SIGTERM to the whole owned set at once, one bounded grace, SIGKILL to
   whatever is left, then a liveness check per pid. `stopped` is the result of that check and not of
   the signals having been delivered;
-- **ownership is decided once, before anything is signalled, and never re-derived.** Four tests,
-  because no one of them suffices: the pids `attempt.json` records; anything still in their process
-  groups; anything descending from them transitively; and anything whose command line names this
-  attempt's view root — a fresh `mkdtemp` path no other process can name. The ancestry test only
+- **ownership is decided before anything is signalled, from four complementary observations.**
+  They are not four independent proofs of containment and must not be read as redundancy: each
+  covers a shape the others miss, and the set is only as strong as its union. The pids
+  `attempt.json` records; anything still in their process groups; anything descending from them
+  transitively; and anything whose command line names this attempt's view root — a fresh `mkdtemp`
+  path no other process can name. A command line naming the view is *ownership evidence* precisely
+  because the path is unique to this slot; it is not name similarity, and no test here matches on a
+  program name. The ancestry test only
   works before the first signal, because a `setsid` descendant is reparented to pid 1 the moment
   its parent dies, and the view-root test is what catches the processes the launcher never records
   at all: the in-view launcher and the `wait_worker` helper, which inherit the *controller's*

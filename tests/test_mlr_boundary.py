@@ -26,6 +26,9 @@ sys.path.insert(0, str(ROOT / "evals"))
 import _hermetic        # noqa: E402
 import _mlr             # noqa: E402
 import _mlr_boundary    # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _host_serial  # noqa: E402
 import _mlr_context     # noqa: E402
 import _mlr_run         # noqa: E402
 import _profile         # noqa: E402
@@ -689,3 +692,12 @@ class EnvironmentPolicyTest(unittest.TestCase):
 
 if __name__ == "__main__":                                  # pragma: no cover
     unittest.main()
+
+
+def setUpModule() -> None:
+    """One host-state suite at a time. constructs semantic views and materialises arms."""
+    _host_serial.serialise(__name__)
+
+
+def tearDownModule() -> None:
+    _host_serial.release()

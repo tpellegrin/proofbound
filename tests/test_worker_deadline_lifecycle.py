@@ -35,6 +35,9 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import run_worker  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _host_serial  # noqa: E402
+
 PROTOCOL_NAMES = (
     'COMMON.md', 'PROOF-PATTERNS.md', 'roles/dsd-implementer/SKILL.md', 'roles/dsd-fixer/SKILL.md',
     'roles/dsd-reviewer/SKILL.md', 'roles/dsd-verification/SKILL.md', 'roles/dsd-discovery/SKILL.md',
@@ -260,6 +263,37 @@ raise SystemExit(2)
         self.tmp = Path(tempfile.mkdtemp(prefix="pb-deadline-lifecycle-"))
         self.addCleanup(shutil.rmtree, self.tmp, True)
 
+    def sealed_env(self, bin_dir: Path, fake: Path) -> dict[str, str]:
+        """An environment in which no real executor and no real credential is reachable.
+
+        Replacing `PATH` is necessary and not sufficient. `run_worker` resolves the executor by
+        name, so `PATH` is the only route by which one is *selected* — but the harm a mis-selection
+        does comes from the credential, which the executor reads from `HOME`. An earlier revision
+        of this file built an environment and then forgot to pass it, and the host's real
+        `opencode` ran against the real provider auth file. So `HOME` is redirected to a throwaway
+        directory as well: the two conditions for a billable request are separated, and neither is
+        met.
+
+        `OPENCODE_*` names are dropped rather than inherited, because a value pointing at a real
+        session store or credential path would otherwise survive the reset unnoticed. And the fake
+        is checked by content, so a stray executable of the same name cannot stand in for it.
+        """
+        env = {k: v for k, v in os.environ.items() if not k.startswith("OPENCODE")}
+        env["PATH"] = os.pathsep.join([str(bin_dir), "/usr/bin", "/bin"])
+        home = self.tmp / "sealed-home"
+        home.mkdir(parents=True, exist_ok=True)
+        env["HOME"] = str(home)
+        env["TMPDIR"] = str(self.tmp)
+
+        resolved = shutil.which("opencode", path=env["PATH"])
+        self.assertEqual(resolved, str(fake),
+                         "refusing to launch: `opencode` does not resolve to this test's fake")
+        self.assertEqual(Path(resolved).read_text(encoding="utf-8"), self.FAKE,
+                         "the resolved `opencode` is not the fake this test wrote")
+        self.assertFalse((home / ".local" / "share" / "opencode" / "auth.json").exists(),
+                         "the sealed home must hold no provider credential")
+        return env
+
     def worker_rules(self, run: Path):
         revision = run / "worker-rules" / "r0001"
         rules = revision / "WORKER_RULES.md"
@@ -315,13 +349,9 @@ raise SystemExit(2)
         # that merely puts a fake in front is one ordering mistake away from launching the real
         # executor against real credentials. This was not hypothetical: an earlier revision of
         # this file built `env` and forgot to pass it, and the real 1.18.30 binary ran.
-        env = os.environ.copy()
-        env["PATH"] = os.pathsep.join([str(bin_dir), "/usr/bin", "/bin"])
+        env = self.sealed_env(bin_dir, fake)
         env["PB_FAKE_MODE"] = mode
         env["PB_FAKE_DESCENDANT"] = str(self.descendant_marker)
-        resolved = shutil.which("opencode", path=env["PATH"])
-        self.assertEqual(resolved, str(fake),
-                         "refusing to launch: `opencode` does not resolve to this test's fake")
 
         argv = [PYTHON, str(ROOT / "scripts" / "run_worker.py"),
                 "--project-root", str(project), "--run-root", str(run),
@@ -481,12 +511,9 @@ raise SystemExit(2)
                     "sha256": hashlib.sha256(contract.read_bytes()).hexdigest()}}}}},
         }), encoding="utf-8")
 
-        env = os.environ.copy()
-        env["PATH"] = os.pathsep.join([str(bin_dir), "/usr/bin", "/bin"])
+        env = self.sealed_env(bin_dir, fake)
         env["PB_FAKE_MODE"] = "prompt"
         env["PB_FAKE_DESCENDANT"] = str(self.tmp / "forward" / "unused.pid")
-        self.assertEqual(shutil.which("opencode", path=env["PATH"]), str(fake),
-                         "refusing to launch: `opencode` does not resolve to this test's fake")
 
         done = subprocess.run(
             [PYTHON, str(ROOT / "scripts" / "dsd_attempt.py"), "launch",
@@ -842,3 +869,12 @@ class DeadlineLayeringTest(unittest.TestCase):
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
+
+def setUpModule() -> None:
+    """One host-state suite at a time. asserts no process of an attempt survives on the host."""
+    _host_serial.serialise(__name__)
+
+
+def tearDownModule() -> None:
+    _host_serial.release()
