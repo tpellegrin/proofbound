@@ -155,6 +155,14 @@ must not silently reinterpret evidence gathered before it moved.
   host's CPython 3.9.6 the semantic boundary identity reproduces `b88bd43109184459`. Preflight is
   launchable. An earlier inference that the frozen build was a Homebrew bottle was wrong and is
   withdrawn — no committed record names any distribution channel
+- Cross-fixture replication — **executed, family R1 · the core phenomenon replicates**. Twelve
+  slots, twelve valid trajectories, one attempt each, no retries, $0.238762 of $0.50 and the figure
+  is the whole of it; every frozen identity held on all twelve. The secondary procedural pattern is
+  heterogeneous and does not resemble q1's. A later dated audit corrects the run report's
+  attempt-ceiling reasoning and leaves the result standing:
+  [run](../craft/modularity-local-reasoning/MLR-eventbus-b1-run.md),
+  [audit](../craft/modularity-local-reasoning/MLR-eventbus-b1-timeout-audit.md),
+  [record](../results/craft-mlr-deepseek-v4-flash-high-paired-eventbus-b1.json)
 
 ---
 
@@ -197,7 +205,7 @@ load-bearing.
 | MLR execution boundary | 2 trajectories, 0 slots | superseded by the clean-route requalification |
 | MLR field requalification | not run | 4/4 valid and correct — complete path field-qualified |
 | MLR paired `q1`, on the qualified stack | not run | executed, valid — family E · Heterogeneous, 12/12 |
-| MLR cross-fixture `eventbus-b1` | not run | frozen, executable, preflight launchable; not run |
+| MLR cross-fixture `eventbus-b1` | not run | executed, valid — family R1 · core phenomenon replicates, 12/12 |
 
 An empty cell means *not run*, never *worse*.
 

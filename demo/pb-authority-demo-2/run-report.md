@@ -1,5 +1,13 @@
 # pb-authority-demo-2 — run report
 
+> **Added 2026-09-17, after this report was written. The report below is unchanged.** A post-run
+> audit withdrew two of its claims and reclassified two of its departures:
+> [`authority-workflow-demo-2-audit.md`](../../docs/architecture/proofbound/evidence/authority-workflow-demo-2-audit.md).
+> In short: the **Spend** section's "accounting complete" and its charged figure of `$0.112599` are
+> withdrawn — the interrupted call was charged at an estimate, not a bound, and the figure is
+> incomplete. The derived `$0.106891` stands. `D1` and `D4` are protocol departures, so this run is
+> not a conforming execution of its frozen protocol. The findings themselves are unaffected.
+
 **Outcome: stopped at a genuine finding against the parent intent, after the budgeted repair cycle
 was spent. The fresh-context handoff was prepared but never exercised.**
 

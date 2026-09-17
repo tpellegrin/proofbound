@@ -1,5 +1,13 @@
 # `pb-authority-demo-1` — the run
 
+> **Added 2026-09-17, after this report was written. The report below is unchanged.** Corrections to
+> this demonstration's *preparation* — spend accounting, the external suite's boundary blindness, the
+> no-I/O assertion, the holdout's description, and the unexercised authorization guard — are recorded
+> in
+> [`authority-workflow-successor.md`](../../docs/architecture/proofbound/evidence/authority-workflow-successor.md).
+> Every terminal record here carries `session_id: null` from a defect found later, so this run's
+> completeness claim rested on an attribution check that could not have been performed.
+
 **2026-09-17.** Executed at `faae1cf`, whose parent `0a1d749` is the preparation the plan was frozen
 in. Plan: [`execution-record.json`](execution-record.json). Design:
 [`authority-workflow-demonstration.md`](../../docs/architecture/proofbound/evidence/authority-workflow-demonstration.md).

@@ -1,0 +1,31 @@
+{
+  "id": "coherent-requirements",
+  "question": "Does an intent challenge allow a clearly satisfiable, precisely bounded task to proceed?",
+  "artifact": "requirements.md",
+  "agent_visible": ["requirements.md"],
+  "expected_class": "proceed",
+  "expected_judgement": {
+    "verdict": "no defect found within declared coverage",
+    "reasoning": "every arrival sequence in the declared domain admits a dispatch order meeting all four obligations, and two structurally different implementations achieve it",
+    "not_expected": [
+      "a finding that the requirements conflict",
+      "a finding that narrows the declared domain",
+      "rejecting the advice section as an unmet requirement"
+    ]
+  },
+  "oracle": {
+    "kind": "exhaustive enumeration over a finite declared domain",
+    "complete": true,
+    "why_complete": "an arrival sequence has finitely many dispatch orders and all of them are enumerated, so finding none is nonexistence rather than search exhaustion",
+    "domain": "up to 3 keys, up to 5 items; 363 arrival sequences",
+    "covers": "the declared domain only; nothing is claimed about longer queues or more keys"
+  },
+  "prose_to_model_mapping": {
+    "judged_by": "human, recorded here and open to challenge",
+    "R1": "requirement 1 -> exactly-once",
+    "R2": "requirement 2 -> fifo-per-key",
+    "R3": "requirement 3 -> round-robin",
+    "R4": "requirement 4 -> head-first",
+    "caveat": "the checker decides the encoded model; whether the encoding is faithful to the prose is exactly the kind of claim a challenge should examine, and a challenge that disputes it is producing a legitimate finding rather than a false one"
+  }
+}

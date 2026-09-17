@@ -20,6 +20,16 @@ Accounting now reconciles the run tree's launch facts against the session's usag
 call a figure complete unless both agree. The principle is the one the b1 spend work established:
 unknown expenditure is unknown, never zero, and it blocks further launches.
 
+**Dated correction, 2026-09-17, after the run.** A fourth defect was found by post-run inspection
+and is repaired here prospectively: this file called the dearest completed call in a session an
+*upper bound* on a call that never finished, and `spend()` used that estimate to declare the figure
+complete and admit further launches. Nothing constrains an interrupted call to cost no more than a
+finished one. A heuristic reserve is now reported as an estimate, a genuine ceiling requires an
+identified enforced limit (`ENFORCED_MAX_OUTPUT_TOKENS`, unset in this configuration), and an
+unfinished call with no such limit leaves the figure **incomplete**, which refuses further
+launches. The run's own records are unmodified; what this changes about its claims is set out in
+`docs/architecture/proofbound/evidence/authority-workflow-demo-2-audit.md`.
+
     python3 demo/pb-authority-demo-2/scaffold.py identities
     python3 demo/pb-authority-demo-2/scaffold.py setup --into <workdir>
     python3 demo/pb-authority-demo-2/scaffold.py withhold|release|check-withholding
@@ -300,33 +310,48 @@ def session_by_title(db: Path, title: str) -> "str | None":
     title that matches no session still yields nothing.
     """
     import sqlite3
+    from contextlib import closing
     try:
-        with sqlite3.connect(f"file:{db}?mode=ro", uri=True) as conn:
+        with closing(sqlite3.connect(f"file:{db}?mode=ro", uri=True)) as conn:
             rows = conn.execute("select id from session where title = ?", (title,)).fetchall()
     except sqlite3.Error:
         return None
     return str(rows[0][0]) if len(rows) == 1 else None
 
 
-def interrupted_call_bound(db: Path, sessions: "set[str]", when: Any) -> "dict[str, Any] | None":
-    """An upper bound on what a model call that never finished can have cost.
+#: Tokens a single model call is *enforced* not to exceed, under this run's configuration.
+#: `None` means no such limit is imposed anywhere in the path — not that one is unnecessary.
+#: A genuine ceiling on an unfinished call needs an identified, enforced limit plus the pricing
+#: assumptions that apply to it; without one the amount is unknown, and `spend()` says so.
+ENFORCED_MAX_OUTPUT_TOKENS: "int | None" = None
 
-    A worker stopped at its deadline leaves its in-flight call out of the session's usage totals.
-    That call is unaccounted, and the b1 principle says unaccounted is never zero — but it is not
-    therefore *unbounded*. The session records every completed call's own token usage, so the most
-    expensive completed call in the same session is a defensible ceiling for one that did not
-    finish, and charging that ceiling against the budget is stricter than the alternative of
-    quietly carrying on.
 
-    Returns `None` when the per-call record cannot be read at all. That case is genuinely unbounded
-    and must stop the run rather than be estimated.
+def interrupted_call_reserve(db: Path, sessions: "set[str]", when: Any) -> "dict[str, Any] | None":
+    """A **heuristic reserve** for a model call that never finished. Not an upper bound.
+
+    A worker stopped at its deadline leaves its in-flight call out of the session's usage totals,
+    and the b1 principle says unaccounted is never zero. The dearest *completed* call in the same
+    session is the natural thing to reach for, and this returns it — but as an estimate, because
+    nothing constrains an unfinished call to the shape of a finished one. A call stopped at 900
+    seconds may be the largest the session ever made; the completed calls bound the completed
+    calls and nothing else. Reproduced: a session whose dearest completed call prices at $0.000066
+    yields that as the "ceiling", while the same pricing charges $0.0066 for an unfinished call
+    that reached 10,000 output tokens.
+
+    An estimate cannot establish a complete spend figure, so `spend()` reports this separately and
+    still refuses to call the run accounted for. `enforced_call_bound` is the only thing here that
+    produces a genuine ceiling, and it needs a limit that something actually enforces.
+
+    Returns `None` when the per-call record cannot be read at all — no record, not even an
+    estimate.
     """
     import sqlite3
+    from contextlib import closing
     import _pricing
     if not sessions:
         return None
     try:
-        with sqlite3.connect(f"file:{db}?mode=ro", uri=True) as conn:
+        with closing(sqlite3.connect(f"file:{db}?mode=ro", uri=True)) as conn:
             marks = ",".join("?" * len(sessions))
             rows = conn.execute(
                 f"select data from message where session_id in ({marks})",
@@ -359,9 +384,40 @@ def interrupted_call_bound(db: Path, sessions: "set[str]", when: Any) -> "dict[s
         return None
     return {"unfinished_calls": unfinished,
             "dearest_completed_call": round(max(priced), 6),
-            "bound": round(max(priced) * unfinished, 6),
-            "basis": "each unfinished call charged at the dearest completed call in the same "
-                     "session; an upper bound, not a measurement"}
+            "reserve_estimate": round(max(priced) * unfinished, 6),
+            "is_upper_bound": False,
+            "basis": "each unfinished call estimated at the dearest completed call in the same "
+                     "session; a heuristic reserve, not a measurement and not a ceiling — "
+                     "nothing constrains an interrupted call to cost no more than a finished one"}
+
+
+def enforced_call_bound(when: Any, *, unfinished_calls: int,
+                        max_output_tokens: "int | None" = ENFORCED_MAX_OUTPUT_TOKENS,
+                        ) -> "dict[str, Any] | None":
+    """A genuine ceiling for unfinished calls, derived from a limit something enforces.
+
+    Returns `None` when no such limit is identified, which is the case in this run's
+    configuration: nothing in the path caps a single call's output, so the cost of a call that
+    never finished is unknown rather than bounded. Supplying a limit here is a claim that it is
+    enforced; the ceiling is only as good as that claim and the price table it is read under.
+    """
+    import _pricing
+    if not max_output_tokens or unfinished_calls <= 0:
+        return None
+    priced = _pricing.cost({"input": 0, "output": int(max_output_tokens) * int(unfinished_calls),
+                            "cache_read": 0, "cache_write": 0},
+                           model=MODEL.split("/", 1)[-1], when=when)
+    amount = (priced or {}).get("amount")
+    if not isinstance(amount, (int, float)):
+        return None
+    return {"unfinished_calls": int(unfinished_calls),
+            "max_output_tokens_per_call": int(max_output_tokens),
+            "bound": round(float(amount), 6),
+            "is_upper_bound": True,
+            "basis": "an enforced per-call output limit priced at the run's own table; input and "
+                     "cache tokens are not bounded by it, so this ceiling holds only where the "
+                     "limit is the binding constraint",
+            "price": priced}
 
 
 def spend(into: Path) -> "dict[str, Any]":
@@ -435,13 +491,23 @@ def spend(into: Path) -> "dict[str, Any]":
     if unfinished_calls:
         attributed = {a["attributed_session"] for a in facts["attempts"]
                       if a.get("attributed_session")}
-        bound = interrupted_call_bound(db, attributed, _priced_at(facts))
-        if bound is None:
-            unsettled.append(f"{unfinished_calls} model call(s) started and did not finish, and "
-                             "the per-call record cannot be read, so their cost is unbounded")
-        else:
-            account["unfinished_call_bound"] = bound
+        bound = enforced_call_bound(_priced_at(facts), unfinished_calls=unfinished_calls)
+        reserve = interrupted_call_reserve(db, attributed, _priced_at(facts))
+        if reserve is not None:
+            account["interrupted_call_reserve"] = reserve
+        if bound is not None:
+            # A ceiling something enforces. This one *can* settle the figure.
+            account["interrupted_call_bound"] = bound
             charged += bound["bound"]
+        else:
+            # No enforced limit, so no ceiling. The reserve is reported because unaccounted is
+            # never zero, and the figure stays incomplete because an estimate is not a bound.
+            unsettled.append(
+                f"{unfinished_calls} model call(s) started and did not finish; no enforced "
+                "per-call limit makes their cost boundable, so it is unknown, not zero"
+                + (f" (heuristic reserve {reserve['reserve_estimate']}, an estimate that "
+                   "establishes nothing)" if reserve else
+                   " and the per-call record cannot be read at all"))
     account["charged"] = round(charged, 6)
     if unsettled:
         return {**account, "derived": round(float(amount), 6), "complete": False,
@@ -449,10 +515,11 @@ def spend(into: Path) -> "dict[str, Any]":
                          + "; ".join(unsettled)}
     settled = "the run tree's launches and the session's usage agree; the figure is the whole " \
              "of what this run spent"
-    if account.get("unfinished_call_bound"):
-        settled = (f"{account['unfinished_call_bound']['unfinished_calls']} interrupted call(s) "
-                   "are not in the session's totals and are charged at an upper bound, so the "
-                   "charged figure is at or above what this run spent")
+    if account.get("interrupted_call_bound"):
+        settled = (f"{account['interrupted_call_bound']['unfinished_calls']} interrupted call(s) "
+                   "are not in the session's totals and are charged at a ceiling an enforced "
+                   "per-call limit supports, so the charged figure is at or above what this run "
+                   "spent under that limit's pricing assumptions")
     return {**account, "derived": round(float(amount), 6), "complete": True,
             "headroom": round(AGGREGATE_LIMIT - RESERVE - charged, 6), "claim": settled}
 

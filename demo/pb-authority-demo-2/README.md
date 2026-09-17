@@ -27,6 +27,23 @@ demonstration with a separate identity, not a rerun.
 
 Regressions for the accounting repairs are in `tests/test_authority_demo2_accounting.py`.
 
+## Added after the run (2026-09-17)
+
+The run's records above are unmodified. These were added by a post-run audit, whose findings and
+their effect on this run's claims are in
+`docs/architecture/proofbound/evidence/authority-workflow-demo-2-audit.md`.
+
+| File | What it is |
+| --- | --- |
+| `negative_clock_adjudication.py` | A three-valued decision — `exists` / `none` / `unknown` — for whether a conforming finite delay exists, with the completeness argument `posthoc_negative_clock.py` lacked. Adjudicates that check's output rather than replacing it. |
+| `scaffold.py` (dated correction inside) | The interrupted-call "upper bound" was an estimate. A heuristic reserve is now labelled as one, a ceiling requires an enforced limit, and an unfinished call leaves the spend figure incomplete. |
+
+```bash
+python3 demo/pb-authority-demo-2/negative_clock_adjudication.py witness
+python3 demo/pb-authority-demo-2/negative_clock_adjudication.py pair --points 200
+python3 demo/pb-authority-demo-2/negative_clock_adjudication.py replay-probe
+```
+
 ```bash
 python3 demo/pb-authority-demo-2/scaffold.py identities
 python3 demo/pb-authority-demo-2/verify_suite.py

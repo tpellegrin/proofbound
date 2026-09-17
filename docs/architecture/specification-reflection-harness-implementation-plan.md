@@ -2061,6 +2061,71 @@ not claim.
 **The paired DeepSeek experiment is frozen at N = 6 pairs and not executed**, chosen with no treatment
 outcome in view.
 
+## 7T. Authority evidence audit and the four-case slice  *(implemented; the agent-facing half is not observed)*
+
+**2026-09-17.** Two demonstrations of the authority chain had run, and both stopped at genuine review
+findings. That is the chain working, and it is evidence about **refusal only**. This milestone
+audited what those runs established, corrected two claims that overstated it, and built the smallest
+thing that can separate the questions they could not.
+
+### What the audit changed
+
+Full record: [evidence/authority-workflow-demo-2-audit.md](proofbound/evidence/authority-workflow-demo-2-audit.md). Three
+corrections, each reproduced before being repaired, and all additive — no historical record was
+edited.
+
+| Claim | Status after audit |
+|---|---|
+| The interrupted call was charged at an upper bound, and accounting was complete | **Withdrawn.** The "bound" was the dearest *completed* call, which bounds nothing. The derived figure `$0.106891` stands; the figure is now **incomplete**, and an incomplete figure refuses further launches |
+| No finite delay can satisfy requirement 1 at the reported state | **Upheld, on a different argument.** The 4,096-step search that reported it establishes nothing — demonstrated by a state where it exhausts while a conforming delay exists. A completeness argument now covers the reported state |
+| `D1`/`D4` as "missing procedure" | **Reclassified as protocol departures.** The observations survive; the claim that either run conformed to its frozen protocol does not |
+
+The general lesson is recorded because it generalises past this fixture: **a bounded search that
+runs out has established nothing about what it did not reach**, and an experiment built on such an
+oracle inherits an open research question as a dependency.
+
+### The slice
+
+[`evals/authority_slice/`](../../evals/authority_slice/README.md) — four cases, deliberately not a
+chain, so a failure in one leaves the others observable. A discrete worked example (fair dispatch
+over a shared queue) whose contradiction is **proved by enumeration** rather than searched for.
+
+| Case | Mechanical outcome, credential-free | Agent-facing half |
+|---|---|---|
+| Coherent requirements | challenge → accept → record → freeze → aggregate → **authorized** | not observed |
+| Contradictory requirements | minimal core `{R2, R3}` at witness `a,a,b` → nothing accepted → **refused** | not observed |
+| Ready handoff | guard **authorizes**, provenance `verified` | one read-only recovery probe |
+| Blocked handoff | one record removed → **refused** `no-consistency-acceptance`, candidate still derivable | one read-only recovery probe |
+
+Two fresh-context recovery probes recovered all five required facts on both cases, invoked the guard
+themselves, and stopped at the refusal. Both independently found a defect in the fixture that its
+author had not: the fake worker branched on role alone, so a `consistency-reflection` attempt
+emitted the `proposal-reflection` text and its acceptance was mechanically clean and semantically
+empty. Repaired, with a regression. Observations and their accounting scope:
+[probe-observations.md](../../evals/authority_slice/probe-observations.md).
+
+### Where intent challenge now sits
+
+A proposed requirements document is an **ordinary artifact** reviewed under the existing
+`proposal-reflection` purpose — no artifact kind, no new role, no new purpose. The bootstrap
+boundary, what a challenge may and may not conclude, how a finding routes back and what goes stale
+are in [execution-and-review §51.3](proofbound/execution-and-review.md#513-a-proposed-requirements-document-is-an-ordinary-artifact).
+
+### Near-term direction, each with the evidence that would justify it
+
+Ordered by what most changes what Proofbound can claim. Every item is a hypothesis with a gate.
+
+| # | Work | Evidence gate | Status |
+|---|---|---|---|
+| 1 | **Reliable valid path** through authority recovery and delivery | A fresh coordinator recovers authority state and carries one bound implementation to acceptance, repeatedly, with correct refusals on mutated states | Procedure specified and validated: [next-live-experiment.md](../../evals/authority_slice/next-live-experiment.md). **Not run** |
+| 2 | **A second change to accepted software** | Supersession, `needs-revalidation` closure and re-review behave as designed when intent moves — measured, not rehearsed | Not started. Needs (1) |
+| 3 | **Multi-artifact coherence** on a real repository | An aggregate consistency challenge over a multi-member candidate catching a real cross-artifact contradiction | Not started. Every freeze so far has exactly one member |
+| 4 | **Proportionate review effort** | Pre-registered comparison: does earlier challenge find more defects per unit cost? Declared baseline, repeats, guardrails, cost | Hypothesis only |
+| 5 | **Qualified interchangeable executors** | Per-role routing implemented, plus evidence that a reviewer on a different model finds defects the implementer's model misses | Routing not implemented |
+
+Recorded as costs to measure rather than overhead to hide: coordinator interventions, human
+adjudications, and the context a fresh session must reconstruct.
+
 ## 7B. Threat mitigation status
 
 RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC

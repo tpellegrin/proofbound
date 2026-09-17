@@ -135,6 +135,56 @@ This is `P11` applied to Proofbound's own output. Repository patterns are eviden
 authority, and a specification that freezes the shape of one good solution turns a pattern into
 authority through the acceptance chain instead of through imitation.
 
+### 51.3 A proposed requirements document is an ordinary artifact
+
+Both authority demonstrations stopped at findings that a challenge to the *intent* would plausibly
+have caught before any money was spent, and in `pb-authority-demo-2` the defect was in the accepted
+intent itself — a document that entered the chain as an input, frozen by assertion, with every
+artifact downstream of it independently challenged and nothing challenging it.
+
+Closing that gap needs **no new machinery**, and adding some would be the mistake. A proposed
+requirements document is a project artifact: authored under a task contract, challenged by a fresh
+`spec-reflector` under the existing `proposal-reflection` purpose, gated, accepted, recorded in the
+ledger, and frozen into a candidate like anything else. There is no intent artifact kind, no
+mandatory intent role, and no new purpose — a taxonomy would attract behaviour that then depends on
+it, which is why artifact kinds were tried and rejected. A worked procedure, with contracts and a
+credential-free replay of the whole chain, is in `evals/authority_slice/`.
+
+**The bootstrap boundary.** The owner's goal remains the root authority and is **not** reviewed by
+the chain. Somewhere a person says what they want; demanding a reviewed parent for every human
+decision is an infinite regress, not a guarantee. What the chain reviews is the proposed
+requirements *written to express that goal*. The goal stays external to the ledger — it is produced
+by no task — and its identity is made checkable rather than asserted by stamping its digest into
+every contract, so a coordinator holding only the repository can recompute and compare.
+
+**What the challenge may conclude.** Whether the proposed requirements faithfully express the goal;
+whether they state a usable domain rather than implying they hold everywhere; whether any of them
+contradict each other over that domain, named specifically and with a reachable witness; whether
+they rest on an assumption the goal does not support. Three conclusions are legitimate: a concrete
+defect, **no defect found within declared coverage**, and unresolved uncertainty.
+
+**What it may not do.** Replace the goal, choose between conflicting requirements, or silently
+narrow the domain so a conflict disappears. Narrowing a domain is an authority decision; a reviewer
+that makes it has substituted itself for the owner. A finding routes back to the authority that can
+repair it — the owner for a defect in the goal, the author for a defect in the requirements — and
+what becomes stale is what `P9` and the ledger closure already say becomes stale: dependents of a
+superseded artifact are `needs-revalidation`, and a repaired requirements document invalidates the
+reflection that examined it, its ledger record, the graph validation, the candidate identity
+derived from it, and any consistency acceptance or authorization recorded against that candidate.
+
+**A clean gate proves the permitted process occurred.** It does not prove the requirements are
+jointly satisfiable. Where satisfiability is decidable over a declared finite domain it can be
+established deterministically and the challenge can carry a proof; where it is not, the honest
+report is the coverage actually checked. A reference implementation passing tests is evidence that
+the requirements are satisfiable in the cases exercised, not a universal proof.
+
+**Proportion.** Review effort scales with a change's scope and risk. Accepted requirements that a
+change does not touch are not re-authored for every implementation edit; an unchanged accepted
+artifact stays accepted, which is what the ledger is for. Whether an earlier challenge finds more
+defects per unit of effort than a later one is a **hypothesis to evaluate**, not a property of the
+diagram. A paid intent reviewer moves detection earlier in the chain; it does not make detection
+free, and its cost belongs in the same accounting as every other attempt.
+
 ### 51.2 Discovery downstream is repair, not a new workflow
 
 Nothing above implies a waterfall. A design will expose decisions the proposal did not see, and a

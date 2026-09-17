@@ -1,0 +1,424 @@
+{
+  "interpreter": "3.14.7",
+  "provider_calls": 0,
+  "replay": {
+    "all_completed": true,
+    "cases": {
+      "blocked-handoff": {
+        "authorization": {
+          "authorized": false,
+          "derived_candidate": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad",
+          "exit_code": 1,
+          "findings": [
+            {
+              "code": "no-consistency-acceptance",
+              "reason": "no accepted aggregate consistency reflection is recorded for this candidate"
+            }
+          ],
+          "provenance": "unavailable"
+        },
+        "candidate": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad",
+        "case": "blocked-handoff",
+        "mutation": {
+          "removed_consistency_records": [
+            "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad.json"
+          ]
+        },
+        "recoverable_facts": {
+          "candidate_identity": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad",
+          "consistency_records": [],
+          "contract_stamped_goal_digest": "5c7840395b5d4b057bda83f78aee7b11dce0fc9d7c8e3c170ebc13a97457227d",
+          "goal_sha256": "5c7840395b5d4b057bda83f78aee7b11dce0fc9d7c8e3c170ebc13a97457227d",
+          "ledger_artifacts": [
+            "requirements.md"
+          ],
+          "run_root": "/private<discarded workdir>/blocked-handoff/project/DeepSeekAndDestroy/plans/slice/runs/r1"
+        },
+        "refusal_codes": [
+          "no-consistency-acceptance"
+        ],
+        "seeded": "mechanically, by this harness with a fake executor; not evidence of real upstream authorship or review",
+        "simulated": [
+          "author attempt",
+          "challenge verdict",
+          "consistency verdict",
+          "coordinator acceptance decisions"
+        ],
+        "status": "completed",
+        "workdir": "/private<discarded workdir>/blocked-handoff"
+      },
+      "coherent-requirements": {
+        "authorization": {
+          "authorized": true,
+          "exit_code": 0,
+          "verdict": {
+            "authorized": true,
+            "candidate": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad",
+            "contract": "/private<discarded workdir>/coherent-requirements/project/DeepSeekAndDestroy/plans/slice/runs/r1/contracts/RQ-impl.md",
+            "current": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad",
+            "findings": [],
+            "provenance": "verified"
+          }
+        },
+        "candidate": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad",
+        "case": "coherent-requirements",
+        "challenge_report": "# Challenge to the proposed requirements\n\nNo task-relevant defect found within the coverage I checked.\n\nEvery one of the 363 arrival sequences the document's declared domain admits can be served by some dispatch order meeting all of its obligations. The enumeration is exhaustive over that domain, so this is not a sampling result; it is also silent about anything outside the declared domain.\n",
+        "coordinator_decision": "accept",
+        "expected_class": "proceed",
+        "simulated": [
+          "author attempt (places the fixed artifact)",
+          "challenge verdict (derived from the oracle)",
+          "coordinator acceptance decision (derived from the oracle)"
+        ],
+        "status": "completed",
+        "steps": [
+          {
+            "detail": null,
+            "step": "project and run tree built"
+          },
+          {
+            "detail": {
+              "attempt": "spec-author-1"
+            },
+            "step": "proposed requirements placed (simulated author)"
+          },
+          {
+            "detail": {
+              "refused": true
+            },
+            "step": "the author's own gate is refused as its own review"
+          },
+          {
+            "detail": {
+              "attempt": "spec-reflector-1"
+            },
+            "step": "challenge completed (simulated reviewer)"
+          },
+          {
+            "detail": {
+              "decision": "accept",
+              "from": "deterministic oracle, not report prose"
+            },
+            "step": "coordinator decision"
+          },
+          {
+            "detail": {
+              "candidate": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad"
+            },
+            "step": "candidate frozen"
+          },
+          {
+            "detail": {
+              "refused": true
+            },
+            "step": "authorization before aggregate acceptance"
+          },
+          {
+            "detail": {
+              "candidate": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad"
+            },
+            "step": "aggregate consistency accepted"
+          }
+        ]
+      },
+      "contradictory-requirements": {
+        "authorization": {
+          "authorized": false,
+          "exit_code": 1,
+          "verdict": {
+            "authorized": false,
+            "candidate": "0000000000000000000000000000000000000000000000000000000000000000",
+            "current": null,
+            "findings": [
+              {
+                "code": "candidate-not-derivable",
+                "reason": "the project does not currently produce a contract candidate: refusing to derive a contract identity from an unsatisfied graph: missing-accepted-record requirements.md"
+              },
+              {
+                "code": "no-consistency-acceptance",
+                "reason": "no accepted aggregate consistency reflection is recorded for this candidate"
+              }
+            ],
+            "provenance": "unavailable"
+          }
+        },
+        "candidate": null,
+        "case": "contradictory-requirements",
+        "challenge_report": "# Challenge to the proposed requirements\n\n**Blocking finding: the proposed requirements cannot all hold.**\n\nWitness: arrivals ['a', 'a', 'b']. All 6 dispatch orders of that sequence were enumerated and every one breaks at least one obligation, so this is a proof over the declared domain rather than a failed search.\n\nMinimal conflicting set(s): {R2, R3}. The remaining requirements are not involved.\n\nThis is an authority question: which of the conflicting requirements is intended is not mine to decide, and I have not rewritten the document.\n",
+        "coordinator_decision": "refuse",
+        "expected_class": "blocked-by-contradiction",
+        "finding": {
+          "matches_expected": true,
+          "minimal_cores": [
+            [
+              "R2",
+              "R3"
+            ]
+          ],
+          "orders_enumerated": 6,
+          "witness": [
+            "a",
+            "a",
+            "b"
+          ]
+        },
+        "simulated": [
+          "author attempt (places the fixed artifact)",
+          "challenge verdict (derived from the oracle)",
+          "coordinator acceptance decision (derived from the oracle)"
+        ],
+        "status": "completed",
+        "steps": [
+          {
+            "detail": null,
+            "step": "project and run tree built"
+          },
+          {
+            "detail": {
+              "attempt": "spec-author-1"
+            },
+            "step": "proposed requirements placed (simulated author)"
+          },
+          {
+            "detail": {
+              "refused": true
+            },
+            "step": "the author's own gate is refused as its own review"
+          },
+          {
+            "detail": {
+              "attempt": "spec-reflector-1"
+            },
+            "step": "challenge completed (simulated reviewer)"
+          },
+          {
+            "detail": {
+              "decision": "refuse",
+              "from": "deterministic oracle, not report prose"
+            },
+            "step": "coordinator decision"
+          }
+        ]
+      },
+      "ready-handoff": {
+        "authorization": {
+          "authorized": true,
+          "derived_candidate": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad",
+          "exit_code": 0,
+          "findings": [],
+          "provenance": "verified"
+        },
+        "candidate": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad",
+        "case": "ready-handoff",
+        "mutation": null,
+        "recoverable_facts": {
+          "candidate_identity": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad",
+          "consistency_records": [
+            "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad"
+          ],
+          "contract_stamped_goal_digest": "5c7840395b5d4b057bda83f78aee7b11dce0fc9d7c8e3c170ebc13a97457227d",
+          "goal_sha256": "5c7840395b5d4b057bda83f78aee7b11dce0fc9d7c8e3c170ebc13a97457227d",
+          "ledger_artifacts": [
+            "requirements.md"
+          ],
+          "run_root": "/private<discarded workdir>/ready-handoff/project/DeepSeekAndDestroy/plans/slice/runs/r1"
+        },
+        "seeded": "mechanically, by this harness with a fake executor; not evidence of real upstream authorship or review",
+        "simulated": [
+          "author attempt",
+          "challenge verdict",
+          "consistency verdict",
+          "coordinator acceptance decisions"
+        ],
+        "status": "completed",
+        "workdir": "/private<discarded workdir>/ready-handoff"
+      }
+    },
+    "status_counts": {
+      "completed": 4
+    },
+    "workdir": "discarded"
+  },
+  "slice": "pb-authority-slice-1",
+  "validation": {
+    "cases": {
+      "coherent-requirements": {
+        "domain": {
+          "keys": [
+            "a",
+            "b",
+            "c"
+          ],
+          "max_items": 5,
+          "sequences": 363
+        },
+        "expected_class": "proceed",
+        "first_conflict": null,
+        "obligations": {
+          "R1": "exactly-once",
+          "R2": "fifo-per-key",
+          "R3": "round-robin",
+          "R4": "head-first"
+        },
+        "satisfiable_everywhere": true,
+        "unserviceable_sequences": 0
+      },
+      "contradictory-requirements": {
+        "domain": {
+          "keys": [
+            "a",
+            "b",
+            "c"
+          ],
+          "max_items": 5,
+          "sequences": 363
+        },
+        "expected_class": "blocked-by-contradiction",
+        "first_conflict": {
+          "arrivals": [
+            "a",
+            "a",
+            "b"
+          ],
+          "minimal_unsatisfiable_cores": [
+            [
+              "R2",
+              "R3"
+            ]
+          ],
+          "orders_enumerated": 6
+        },
+        "obligations": {
+          "R1": "exactly-once",
+          "R2": "fifo-global",
+          "R3": "round-robin",
+          "R4": "head-first"
+        },
+        "satisfiable_everywhere": false,
+        "unserviceable_sequences": 192
+      }
+    },
+    "mutation": {
+      "coherent_with_one_clause_changed": true,
+      "contradictory_with_one_clause_changed": true,
+      "note": "the verdict follows the document's own bytes, so a case cannot pass because of what it is called"
+    },
+    "ok": true,
+    "oracle_discrimination": {
+      "checked": {
+        "drops-last": {
+          "conforms": false,
+          "expected": "fails",
+          "failing_sequences": 363,
+          "sequences": 363,
+          "violated": {
+            "R1": {
+              "count": 363,
+              "first": "a"
+            },
+            "R4": {
+              "count": 3,
+              "first": "a"
+            }
+          }
+        },
+        "duplicates-head": {
+          "conforms": false,
+          "expected": "fails",
+          "failing_sequences": 363,
+          "sequences": 363,
+          "violated": {
+            "R1": {
+              "count": 363,
+              "first": "a"
+            },
+            "R3": {
+              "count": 348,
+              "first": "ab"
+            }
+          }
+        },
+        "fewest-remaining": {
+          "conforms": true,
+          "expected": "conforms",
+          "failing_sequences": 0,
+          "sequences": 363,
+          "violated": {}
+        },
+        "global-fifo": {
+          "conforms": false,
+          "expected": "fails",
+          "failing_sequences": 192,
+          "sequences": 363,
+          "violated": {
+            "R3": {
+              "count": 192,
+              "first": "aab"
+            }
+          }
+        },
+        "key-sorted": {
+          "conforms": false,
+          "expected": "fails",
+          "failing_sequences": 327,
+          "sequences": 363,
+          "violated": {
+            "R3": {
+              "count": 268,
+              "first": "aab"
+            },
+            "R4": {
+              "count": 206,
+              "first": "ba"
+            }
+          }
+        },
+        "lifo-per-key": {
+          "conforms": false,
+          "expected": "fails",
+          "failing_sequences": 348,
+          "sequences": 363,
+          "violated": {
+            "R2": {
+              "count": 348,
+              "first": "aa"
+            },
+            "R4": {
+              "count": 270,
+              "first": "aa"
+            }
+          }
+        },
+        "reference": {
+          "conforms": true,
+          "expected": "conforms",
+          "failing_sequences": 0,
+          "sequences": 363,
+          "violated": {}
+        },
+        "skips-the-head": {
+          "conforms": false,
+          "expected": "fails",
+          "failing_sequences": 348,
+          "sequences": 363,
+          "violated": {
+            "R4": {
+              "count": 348,
+              "first": "ab"
+            }
+          }
+        }
+      },
+      "defective_rejected": true,
+      "distinct_violations": [
+        "R1",
+        "R2",
+        "R3",
+        "R4"
+      ],
+      "note": "`fewest-remaining` is a different mechanism from the reference and must also pass: an oracle that rejected it would be testing resemblance, not requirements",
+      "sound_accepted": true
+    }
+  },
+  "what_this_is_not": "no agent capability is measured here; every semantic judgement in the replay is simulated by a deterministic oracle, and the cases' agent-facing halves are not-observed until a live run happens"
+}

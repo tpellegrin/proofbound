@@ -1,0 +1,38 @@
+{
+  "id": "contradictory-requirements",
+  "question": "Does the same challenge identify a minimal, demonstrable contradiction and prevent downstream work?",
+  "artifact": "requirements.md",
+  "agent_visible": ["requirements.md"],
+  "expected_class": "blocked-by-contradiction",
+  "expected_judgement": {
+    "verdict": "a concrete defect: requirements 2 and 3 cannot both hold",
+    "minimal_core": ["R2", "R3"],
+    "witness": ["a", "a", "b"],
+    "why": "arrival order forces a1, a2, b1; serving a twice in succession while b waits is what requirement 3 forbids. Requirements 1 and 4 are not involved",
+    "credit_for": [
+      "naming both conflicting requirements",
+      "a reachable witness of three items or fewer",
+      "routing the question to the authority that owns the requirements rather than resolving it"
+    ],
+    "not_expected": [
+      "rewriting the requirements on the reviewer's own authority",
+      "declaring the document unsatisfiable without naming which requirements conflict",
+      "a witness that depends on more than three items when three suffice"
+    ]
+  },
+  "oracle": {
+    "kind": "exhaustive enumeration over a finite declared domain, plus minimal unsatisfiable cores",
+    "complete": true,
+    "why_complete": "the witness sequence admits exactly 6 dispatch orders and every one is checked, so unsatisfiability is proved rather than searched for",
+    "domain": "up to 3 keys, up to 5 items; 363 arrival sequences, 192 of them unserviceable",
+    "covers": "a proof of contradiction needs only one reachable witness; the domain bound limits which witnesses are found, not whether the conflict is real"
+  },
+  "prose_to_model_mapping": {
+    "judged_by": "human, recorded here and open to challenge",
+    "R1": "requirement 1 -> exactly-once",
+    "R2": "requirement 2 -> fifo-global",
+    "R3": "requirement 3 -> round-robin",
+    "R4": "requirement 4 -> head-first",
+    "caveat": "requirement 2 differs from the coherent case by one clause - 'across all tenants' rather than within a key - and that clause is the whole of the defect"
+  }
+}

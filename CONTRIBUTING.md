@@ -15,7 +15,9 @@ also the entry point to the architecture and routes to the documents relevant to
 **Python 3.10 or newer.** No third-party packages, no virtual environment, and no
 installation step: every script and test is standard-library only. Please keep it that way.
 
-Verified green on 3.10, 3.12, 3.13 and 3.14.
+CI runs the suite on **3.10 and 3.14** — the declared minimum and current stable, which
+bracket the supported range (`.github/workflows/tests.yml`). Versions in between are
+expected to work and are not continuously verified.
 
 > On macOS, `/usr/bin/python3` may still be 3.9. Check with `python3 --version` and use an
 > explicit `python3.10`+ interpreter if it is older.

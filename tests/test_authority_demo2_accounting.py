@@ -18,6 +18,7 @@ import json
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,6 +54,25 @@ class AccountingTest(unittest.TestCase):
                        "title": title, "started_at": started_at, **terminal}
             (event / "terminal.json").write_text(json.dumps(payload), encoding="utf-8")
 
+    def real_db(self, *, sessions: "list[tuple[str, str]]",
+                calls: "list[tuple[str, float | None, bool]]") -> Path:
+        """A genuine sqlite session database, for the queries that must run for real."""
+        import sqlite3
+        from contextlib import closing
+        db = Path(tempfile.mkdtemp(prefix="pb-demo2-db-")) / "worker.db"
+        self.addCleanup(__import__("shutil").rmtree, db.parent, True)
+        with closing(sqlite3.connect(db)) as conn:
+            conn.execute("create table session (id text, title text)")
+            conn.executemany("insert into session values (?, ?)", sessions)
+            conn.execute("create table message (id text, session_id text, data text)")
+            for n, (ses, output, done) in enumerate(calls):
+                conn.execute("insert into message values (?, ?, ?)", (f"m{n}", ses, json.dumps(
+                    {"role": "assistant", "time": {"completed": 1 if done else None},
+                     "tokens": {"input": 0, "output": output or 0,
+                                "cache": {"read": 0, "write": 0}}})))
+            conn.commit()      # `closing` closes; it does not commit, unlike the connection CM
+        return db
+
     def session(self, usage: "dict[str, int]",
                 real_sessions: "list[tuple[str, str]] | None" = None,
                 calls: "list[tuple[str, float | None, bool]] | None" = None) -> None:
@@ -68,7 +88,8 @@ class AccountingTest(unittest.TestCase):
             db.write_bytes(b"not a real database; usage is supplied by the stub")
         else:
             import sqlite3
-            with sqlite3.connect(db) as conn:
+            from contextlib import closing
+            with closing(sqlite3.connect(db)) as conn:
                 conn.execute("create table session (id text, title text)")
                 conn.executemany("insert into session values (?, ?)", real_sessions)
                 conn.execute("create table message (id text, session_id text, data text)")
@@ -79,6 +100,7 @@ class AccountingTest(unittest.TestCase):
                                        "cache": {"read": 0, "write": 0}}}
                     conn.execute("insert into message values (?, ?, ?)",
                                  (f"m{n}", ses, json.dumps(data)))
+                conn.commit()
         stub_usage = dict(usage)
 
         def fake_profile(_db, **_kw):
@@ -159,8 +181,30 @@ class AccountingTest(unittest.TestCase):
         self.assertEqual(account["interrupted_attempts"], ["spec-author-1"],
                          "the interruption is still recorded, it is just not a spend gap")
 
-    def test_an_unfinished_call_is_charged_at_an_upper_bound(self):
-        """Unaccounted is never zero — but it need not be unbounded either."""
+    def test_the_dearest_completed_call_does_not_bound_an_unfinished_one(self):
+        """The reported defect, as a falsifiable property rather than a restated formula.
+
+        The repaired code called the dearest *completed* call in a session an upper bound on one
+        that never finished. This constructs a session whose completed calls are small, then
+        prices — with the same table the reserve is derived from — an unfinished call that reached
+        10,000 output tokens. If the reserve were a ceiling it would be at least that. It is two
+        orders of magnitude below it, which is why it may not settle a spend figure.
+        """
+        import _pricing
+        when = datetime(2026, 9, 17, 12, 0, tzinfo=timezone.utc)
+        db = self.real_db(sessions=[("ses_live", "t")],
+                          calls=[("ses_live", 100.0, True), ("ses_live", None, False)])
+        reserve = scaffold.interrupted_call_reserve(db, {"ses_live"}, when)
+        self.assertFalse(reserve["is_upper_bound"])
+        self.assertNotIn("bound", reserve, "the estimate must not be reported as a bound")
+        bigger = _pricing.cost({"input": 0, "output": 10_000, "cache_read": 0},
+                               model="deepseek-v4-flash", when=when)["amount"]
+        self.assertLess(reserve["reserve_estimate"], bigger,
+                        "an unfinished call can cost more than the dearest finished one, so the "
+                        "estimate is not a ceiling")
+
+    def test_an_unfinished_call_leaves_the_figure_incomplete_and_refuses_a_launch(self):
+        """Unaccounted is never zero, and an estimate does not make it accounted for."""
         self.attempt("spec-author-1", terminal={"status": "timeout"}, session_id=None,
                      title="dsd:RG-spec:spec-author:1")
         self.session({"input": 10, "output": 5, "calls_started": 3, "calls_finished": 2},
@@ -168,21 +212,40 @@ class AccountingTest(unittest.TestCase):
                      calls=[("ses_live", 9.0, True), ("ses_live", 4.0, True),
                             ("ses_live", None, False)])
         account = scaffold.spend(self.into)
-        self.assertTrue(account["complete"], account)
-        bound = account["unfinished_call_bound"]
-        self.assertEqual(bound["unfinished_calls"], 1)
-        self.assertGreater(account["charged"], account["derived"],
-                           "the bound must actually be charged against the budget")
-        self.assertAlmostEqual(account["charged"],
-                               account["derived"] + bound["bound"], places=6)
+        self.assertFalse(account["complete"], account)
+        self.assertIn("unknown, not zero", account["claim"])
+        self.assertEqual(account["interrupted_call_reserve"]["unfinished_calls"], 1,
+                         "the reserve is still reported; it just settles nothing")
+        self.assertNotIn("interrupted_call_bound", account)
+        self.assertEqual(account["charged"], account["derived"],
+                         "an estimate is not charged as if it were measured")
+        self.assertFalse(scaffold.admit(self.into)["admit"])
+
+    def test_an_enforced_per_call_limit_is_a_ceiling_and_can_settle_the_figure(self):
+        """The other half: a limit something enforces does bound the call it limits.
+
+        Falsifiable rather than formulaic — the ceiling is checked against the priced cost of
+        calls at and below the limit, which it must not fall under.
+        """
+        import _pricing
+        when = datetime(2026, 9, 17, 12, 0, tzinfo=timezone.utc)
+        bound = scaffold.enforced_call_bound(when, unfinished_calls=1, max_output_tokens=2_000)
+        self.assertTrue(bound["is_upper_bound"])
+        for output in (1, 500, 2_000):
+            priced = _pricing.cost({"input": 0, "output": output, "cache_read": 0},
+                                   model="deepseek-v4-flash", when=when)["amount"]
+            self.assertGreaterEqual(bound["bound"], priced, f"{output} tokens exceeds the ceiling")
+        self.assertIsNone(scaffold.enforced_call_bound(when, unfinished_calls=1,
+                                                       max_output_tokens=None),
+                          "no identified limit, no ceiling")
 
     def test_an_unfinished_call_with_no_readable_per_call_record_still_stops_the_run(self):
-        """The bound is a measurement of the session, not an estimate. No record, no bound."""
+        """No per-call record means not even an estimate, and the run still stops."""
         self.attempt("spec-author-1", terminal={"status": "timeout"})
         self.session({"input": 10, "output": 5, "calls_started": 3, "calls_finished": 2})
         account = scaffold.spend(self.into)
         self.assertFalse(account["complete"], account)
-        self.assertIn("unbounded", account["claim"])
+        self.assertIn("cannot be read at all", account["claim"])
         self.assertFalse(scaffold.admit(self.into)["admit"])
 
     def test_usage_that_cannot_be_attributed_to_a_launch_is_unaccounted(self):

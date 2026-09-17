@@ -83,6 +83,8 @@ split.
 | [evidence/authority-workflow-demonstration.md](evidence/authority-workflow-demonstration.md) | **Historical evidence** | `pb-authority-demo-1`: the design of the first real-agent run of the full authority chain, and the manual decisions it needs. It ran; the specification challenge found a real defect and the run stopped there under its own no-repair rule. |
 | [evidence/authority-workflow-successor.md](evidence/authority-workflow-successor.md) | **Historical evidence** | Dated corrections to `pb-authority-demo-1`'s preparation, and the questions its plan left unanswered. Corrects by addition; that demonstration's records are unmodified. |
 | [evidence/authority-workflow-intent-defect.md](evidence/authority-workflow-intent-defect.md) | **Historical evidence** | `pb-authority-demo-2` stopped because the parent intent it was built on was internally inconsistent. What the inconsistency was, how it survived six paid attempts, and what would have caught it. |
+| [evidence/readme-usability-check.md](evidence/readme-usability-check.md) | **Historical evidence** | Can a stranger answer five questions from the documentation alone? What one fresh reader got right, what it exposed, and what changed. |
+| [evidence/authority-workflow-demo-2-audit.md](evidence/authority-workflow-demo-2-audit.md) | **Historical evidence** | Dated post-run audit of `pb-authority-demo-2`: the interrupted call was never bounded, search exhaustion is not nonexistence, and D1/D4 were protocol departures. Corrects by addition; that run's records are unmodified. |
 | [../specification-reflection-harness-implementation-plan.md](../specification-reflection-harness-implementation-plan.md) | **Roadmap** | Milestone status, acceptance criteria, dependencies, deferrals, threat mitigation status |
 
 **Precedence.** Normative beats rationale beats research beats history. Within normative documents, no
@@ -146,7 +148,11 @@ One line each. **The canonical definitions, with their falsifiers, are in
 | System Craft observable | **Decided**; craft returns discovered evolvability consequences, never verdicts — a verdict needs a referent craft is defined not to have |
 | Modularity and local reasoning | **Mechanics validated** (MLR-C2); the C1 treatment was recoverable with one `inspect` call, so the runtime is now compiled and the measurand revised before evidence |
 | MLR paired `q1`, on the qualified stack | **Run**; family E · Heterogeneous — 12/12 valid, 6/6 pairs both correct, `contract` direct source zero in every pair, and the compensating runtime channel spans 102 to 39,231 bytes and is not arm-determined |
-| MLR cross-fixture `eventbus-b1` | **Frozen, executable, preflight launchable; not run.** The design is unchanged. The frozen executor was acquired in isolation and matches the full historical digest, and under the frozen host's interpreter the boundary identity reproduces |
+| MLR cross-fixture `eventbus-b1` | **Run** (2026-09-15/16); twelve slots, twelve valid trajectories, no retries, $0.238762 of $0.50 — family R1, the core phenomenon replicates and the secondary procedural pattern is heterogeneous and unlike q1's. A later dated audit corrects the run report's attempt-ceiling reasoning and leaves the result standing |
+| Authority evidence audit (`pb-authority-demo-2`) | **Complete**; two claims withdrawn and `D1`/`D4` reclassified as departures, so neither demonstration is a conforming run |
+| Authority slice — four cases, valid and invalid | **Validated credential-free**, 4/4 mechanical; the agent-facing half is **not observed** |
+| Fresh-context authority recovery | **Two read-only observations**; never a reliability estimate, and live continuation is untested |
+| Intent challenge as an ordinary artifact | **Decided**: `proposal-reflection`, no new kind, role or purpose |
 | Decision provenance, coherence audit, context telemetry | Direction only; see the plan's dependency graph |
 
 Canonical test command: `python3 -m unittest discover -s tests -t .` (Python ≥3.10).
