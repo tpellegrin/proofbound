@@ -1,0 +1,164 @@
+{
+  "budget": {
+    "aggregate_limit": 0.4,
+    "coordinators": "coordinator 1 and coordinator 2 are Claude Code sessions billed to a subscription; disclosed, not netted against the limit",
+    "earlier_unknown_charge": "stays in its own dated record; not counted here, not zero",
+    "reserve": 0.1,
+    "rule": "before each launch, refuse if derived + reserve > limit, or if the spend figure is not complete",
+    "unknown_spend": "unknown, never zero; it blocks further launches",
+    "what_it_is": "a launch-admission guard, not a guaranteed provider billing cap"
+  },
+  "candidate_binds": {
+    "members": [
+      "spec.md"
+    ],
+    "narrowness": "a single-member freeze demonstrates candidate-bound implementation, not multi-artifact aggregate coherence"
+  },
+  "deadline_seconds": 900,
+  "executor": {
+    "path": "/Users/thiago/.proofbound/executors/opencode-1.18.29-darwin-arm64/opencode",
+    "sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+    "version": "1.18.29",
+    "why_pinned": "identical to the predecessor's, so the two runs stay comparable"
+  },
+  "external_suite_withholding": "mode 0000 for the duration of every worker run, verified per run; withholding, not isolation",
+  "handoff": {
+    "allowed_inputs": [
+      "the repository path",
+      "the run root",
+      "the ledger path",
+      "the graph path",
+      "the freezes directory",
+      "the consistency directory",
+      "the session database path",
+      "the demo directory",
+      "standing operational instructions",
+      "the frozen resource policy"
+    ],
+    "must_invoke": "scripts/pb_execution.py authorize, retaining the result, before launching implementation",
+    "must_recover_independently": [
+      "the candidate identity",
+      "that it has a durable consistency acceptance",
+      "the provenance state of the recorded artifact",
+      "where the intent's authority lives and that it checks",
+      "the remaining budget and whether the repair is spent",
+      "the next action"
+    ],
+    "point": "after pb_consistency record succeeds, before any pb_execution.py authorize call",
+    "withheld": [
+      "the candidate identity",
+      "which stages ran or succeeded",
+      "coordinator 1's conclusions",
+      "coordinator 1's conversation in any form",
+      "a prepared authorize invocation containing the answer"
+    ]
+  },
+  "identities": {
+    "contracts_tree_sha256": "d87613b766aaf0a85e699cd0a6b6038042ff074bfa91f4e7311053ec6b2abf6c",
+    "external_suite_sha256": "49161a7cf5c79d017c2798ec347f37b82938b636a6cf0a16c15571d44ce25448",
+    "fixture_source_sha256": "30bb419a37ff5dfb92bdb875d6bcb794d02e592874ea0db527ce8d954dca0dc0",
+    "fixture_suite_sha256": "858482c17ca4a5bbebba06760f66d795b47409dbac8993785be8e79f917bdfc6",
+    "fixture_tree_sha256": "d6cd22e6c446d22052dc8c5335a5a6495258943ae54517ae3abf756a820a5aab",
+    "intent_sha256": "a7e16b87c8dc8131edd027f289bb5bdcd80bc0fcca02e0827a88646280b70a04",
+    "protocol_sha256": "4258a28c47865ef08d6162c2304f788f10d53bfa5b7d2810bf1cb5461c0b3f62",
+    "witness_sha256": "ed71e8894ff337f9bef3e8ab0a505b192b67d56714c1a9a1e8e7c4de72379910"
+  },
+  "identity": "pb-authority-demo-2",
+  "initial_accepted_authority": {
+    "artifact": "demo/pb-authority-demo-2/intent.md",
+    "checkable_at_handoff": "the same digest is stamped into the header of every task contract placed in the run root",
+    "held_by": "coordinating agent as parent for this disposable demonstration",
+    "sha256": "a7e16b87c8dc8131edd027f289bb5bdcd80bc0fcca02e0827a88646280b70a04",
+    "where_it_lives": "external to the ledger; the ledger records artifacts produced by accepted tasks and the intent is produced by none"
+  },
+  "interpreter": {
+    "path": "/usr/bin/python3",
+    "version": "3.14.7"
+  },
+  "launch_ceiling": {
+    "clean": 5,
+    "hard": 8,
+    "with_implementation_repair": 7,
+    "with_specification_repair": 8
+  },
+  "model": "deepseek/deepseek-v4-flash",
+  "paths": {
+    "consistency": "/Users/thiago/.proofbound/demo2/live/consistency",
+    "db": "/Users/thiago/.proofbound/demo2/live/session/worker.db",
+    "freezes": "/Users/thiago/.proofbound/demo2/live/freezes",
+    "graph": "/Users/thiago/.proofbound/demo2/live/project/change-graph.json",
+    "ledger": "/Users/thiago/.proofbound/demo2/live/ledger.json",
+    "project": "/Users/thiago/.proofbound/demo2/live/project",
+    "run_root": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1"
+  },
+  "predecessor": {
+    "commit": "16062678a35a5165c4edb735043e8b94476f7a83",
+    "identity": "pb-authority-demo-1",
+    "outcome": "stopped after a real specification finding under its frozen no-repair rule",
+    "records": "preserved unchanged; corrections by addition in docs/architecture/proofbound/evidence/authority-workflow-successor.md"
+  },
+  "preparation_commit": "7f74a1717d5c3aa0e8d393ef7c11385b70368f0d",
+  "project_base_commit": "bd57018ef7def78704011740486c975b7d73e233",
+  "protocol": "demo/pb-authority-demo-2/protocol.md",
+  "rehearsed_unpaid": {
+    "authorize_invoked": true,
+    "authorize_refuses_before_consistency_acceptance": true,
+    "clean_path": true,
+    "fake_verified_by": "resolved path and file content, in a constructed credential-free environment passed explicitly",
+    "repair_path": true
+  },
+  "repair_policy": {
+    "after_it_is_spent": "a further genuine finding stops the run",
+    "cycles": 1,
+    "repairer": "the producer role on the same task and the same immutable contract",
+    "shared_between": [
+      "design/RG-spec",
+      "build/RG-impl"
+    ],
+    "spent_test": "more than one producer attempt on any single task, derivable from state.json"
+  },
+  "role_purpose_map": [
+    {
+      "context": "intent.md + the project; no reviewer output, no implementation",
+      "order": 1,
+      "purpose": null,
+      "role": "spec-author",
+      "task": "design/RG-spec"
+    },
+    {
+      "context": "the same contract + the author's report.md as an exact --input",
+      "order": 2,
+      "purpose": "specification-reflection",
+      "role": "spec-reflector",
+      "task": "design/RG-spec"
+    },
+    {
+      "context": "the candidate-bound contract + the frozen members; no producer reasoning",
+      "order": 3,
+      "purpose": "consistency-reflection",
+      "role": "spec-reflector",
+      "task": "design/RG-consistency"
+    },
+    {
+      "context": "spec.md + intent.md + the project, bound to the exact candidate",
+      "order": 4,
+      "purpose": null,
+      "role": "implementer",
+      "task": "build/RG-impl"
+    },
+    {
+      "context": "the same contract + the implementer's report.md as an exact --input",
+      "order": 5,
+      "purpose": "implementation-review",
+      "role": "reviewer",
+      "task": "build/RG-impl"
+    }
+  ],
+  "suite_verification": {
+    "defective_variants_failed": 6,
+    "unmodified_fixture_fails": true,
+    "witness_passes_external_suite": true,
+    "witness_passes_projects_own_suite_unedited": true
+  },
+  "variant": "high"
+}
