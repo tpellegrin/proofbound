@@ -1,0 +1,108 @@
+{
+  "budget": {
+    "aggregate_limit": 0.4,
+    "earlier_lifecycle_unknown_charge": "stays in its own record; not counted here, not treated as zero",
+    "reserve": 0.1,
+    "rule": "before each launch, refuse if derived + reserve > limit",
+    "unknown_spend": "any executor-reached attempt without recorded usage blocks further launches"
+  },
+  "deadline_seconds": 900,
+  "design": "docs/architecture/proofbound/evidence/authority-workflow-demonstration.md",
+  "execution_commit": "0a1d749e632ee721b81a526478f3b8ede857f4ca",
+  "executor": {
+    "path": "/Users/thiago/.proofbound/executors/opencode-1.18.29-darwin-arm64/opencode",
+    "sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669"
+  },
+  "external_suite_lock": "mode 0000 for the duration of every worker run, verified per run",
+  "failure_and_retry": {
+    "attempts_per_task_step": 2,
+    "paid_retries_beyond_that": 0,
+    "repair_cycle_budgeted": false,
+    "reviewer_defect": "legitimate outcome; recorded and the run stops"
+  },
+  "fixture_and_suites": {
+    "check_sha256": "e34b32908ce9829b7b12d5d111918e8870ba83e5273f0eb1d669baa5a072d2fc",
+    "contracts_tree_sha256": "c3a27c45f0b1090aa94d3cb46c405acb6534857393f40b17cfac642f8776c4e7",
+    "design_sha256": "f3f64df786e12d22ae3024a4f899f2e07d5dedb230d5bd3f8f8b36d6d85474f9",
+    "external_suite_sha256": "025a29c280dc756faa3e7f36330477fa38f3eaf16b6d8c15995007645d785d73",
+    "fixture_source_sha256": "30bb419a37ff5dfb92bdb875d6bcb794d02e592874ea0db527ce8d954dca0dc0",
+    "fixture_suite_sha256": "858482c17ca4a5bbebba06760f66d795b47409dbac8993785be8e79f917bdfc6",
+    "fixture_tree_sha256": "d6cd22e6c446d22052dc8c5335a5a6495258943ae54517ae3abf756a820a5aab",
+    "intent_sha256": "3f8edd357fba05e21b468b4d065abc57fcbddfeaf187a03d107b07f80276fa67",
+    "reference_sha256": "deffe368339b0aafa56cbe1e9cd80dadc25c4380becd116707b535611dab1666"
+  },
+  "handoff": {
+    "allowed_inputs": [
+      "the run root path",
+      "the ledger path",
+      "the graph path",
+      "the freezes directory",
+      "the consistency directory",
+      "the repository path and the operational instructions",
+      "the budget limit and reserve"
+    ],
+    "point": "after aggregate consistency acceptance, before implementation authorization",
+    "withheld": [
+      "this conversation",
+      "the candidate identity",
+      "which stages ran",
+      "any summary of what was decided"
+    ]
+  },
+  "identity": "pb-authority-demo-1",
+  "initial_accepted_authority": {
+    "artifact": "intent.md",
+    "held_by": "coordinating agent as parent for this disposable demonstration (deviation D1)",
+    "sha256": "3f8edd357fba05e21b468b4d065abc57fcbddfeaf187a03d107b07f80276fa67"
+  },
+  "interpreter": "/usr/bin/python3",
+  "model": "deepseek/deepseek-v4-flash",
+  "paths": {
+    "db": "/Users/thiago/.proofbound/demo/live/session/worker.db",
+    "graph": "/Users/thiago/.proofbound/demo/live/project/change-graph.json",
+    "ledger": "/Users/thiago/.proofbound/demo/live/ledger.json",
+    "project": "/Users/thiago/.proofbound/demo/live/project",
+    "run_root": "/Users/thiago/.proofbound/demo/live/project/DeepSeekAndDestroy/plans/demo/runs/r1",
+    "task_contracts": "/Users/thiago/.proofbound/demo/live/project/DeepSeekAndDestroy/plans/demo/runs/r1/contracts"
+  },
+  "preparation_check": "demo/pb-authority-demo-1/design-to-execution-check.md",
+  "project_base_commit": "0cc010998b156daae41fe1327845f4d6a95c7126",
+  "role_purpose_map": [
+    {
+      "context": "intent.md + the project; no reviewer output, no implementation",
+      "order": 1,
+      "purpose": null,
+      "role": "spec-author",
+      "task": "design/RG-spec"
+    },
+    {
+      "context": "the same contract + the author's report.md as an exact --input; not its session",
+      "order": 2,
+      "purpose": "specification-reflection",
+      "role": "spec-reflector",
+      "task": "design/RG-spec"
+    },
+    {
+      "context": "the candidate-bound contract + the frozen members; no producer reasoning",
+      "order": 3,
+      "purpose": "consistency-reflection",
+      "role": "spec-reflector",
+      "task": "design/RG-consistency"
+    },
+    {
+      "context": "spec.md + intent.md + the project, bound to the exact candidate",
+      "order": 4,
+      "purpose": null,
+      "role": "implementer",
+      "task": "build/RG-impl"
+    },
+    {
+      "context": "the same contract + the implementer's report.md as an exact --input",
+      "order": 5,
+      "purpose": "implementation-review",
+      "role": "reviewer",
+      "task": "build/RG-impl"
+    }
+  ],
+  "variant": "high"
+}
