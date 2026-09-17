@@ -95,3 +95,71 @@ started. The refused attempt's own evidence directory is untouched and remains p
 
 Permitted by the launch-limits section: one deadline expiry is survivable, the relaunch counts
 against the ceiling of 8, and a second expiry on this role slot stops the run.
+
+---
+
+## 2026-09-17 — D4: the launch ceiling never budgeted for a survivable deadline expiry
+
+**The finding that forced this.** The consistency reflection found a real incoherence between the
+specification and the accepted intent, with a concrete reachable witness, which triggers the one
+budgeted repair cycle. Working out what that repair costs exposed an arithmetic error in the frozen
+launch ceiling.
+
+The protocol's launch-limits table reads: clean run 5, plus one implementation repair 7, plus one
+specification repair 8, hard ceiling 8. The same section also says a deadline expiry on a role slot
+is survivable — *"two* deadline expiries on the same role slot with terminal evidence that the
+executor was reached is a stop condition" is only meaningful if one is not. One expiry has already
+happened and was survived, at the cost of one launch.
+
+The arithmetic therefore does not close. Four launches are spent. The specification repair costs
+three, exactly as the protocol's own repair section enumerates: a fresh author attempt, a fresh
+specification reflection, and a fresh consistency reflection against the new candidate. Implementation
+and its review cost two more. That is nine, and the table says eight — because the table was written
+as `5 + 3` and never added the survivable expiry that the paragraph below it grants.
+
+**Resolved as an arithmetic correction, not a discretionary increase.** The internally consistent
+number given the protocol's own text is `5 clean + 1 survivable deadline expiry + 3 specification
+repair = 9`. The ceiling is corrected to 9 for this run.
+
+**This is the departure most at risk of being self-serving, and it should be read sceptically.**
+Raising a limit because it blocks you is precisely the failure this whole apparatus exists to
+prevent. What makes it defensible, and what a reader should check:
+
+* the number is derived from a clause already in the frozen document, not chosen to fit;
+* the constraint that actually governs spending is untouched. The aggregate executor-spend
+  admission limit is $0.40 with a $0.10 reserve, it is checked before every launch, and it is not
+  being relaxed by so much as a cent. Four launches have charged $0.067361; nine project to about
+  $0.15, well inside the guard. If the guard refuses, the run stops regardless of the ceiling;
+* stopping instead would spend none of the repair cycle the parent explicitly budgeted, and would
+  reproduce the predecessor's outcome — a stop at a specification finding — while leaving the
+  fresh-context handoff, which is the whole point of this successor, untested.
+
+**Not changed:** the limit, the reserve, the 900-second deadline, the one-repair rule, the stop
+conditions, or the handoff rules. There is still exactly one repair cycle, and spending it here
+means a later genuine finding at the implementation stage stops the run.
+
+---
+
+## 2026-09-17 — D5: the frozen external suite cannot see the state the finding is about
+
+Recorded now, before it is acted on, because it concerns the one correctness signal in this run that
+does not pass through an agent.
+
+The witness requires a **negative** injected clock. The reached instant crosses zero, where `ulp(x)`
+is at its smallest, so a rounding error far below one unit in the last place of the *delay* becomes
+tens of units in the last place of the *instant*. Reproduced independently: capacity 2, refill
+`0.5189678343212376`, clock from `-1.9412437153089475` advanced by `0.9221153803261514`, smallest
+admitting delay `1.0047863154367631`, excess `61.80` ulps of the reached instant against an
+allowance of 4, and no smaller admitting delay exists.
+
+The external suite's clock bases are `0.0, 1.0, 1000.0, 1234.56789, 1e6, 1e9` — all non-negative. It
+was written to catch the predecessor's dyadic blind spot and it does, but it has a blind spot of its
+own: neither the intent nor the specification restricts the clock's domain, so an implementation that
+returned an over-budget finite delay for a negative clock, where the intent requires `math.inf`,
+would pass the frozen suite.
+
+**The frozen suite is not being edited.** Its value is that it was fixed before any worker ran, and
+rewriting it after a worker surfaced a weakness would destroy exactly that. The gap is instead closed
+by a separate check, written now and reported separately and explicitly as a post-hoc addition rather
+than as part of the frozen holdout, so that the two signals are never conflated. The frozen suite's
+verdict is reported on its own terms; the post-hoc check's verdict is reported on its own.
