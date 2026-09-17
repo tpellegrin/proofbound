@@ -80,7 +80,8 @@ split.
 | [evidence/evaluation-runs.md](evidence/evaluation-runs.md) | **Historical evidence** | What individual evaluation runs established: the V1 implementation outcome, baseline zero, calibration outcomes. Never protocol. |
 | [evidence/original-rfc.md](evidence/original-rfc.md) | **Historical, superseded** | Pre-implementation design intent. Known wrong in several places. Never authoritative. |
 | [evidence/lifecycle-field-check.md](evidence/lifecycle-field-check.md) | **Historical evidence** | `pb-lifecycle-field-check-1`: the protocol and outcome of the attempt-deadline field check. An engineering validation, never a treatment sample. |
-| [evidence/authority-workflow-demonstration.md](evidence/authority-workflow-demonstration.md) | **Design, not yet run** | `pb-authority-demo-1`: the planned first real-agent run of the full authority chain, and the manual decisions it needs. No paid agent has executed it. |
+| [evidence/authority-workflow-demonstration.md](evidence/authority-workflow-demonstration.md) | **Historical evidence** | `pb-authority-demo-1`: the design of the first real-agent run of the full authority chain, and the manual decisions it needs. It ran; the specification challenge found a real defect and the run stopped there under its own no-repair rule. |
+| [evidence/authority-workflow-successor.md](evidence/authority-workflow-successor.md) | **Historical evidence** | Dated corrections to `pb-authority-demo-1`'s preparation, and the questions its plan left unanswered. Corrects by addition; that demonstration's records are unmodified. |
 | [../specification-reflection-harness-implementation-plan.md](../specification-reflection-harness-implementation-plan.md) | **Roadmap** | Milestone status, acceptance criteria, dependencies, deferrals, threat mitigation status |
 
 **Precedence.** Normative beats rationale beats research beats history. Within normative documents, no
