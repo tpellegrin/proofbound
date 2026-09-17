@@ -136,11 +136,17 @@ def parse_sessions(value: Any) -> list[dict[str, Any]]:
     return []
 
 
-def lookup_session_id(env: dict[str, str], title: str) -> tuple[str | None, str | None]:
+def lookup_session_id(env: dict[str, str], title: str,
+                     project_root: Path | None = None) -> tuple[str | None, str | None]:
+    # `session list` scopes its answer to the working directory, so it must be asked from the
+    # same directory the worker ran in. Asked from anywhere else it exits 0 and prints nothing,
+    # which parses as no sessions rather than as an error — the terminal record then loses the
+    # session id silently, and usage cannot be attributed to the launch that incurred it.
     try:
         cp = subprocess.run(
             ["opencode", "session", "list", "--format", "json", "--max-count", "50"],
             text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env,
+            cwd=str(project_root) if project_root else None,
             timeout=30, check=False,
         )
     except Exception as exc:
@@ -491,7 +497,7 @@ def child_run(args: argparse.Namespace, paths: dict[str, Path], reserved_at: str
     if args.resume_session:
         session_id, session_error = args.resume_session, None
     else:
-        session_id, session_error = lookup_session_id(env, title)
+        session_id, session_error = lookup_session_id(env, title, project_root)
     terminal = {
         "format": "dsd-worker-terminal-v3",
         "status": "timeout" if timed_out else ("completed" if rc == 0 else "process-error"),

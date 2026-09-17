@@ -122,8 +122,12 @@ def release() -> "dict[str, Any]":
     return check_withholding(expect_withheld=False)
 
 
-def check_withholding(*, expect_withheld: bool = True) -> "dict[str, Any]":
-    """What is actually true right now, including what the measure does not prevent."""
+def check_withholding(*, expect_withheld: "bool | None" = True) -> "dict[str, Any]":
+    """What is actually true right now, including what the measure does not prevent.
+
+    `expect_withheld=None` observes without asserting, for a caller that wants the honest
+    description of the measure and has no business dictating the ambient mode.
+    """
     target = EXTERNAL / "test_retry_after_external.py"
     try:
         with open(target, "rb"):
@@ -140,9 +144,9 @@ def check_withholding(*, expect_withheld: bool = True) -> "dict[str, Any]":
         "uid": os.getuid(),
         "owner_can_restore_mode_without_privilege": True,
         "therefore": "withholding, not isolation: an unprivileged owner may chmod and read",
-        "as_expected": (not readable) == expect_withheld,
+        "as_expected": None if expect_withheld is None else (not readable) == expect_withheld,
     }
-    if not record["as_expected"]:
+    if record["as_expected"] is False:
         raise SystemExit(f"external-suite withholding is not in the expected state: {record}")
     return record
 
@@ -268,6 +272,7 @@ def launch_facts(into: Path) -> "dict[str, Any]":
             "readable": True,
             "started_at": data.get("started_at"),
             "session_id": terminal.get("session_id"),
+            "title": terminal.get("title"),
             "terminal_status": terminal.get("status"),
             "terminal_present": bool(terminal),
         })
@@ -283,6 +288,80 @@ def _priced_at(facts: "dict[str, Any]") -> datetime:
         except ValueError:                                   # pragma: no cover
             continue
     return datetime.now(tz=timezone.utc)
+
+
+def session_by_title(db: Path, title: str) -> "str | None":
+    """The session a launch produced, found the way the launcher itself finds it: by exact title.
+
+    The session id in a terminal record is a convenience, not the attribution key — `run_worker`
+    matches sessions on the title it launched with, and the title survives in the terminal record
+    even when the id lookup failed. Asking the database directly therefore recovers attribution
+    for an attempt whose lookup was asked from the wrong directory, without inventing anything: a
+    title that matches no session still yields nothing.
+    """
+    import sqlite3
+    try:
+        with sqlite3.connect(f"file:{db}?mode=ro", uri=True) as conn:
+            rows = conn.execute("select id from session where title = ?", (title,)).fetchall()
+    except sqlite3.Error:
+        return None
+    return str(rows[0][0]) if len(rows) == 1 else None
+
+
+def interrupted_call_bound(db: Path, sessions: "set[str]", when: Any) -> "dict[str, Any] | None":
+    """An upper bound on what a model call that never finished can have cost.
+
+    A worker stopped at its deadline leaves its in-flight call out of the session's usage totals.
+    That call is unaccounted, and the b1 principle says unaccounted is never zero — but it is not
+    therefore *unbounded*. The session records every completed call's own token usage, so the most
+    expensive completed call in the same session is a defensible ceiling for one that did not
+    finish, and charging that ceiling against the budget is stricter than the alternative of
+    quietly carrying on.
+
+    Returns `None` when the per-call record cannot be read at all. That case is genuinely unbounded
+    and must stop the run rather than be estimated.
+    """
+    import sqlite3
+    import _pricing
+    if not sessions:
+        return None
+    try:
+        with sqlite3.connect(f"file:{db}?mode=ro", uri=True) as conn:
+            marks = ",".join("?" * len(sessions))
+            rows = conn.execute(
+                f"select data from message where session_id in ({marks})",
+                tuple(sorted(sessions))).fetchall()
+    except sqlite3.Error:
+        return None
+
+    priced, unfinished = [], 0
+    for (raw,) in rows:
+        try:
+            message = json.loads(raw)
+        except ValueError:
+            return None
+        if message.get("role") != "assistant":
+            continue
+        if (message.get("time") or {}).get("completed") is None:
+            unfinished += 1
+            continue
+        tokens = message.get("tokens") or {}
+        cache = tokens.get("cache") or {}
+        cost = _pricing.cost({"input": tokens.get("input", 0), "output": tokens.get("output", 0),
+                              "cache_read": cache.get("read", 0),
+                              "cache_write": cache.get("write", 0)},
+                             model=MODEL.split("/", 1)[-1], when=when)
+        amount = (cost or {}).get("amount")
+        if not isinstance(amount, (int, float)):
+            return None
+        priced.append(float(amount))
+    if not priced:
+        return None
+    return {"unfinished_calls": unfinished,
+            "dearest_completed_call": round(max(priced), 6),
+            "bound": round(max(priced) * unfinished, 6),
+            "basis": "each unfinished call charged at the dearest completed call in the same "
+                     "session; an upper bound, not a measurement"}
 
 
 def spend(into: Path) -> "dict[str, Any]":
@@ -314,9 +393,8 @@ def spend(into: Path) -> "dict[str, Any]":
     finished = usage.get("calls_finished")
 
     unsettled = []
-    if isinstance(started, int) and isinstance(finished, int) and started != finished:
-        unsettled.append(f"{started - finished} of {started} model call(s) started and did not "
-                         "finish, so their usage is not in these totals")
+    unfinished_calls = (started - finished
+                        if isinstance(started, int) and isinstance(finished, int) else None)
     missing_terminal = [a["event_dir"] for a in facts["attempts"]
                         if a.get("readable") and not a.get("terminal_present")]
     if missing_terminal:
@@ -327,12 +405,23 @@ def spend(into: Path) -> "dict[str, Any]":
     interrupted = [a["event_dir"] for a in facts["attempts"]
                    if a.get("terminal_present") and a.get("terminal_status") not in
                    (None, "completed")]
-    if interrupted:
-        unsettled.append(f"attempt(s) that did not complete: {interrupted}")
-    sessions = {a.get("session_id") for a in facts["attempts"] if a.get("session_id")}
-    if facts["launched"] and not sessions:
-        unsettled.append("no attempt recorded a session id, so usage cannot be attributed to a "
-                         "launch")
+    account["interrupted_attempts"] = interrupted
+    unattributed = []
+    for attempt in facts["attempts"]:
+        if not attempt.get("readable"):
+            continue
+        resolved = attempt.get("session_id")
+        how = "recorded in the terminal record"
+        if not resolved and attempt.get("title"):
+            resolved = session_by_title(db, str(attempt["title"]))
+            how = "recovered from the session database by exact title"
+        attempt["attributed_session"] = resolved
+        attempt["attributed_by"] = how if resolved else None
+        if not resolved:
+            unattributed.append(attempt["event_dir"])
+    if unattributed:
+        unsettled.append(f"attempt(s) whose usage cannot be attributed to a session: "
+                         f"{unattributed}")
 
     priced = _pricing.cost(usage, model=MODEL.split("/", 1)[-1], when=_priced_at(facts))
     amount = (priced or {}).get("amount")
@@ -342,14 +431,30 @@ def spend(into: Path) -> "dict[str, Any]":
                 "claim": "a session exists but no usage could be priced; spend is unknown, not "
                          "zero"}
     account["cost"] = priced
+    charged = float(amount)
+    if unfinished_calls:
+        attributed = {a["attributed_session"] for a in facts["attempts"]
+                      if a.get("attributed_session")}
+        bound = interrupted_call_bound(db, attributed, _priced_at(facts))
+        if bound is None:
+            unsettled.append(f"{unfinished_calls} model call(s) started and did not finish, and "
+                             "the per-call record cannot be read, so their cost is unbounded")
+        else:
+            account["unfinished_call_bound"] = bound
+            charged += bound["bound"]
+    account["charged"] = round(charged, 6)
     if unsettled:
         return {**account, "derived": round(float(amount), 6), "complete": False,
                 "claim": "the derived figure omits work this run cannot account for — "
                          + "; ".join(unsettled)}
+    settled = "the run tree's launches and the session's usage agree; the figure is the whole " \
+             "of what this run spent"
+    if account.get("unfinished_call_bound"):
+        settled = (f"{account['unfinished_call_bound']['unfinished_calls']} interrupted call(s) "
+                   "are not in the session's totals and are charged at an upper bound, so the "
+                   "charged figure is at or above what this run spent")
     return {**account, "derived": round(float(amount), 6), "complete": True,
-            "headroom": round(AGGREGATE_LIMIT - RESERVE - float(amount), 6),
-            "claim": "the run tree's launches and the session's usage agree; the figure is the "
-                     "whole of what this run spent"}
+            "headroom": round(AGGREGATE_LIMIT - RESERVE - charged, 6), "claim": settled}
 
 
 def admit(into: Path) -> "dict[str, Any]":
@@ -357,9 +462,10 @@ def admit(into: Path) -> "dict[str, Any]":
     account = spend(into)
     if not account["complete"]:
         return {"admit": False, "why": "this run's spend cannot be established", "spend": account}
-    if account["derived"] + RESERVE > AGGREGATE_LIMIT:
+    charged = account.get("charged", account["derived"])
+    if charged + RESERVE > AGGREGATE_LIMIT:
         return {"admit": False,
-                "why": f"derived {account['derived']} + reserve {RESERVE} exceeds "
+                "why": f"charged {charged} + reserve {RESERVE} exceeds "
                        f"{AGGREGATE_LIMIT}", "spend": account}
     return {"admit": True, "spend": account}
 

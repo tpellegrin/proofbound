@@ -17,6 +17,8 @@ demonstration with a separate identity, not a rerun.
 | `external-suite/` | The behavioural suite the coordinator runs, withheld from every worker. `witness/` holds the private reference implementation. |
 | `verify_suite.py` | Proves the external suite satisfiable (the witness passes) and discriminating (six defective variants fail). Unpaid. |
 | `rehearse.py` | Drives the whole sequence against a credential-free fake executor, on the clean path and the repair path, including `pb_execution.py authorize`. Unpaid. |
+| `departures.md` | Append-only, dated record of every departure from the frozen protocol, and of repository code changed mid-run. |
+| `execution-record.json` | Identities, information flow, launch ceiling, stop conditions and handoff rules, fixed before the first paid call. |
 | `scaffold.py` | Mechanical setup, identities, the withholding measure, and reconciled spend accounting. Launches no worker and makes no semantic decision. |
 
 Regressions for the accounting repairs are in `tests/test_authority_demo2_accounting.py`.

@@ -40,7 +40,8 @@ class AccountingTest(unittest.TestCase):
         self.run.mkdir(parents=True)
 
     def attempt(self, name: str, *, started_at: str = "2026-09-17T10:00:00+00:00",
-                terminal: "dict | None" = None, session_id: str = "ses_x") -> None:
+                terminal: "dict | None" = None, session_id: "str | None" = "ses_x",
+                title: "str | None" = None) -> None:
         """One recorded attempt in the run tree, as the launcher would leave it."""
         event = self.run / "attempts" / name
         event.mkdir(parents=True)
@@ -49,14 +50,35 @@ class AccountingTest(unittest.TestCase):
             "worker_pid": 1, "launcher_pid": 2}), encoding="utf-8")
         if terminal is not None:
             payload = {"format": "dsd-worker-terminal-v3", "session_id": session_id,
-                       "started_at": started_at, **terminal}
+                       "title": title, "started_at": started_at, **terminal}
             (event / "terminal.json").write_text(json.dumps(payload), encoding="utf-8")
 
-    def session(self, usage: "dict[str, int]") -> None:
-        """A session database whose usage is whatever this test wants it to be."""
+    def session(self, usage: "dict[str, int]",
+                real_sessions: "list[tuple[str, str]] | None" = None,
+                calls: "list[tuple[str, float | None, bool]] | None" = None) -> None:
+        """A session database whose usage is whatever this test wants it to be.
+
+        Usage is stubbed, because pricing is not what these tests are about. When a test needs the
+        *title* lookup, `real_sessions` builds a genuine sqlite database so the query under test
+        runs for real rather than against another stub.
+        """
         db = self.into / "session" / "worker.db"
         db.parent.mkdir(parents=True, exist_ok=True)
-        db.write_bytes(b"not a real database; usage is supplied by the stub")
+        if real_sessions is None:
+            db.write_bytes(b"not a real database; usage is supplied by the stub")
+        else:
+            import sqlite3
+            with sqlite3.connect(db) as conn:
+                conn.execute("create table session (id text, title text)")
+                conn.executemany("insert into session values (?, ?)", real_sessions)
+                conn.execute("create table message (id text, session_id text, data text)")
+                for n, (ses, output, done) in enumerate(calls or []):
+                    data = {"role": "assistant",
+                            "time": {"completed": 1 if done else None},
+                            "tokens": {"input": 0, "output": output or 0,
+                                       "cache": {"read": 0, "write": 0}}}
+                    conn.execute("insert into message values (?, ?, ?)",
+                                 (f"m{n}", ses, json.dumps(data)))
         stub_usage = dict(usage)
 
         def fake_profile(_db, **_kw):
@@ -123,19 +145,80 @@ class AccountingTest(unittest.TestCase):
         self.assertFalse(account["complete"], account)
         self.assertIn("without a terminal record", account["claim"])
 
-    def test_an_interrupted_attempt_is_unaccounted(self):
+    def test_an_interrupted_attempt_whose_calls_all_finished_leaves_nothing_unaccounted(self):
+        """Being stopped is not by itself an accounting gap: an in-flight call is.
+
+        The first version of this rule treated any non-completed attempt as permanently
+        unaccountable, which contradicted the protocol's own allowance for surviving one deadline
+        expiry. What actually escapes the totals is a call that started and never finished.
+        """
         self.attempt("spec-author-1", terminal={"status": "timeout"})
         self.session({"input": 10, "output": 5, "calls_started": 2, "calls_finished": 2})
         account = scaffold.spend(self.into)
+        self.assertTrue(account["complete"], account)
+        self.assertEqual(account["interrupted_attempts"], ["spec-author-1"],
+                         "the interruption is still recorded, it is just not a spend gap")
+
+    def test_an_unfinished_call_is_charged_at_an_upper_bound(self):
+        """Unaccounted is never zero — but it need not be unbounded either."""
+        self.attempt("spec-author-1", terminal={"status": "timeout"}, session_id=None,
+                     title="dsd:RG-spec:spec-author:1")
+        self.session({"input": 10, "output": 5, "calls_started": 3, "calls_finished": 2},
+                     real_sessions=[("ses_live", "dsd:RG-spec:spec-author:1")],
+                     calls=[("ses_live", 9.0, True), ("ses_live", 4.0, True),
+                            ("ses_live", None, False)])
+        account = scaffold.spend(self.into)
+        self.assertTrue(account["complete"], account)
+        bound = account["unfinished_call_bound"]
+        self.assertEqual(bound["unfinished_calls"], 1)
+        self.assertGreater(account["charged"], account["derived"],
+                           "the bound must actually be charged against the budget")
+        self.assertAlmostEqual(account["charged"],
+                               account["derived"] + bound["bound"], places=6)
+
+    def test_an_unfinished_call_with_no_readable_per_call_record_still_stops_the_run(self):
+        """The bound is a measurement of the session, not an estimate. No record, no bound."""
+        self.attempt("spec-author-1", terminal={"status": "timeout"})
+        self.session({"input": 10, "output": 5, "calls_started": 3, "calls_finished": 2})
+        account = scaffold.spend(self.into)
         self.assertFalse(account["complete"], account)
-        self.assertIn("did not complete", account["claim"])
+        self.assertIn("unbounded", account["claim"])
+        self.assertFalse(scaffold.admit(self.into)["admit"])
 
     def test_usage_that_cannot_be_attributed_to_a_launch_is_unaccounted(self):
         self.attempt("spec-author-1", terminal={"status": "completed"}, session_id="")
         self.session({"input": 10, "output": 5, "calls_started": 2, "calls_finished": 2})
         account = scaffold.spend(self.into)
         self.assertFalse(account["complete"], account)
-        self.assertIn("session id", account["claim"])
+        self.assertIn("cannot be attributed to a session", account["claim"])
+
+    def test_a_lost_session_id_is_recovered_from_the_title_the_launch_used(self):
+        """The id is a convenience; the title is the key the launcher actually matches on.
+
+        Every terminal record in the first authority demonstration carried `session_id: null`,
+        because the lookup was asked from the wrong directory (see
+        `tests/test_worker_session_attribution.py`). Attribution must survive that, and it must
+        survive it by *finding* the session rather than by assuming one.
+        """
+        self.attempt("spec-author-1", terminal={"status": "completed"}, session_id=None,
+                     title="dsd:RG-spec:spec-author:1")
+        self.session({"input": 10, "output": 5, "calls_started": 3, "calls_finished": 3},
+                     real_sessions=[("ses_recovered", "dsd:RG-spec:spec-author:1")])
+        account = scaffold.spend(self.into)
+        self.assertTrue(account["complete"], account)
+        attempt = account["attempts"][0]
+        self.assertEqual(attempt["attributed_session"], "ses_recovered")
+        self.assertIn("by exact title", attempt["attributed_by"])
+
+    def test_a_title_matching_no_session_is_still_unattributed(self):
+        """Recovery must not become invention: no matching row means no attribution."""
+        self.attempt("spec-author-1", terminal={"status": "completed"}, session_id=None,
+                     title="dsd:RG-spec:spec-author:1")
+        self.session({"input": 10, "output": 5, "calls_started": 3, "calls_finished": 3},
+                     real_sessions=[("ses_other", "dsd:SOMETHING-ELSE:reviewer:1")])
+        account = scaffold.spend(self.into)
+        self.assertFalse(account["complete"], account)
+        self.assertIn("cannot be attributed to a session", account["claim"])
 
     def test_a_reconciled_run_is_complete_and_admits(self):
         self.attempt("spec-author-1", terminal={"status": "completed"})
@@ -162,7 +245,8 @@ class WithholdingHonestyTest(unittest.TestCase):
     """The holdout measure must describe itself accurately."""
 
     def test_it_reports_withholding_rather_than_isolation(self):
-        record = scaffold.check_withholding(expect_withheld=False)
+        # Observe without dictating: a live run may legitimately have the suite withheld.
+        record = scaffold.check_withholding(expect_withheld=None)
         self.assertTrue(record["owner_can_restore_mode_without_privilege"])
         self.assertIn("withholding, not isolation", record["therefore"])
 
