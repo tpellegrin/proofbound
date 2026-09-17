@@ -1,0 +1,37 @@
+{
+  "allowed_source_changes": [
+    "spec.md"
+  ],
+  "errors": [
+    "worker lifecycle not completed/0: status='timeout' exit=-15"
+  ],
+  "format": "dsd-integrity-gate-v2",
+  "integrity_ok": false,
+  "launch_reservation": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/launch-reservation.json",
+  "launch_reservation_sha256": "212e55194def166c1e77c8f2d6a7378305bac488a5c58866a85228ee72af665f",
+  "log": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/worker.log",
+  "needs_report_recovery": false,
+  "ready_for_interpretation": false,
+  "report": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/report.md",
+  "report_sha256": "f7a0214302f5a17c67ef126a640615297196b29ef145f414b4536a57333af393",
+  "report_state": "present",
+  "role": "spec-author",
+  "scope": {
+    "added_count": 1,
+    "baseline": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/scope-baseline.json",
+    "changed_count": 1,
+    "diff": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/scope-diff.json",
+    "diff_sha256": "4c0a00a56d1dbab4395086d2b001145315b60ca089f6300193fdd0b6aed3c3cd",
+    "extra_inventory": [],
+    "git_head_changed": false,
+    "modified_count": 0,
+    "removed_count": 0
+  },
+  "task": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/contracts/RG-spec.md",
+  "task_sha256": "87f55b0feefc58b98bb9be5348101c2bbe835104a42cdfb1e57f1f8644af7c13",
+  "terminal_event": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/terminal.json",
+  "terminal_event_sha256": "0c83760b4ad1f46587646808f185d477834acbb1444ee7e024459c9c57b05ad2",
+  "warnings": [],
+  "write_restriction_declared": true,
+  "writes_project": true
+}

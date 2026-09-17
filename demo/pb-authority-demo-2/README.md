@@ -17,6 +17,10 @@ demonstration with a separate identity, not a rerun.
 | `external-suite/` | The behavioural suite the coordinator runs, withheld from every worker. `witness/` holds the private reference implementation. |
 | `verify_suite.py` | Proves the external suite satisfiable (the witness passes) and discriminating (six defective variants fail). Unpaid. |
 | `rehearse.py` | Drives the whole sequence against a credential-free fake executor, on the clean path and the repair path, including `pb_execution.py authorize`. Unpaid. |
+| `run-report.md` | What happened, what was verified independently, and why the run stopped. |
+| `handoff-input.md` | The verbatim text prepared for the fresh coordinator. Never delivered — the run stopped upstream. |
+| `posthoc_negative_clock.py` | A check the frozen suite cannot make, reported separately and never merged into its verdict. |
+| `evidence-attempts/` | Every attempt's prompt, report, gate, scope diff and terminal record. |
 | `departures.md` | Append-only, dated record of every departure from the frozen protocol, and of repository code changed mid-run. |
 | `execution-record.json` | Identities, information flow, launch ceiling, stop conditions and handoff rules, fixed before the first paid call. |
 | `scaffold.py` | Mechanical setup, identities, the withholding measure, and reconciled spend accounting. Launches no worker and makes no semantic decision. |

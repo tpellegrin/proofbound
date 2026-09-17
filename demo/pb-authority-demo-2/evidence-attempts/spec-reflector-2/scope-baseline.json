@@ -1,0 +1,25 @@
+{
+  "captured_at": "2026-09-17T16:02:00.930451+00:00",
+  "entries": {
+    "change-graph.json": {
+      "exists": true,
+      "kind": "file",
+      "sha256": "c520b40fd335ddb5bdca67e8b7a558e4d651ff00fdab86d7d6ed58c937fe9698",
+      "size": 85
+    },
+    "spec.md": {
+      "exists": true,
+      "kind": "file",
+      "sha256": "c0c3eb7a94a5e48977ad99c9e552f5b7e3b7b59fceb74b9183760375f7fdd21e",
+      "size": 6819
+    }
+  },
+  "exclude_prefixes": [
+    "DeepSeekAndDestroy"
+  ],
+  "extra_inventory_specs": [],
+  "format": "deepseek-and-destroy-scope-snapshot-v5",
+  "git_head": "bd57018ef7def78704011740486c975b7d73e233",
+  "inventory_mode": "git-dirty",
+  "project_root": "/Users/thiago/.proofbound/demo2/live/project"
+}

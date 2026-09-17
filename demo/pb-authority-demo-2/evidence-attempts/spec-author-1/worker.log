@@ -1,0 +1,92 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/WORKER_RULES.md
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/COMMON.md
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/roles/dsd-spec-author/SKILL.md
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/contracts/RG-spec.md
+[0m→ [0mRead intent.md
+[0m
+[0m$ [0mls -la /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/ 2>/dev/null; echo "---"; ls -la /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/ 2>/dev/null
+total 0
+drwxr-xr-x  3 thiago  staff   96 17 Sep 12:08 .
+drwxr-xr-x  6 thiago  staff  192 17 Sep 12:08 ..
+drwxr-xr-x  8 thiago  staff  256 17 Sep 12:08 spec-author-1
+---
+total 48
+drwxr-xr-x  8 thiago  staff   256 17 Sep 12:08 .
+drwxr-xr-x  3 thiago  staff    96 17 Sep 12:08 ..
+-rw-r--r--  1 thiago  staff   780 17 Sep 12:08 attempt.json
+-rw-r--r--  1 thiago  staff   954 17 Sep 12:08 launch-prompt.txt
+-rw-------  1 thiago  staff  1761 17 Sep 12:08 launch-reservation.json
+-rw-r--r--  1 thiago  staff   315 17 Sep 12:08 report.md
+-rw-r--r--  1 thiago  staff   550 17 Sep 12:08 scope-baseline.json
+-rw-r--r--  1 thiago  staff   443 17 Sep 12:08 worker.log
+[0m
+[0m$ [0mls -la /Users/thiago/.proofbound/demo2/live/project && echo "---RATEGUARD---" && ls -R /Users/thiago/.proofbound/demo2/live/project/rateguard 2>/dev/null && echo "---TESTS---" && ls -R /Users/thiago/.proofbound/demo2/live/project/tests 2>/dev/null
+total 32
+drwxr-xr-x   9 thiago  staff   288 17 Sep 12:06 .
+drwxr-xr-x   7 thiago  staff   224 17 Sep 12:06 ..
+drwxr-xr-x  13 thiago  staff   416 17 Sep 12:08 .git
+-rw-r--r--   1 thiago  staff    85 17 Sep 12:06 change-graph.json
+drwxr-xr-x   3 thiago  staff    96 17 Sep 12:06 DeepSeekAndDestroy
+-rw-r--r--   1 thiago  staff  5085 17 Sep 12:06 intent.md
+-rw-r--r--   1 thiago  staff    76 17 Sep 12:06 PLAN.md
+drwxr-xr-x   3 thiago  staff    96 17 Sep 12:06 rateguard
+drwxr-xr-x   3 thiago  staff    96 17 Sep 12:06 tests
+---RATEGUARD---
+__init__.py
+---TESTS---
+test_rateguard.py
+[0m
+[0m→ [0mRead rateguard/__init__.py
+[0m→ [0mRead tests/test_rateguard.py
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/report.md
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/launch-prompt.txt
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/attempt.json
+[0m→ [0mRead PLAN.md
+[0m→ [0mRead change-graph.json
+[0m
+[0m$ [0mshasum -a 256 /Users/thiago/.proofbound/demo2/live/project/intent.md
+a7e16b87c8dc8131edd027f289bb5bdcd80bc0fcca02e0827a88646280b70a04  /Users/thiago/.proofbound/demo2/live/project/intent.md
+[0m
+[0m$ [0mpython3 --version && git -C /Users/thiago/.proofbound/demo2/live/project status --porcelain && git -C /Users/thiago/.proofbound/demo2/live/project log --oneline -5
+Python 3.14.7
+?? DeepSeekAndDestroy/
+?? change-graph.json
+bd57018 initial rateguard
+[0m
+[0m← [0mWrite /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg_explore.py
+Wrote file successfully.
+[0m
+[0m$ [0mpython3 /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg_explore.py
+ex1 d= 0.7692307692307692 now+d= 1000.7692307692307 admit? False
+ex1 d2= 0.7692307692307693 now+d2= 1000.7692307692307 admit? False
+ex1 sim w= 0.7692307692307737 now+w= 1000.7692307692308 admit? True excess ulp= 0.0400390625
+ex2 d= 11.11111111111111 now+d= 11.11111111111111 admit? False
+ex2 sim w= 11.111111111111112 now+w= 11.111111111111112 admit? True excess ulp= 1.0
+worst excess ulp = 2.0 bound_bad = 0 mono_bad = 0
+tiny r 1e-300 -> 1e+300
+tiny r 1e-308 -> 1.0000000000000002e+308
+tiny r 5e-324 -> inf
+tiny r 1e-320 -> inf
+[0m
+[0m← [0mWrite DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/report.md
+Wrote file successfully.
+[0m
+[0m← [0mWrite spec.md
+Wrote file successfully.
+[0m
+[0m← [0mWrite /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg_stress.py
+Wrote file successfully.
+[0m
+[0m$ [0mpython3 /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg_stress.py
+(no output)
+
+<shell_metadata>
+shell tool terminated command after exceeding timeout 600000 ms. If this command is expected to take longer and is not waiting for interactive input, retry with a larger timeout value in milliseconds.
+</shell_metadata>
+[0m
+[0m← [0mWrite /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg_stress2.py
+Wrote file successfully.
+[0m

@@ -1,0 +1,38 @@
+{
+  "attempt": 2,
+  "ended_at": "2026-09-17T16:06:52.710494+00:00",
+  "exit_code": 0,
+  "format": "dsd-worker-terminal-v3",
+  "launch_reservation": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/launch-reservation.json",
+  "launch_reservation_sha256": "95174ab11a743d97f2786b9c26e73df5b3e169d6af35d9b342fc117874c30456",
+  "launcher_pid": 39597,
+  "model": "deepseek/deepseek-v4-flash",
+  "process_ended_at": "2026-09-17T16:06:52.047670+00:00",
+  "reserved_at": "2026-09-17T16:02:01.033555+00:00",
+  "role": "spec-reflector",
+  "session_id": "ses_f4fe58072ffel8DG3bCDMdCU8G",
+  "session_lookup_error": null,
+  "started_at": "2026-09-17T16:02:01.085712+00:00",
+  "status": "completed",
+  "task_id": "RG-consistency",
+  "terminal_report": {
+    "path": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/report.md",
+    "sha256": "6607ac1c93f5a7fbec554e03dd205c9e0296eeb555564a34122315937f4d5247",
+    "state": "present"
+  },
+  "terminal_report_error": null,
+  "terminal_scope": {
+    "compared_at": "2026-09-17T16:06:52.140266+00:00",
+    "path": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/scope-diff.json",
+    "sha256": "a1b515283c476d19f17c55ba207fdaf5d8224c74df9c894cf42ab3ab2e6897ce"
+  },
+  "terminal_scope_error": null,
+  "termination": null,
+  "timed_out": false,
+  "timeout_seconds": 900.0,
+  "title": "dsd:RG-consistency:spec-reflector:2",
+  "worker_monotonic_seconds": 290.959,
+  "worker_pid": 39599,
+  "worker_stopped": null,
+  "worker_wall_seconds": 290.959
+}

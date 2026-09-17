@@ -1,0 +1,18 @@
+{
+  "attempt": 1,
+  "db": "/Users/thiago/.proofbound/demo2/live/session/worker.db",
+  "format": "dsd-worker-attempt-v3",
+  "launch_reservation": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/launch-reservation.json",
+  "launch_reservation_sha256": "b11b7a217562145f5ddddac7be51a77159d9b71c6843b8299baf916b59524574",
+  "launcher_pid": 38805,
+  "model": "deepseek/deepseek-v4-flash",
+  "project_root": "/Users/thiago/.proofbound/demo2/live/project",
+  "reserved_at": "2026-09-17T15:52:58.285931+00:00",
+  "resume_session": null,
+  "role": "spec-reflector",
+  "started_at": "2026-09-17T15:52:58.338325+00:00",
+  "task_id": "RG-spec",
+  "title": "dsd:RG-spec:spec-reflector:1",
+  "worker_pid": 38807,
+  "writes_project": false
+}

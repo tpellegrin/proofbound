@@ -1,0 +1,12 @@
+DSD SPEC REFLECTOR for RG-spec.
+Read, in order:
+1. /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/WORKER_RULES.md
+2. /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/COMMON.md
+3. /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/roles/dsd-spec-reflector/SKILL.md
+4. /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/contracts/RG-spec.md
+Additional exact inputs (path + SHA-256):
+- /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-3/report.md | d725b0d1c663d16882a7ec3cbdc6338f2cd00b40f5a140e855a1b79311d228d4
+Report: /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-3/report.md
+This attempt has its own report path. Make that report self-contained; start it early and keep it current.
+Do the bounded role task from authority. Preserve truthful semantic evidence; report formatting is not a protocol.
+Final stdout: report path plus at most one short conclusion.

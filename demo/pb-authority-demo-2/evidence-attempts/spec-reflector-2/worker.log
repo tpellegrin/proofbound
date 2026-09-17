@@ -1,0 +1,640 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/WORKER_RULES.md
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/COMMON.md
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/roles/dsd-spec-reflector/SKILL.md
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/contracts/RG-consistency.md
+[0m
+[0m$ [0mls -la /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/
+total 16
+drwxr-xr-x  6 thiago  staff   192 17 Sep 13:02 .
+drwxr-xr-x  3 thiago  staff    96 17 Sep 12:06 ..
+drwxr-xr-x  6 thiago  staff   192 17 Sep 13:02 attempts
+drwxr-xr-x  4 thiago  staff   128 17 Sep 13:02 contracts
+-rw-r--r--  1 thiago  staff  6059 17 Sep 13:02 state.json
+drwxr-xr-x  3 thiago  staff    96 17 Sep 12:06 worker-rules
+[0m
+[0m$ [0mls -la /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/
+total 0
+drwxr-xr-x   6 thiago  staff  192 17 Sep 13:02 .
+drwxr-xr-x   6 thiago  staff  192 17 Sep 13:02 ..
+drwxr-xr-x  11 thiago  staff  352 17 Sep 12:24 spec-author-1
+drwxr-xr-x  11 thiago  staff  352 17 Sep 12:52 spec-author-2
+drwxr-xr-x  11 thiago  staff  352 17 Sep 13:01 spec-reflector-1
+drwxr-xr-x   8 thiago  staff  256 17 Sep 13:02 spec-reflector-2
+[0m
+[0m$ [0mfind /Users/thiago/.proofbound/demo2/live/project -maxdepth 2 -name "intent.md" -o -maxdepth 2 -name "PLAN.md" 2>/dev/null
+/Users/thiago/.proofbound/demo2/live/project/intent.md
+/Users/thiago/.proofbound/demo2/live/project/PLAN.md
+[0m
+[0m→ [0mRead intent.md
+[0m→ [0mRead PLAN.md
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/state.json
+[0m
+[0m$ [0mfind /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts -type f | sort
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/attempt.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/evidence-gate.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/launch-prompt.txt
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/launch-reservation.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/report.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/scope-baseline.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/scope-diff.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/terminal.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-1/worker.log
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-2/attempt.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-2/evidence-gate.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-2/launch-prompt.txt
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-2/launch-reservation.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-2/report.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-2/scope-baseline.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-2/scope-diff.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-2/terminal.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-2/worker.log
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/attempt.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/evidence-gate.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/launch-prompt.txt
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/launch-reservation.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/report.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/scope-baseline.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/scope-diff.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/terminal.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/worker.log
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/attempt.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/launch-prompt.txt
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/launch-reservation.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/report.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/scope-baseline.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/worker.log
+[0m
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/report.md
+[0m
+[0m$ [0mfind /Users/thiago/.proofbound/demo2/live/project -type f \( -name "*.md" -o -name "*.json" \) -not -path "*/.git/*" | grep -v "DeepSeekAndDestroy/plans/demo2/runs/r1/attempts" | sort
+/Users/thiago/.proofbound/demo2/live/project/change-graph.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/contracts/RG-consistency.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/contracts/RG-spec.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/state.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/MANIFEST.json
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/COMMON.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/PROOF-PATTERNS.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/roles/dsd-discovery/SKILL.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/roles/dsd-evidence-clerk/SKILL.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/roles/dsd-fixer/SKILL.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/roles/dsd-implementer/SKILL.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/roles/dsd-phase-auditor/SKILL.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/roles/dsd-phase-surveyor/SKILL.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/roles/dsd-recovery/SKILL.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/roles/dsd-reviewer/SKILL.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/roles/dsd-spec-author/SKILL.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/roles/dsd-spec-reflector/SKILL.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/roles/dsd-verification/SKILL.md
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/WORKER_RULES.md
+/Users/thiago/.proofbound/demo2/live/project/intent.md
+/Users/thiago/.proofbound/demo2/live/project/PLAN.md
+/Users/thiago/.proofbound/demo2/live/project/spec.md
+[0m
+[0m$ [0mls -la /Users/thiago/.proofbound/demo2/live/project/
+total 48
+drwxr-xr-x  10 thiago  staff   320 17 Sep 12:52 .
+drwxr-xr-x   7 thiago  staff   224 17 Sep 13:01 ..
+drwxr-xr-x  13 thiago  staff   416 17 Sep 12:57 .git
+-rw-r--r--   1 thiago  staff    85 17 Sep 12:06 change-graph.json
+drwxr-xr-x   3 thiago  staff    96 17 Sep 12:06 DeepSeekAndDestroy
+-rw-r--r--   1 thiago  staff  5085 17 Sep 12:06 intent.md
+-rw-r--r--   1 thiago  staff    76 17 Sep 12:06 PLAN.md
+drwxr-xr-x   3 thiago  staff    96 17 Sep 12:06 rateguard
+-rw-r--r--   1 thiago  staff  6819 17 Sep 12:52 spec.md
+drwxr-xr-x   3 thiago  staff    96 17 Sep 12:06 tests
+[0m
+[0m→ [0mRead spec.md
+[0m→ [0mRead change-graph.json
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/contracts/RG-spec.md
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/launch-prompt.txt
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/report.md
+[0m
+[0m$ [0mshasum -a 256 /Users/thiago/.proofbound/demo2/live/project/intent.md /Users/thiago/.proofbound/demo2/live/project/spec.md /Users/thiago/.proofbound/demo2/live/project/change-graph.json /Users/thiago/.proofbound/demo2/live/project/PLAN.md /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/contracts/RG-consistency.md
+a7e16b87c8dc8131edd027f289bb5bdcd80bc0fcca02e0827a88646280b70a04  /Users/thiago/.proofbound/demo2/live/project/intent.md
+c0c3eb7a94a5e48977ad99c9e552f5b7e3b7b59fceb74b9183760375f7fdd21e  /Users/thiago/.proofbound/demo2/live/project/spec.md
+c520b40fd335ddb5bdca67e8b7a558e4d651ff00fdab86d7d6ed58c937fe9698  /Users/thiago/.proofbound/demo2/live/project/change-graph.json
+05d3c31c103b9dfa96e0e3780d5477005a8d289eedc839b45d3fa9ba24ba8501  /Users/thiago/.proofbound/demo2/live/project/PLAN.md
+de07949c70904bf62a5da37c0974875191f2c6090c354e367eff61536bd23255  /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/contracts/RG-consistency.md
+[0m
+[0m$ [0mfind /Users/thiago/.proofbound/demo2/live/project/rateguard /Users/thiago/.proofbound/demo2/live/project/tests -type f | sort
+/Users/thiago/.proofbound/demo2/live/project/rateguard/__init__.py
+/Users/thiago/.proofbound/demo2/live/project/tests/test_rateguard.py
+[0m
+[0m$ [0mcd /Users/thiago/.proofbound/demo2/live/project && git log --oneline -10 && echo "---STATUS---" && git status --porcelain
+bd57018 initial rateguard
+---STATUS---
+?? DeepSeekAndDestroy/
+?? change-graph.json
+?? spec.md
+[0m
+[0m→ [0mRead rateguard/__init__.py
+[0m→ [0mRead tests/test_rateguard.py
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/attempt.json
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/launch-reservation.json
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/scope-baseline.json
+[0m✱ [0mGrep "c0c3eb7a94a5e48977ad99c9e552f5b7e3b7b59fceb74b9183760375f7fdd21e"[90m in . · 8 matches[0m
+[0m✱ [0mGrep "cb93bdf09ea2e212fb2cdd8fe7e27edad8fb5bdc9f4ed48afd30fa8c7c2ebf1b"[90m in . · 1 match[0m
+[0m
+[0m← [0mWrite DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/report.md
+Wrote file successfully.
+[0m
+Now I'll write an initial self-contained report, then verify claims empirically.
+[0m$ [0mmkdir -p /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-consistency && cat > /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-consistency/check.py <<'PY'
+import math
+from fractions import Fraction
+
+def allow_admits(capacity, refill, tokens, last, now):
+    # replicate rateguard.allow token math (without consuming)
+    elapsed = now - last
+    if elapsed < 0.0:
+        elapsed = 0.0
+    t = tokens + elapsed * refill
+    if t > capacity:
+        t = float(capacity)
+    return t >= 1.0
+
+def w_star(refill, tokens, last, now):
+    # exact real delay to reach token==1 from now, Fraction
+    tstar = Fraction(last) + Fraction(1) - Fraction(tokens)
+    # (1 - tokens)/refill
+    tstar = Fraction(last) + (Fraction(1) - Fraction(tokens)) / Fraction(refill)
+    w = tstar - Fraction(now)
+    if w < 0:
+        w = Fraction(0)
+    return w
+
+def minimal_admitting_instant(capacity, refill, tokens, last, now):
+    # smallest float x >= now with allow_admits at x
+    if allow_admits(capacity, refill, tokens, last, now):
+        return now
+    # if tokens already >=1 admits; else search upward. Use nextafter stepping
+    # estimate target
+    x = now
+    # coarse jump using exact target then walk
+    target = Fraction(last) + (Fraction(1) - Fraction(tokens)) / Fraction(refill)
+    if target > x:
+        x = float(target)
+        # ensure >= now
+        if x < now:
+            x = now
+        # step back while previous still admits
+        while True:
+            p = math.nextafter(x, -math.inf)
+            if p >= now and allow_admits(capacity, refill, tokens, last, p):
+                x = p
+            else:
+                break
+        # step forward if not admitting
+        while not allow_admits(capacity, refill, tokens, last, x):
+            x = math.nextafter(x, math.inf)
+    else:
+        while not allow_admits(capacity, refill, tokens, last, x):
+            x = math.nextafter(x, math.inf)
+    return x
+
+def check(capacity, refill, tokens, last, now):
+    if allow_admits(capacity, refill, tokens, last, now):
+        return None
+    x0 = minimal_admitting_instant(capacity, refill, tokens, last, now)
+    if x0 == math.inf:
+        return ('inf', None)
+    wmin = x0 - now
+    ws = w_star(refill, tokens, last, now)
+    excess = Fraction(wmin) - ws
+    ulp = math.ulp(x0)
+    ratio = float(excess / Fraction(ulp)) if ulp > 0 else float('inf')
+    return (x0, wmin, float(ws), ratio)
+
+# 1) verify intent's two counterexamples
+print("intent ex1:", check(2, 1.3, 0.0, 1000.0, 1000.0))  # capacity 2, drained by 2 admissions => tokens 0, last 1000
+# actually two admissions: start full 2, after two allow tokens=0, last=1000. now=1000
+print("intent ex2:", check(1, 0.09, 0.0, 0.0, 0.0))
+
+# 2) random search for ratio > 4
+import random
+random.seed(12345)
+worst = (0, None)
+over = []
+refills = [1e-3,1e-2,0.05,0.09,0.1,0.3,0.5,0.7,1.0,1.3,2.0,3.0,7.0,1e-6,1e-9,1e-12]
+clocks = [0.0,1.0,1000.0,1e6,1e12,-1000.0,-1e6]
+caps = [1,2,3,10,1000]
+for it in range(300000):
+    cap = random.choice(caps)
+    r = random.choice(refills) * (10 ** random.uniform(-3,3))
+    last = random.choice(clocks) * (10 ** random.uniform(-3,3))
+    now = last + random.uniform(0, 2.0/r)
+    tokens = random.uniform(0, min(1.0, cap))
+    res = check(cap, r, tokens, last, now)
+    if res is None: continue
+    if res[0] == 'inf': continue
+    ratio = res[3]
+    if ratio > worst[0]:
+        worst = (ratio, (cap, r, tokens, last, now, res))
+    if ratio > 4:
+        over.append((cap, r, tokens, last, now, res))
+        if len(over) >= 10: break
+print("worst ratio:", worst[0])
+print("worst case:", worst[1])
+print("num over 4 (capped 10):", len(over))
+for o in over[:5]:
+    print("OVER:", o)
+PY
+python3 /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-consistency/check.py
+intent ex1: (1000.7692307692308, 0.7692307692308304, 0.7692307692307692, 0.5386926775147929)
+intent ex2: (11.111111111111112, 11.111111111111112, 11.11111111111111, 0.5462962962962963)
+worst ratio: 407.81836503231625
+worst case: (10, 3.026799253269208e-06, 0.0816709125716446, -302962.08884743985, -277551.6010789332, (437.31447819518513, 277988.91555712844, 277988.91555712844, 407.81836503231625))
+num over 4 (capped 10): 9
+OVER: (10, 3.026799253269208e-06, 0.0816709125716446, -302962.08884743985, -277551.6010789332, (437.31447819518513, 277988.91555712844, 277988.91555712844, 407.81836503231625))
+OVER: (2, 0.6116579446931443, 0.06231725927042642, -1.420985595199045, -1.3541612982959395, (0.11203257102454411, 1.4661938693204837, 1.4661938693204835, 8.622489660692828))
+OVER: (1, 0.005727883512257245, 0.1375340499025317, -141.8800715930912, -128.21978699547702, (8.693163398831262, 136.9129503943083, 136.91295039430827, 10.402182190196942))
+OVER: (1, 0.005376245159594566, 0.19284330224888135, -150.3790099943058, -122.0987557865954, (-0.2451017013312793, 121.85365408526413, 121.85365408526413, 87.0267588165564))
+OVER: (10, 0.01427097663508638, 0.16197243207662826, -57.54549857936317, -43.53194631397028, (1.1770114038016395, 44.70895771777192, 44.70895771777192, 5.890077035596058))
+[0m
+[0m$ [0mcat > /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-consistency/check2.py <<'PY'
+import math, random
+from fractions import Fraction
+
+def admit(cap, refill, tokens, last, now):
+    el = now - last
+    if el < 0.0: el = 0.0
+    t = tokens + el * refill
+    if t > cap: t = float(cap)
+    return t >= 1.0
+
+def wstar(refill, tokens, last, now):
+    return Fraction(last) + (Fraction(1)-Fraction(tokens))/Fraction(refill) - Fraction(now)
+
+def ulps(x):
+    return math.ulp(x)
+
+def best_excess(cap, refill, tokens, last, now):
+    """find min over admitting w of (w - w*)/ulp(now+w); None if none finite admit."""
+    if admit(cap, refill, tokens, last, now):
+        return ('admitted', None)
+    # find a starting x above threshold using exact target
+    target = Fraction(last) + (Fraction(1)-Fraction(tokens))/Fraction(refill)
+    x = float(target)
+    if x < now: x = now
+    # walk to first admitting
+    guard=0
+    while not admit(cap,refill,tokens,last,x):
+        x = math.nextafter(x, math.inf); guard+=1
+        if guard>10000: return ('nofind', None)
+    while True:
+        p = math.nextafter(x, -math.inf)
+        if p>=now and admit(cap,refill,tokens,last,p):
+            x=p
+        else: break
+    # now x is minimal admitting instant (approx)
+    # candidate w: any float w such that now+w admits. smallest w is around x-now
+    ws = wstar(refill,tokens,last,now)
+    # gather candidate w values: x-now and a few nextafter around it, plus nextafter(x) derived
+    cands=set()
+    w0 = x - now
+    w = w0
+    for _ in range(5):
+        cands.add(w)
+        w = math.nextafter(w, math.inf)
+    w = w0
+    for _ in range(5):
+        cands.add(w)
+        w = math.nextafter(w, -math.inf)
+    best=None
+    for w in cands:
+        if w < 0: continue
+        xx = now + w
+        if not admit(cap,refill,tokens,last,xx): continue
+        excess = Fraction(w) - ws
+        ratio = float(excess / Fraction(ulps(xx))) if ulps(xx)>0 else float('inf')
+        if best is None or ratio < best[0]:
+            best=(ratio, w, xx, excess, float(ws))
+    return best
+
+# focused search: NON-NEGATIVE clocks only
+random.seed(999)
+worst=(None,None)
+over=[]
+refills=[1e-9,1e-7,1e-5,1e-4,1e-3,0.001,0.005,0.01,0.02,0.05,0.09,0.1,0.3,0.5,0.7,1.0,1.3,2.0,3.0,7.0,100.0]
+clocks=[0.0,0.5,1.0,2.0,10.0,1000.0,1e6,1e9,1e12]
+caps=[1,2,3,10,1000]
+for it in range(400000):
+    cap=random.choice(caps)
+    r=random.choice(refills)*(10**random.uniform(-2,2))
+    last=random.choice(clocks)*(10**random.uniform(-2,2))
+    now=last+random.uniform(0, 3.0/r)
+    tokens=random.uniform(0, min(1.0,cap))
+    res=best_excess(cap,r,tokens,last,now)
+    if res is None or res[0] in ('admitted',) or isinstance(res,tuple) and res[0]=='nofind':
+        continue
+    ratio=res[0]
+    if worst[0] is None or ratio>worst[0]:
+        worst=(ratio,(cap,r,tokens,last,now,res))
+    if ratio>4:
+        over.append((cap,r,tokens,last,now,res))
+        if len(over)>=8: break
+print("NON-NEG clocks worst ratio:", worst[0])
+print("worst case:", worst[1])
+print("num over 4:", len(over))
+for o in over:
+    print("OVER:", o)
+PY
+python3 /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-consistency/check2.py
+NON-NEG clocks worst ratio: 1.482107321239902
+worst case: (1, 1.1811869291712572e-09, 0.10912766909875116, 0.016016554689326667, 188458450.55543703, (1.482107321239902, 565759454.2644379, 754217904.819875, Fraction(649276618876109712783379, 3674853339743728283157620850688), 565759454.2644378))
+num over 4: 0
+[0m
+[0m$ [0mcat > /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-consistency/witness.py <<'PY'
+import math, random
+from fractions import Fraction
+
+class Clock:
+    def __init__(self, t): self.now=float(t)
+    def __call__(self): return self.now
+
+class RG:
+    def __init__(self, cap, r, clock):
+        self.cap=int(cap); self.r=float(r); self.c=clock; self.tok={}; self.last={}
+    def allow(self, key):
+        now=self.c()
+        tokens=self.tok.get(key, float(self.cap))
+        last=self.last.get(key, now)
+        el=now-last
+        if el<0.0: el=0.0
+        tokens=tokens+el*self.r
+        if tokens>self.cap: tokens=float(self.cap)
+        self.last[key]=now
+        if tokens>=1.0:
+            self.tok[key]=tokens-1.0; return True
+        self.tok[key]=tokens; return False
+
+def admit_state(cap, r, tokens, last, now):
+    el=now-last
+    if el<0.0: el=0.0
+    t=tokens+el*r
+    if t>cap: t=float(cap)
+    return t>=1.0
+
+def minimal_w(cap, r, tokens, last, now):
+    if admit_state(cap,r,tokens,last,now): return 0.0
+    target=Fraction(last)+(Fraction(1)-Fraction(tokens))/Fraction(r)
+    x=float(target)
+    if x<now: x=now
+    g=0
+    while not admit_state(cap,r,tokens,last,x):
+        x=math.nextafter(x, math.inf); g+=1
+        if g>100000: return None
+    while True:
+        p=math.nextafter(x,-math.inf)
+        if p>=now and admit_state(cap,r,tokens,last,p): x=p
+        else: break
+    return x-now
+
+def analyze(cap,r,c0,delta):
+    clk=Clock(c0)
+    g=RG(cap,r,clk)
+    a=g.allow('k'); b=g.allow('k')
+    now=c0+delta
+    tokens=g.tok['k']; last=g.last['k']
+    if admit_state(cap,r,tokens,last,now): return None
+    w=minimal_w(cap,r,tokens,last,now)
+    if w is None: return ('nofind',)
+    x=now+w
+    ws=Fraction(last)+(Fraction(1)-Fraction(tokens))/Fraction(r)-Fraction(now)
+    excess=Fraction(w)-ws
+    ratio=float(excess/Fraction(math.ulp(x)))
+    return dict(cap=cap,r=r,c0=c0,delta=delta,now=now,tokens=tokens,last=last,
+                w=w,x=x,wstar=float(ws),excess_ulp=ratio,admits=admit_state(cap,r,tokens,last,x))
+
+random.seed(7)
+found=[]
+for it in range(2000000):
+    r=random.choice([0.3,0.5,0.6116579446931443,0.7,0.9,1.3,2.0,0.09,0.11])*10**random.uniform(-1,1)
+    c0=-1.0/r + random.uniform(-2.0, 2.0)  # put 1/r near -c0 so x0 near 0
+    delta=random.uniform(0, 0.9/r)
+    res=analyze(2,r,c0,delta)
+    if not res or isinstance(res,tuple): continue
+    if res['excess_ulp']>4:
+        found.append(res)
+        if len(found)>=6: break
+print("found over-4 reachable witnesses:", len(found))
+for f in found:
+    print(f)
+PY
+python3 /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-consistency/witness.py
+found over-4 reachable witnesses: 6
+{'cap': 2, 'r': 0.38894941754483164, 'c0': -2.380050540578099, 'delta': 0.1452890142700298, 'now': -2.2347615263080693, 'tokens': 0.0, 'last': -2.380050540578099, 'w': 2.4257393891463006, 'x': 0.19097786283823126, 'wstar': 2.4257393891463006, 'excess_ulp': 6.923045165986973, 'admits': True}
+{'cap': 2, 'r': 0.5189678343212376, 'c0': -1.9412437153089475, 'delta': 0.9221153803261514, 'now': -1.019128334982796, 'tokens': 0.0, 'last': -1.9412437153089475, 'w': 1.0047863154367631, 'x': -0.01434201954603287, 'wstar': 1.0047863154367631, 'excess_ulp': 61.796387867520664, 'admits': True}
+{'cap': 2, 'r': 0.012352885281811762, 'c0': -82.57836326348668, 'delta': 19.66709346625405, 'now': -62.91126979723263, 'tokens': 0.0, 'last': -82.57836326348668, 'w': 61.28565378158025, 'x': -1.6256160156523762, 'wstar': 61.28565378158025, 'excess_ulp': 4.8738913904662935, 'admits': True}
+{'cap': 2, 'r': 0.01180732039494342, 'c0': -83.62028941649453, 'delta': 9.858816049970805, 'now': -73.76147336652372, 'tokens': 0.0, 'last': -83.62028941649453, 'w': 74.8344053204138, 'x': 1.0729319538900768, 'wstar': 74.8344053204138, 'excess_ulp': 11.778854939533959, 'admits': True}
+{'cap': 2, 'r': 0.10147644191184761, 'c0': -9.45159493111801, 'delta': 0.9080101372961338, 'now': -8.543584793821875, 'tokens': 0.0, 'last': -9.45159493111801, 'w': 8.9464938358398, 'x': 0.40290904201792443, 'wstar': 8.9464938358398, 'excess_ulp': 15.991002984410235, 'admits': True}
+{'cap': 2, 'r': 0.01692432596179702, 'c0': -60.60006028235701, 'delta': 23.510908519826785, 'now': -37.08915176253023, 'tokens': 0.0, 'last': -60.60006028235701, 'w': 35.575639580066955, 'x': -1.5135121824632733, 'wstar': 35.57563958006695, 'excess_ulp': 16.99719030179478, 'admits': True}
+[0m
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/PROOF-PATTERNS.md
+[0m
+[0m$ [0mcd /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-consistency && python3 - <<'PY'
+import hashlib, json
+spec=open('/Users/thiago/.proofbound/demo2/live/project/spec.md','rb').read()
+cg=open('/Users/thiago/.proofbound/demo2/live/project/change-graph.json','rb').read()
+intent=open('/Users/thiago/.proofbound/demo2/live/project/intent.md','rb').read()
+target="cb93bdf09ea2e212fb2cdd8fe7e27edad8fb5bdc9f4ed48afd30fa8c7c2ebf1b"
+def h(b): return hashlib.sha256(b).hexdigest()
+cands={
+ 'spec':spec,
+ 'cg':cg,
+ 'spec+cg':spec+cg,
+ 'cg+spec':cg+spec,
+ 'intent+spec':intent+spec,
+ 'spec+intent':spec+intent,
+ 'intent+cg+spec':intent+cg+spec,
+ 'cg_canon':json.dumps(json.loads(cg),sort_keys=True,separators=(',',':')).encode(),
+}
+for k,v in cands.items():
+    print(k, h(v), h(v)==target)
+print("target", target)
+PY
+spec c0c3eb7a94a5e48977ad99c9e552f5b7e3b7b59fceb74b9183760375f7fdd21e False
+cg c520b40fd335ddb5bdca67e8b7a558e4d651ff00fdab86d7d6ed58c937fe9698 False
+spec+cg 7e2f07baedb02f20008de4ac21e07f8263b59b1c2a46f21690fe9f94d282cbec False
+cg+spec d1726ab2d994ea9bacbface053759ab438c7035e169e697b465dbe2389a667fe False
+intent+spec 8711b18478b9889ef8ccbf9fa47f74ef826ef770cefb7824a457a054cac54161 False
+spec+intent 4545246517599cf81c350215d249bb6326121eaab140a296d718f7cc32b09705 False
+intent+cg+spec c00e7ade89b08b2696815dc490d0d552931bbf5cf8f2542e66f2d0f2c77a9a7d False
+cg_canon 713214b59992e9fc1f3bbccb0ce79513c9b5df0e87d14f499623014d5f073c57 False
+target cb93bdf09ea2e212fb2cdd8fe7e27edad8fb5bdc9f4ed48afd30fa8c7c2ebf1b
+[0m
+[0m$ [0mcd /Users/thiago/.proofbound/demo2/live/project && python3 - <<'PY'
+import sys, math
+from fractions import Fraction
+sys.path.insert(0,'/Users/thiago/.proofbound/demo2/live/project')
+from rateguard import RateGuard
+
+class Clock:
+    def __init__(self,t): self.now=float(t)
+    def __call__(self): return self.now
+
+# witness from search: cap=2, r=0.5189678343212376, c0=-1.9412437153089475, now=c0+0.9221153803261514
+cap=2; r=0.5189678343212376; c0=-1.9412437153089475; delta=0.9221153803261514
+clk=Clock(c0)
+g=RateGuard(cap, r, clock=clk)
+print("allow1",g.allow('k'),"allow2",g.allow('k'))
+clk.now=c0+delta
+now=clk.now
+tokens=g._tokens['k']; last=g._last['k']
+print("state tokens",tokens,"last",last,"now",now)
+
+def admit(tokens,last,now):
+    el=now-last
+    if el<0.0: el=0.0
+    t=tokens+el*r
+    if t>cap: t=float(cap)
+    return t>=1.0
+
+# find minimal admitting instant x>=now by scan from now upward
+x=now
+while not admit(tokens,last,x):
+    x=math.nextafter(x, math.inf)
+x0=x
+wmin=x0-now
+ws=Fraction(last)+(Fraction(1)-Fraction(tokens))/Fraction(r)-Fraction(now)
+print("x0",repr(x0),"wmin",repr(wmin),"w*",float(ws))
+print("now+wmin == x0 ?", (now+wmin)==x0, repr(now+wmin))
+excess=Fraction(wmin)-ws
+print("excess (real)=",float(excess),"ulp(x0)=",math.ulp(x0),"excess/ulp=",float(excess/Fraction(math.ulp(x0))))
+
+# check: for a range of larger w, does any satisfy bound?
+best=None
+w=wmin
+for i in range(0,20):
+    xx=now+w
+    if admit(tokens,last,xx):
+        exc=Fraction(w)-ws
+        ratio=float(exc/Fraction(math.ulp(xx)))
+        if best is None or ratio<best[0]:
+            best=(ratio,w,xx)
+    w=math.nextafter(w, math.inf)
+print("best ratio among w>=wmin:",best[0])
+# check smaller w down to 0: none admit
+w=wmin
+for i in range(0,200000):
+    w=math.nextafter(w,-math.inf)
+    if w<0: break
+    if admit(tokens,last,now+w):
+        print("smaller admitting w found!",repr(w)); break
+else:
+    print("no admitting w below wmin")
+PY
+(no output)
+
+<shell_metadata>
+shell tool terminated command after exceeding timeout 120000 ms. If this command is expected to take longer and is not waiting for interactive input, retry with a larger timeout value in milliseconds.
+</shell_metadata>
+[0m
+[0m$ [0mcd /Users/thiago/.proofbound/demo2/live/project && python3 - <<'PY'
+import sys, math
+from fractions import Fraction
+sys.path.insert(0,'/Users/thiago/.proofbound/demo2/live/project')
+from rateguard import RateGuard
+
+class Clock:
+    def __init__(self,t): self.now=float(t)
+    def __call__(self): return self.now
+
+cap=2; r=0.5189678343212376; c0=-1.9412437153089475; delta=0.9221153803261514
+clk=Clock(c0)
+g=RateGuard(cap, r, clock=clk)
+print("allow1",g.allow('k'),"allow2",g.allow('k'))
+clk.now=c0+delta
+now=clk.now
+tokens=g._tokens['k']; last=g._last['k']
+print("state tokens",tokens,"last",last,"now",now)
+
+def admit(tokens,last,now):
+    el=now-last
+    if el<0.0: el=0.0
+    t=tokens+el*r
+    if t>cap: t=float(cap)
+    return t>=1.0
+
+target=Fraction(last)+(Fraction(1)-Fraction(tokens))/Fraction(r)
+x=float(target)
+if x<now: x=now
+# adjust down/up
+while True:
+    p=math.nextafter(x,-math.inf)
+    if p>=now and admit(tokens,last,p): x=p
+    else: break
+while not admit(tokens,last,x):
+    x=math.nextafter(x,math.inf)
+x0=x; wmin=x0-now
+ws=target-Fraction(now)
+print("x0",repr(x0),"wmin",repr(wmin),"w*",float(ws))
+print("now+wmin == x0 ?", (now+wmin)==x0, repr(now+wmin))
+excess=Fraction(wmin)-ws
+print("excess=",float(excess),"ulp(x0)=",math.ulp(x0),"ratio=",float(excess/Fraction(math.ulp(x0))))
+
+# best ratio among admitting w >= wmin, scanning upward 50 steps
+best=(float('inf'),None)
+w=wmin
+for i in range(50):
+    xx=now+w
+    if admit(tokens,last,xx):
+        exc=Fraction(w)-ws
+        ratio=float(exc/Fraction(math.ulp(xx)))
+        if ratio<best[0]: best=(ratio,w)
+    w=math.nextafter(w,math.inf)
+print("best ratio for w>=wmin:",best[0])
+# ensure no admitting w below wmin
+w=wmin
+for i in range(5000):
+    w=math.nextafter(w,-math.inf)
+    if w<0: break
+    if admit(tokens,last,now+w):
+        print("SMALLER admitting w:",repr(w)); break
+else:
+    print("no admitting w below wmin (checked 5000 steps)")
+PY
+allow1 True allow2 True
+state tokens 0.0 last -1.9412437153089475 now -1.019128334982796
+x0 -0.014342019546032979 wmin 1.0047863154367631 w* 1.0047863154367631
+now+wmin == x0 ? False -0.01434201954603287
+excess= 1.0719964476435644e-16 ulp(x0)= 1.734723475976807e-18 ratio= 61.796387867520664
+best ratio for w>=wmin: 61.796387867520664
+no admitting w below wmin (checked 5000 steps)
+[0m
+[0m$ [0mcd /Users/thiago/.proofbound/demo2/live/project && python3 -m unittest -v tests.test_rateguard 2>&1 | tail -20; echo "EXIT=$?"
+test_a_bucket_never_refills_past_capacity (tests.test_rateguard.RateGuardTest.test_a_bucket_never_refills_past_capacity) ... [32mok[0m
+test_a_fresh_key_may_burst_to_capacity_then_is_refused (tests.test_rateguard.RateGuardTest.test_a_fresh_key_may_burst_to_capacity_then_is_refused) ... [32mok[0m
+test_invalid_configuration_is_refused (tests.test_rateguard.RateGuardTest.test_invalid_configuration_is_refused) ... [32mok[0m
+test_keys_are_independent (tests.test_rateguard.RateGuardTest.test_keys_are_independent) ... [32mok[0m
+test_waiting_refills_one_token_per_period (tests.test_rateguard.RateGuardTest.test_waiting_refills_one_token_per_period) ... [32mok[0m
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.000s
+
+[32mOK[0m
+EXIT=0
+[0m
+[0m← [0mWrite DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/report.md
+Wrote file successfully.
+[0m
+[0m$ [0mcd /Users/thiago/.proofbound/demo2/live/project && git status --porcelain && echo "---" && shasum -a 256 DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/report.md
+?? DeepSeekAndDestroy/
+?? change-graph.json
+?? rateguard/__pycache__/
+?? spec.md
+?? tests/__pycache__/
+---
+6607ac1c93f5a7fbec554e03dd205c9e0296eeb555564a34122315937f4d5247  DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/report.md
+[0m
+[0m$ [0mcd /Users/thiago/.proofbound/demo2/live/project && rm -rf rateguard/__pycache__ tests/__pycache__ && git status --porcelain
+?? DeepSeekAndDestroy/
+?? change-graph.json
+?? spec.md
+[0m
+Report: `/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/report.md`
+
+Conclusion: intent and spec cohere and are implementable, with one narrow, actionable boundary incoherence — spec §5 scopes `math.inf` by §3(a) alone while intent 7 scopes it by all of requirement 1 (a+b), reachable via a negative-clock witness where no finite `w` satisfies both; fix is to fire §5 on "no finite `w` satisfies §3(a) and §3(b)".

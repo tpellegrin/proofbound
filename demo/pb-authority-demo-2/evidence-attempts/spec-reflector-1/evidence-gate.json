@@ -1,0 +1,35 @@
+{
+  "allowed_source_changes": [
+    "spec.md"
+  ],
+  "errors": [],
+  "format": "dsd-integrity-gate-v2",
+  "integrity_ok": true,
+  "launch_reservation": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/launch-reservation.json",
+  "launch_reservation_sha256": "b11b7a217562145f5ddddac7be51a77159d9b71c6843b8299baf916b59524574",
+  "log": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/worker.log",
+  "needs_report_recovery": false,
+  "ready_for_interpretation": true,
+  "report": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/report.md",
+  "report_sha256": "d2cfb348f3186a1ebaaae43c0a494ddb733536e4a367ecc846d621953b52d554",
+  "report_state": "present",
+  "role": "spec-reflector",
+  "scope": {
+    "added_count": 0,
+    "baseline": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/scope-baseline.json",
+    "changed_count": 0,
+    "diff": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/scope-diff.json",
+    "diff_sha256": "3ff08492f0fd7f2acb56597aef891e3fd0ee18fa7d83376ef76f254957321853",
+    "extra_inventory": [],
+    "git_head_changed": false,
+    "modified_count": 0,
+    "removed_count": 0
+  },
+  "task": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/contracts/RG-spec.md",
+  "task_sha256": "87f55b0feefc58b98bb9be5348101c2bbe835104a42cdfb1e57f1f8644af7c13",
+  "terminal_event": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-1/terminal.json",
+  "terminal_event_sha256": "1d4093c2b3c687ecced1e46303c091bcf578bef6337c2611966fc8db1f5ac3a6",
+  "warnings": [],
+  "write_restriction_declared": true,
+  "writes_project": false
+}

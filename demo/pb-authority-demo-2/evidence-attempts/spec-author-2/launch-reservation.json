@@ -1,0 +1,22 @@
+{
+  "attempt": 2,
+  "format": "dsd-worker-launch-reservation-v2",
+  "log": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-2/worker.log",
+  "prompt_file": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-2/launch-prompt.txt",
+  "prompt_sha256": "75386f53d0ad5a012e0cf2ca10822b2cc6a9ac168fcb4348ac4a1b9b881fc0aa",
+  "report": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-2/report.md",
+  "report_skeleton_sha256": "cbe86daed4927a1749936c928865d77d9115f22995039ffd85a4464f418cfde2",
+  "reserved_at": "2026-09-17T15:39:31.744634+00:00",
+  "reserved_by_pid": 37996,
+  "role": "spec-author",
+  "scope_baseline": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-2/scope-baseline.json",
+  "scope_baseline_sha256": "930241a91cb4390d3784335fe2434704133cee5ac78579876601fc1e26eb3dc7",
+  "task_contract": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/contracts/RG-spec.md",
+  "task_contract_sha256": "87f55b0feefc58b98bb9be5348101c2bbe835104a42cdfb1e57f1f8644af7c13",
+  "task_id": "RG-spec",
+  "worker_rules": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/WORKER_RULES.md",
+  "worker_rules_manifest": "/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/MANIFEST.json",
+  "worker_rules_manifest_sha256": "7a7bd13e06ce42effbfa279e5987d949ad38cb02e8b635d109d2e3afdccb7004",
+  "worker_rules_sha256": "d9aa5a62b4e7dd7f754db53ea9c07f253f9ac0af5f6e79b7d3f0cb0e438a2e7e",
+  "writes_project": true
+}

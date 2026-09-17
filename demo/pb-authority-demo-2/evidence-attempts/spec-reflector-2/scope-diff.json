@@ -1,0 +1,22 @@
+{
+  "added": [],
+  "baseline_captured_at": "2026-09-17T16:02:00.930451+00:00",
+  "changed": [],
+  "compared_at": "2026-09-17T16:06:52.140266+00:00",
+  "exclude_prefixes": [
+    "DeepSeekAndDestroy"
+  ],
+  "extra_inventory_specs": [],
+  "format": "deepseek-and-destroy-scope-comparison-v5",
+  "git_head_after": "bd57018ef7def78704011740486c975b7d73e233",
+  "git_head_before": "bd57018ef7def78704011740486c975b7d73e233",
+  "git_head_changed": false,
+  "inventory_mode": "git-dirty",
+  "modified": [],
+  "project_root": "/Users/thiago/.proofbound/demo2/live/project",
+  "removed": [],
+  "unchanged": [
+    "change-graph.json",
+    "spec.md"
+  ]
+}

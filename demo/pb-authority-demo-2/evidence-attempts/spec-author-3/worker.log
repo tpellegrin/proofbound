@@ -1,0 +1,572 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/WORKER_RULES.md
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/COMMON.md
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/worker-rules/r0001/protocol/roles/dsd-spec-author/SKILL.md
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/contracts/RG-spec.md
+[0m
+[0m$ [0mshasum -a 256 /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/report.md /Users/thiago/.proofbound/demo2/live/project/intent.md
+6607ac1c93f5a7fbec554e03dd205c9e0296eeb555564a34122315937f4d5247  /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/report.md
+a7e16b87c8dc8131edd027f289bb5bdcd80bc0fcca02e0827a88646280b70a04  /Users/thiago/.proofbound/demo2/live/project/intent.md
+[0m
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-reflector-2/report.md
+[0m→ [0mRead intent.md
+[0m
+[0m$ [0mls -la /Users/thiago/.proofbound/demo2/live/project && echo "---" && ls -la /Users/thiago/.proofbound/demo2/live/project/rateguard /Users/thiago/.proofbound/demo2/live/project/tests 2>/dev/null && echo "---SPEC---" && shasum -a 256 /Users/thiago/.proofbound/demo2/live/project/spec.md 2>/dev/null
+total 48
+drwxr-xr-x  10 thiago  staff   320 17 Sep 12:52 .
+drwxr-xr-x   7 thiago  staff   224 17 Sep 13:01 ..
+drwxr-xr-x  13 thiago  staff   416 17 Sep 13:06 .git
+-rw-r--r--   1 thiago  staff    85 17 Sep 12:06 change-graph.json
+drwxr-xr-x   3 thiago  staff    96 17 Sep 12:06 DeepSeekAndDestroy
+-rw-r--r--   1 thiago  staff  5085 17 Sep 12:06 intent.md
+-rw-r--r--   1 thiago  staff    76 17 Sep 12:06 PLAN.md
+drwxr-xr-x   4 thiago  staff   128 17 Sep 13:08 rateguard
+-rw-r--r--   1 thiago  staff  6819 17 Sep 12:52 spec.md
+drwxr-xr-x   3 thiago  staff    96 17 Sep 13:06 tests
+---
+/Users/thiago/.proofbound/demo2/live/project/rateguard:
+total 8
+-rw-r--r--   1 thiago  staff  1670 17 Sep 11:43 __init__.py
+drwxr-xr-x   3 thiago  staff    96 17 Sep 13:08 __pycache__
+drwxr-xr-x   4 thiago  staff   128 17 Sep 13:08 .
+drwxr-xr-x  10 thiago  staff   320 17 Sep 12:52 ..
+
+/Users/thiago/.proofbound/demo2/live/project/tests:
+total 8
+drwxr-xr-x   3 thiago  staff    96 17 Sep 13:06 .
+drwxr-xr-x  10 thiago  staff   320 17 Sep 12:52 ..
+-rw-r--r--   1 thiago  staff  1979 17 Sep 11:43 test_rateguard.py
+---SPEC---
+c0c3eb7a94a5e48977ad99c9e552f5b7e3b7b59fceb74b9183760375f7fdd21e  /Users/thiago/.proofbound/demo2/live/project/spec.md
+[0m
+[0m→ [0mRead spec.md
+[0m→ [0mRead rateguard/__init__.py
+[0m→ [0mRead tests/test_rateguard.py
+[0m→ [0mRead change-graph.json
+[0m
+[0m$ [0mls -la /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/ 2>/dev/null; echo "---"; ls -la /Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-3/ 2>/dev/null; echo "---git---"; git -C /Users/thiago/.proofbound/demo2/live/project status --porcelain; echo "---log---"; git -C /Users/thiago/.proofbound/demo2/live/project log --oneline -5
+total 0
+drwxr-xr-x   7 thiago  staff  224 17 Sep 13:09 .
+drwxr-xr-x   6 thiago  staff  192 17 Sep 13:09 ..
+drwxr-xr-x  11 thiago  staff  352 17 Sep 12:24 spec-author-1
+drwxr-xr-x  11 thiago  staff  352 17 Sep 12:52 spec-author-2
+drwxr-xr-x   8 thiago  staff  256 17 Sep 13:09 spec-author-3
+drwxr-xr-x  11 thiago  staff  352 17 Sep 13:01 spec-reflector-1
+drwxr-xr-x  11 thiago  staff  352 17 Sep 13:07 spec-reflector-2
+---
+total 48
+drwxr-xr-x  8 thiago  staff   256 17 Sep 13:09 .
+drwxr-xr-x  7 thiago  staff   224 17 Sep 13:09 ..
+-rw-r--r--  1 thiago  staff   780 17 Sep 13:09 attempt.json
+-rw-r--r--  1 thiago  staff  1185 17 Sep 13:09 launch-prompt.txt
+-rw-------  1 thiago  staff  1761 17 Sep 13:09 launch-reservation.json
+-rw-r--r--  1 thiago  staff   315 17 Sep 13:09 report.md
+-rw-r--r--  1 thiago  staff   931 17 Sep 13:09 scope-baseline.json
+-rw-r--r--  1 thiago  staff  2733 17 Sep 13:10 worker.log
+---git---
+?? DeepSeekAndDestroy/
+?? change-graph.json
+?? rateguard/__pycache__/
+?? spec.md
+---log---
+bd57018 initial rateguard
+[0m
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-3/report.md
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-3/attempt.json
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-3/scope-baseline.json
+[0m→ [0mRead DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-3/launch-prompt.txt
+[0m
+[0m$ [0mmkdir -p /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-spec-author-3 && cat > /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-spec-author-3/verify.py <<'PY'
+import math, sys
+sys.path.insert(0, "/Users/thiago/.proofbound/demo2/live/project")
+from rateguard import RateGuard
+
+class Clock:
+    def __init__(self, t): self.now = t
+    def __call__(self): return self.now
+
+# Reproduce spec-reflector-2 witness
+c0 = -1.9412437153089475
+clk = Clock(c0)
+g = RateGuard(capacity=2, refill_per_second=0.5189678343212376, clock=clk)
+print("allow1", g.allow("k"))
+print("allow2", g.allow("k"))
+clk.now = c0 + 0.9221153803261514
+now = clk.now
+tokens = g._tokens["k"]; last = g._last["k"]
+print("now", repr(now), "tokens", repr(tokens), "last", repr(last))
+print("allow at now", g.allow("k"))   # careful: this mutates; do it last / or on copy
+PY
+python3 /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-spec-author-3/verify.py
+allow1 True
+allow2 True
+now -1.019128334982796 tokens 0.0 last -1.9412437153089475
+allow at now False
+[0m
+[0m$ [0mcat > /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-spec-author-3/verify2.py <<'PY'
+import math, sys
+sys.path.insert(0, "/Users/thiago/.proofbound/demo2/live/project")
+from rateguard import RateGuard
+
+CAP = 2
+REFILL = 0.5189678343212376
+LAST = -1.9412437153089475
+TOKENS = 0.0
+
+def admitted_at(x, cap=CAP, refill=REFILL, tokens=TOKENS, last=LAST):
+    elapsed = x - last
+    if elapsed < 0.0: elapsed = 0.0
+    t = tokens + elapsed * refill
+    if t > cap: t = float(cap)
+    return t >= 1.0
+
+def exact_wstar(now, cap=CAP, refill=REFILL, tokens=TOKENS, last=LAST):
+    return max(0.0, (last + (1 - tokens)/refill) - now)
+
+def minimal_admitting_w(now, cap=CAP, refill=REFILL, tokens=TOKENS, last=LAST):
+    # exact target
+    tstar = last + (1 - tokens)/refill
+    wstar = max(0.0, tstar - now)
+    # start from wstar and step up in delay until admitted; also step down to ensure minimal
+    w = wstar
+    # step up
+    for _ in range(100000):
+        x = now + w
+        if admitted_at(x, cap, refill, tokens, last):
+            break
+        w = math.nextafter(w, math.inf)
+    else:
+        return None
+    # step down to minimal
+    for _ in range(100000):
+        cand = math.nextafter(w, -math.inf)
+        if cand < 0: break
+        x = now + cand
+        if admitted_at(x, cap, refill, tokens, last):
+            w = cand
+        else:
+            break
+    return w
+
+now = -1.019128334982796
+wstar = exact_wstar(now)
+w = minimal_admitting_w(now)
+x = now + w
+excess = w - wstar
+ulp_x = math.ulp(x)
+print("wstar", repr(wstar))
+print("minimal w", repr(w))
+print("x", repr(x))
+print("admitted_at(x)", admitted_at(x))
+print("excess", excess)
+print("ulp(x)", ulp_x)
+print("excess/ulp", excess/ulp_x)
+print("within 4 ulp (a)+(b) satisfiable:", excess <= 4*ulp_x)
+
+# Check: does any finite w satisfy both (a) and (b)?
+# best case is minimal admitting w (minimizes x, hence excess); but ulp bound evaluated at its x
+print()
+print("=== intent counterexamples ===")
+def cx1():
+    clk=[1000.0]
+    g=RateGuard(2,1.3,clock=lambda: clk[0])
+    g.allow("k"); g.allow("k")
+    now=clk[0]
+    last=g._last["k"]; tokens=g._tokens["k"]
+    wstar=exact_wstar(now,2,1.3,tokens,last)
+    print("cap2 refill1.3 now1000 wstar", repr(wstar))
+    for dw in [0.0, math.nextafter(wstar,math.inf)-wstar, None]:
+        pass
+    w_exact=wstar
+    print(" x(wstar)=", repr(now+w_exact), "admitted", admitted_at(now+w_exact,2,1.3,tokens,last))
+    w_next=math.nextafter(wstar,math.inf)
+    print(" x(next)=", repr(now+w_next), "admitted", admitted_at(now+w_next,2,1.3,tokens,last))
+    wmin=minimal_admitting_w(now,2,1.3,tokens,last)
+    print(" minimal admitting w", repr(wmin), "x", repr(now+wmin), "admitted", admitted_at(now+wmin,2,1.3,tokens,last))
+cx1()
+
+def cx2():
+    clk=[0.0]
+    g=RateGuard(1,0.09,clock=lambda: clk[0])
+    g.allow("k")
+    now=clk[0]; last=g._last["k"]; tokens=g._tokens["k"]
+    wstar=exact_wstar(now,1,0.09,tokens,last)
+    print("cap1 refill0.09 now0 wstar", repr(wstar))
+    print(" x(wstar)=", repr(now+wstar), "admitted", admitted_at(now+wstar,1,0.09,tokens,last))
+    wmin=minimal_admitting_w(now,1,0.09,tokens,last)
+    print(" minimal admitting w", repr(wmin), "x", repr(now+wmin))
+cx2()
+PY
+python3 /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-spec-author-3/verify2.py
+wstar 1.0047863154367631
+minimal w 1.0047863154367631
+x -0.01434201954603287
+admitted_at(x) True
+excess 0.0
+ulp(x) 1.734723475976807e-18
+excess/ulp 0.0
+within 4 ulp (a)+(b) satisfiable: True
+
+=== intent counterexamples ===
+cap2 refill1.3 now1000 wstar 0.7692307692307168
+ x(wstar)= 1000.7692307692307 admitted False
+ x(next)= 1000.7692307692307 admitted False
+ minimal admitting w 0.7692307692307737 x 1000.7692307692308 admitted True
+cap1 refill0.09 now0 wstar 11.11111111111111
+ x(wstar)= 11.11111111111111 admitted False
+ minimal admitting w 11.111111111111112 x 11.111111111111112
+[0m
+[0m$ [0mcat > /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-spec-author-3/verify3.py <<'PY'
+import math
+from fractions import Fraction as F
+
+CAP=2; REFILL=0.5189678343212376; LAST=-1.9412437153089475; TOKENS=0.0
+NOW=-1.019128334982796
+
+# true real target t* = last + (1-tokens)/refill, as exact reals of the float inputs
+tstar = F(LAST) + (F(1)-F(TOKENS))/F(REFILL)
+wstar_real = tstar - F(NOW)
+print("t* real  =", float(tstar), repr(float(tstar)))
+print("w* real  =", repr(float(wstar_real)))
+print("w* real hex", float(wstar_real).hex())
+
+w = 1.0047863154367631
+x = NOW + w
+print("w float  =", repr(w))
+print("x float  =", repr(x))
+excess = F(w) - wstar_real
+print("excess real =", float(excess), "=", excess)
+print("ulp(x) =", math.ulp(x))
+print("excess/ulp =", float(excess/math.ulp(x)))
+
+# float-computed w* per spec formula
+wstar_float = max(0.0, (LAST + (1-TOKENS)/REFILL) - NOW)
+print("w* float-formula =", repr(wstar_float))
+print("float formula excess =", repr(w - wstar_float))
+
+# Is there any finite w satisfying both (a) and (b)? search near minimal admitting
+def admitted(x):
+    elapsed = x - LAST
+    if elapsed < 0.0: elapsed = 0.0
+    t = TOKENS + elapsed*REFILL
+    if t > CAP: t = CAP
+    return t >= 1.0
+print("admitted at x:", admitted(x))
+# step down
+cand = w
+for i in range(10):
+    nxt = math.nextafter(cand, -math.inf)
+    if admitted(NOW+nxt):
+        cand = nxt
+    else:
+        break
+print("minimal admitting w (float) =", repr(cand), "excess real =", float(F(cand)-wstar_real), "ratio", float((F(cand)-wstar_real)/math.ulp(NOW+cand)))
+PY
+python3 /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-spec-author-3/verify3.py
+t* real  = -0.014342019546032977 -0.014342019546032977
+w* real  = 1.0047863154367631
+w* real hex 0x1.0139ad0c44eccp+0
+w float  = 1.0047863154367631
+x float  = -0.01434201954603287
+excess real = 1.0719964476435644e-16 = 1128374690446145/10525918186823378652560992763904
+ulp(x) = 1.734723475976807e-18
+excess/ulp = 61.796387867520664
+w* float-formula = 1.0047863154367631
+float formula excess = 0.0
+admitted at x: True
+minimal admitting w (float) = 1.0047863154367631 excess real = 1.0719964476435644e-16 ratio 61.796387867520664
+[0m
+[0m$ [0mcat > /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-spec-author-3/verify4.py <<'PY'
+import math
+from fractions import Fraction as F
+
+CAP=2; REFILL=0.5189678343212376; LAST=-1.9412437153089475; TOKENS=0.0
+NOW=-1.019128334982796
+
+def admitted(x):
+    elapsed = x - LAST
+    if elapsed < 0.0: elapsed = 0.0
+    t = TOKENS + elapsed*REFILL
+    if t > CAP: t = CAP
+    return t >= 1.0
+
+tstar = F(LAST) + (F(1)-F(TOKENS))/F(REFILL)
+
+def exists_ok(now):
+    wstar_real = tstar - F(now)
+    if wstar_real <= 0: return True, None
+    # find minimal admitting w via stepping from wstar float
+    w = float(wstar_real)
+    # ensure admitted, step up
+    for _ in range(10000):
+        if admitted(now + w): break
+        w = math.nextafter(w, math.inf)
+    else:
+        return False, None
+    for _ in range(10000):
+        c = math.nextafter(w, -math.inf)
+        if now + c == now + w:  # no change in reached instant
+            w = c; continue
+        if admitted(now + c): w = c
+        else: break
+    x = now + w
+    return (F(w) - wstar_real) <= 4*F(math.ulp(x)), w
+
+ok, w = exists_ok(NOW)
+print("witness NOW ok?", ok, "w=", repr(w), "excess ratio", float((F(w)-tstar+F(NOW))/math.ulp(NOW+w)))
+
+# scan larger w above w_min for the witness state
+wmin = w
+found=None
+for i in range(1,200000):
+    ww = wmin
+    for _ in range(i): ww = math.nextafter(ww, math.inf)  # O(n^2) too slow; do differently
+    break
+# faster scan
+ww = wmin
+for i in range(200000):
+    x = NOW + ww
+    if F(ww) - (tstar - F(NOW)) <= 4*F(math.ulp(x)):
+        found=(i, ww, x); break
+    ww = math.nextafter(ww, math.inf)
+print("any larger w satisfies within 200000 steps?", found)
+
+# Monotonicity of fixed answer as now advances (intent 4): finite vs inf
+print()
+print("=== as now advances ===")
+prev=None
+transitions=[]
+nows=[NOW - 0.5, NOW - 0.1, NOW - 1e-3, NOW, NOW + 1e-3, NOW + 1e-2, NOW + 0.1]
+for n in nows:
+    ok,w2 = exists_ok(n)
+    ans = "inf" if not ok else ("0.0" if n >= float(tstar) else repr(w2))
+    print("now", repr(n), "->", ans, "(ok)" if ok else "(INF)")
+PY
+python3 /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-spec-author-3/verify4.py
+witness NOW ok? False w= 1.0047863154367631 excess ratio 61.796387867520664
+any larger w satisfies within 200000 steps? None
+
+=== as now advances ===
+now -1.519128334982796 -> inf (INF)
+now -1.119128334982796 -> inf (INF)
+now -1.0201283349827959 -> inf (INF)
+now -1.019128334982796 -> inf (INF)
+now -1.018128334982796 -> inf (INF)
+now -1.009128334982796 -> inf (INF)
+now -0.919128334982796 -> inf (INF)
+[0m
+[0m$ [0mcat > /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-spec-author-3/verify5.py <<'PY'
+import math, sys
+sys.path.insert(0,"/Users/thiago/.proofbound/demo2/live/project")
+from rateguard import RateGuard
+
+# spec section 5 measured instance
+clk=[1000.0]
+g=RateGuard(1, 5e-324, clock=lambda: clk[0])
+print("allow", g.allow("k"))
+tokens=g._tokens["k"]; last=g._last["k"]
+print("tokens",tokens,"last",last)
+wstar=(last + (1-tokens)/5e-324) - clk[0]
+print("wstar formula", wstar, "inf?", math.isinf(wstar))
+# is there any finite admitting instant? exact target overflows
+print("(1-tokens)/refill", (1-tokens)/5e-324)
+
+# Verify allow behavior unchanged + suite green
+import subprocess
+r=subprocess.run([sys.executable,"-m","unittest","-v"],cwd="/Users/thiago/.proofbound/demo2/live/project",capture_output=True,text=True)
+print(r.stderr.strip().splitlines()[-3:])
+PY
+python3 /var/folders/k3/4xs3wtdd6vdfkvf4d272775c0000gn/T/opencode/rg-spec-author-3/verify5.py
+allow True
+tokens 0.0 last 1000.0
+wstar formula inf inf? True
+(1-tokens)/refill inf
+['Ran 0 tests in 0.000s', '', '\x1b[33mNO TESTS RAN\x1b[0m']
+[0m
+[0m$ [0mcd /Users/thiago/.proofbound/demo2/live/project && python3 -m unittest discover -s tests -v 2>&1 | tail -5; echo "---"; python3 tests/test_rateguard.py 2>&1 | tail -5
+----------------------------------------------------------------------
+Ran 5 tests in 0.000s
+
+[32mOK[0m
+---
+Traceback (most recent call last):
+  File [35m"/Users/thiago/.proofbound/demo2/live/project/tests/test_rateguard.py"[0m, line [35m6[0m, in [35m<module>[0m
+    from rateguard import RateGuard
+[1;35mModuleNotFoundError[0m: [35mNo module named 'rateguard'[0m
+[0m
+[0m← [0mWrite DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-3/report.md
+Wrote file successfully.
+[0m
+Now I have verified the reflector's witness. Let me start the report early, then revise `spec.md`.
+[0m← [0mEdit spec.md
+Index: /Users/thiago/.proofbound/demo2/live/project/spec.md
+===================================================================
+--- /Users/thiago/.proofbound/demo2/live/project/spec.md
++++ /Users/thiago/.proofbound/demo2/live/project/spec.md
+@@ -25,8 +25,13 @@
+   This is the least non-negative real `δ` for which the mathematically exact token count at instant
+   `now + δ` reaches `1`. It is the "mathematically exact requirement" that §3(b) measures excess
+   against; it is **not** the definition of what `retry_after` must return.
+ 
++  `w*` is an exact real quantity: the displayed expression denotes it in exact real arithmetic.
++  Evaluating that expression in floating point returns a nearby `float` and is only an approximation
++  of it, so §3(b)'s excess is measured against the real value `w*`, not against a floating-point
++  evaluation of the expression.
++
+ ## 1. Signature, return type, purity
+ 
+ `retry_after(key) -> float` is a method on `RateGuard`, taking the same kind of key as `allow`. It
+ returns a Python `float`:
+
+[0m
+[0m← [0mEdit spec.md
+Index: /Users/thiago/.proofbound/demo2/live/project/spec.md
+===================================================================
+--- /Users/thiago/.proofbound/demo2/live/project/spec.md
++++ /Users/thiago/.proofbound/demo2/live/project/spec.md
+@@ -57,9 +57,11 @@
+ answers for that instant.
+ 
+ ## 3. The promise when refused (intent 1)
+ 
+-When the key would be refused at `now`, `retry_after` returns a positive delay `w` such that:
++When the key would be refused at `now`, `retry_after` returns a positive delay `w` satisfying **both**
++(a) and (b) below, whenever such a finite `w` exists. When no finite `w` satisfies both, §5 applies
++instead.
+ 
+ **(a) The wait works.** Let `x = now + w`, evaluated as a single Python float addition — the instant
+ the clock reaches when advanced by exactly `w`. At instant `x`, `allow(key)` is admitted, provided
+ nothing else changed the key's bucket in between.
+
+[0m
+[0m← [0mEdit spec.md
+Index: /Users/thiago/.proofbound/demo2/live/project/spec.md
+===================================================================
+--- /Users/thiago/.proofbound/demo2/live/project/spec.md
++++ /Users/thiago/.proofbound/demo2/live/project/spec.md
+@@ -83,18 +83,28 @@
+ not required.
+ 
+ ## 5. The exceptional case (intent 7)
+ 
+-If no finite `float` `w` satisfies §3(a) for the key at `now`, `retry_after` returns `math.inf`. It
+-is returned, not raised. §3's guarantee is scoped to the case where a finite delay exists; it is not
+-a promise that one always does.
++If **no finite `float` `w` satisfies requirement 1 at `now`** — that is, no finite `w` both reaches
++an admitting instant (§3(a)) and stays within the excess bound (§3(b)) — `retry_after` returns
++`math.inf`. It is returned, not raised. §3's guarantee is scoped to the case where such a finite
++delay exists; it is not a promise that one always does.
+ 
+-This is a property of a constructor configuration that is already accepted, not an error: a
+-`refill_per_second` can be small enough that no finite delay reaches an admitting instant. `allow`
+-itself keeps working normally; only the new query answers `math.inf`. Measured instance:
+-`capacity=1`, `refill_per_second=5e-324`, one admission, clock `1000.0` — the deficit divided by the
+-refill rate overflows the finite float range and no finite delay admits.
++The predicate is the whole of requirement 1, not clause (a) alone. A finite delay can reach an
++admitting instant while every delay that does so exceeds the four-ULP bound; in that state the answer
++is `math.inf` too, because no finite delay satisfies requirement 1. This is reachable: when the
++admitting instant is near zero while the bucket's last update is far from it, `math.ulp` at the
++admitting instant is far finer than the unavoidable rounding in the refill product, so the least
++admitting delay can exceed `4 * math.ulp(now + w)`. (Both documents leave the injected clock's domain
++unrestricted, so such instants are legitimate.)
+ 
++The `refill_per_second` case is the simpler, clause-(a)-only instance: a value small enough that no
++finite delay reaches an admitting instant at all. Measured instance: `capacity=1`,
++`refill_per_second=5e-324`, one admission, clock `1000.0` — the deficit divided by the refill rate
++overflows the finite float range and no finite delay admits. Either way this is a property of a
++constructor configuration the constructor already accepts, not an error. `allow` itself keeps working
++normally; only the new query answers `math.inf`.
++
+ ## 6. What must not change (intent 2, 6, and "What must not change")
+ 
+ - **Constructor.** The signature `RateGuard(capacity, refill_per_second, *, clock=time.monotonic)`
+   and its validation (`capacity >= 1`; `refill_per_second > 0`) are unchanged. §5 describes what the
+
+[0m
+[0m← [0mEdit spec.md
+Index: /Users/thiago/.proofbound/demo2/live/project/spec.md
+===================================================================
+--- /Users/thiago/.proofbound/demo2/live/project/spec.md
++++ /Users/thiago/.proofbound/demo2/live/project/spec.md
+@@ -131,7 +131,8 @@
+ 
+ If a formula is used, the exact real target instant is `last + (1 - tokens) / refill_per_second`.
+ One way to stay inside §3(b) is to return the smallest non-negative `w` whose reached instant
+ `now + w` is admitted, which requires checking the reached instant rather than assuming the exact
+-real wait suffices. The four-ULP allowance in §3(b) exists to absorb the fact that the admitting
+-instant can sit a few representable steps above the exact target; it is not a licence to overshoot
+-deliberately.
++real wait suffices. If even that smallest admitting delay exceeds the four-ULP bound, no finite delay
++satisfies requirement 1 and §5 calls for `math.inf`. The four-ULP allowance in §3(b) exists to absorb
++the fact that the admitting instant can sit a few representable steps above the exact target; it is
++not a licence to overshoot deliberately.
+
+[0m
+[0m→ [0mRead spec.md
+Now let me verify scope integrity and re-check the tests, then compute the new hash.
+[0m
+[0m$ [0mcd /Users/thiago/.proofbound/demo2/live/project && echo "=== git status ===" && git status --porcelain && echo "=== tracked-file diffs (should be none) ===" && git diff --stat && echo "=== spec hash ===" && shasum -a 256 spec.md rateguard/__init__.py tests/test_rateguard.py intent.md change-graph.json && echo "=== tests ===" && python3 -m unittest discover -s tests 2>&1 | tail -3
+=== git status ===
+?? DeepSeekAndDestroy/
+?? change-graph.json
+?? rateguard/__pycache__/
+?? spec.md
+?? tests/__pycache__/
+=== tracked-file diffs (should be none) ===
+=== spec hash ===
+a543a782a02dc7fa9aff51c9b00d5de34e8a1d2648e5d96fb52d9d5e12104757  spec.md
+30bb419a37ff5dfb92bdb875d6bcb794d02e592874ea0db527ce8d954dca0dc0  rateguard/__init__.py
+858482c17ca4a5bbebba06760f66d795b47409dbac8993785be8e79f917bdfc6  tests/test_rateguard.py
+a7e16b87c8dc8131edd027f289bb5bdcd80bc0fcca02e0827a88646280b70a04  intent.md
+c520b40fd335ddb5bdca67e8b7a558e4d651ff00fdab86d7d6ed58c937fe9698  change-graph.json
+=== tests ===
+Ran 5 tests in 0.000s
+
+[32mOK[0m
+[0m
+[0m$ [0mcd /Users/thiago/.proofbound/demo2/live/project && python3 --version && echo "--- pycache listing ---" && find . -name __pycache__ -not -path './DeepSeekAndDestroy/*' -exec ls -la {} \; && echo "--- hashes ---" && shasum -a 256 rateguard/__pycache__/* tests/__pycache__/* 2>/dev/null
+Python 3.14.7
+--- pycache listing ---
+total 16
+drwxr-xr-x  3 thiago  staff    96 17 Sep 13:11 .
+drwxr-xr-x  4 thiago  staff   128 17 Sep 13:11 ..
+-rw-r--r--  1 thiago  staff  5851 17 Sep 13:11 test_rateguard.cpython-314.pyc
+total 8
+-rw-r--r--  1 thiago  staff  2855 17 Sep 13:08 __init__.cpython-314.pyc
+drwxr-xr-x  3 thiago  staff    96 17 Sep 13:08 .
+drwxr-xr-x  4 thiago  staff   128 17 Sep 13:08 ..
+--- hashes ---
+b98a03ae8f665adff728e19e9b274dfb8e229a6abd4dfd699f17a9dbf5248efc  rateguard/__pycache__/__init__.cpython-314.pyc
+ad7721b7174a611d8ed0ae36ccc9f7776481142ee14ceaa8440333191f169f4e  tests/__pycache__/test_rateguard.cpython-314.pyc
+[0m
+[0m$ [0mcd /Users/thiago/.proofbound/demo2/live/project && rm -rf tests/__pycache__ && echo "removed tests/__pycache__" && git status --porcelain && echo "--- pycache ---" && find . -name __pycache__ -not -path './DeepSeekAndDestroy/*'
+removed tests/__pycache__
+?? DeepSeekAndDestroy/
+?? change-graph.json
+?? rateguard/__pycache__/
+?? spec.md
+--- pycache ---
+./rateguard/__pycache__
+[0m
+[0m← [0mWrite DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-3/report.md
+Wrote file successfully.
+[0m
+[0m$ [0mcd /Users/thiago/.proofbound/demo2/live/project && echo "=== spec hash ===" && shasum -a 256 spec.md && echo "=== git status ===" && git status --porcelain && echo "=== pycache present ===" && find . -name __pycache__ -not -path './DeepSeekAndDestroy/*' && echo "=== report hash ===" && shasum -a 256 DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-3/report.md && echo "=== report lines ===" && wc -l DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-3/report.md
+=== spec hash ===
+a543a782a02dc7fa9aff51c9b00d5de34e8a1d2648e5d96fb52d9d5e12104757  spec.md
+=== git status ===
+?? DeepSeekAndDestroy/
+?? change-graph.json
+?? rateguard/__pycache__/
+?? spec.md
+=== pycache present ===
+./rateguard/__pycache__
+=== report hash ===
+d725b0d1c663d16882a7ec3cbdc6338f2cd00b40f5a140e855a1b79311d228d4  DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-3/report.md
+=== report lines ===
+     102 DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-3/report.md
+[0m
+/Users/thiago/.proofbound/demo2/live/project/DeepSeekAndDestroy/plans/demo2/runs/r1/attempts/spec-author-3/report.md
+Revised `spec.md` so §5's `math.inf` predicate is the whole of intent requirement 1 (both §3(a) and §3(b)), closing reflector-2's finding; only `spec.md` changed.
