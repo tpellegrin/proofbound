@@ -269,3 +269,32 @@ that the answer was right.
 No new orchestrator — the second orchestrator is a person running the commands above. No durable
 implementation provenance beyond what the ledger already records. No promotion of fixture
 mechanisms into core policy. No MLR fixture, and no relationship to `q1` or `b1`.
+
+---
+
+# Outcome — partially demonstrated
+
+**2026-09-17.** Executed at `faae1cf`. Full report:
+[`demo/pb-authority-demo-1/run-report.md`](../../../../demo/pb-authority-demo-1/run-report.md).
+
+Two of five planned paid runs executed, $0.017183 of $0.40, accounting complete. A real
+`spec-author` wrote a specification; a real independent `spec-reflector` found a blocking defect in
+it — the mandated formula contradicts the exact-boundary behaviour the specification also asserts,
+which independent reproduction confirmed (15 of 45 sampled configurations refuse after waiting
+exactly `retry_after`, 0 of 45 at a clock base of zero). The parent rejected the specification, and
+because this plan records `repair_cycle_budgeted: false` the live run stopped there rather than
+revising.
+
+So: specification authoring and independent specification challenge are demonstrated with real
+agents. Ledger acceptance, candidate freeze, aggregate consistency, **the fresh-context handoff**,
+candidate-bound implementation, implementation review and final acceptance are **not** — they were
+exercised only mechanically with a fake executor. The handoff did not happen and nothing here is
+evidence about resumption.
+
+Four mechanical refusals were observed for their intended reasons, one of them live. They are
+evidence about gates, not about reviewers.
+
+Several statements in the design above were not executable and were corrected in
+[`design-to-execution-check.md`](../../../../demo/pb-authority-demo-1/design-to-execution-check.md)
+before anything was paid for — most substantially: the ledger cannot record parent authority such as
+an intent, and reviews are later attempts on the same task rather than separate tasks.

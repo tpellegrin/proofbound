@@ -1,0 +1,10 @@
+{
+  "errors": [],
+  "format": "dsd-integrity-gate-v2",
+  "integrity_ok": true,
+  "ready_for_interpretation": true,
+  "report_sha256": "4172be961627dd0a49ef82ee65a8055ee4fa817bcaa2556053e9995dc9e71268",
+  "report_state": "present",
+  "role": "spec-author",
+  "task": "/Users/thiago/.proofbound/demo/live/project/DeepSeekAndDestroy/plans/demo/runs/r1/contracts/RG-spec.md"
+}
