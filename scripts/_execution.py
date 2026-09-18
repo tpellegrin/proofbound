@@ -9,12 +9,14 @@ fact it needs was already shipped:
 * `_consistency.check_provenance` says whether the challenge's evidence still agrees;
 * the inherited immutable-contract machinery binds a task to whatever its contract says.
 
-So this module composes, and introduces **no new identity and no new persistent state**. A
-contract naming `C` already has a different hash from one naming `C2`, which is why a
-review of one can never be accepted for the other — no nonce, no reservation field, no
-`current_freeze` pointer.
+So this module composes, and introduces **no new identity**. A contract naming `C` already has a
+different hash from one naming `C2`, which is why a review of one can never be accepted for the
+other — no nonce, no reservation field, no `current_freeze` pointer.
 
-Two responsibilities:
+It does now write one piece of state, and only because an invariant consumes it: the admission
+record (A6.10). See `ADMISSION_FORMAT` below for what it is and why it lives where it does.
+
+Three responsibilities:
 
 **Authorization** answers *may implementation work begin against this candidate now?* It is
 a launch-time question. Once a task is authorized and its immutable contract written, that
@@ -23,6 +25,10 @@ implementation, review, the fixer loop and acceptance. Later movement of enginee
 does not silently rebind running work, and nothing here rechecks currentness at acceptance:
 doing so would either discard correct work or require deciding whether the newer candidate
 *mattered* to the task, which is applicability inference and is deferred.
+
+**Admission** is the transition that *acts* on that answer: it authorizes and binds a
+candidate-bound contract to its task in one atomic state write, so a launch can tell an admitted
+task from one whose contract merely names a candidate. Authorization alone confers nothing.
 
 **Reporting** answers *which candidate governs each task in this run?* Divergence is
 information, not a failure: engineering intent legitimately evolves mid-run, and there is no
@@ -37,6 +43,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -122,6 +129,75 @@ def authorize(*, candidate: str, graph_path: Path, ledger_path: Path, project_ro
 
     return {"authorized": not findings, "candidate": candidate,
             "current": derived, "provenance": provenance, "findings": findings}
+
+
+#: The one fact A6.6 said would be needed the moment an invariant consumed it. That invariant now
+#: exists: a launch on the guarded path must be able to tell an *admitted* task from a task whose
+#: contract merely names a candidate. The record is written into the task's own state entry by the
+#: same atomic write that binds the contract, so there is no instant at which a contract is bound
+#: and unadmitted, and rebinding drops it.
+ADMISSION_FORMAT = "proofbound-implementation-admission-v1"
+
+
+def build_admission(*, candidate: str, contract_path: Path, contract_sha256: str,
+                    project_root: Path, authorization: dict[str, Any], graph_path: Path,
+                    ledger_path: Path, consistency_dir: Path) -> dict[str, Any]:
+    """The admission fact, bound to exactly what was checked."""
+    return {
+        "format": ADMISSION_FORMAT,
+        "candidate": candidate,
+        "contract_path": str(contract_path),
+        "contract_sha256": contract_sha256,
+        "project_root": str(project_root),
+        "admitted_at": datetime.now(tz=timezone.utc).isoformat(),
+        "authority": {"graph": str(graph_path), "ledger": str(ledger_path),
+                      "consistency": str(consistency_dir)},
+        "authorization": {"provenance": authorization.get("provenance"),
+                          "current": authorization.get("current")},
+    }
+
+
+def admission_findings(admission: Any, *, candidate: str, contract_sha256: str,
+                       project_root: Path) -> list[dict[str, Any]]:
+    """Why a recorded admission does not qualify this launch — empty when it does.
+
+    Every field is compared rather than trusted. An admission is a fact about one task's exact
+    contract revision, candidate and project; it must not carry over to another task, a different
+    revision, a different candidate, or a run tree copied somewhere else.
+
+    Note what is deliberately *not* rechecked: whether the candidate is still the one the project
+    currently derives. Authority is fixed at admission (A6.4). A task admitted under `C1` keeps
+    working when the project moves to `C2`; only a *new* admission would have to pass against the
+    newer state.
+    """
+    if not isinstance(admission, dict):
+        return [_finding("not-admitted",
+                         "this contract is candidate-bound execution and the task carries no "
+                         "admission record; admit it with `pb_execution.py admit`")]
+    if admission.get("format") != ADMISSION_FORMAT:
+        return [_finding("malformed-admission",
+                         f"unexpected admission format: {admission.get('format')!r}")]
+    findings: list[dict[str, Any]] = []
+    if admission.get("candidate") != candidate:
+        findings.append(_finding(
+            "admission-candidate-mismatch",
+            f"the task was admitted for candidate {str(admission.get('candidate'))[:12]}, and this "
+            f"contract names {candidate[:12]}"))
+    if admission.get("contract_sha256") != contract_sha256:
+        findings.append(_finding(
+            "admission-contract-mismatch",
+            "the admission was granted against a different contract revision; a new revision needs "
+            "a new admission"))
+    try:
+        same_project = Path(str(admission.get("project_root"))).resolve() == project_root.resolve()
+    except OSError:                                          # pragma: no cover - unresolvable path
+        same_project = False
+    if not same_project:
+        findings.append(_finding(
+            "admission-project-mismatch",
+            f"the admission was granted for project {admission.get('project_root')!r}, not "
+            f"{str(project_root)!r}"))
+    return findings
 
 
 def bound_candidates(run_root: Path) -> dict[str, Any]:

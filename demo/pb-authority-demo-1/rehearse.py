@@ -144,9 +144,24 @@ class Rehearsal:
         return target
 
     def bind(self, phase: str, task: str, contract: Path) -> None:
-        must(sh([sys.executable, SCRIPTS / "dsd_state.py", "bind-contract",
+        """Bind a contract by whichever route its own kind requires.
+
+        Candidate-bound execution — a contract that names a candidate and writes the project —
+        enters through `pb_execution.py admit`, which authorizes and binds in one act. Everything
+        else binds directly. The choice belongs to the contract, not to the caller.
+        """
+        sys.path.insert(0, str(SCRIPTS))
+        from _contract import requires_admission
+        if not requires_admission(contract.read_text(encoding="utf-8", errors="replace")):
+            must(sh([sys.executable, SCRIPTS / "dsd_state.py", "bind-contract",
+                     "--run-root", self.run, "--phase-id", phase, "--task-id", task,
+                     "--contract", contract]), f"bind {phase}/{task}")
+            return
+        must(sh([sys.executable, SCRIPTS / "pb_execution.py", "admit",
                  "--run-root", self.run, "--phase-id", phase, "--task-id", task,
-                 "--contract", contract]), f"bind {phase}/{task}")
+                 "--contract", contract, "--graph", self.graph, "--ledger", self.ledger,
+                 "--project-root", self.project, "--consistency", self.consistency]),
+             f"admit {phase}/{task}")
 
     def work(self, phase: str, task: str, role: str, *,
              inputs: "list[Path] | None" = None) -> Path:

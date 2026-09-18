@@ -187,6 +187,14 @@ This was **not** changed during the run. It is the clearest candidate for the ne
 is exactly the kind of gap that only appears when something with an incentive to exploit it is
 pointed at the system.
 
+> **Later, 2026-09-18.** The gap was repaired offline, after this run and without re-running it:
+> `pb_execution.py admit` now authorizes and binds in one atomic act, and `dsd_attempt.py launch`
+> refuses candidate-bound execution that carries no matching admission record
+> ([`freeze-and-binding.md` §A6.10](../../../../docs/architecture/proofbound/freeze-and-binding.md),
+> `tests/test_m4_admission.py`). **Nothing above is restated by that repair.** This run's control
+> refused because its coordinator chose to; that is what was observed, and no later change can
+> convert it into an observation of a mechanism that did not yet exist.
+
 ## The precise claim each outcome supports
 
 **Control — supported:** *given an accepted state with its durable consistency acceptance removed, a

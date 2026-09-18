@@ -1,14 +1,14 @@
 # Proofbound architecture
 
 > **Entry point and router.** This document routes; it does not summarize. Every rule below is stated in
-> exactly one place, and this page links to it. If you find a principle restated here in full, that is a
-> defect — fix it by replacing the copy with a link.
+> exactly one place and linked from here. A principle restated here in full is a defect — fix it by
+> replacing the copy with a link.
 
 **Thesis.** Proofbound turns engineering intent into verified implementation by keeping two things apart:
 what Python can *prove* (identity, boundaries, ordering, roles, schema) and what only an engineer or agent
-can *judge* (whether the work is any good). It inherits DeepSeek-and-Destroy's execution and review
-mechanics, adds durable specification artifacts with content-addressed provenance, and is designed so that
-a long autonomous run cannot silently accumulate architecture nobody decided on.
+can *judge* (whether the work is good). It inherits DeepSeek-and-Destroy's execution and review
+mechanics, adds durable specification artifacts with content-addressed provenance, and is built so a long
+autonomous run cannot silently accumulate architecture nobody decided on.
 
 ## 0. Project identity boundary
 
@@ -20,82 +20,80 @@ project. The inherited MIT license and copyright notice are preserved unchanged 
 The identity boundary is deliberate and load-bearing:
 
 - **Proofbound** names the project and new project-facing material: the repository, contributor
-  documentation, architecture documents when they discuss *this* system rather than inherited
-  implementation, and any genuinely new Proofbound-specific concept.
+  documentation, architecture documents discussing *this* system rather than inherited implementation,
+  and any genuinely new Proofbound-specific concept.
 - **DeepSeek-and-Destroy-derived internal identifiers remain compatibility-sensitive
   implementation details until an explicit migration milestone.** That includes the
   `DeepSeekAndDestroy/` workspace root, `dsd_*.py` helpers and their CLI surface, persisted
   workspace paths, protocol and manifest format strings, snapshot formats, state keys,
   environment variables, adapters, and existing role names.
 
-These are **wire and protocol identifiers**, not branding. Renaming them changes durable
-artifacts that installed projects and historical runs depend on, so it requires its own
-milestone with its own migration evidence — never a cosmetic pass bundled into feature work.
-
----
-
+These are **wire and protocol identifiers**, not branding. Renaming them changes durable artifacts that
+installed projects and historical runs depend on, so it needs its own milestone with its own migration
+evidence — never a cosmetic pass bundled into feature work.
 
 ---
 
 ## Read this if…
 
-Read the entry point plus the rows that match your task. Reading more is allowed; reading less is the
-point. Byte figures are the authoritative-architecture cost of each route.
+Read the entry point plus the rows matching your task. Reading more is allowed; reading less is the
+point. Byte figures are each route's authoritative-architecture cost.
 
 | Your task | Read | Skip | ≈ bytes |
 |---|---|---|---|
-| **A.** Changing reviewer freshness, attempts, gates, roles, or acceptance | README + [execution-and-review](execution-and-review.md) + [core-model](core-model.md) | everything else | ~28 KB |
+| **A.** Changing reviewer freshness, attempts, gates, roles, acceptance | README + [execution-and-review](execution-and-review.md) + [core-model](core-model.md) | everything else | ~28 KB |
 | **B.** Implementing the artifact graph or ledger | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + plan | freeze, autonomy, research, history | ~54 KB + plan |
 | **B2.** Implementing freeze / contract identity (M2C) | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [freeze-and-binding](freeze-and-binding.md) + plan | autonomy, research, history | ~64 KB + plan |
 | **C.** Implementing decision provenance | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [long-running-autonomy](long-running-autonomy.md) | research, history | ~68 KB |
 | **D.** Implementing context telemetry | README + [core-model](core-model.md) + [context-economy](context-economy.md) | artifacts, autonomy, history | ~34 KB |
-| **D2.** Authoring scenarios or grading a run | README + [evaluation](evaluation.md) | the contract-binding chain, comparison rules, run history | ~36 KB |
-| **D3.** Calibrating a suite, comparing runs, or designing a control arm | README + [evaluation-comparison](evaluation-comparison.md) | scenario authoring, the contract-binding chain | ~40 KB |
-| **D4.** Measuring what many changes do to a system, or calibrating that measurement | README + [system-craft](system-craft.md) | the contract-binding chain, scenario authoring | ~39 KB |
+| **D2.** Authoring scenarios or grading a run | README + [evaluation](evaluation.md) | the binding chain, comparison rules, run history | ~36 KB |
+| **D3.** Calibrating a suite, comparing runs, or designing a control arm | README + [evaluation-comparison](evaluation-comparison.md) | scenario authoring, the binding chain | ~40 KB |
+| **D4.** Measuring what many changes do to a system, or calibrating that | README + [system-craft](system-craft.md) | the contract-binding chain, scenario authoring | ~39 KB |
 | **E.** Fixing a bug in inherited DSD mechanics | README + [execution-and-review](execution-and-review.md) | everything else | ~12 KB |
 | **F.** Asking "why is this rule like this?" | [evidence/implementation-findings](evidence/implementation-findings.md) | — | ~41 KB |
 | **G.** Archaeology on the original design | [evidence/original-rfc](evidence/original-rfc.md) | — | ~83 KB |
 
 If your task touches a principle, read its canonical definition in
-[core-model.md](core-model.md#33-consolidated-principles) — not a paraphrase you found nearby (`P11`).
+[core-model.md](core-model.md#33-consolidated-principles), not a paraphrase found nearby (`P11`).
 
 ## Documents and their authority
 
-Authority classes are deliberately visible in the filesystem. A research hypothesis and a proven invariant
-must not look equally authoritative merely by living in the same file — that was the strongest reason to
+Authority classes are deliberately visible in the filesystem: a research hypothesis and a proven invariant
+must not look equally authoritative merely by living in the same file, which was the strongest reason to
 split.
 
 | Document | Class | Contains |
 |---|---|---|
 | [core-model.md](core-model.md) | **Normative** | Truth layers `L1`–`L4`; structural validity vs provenance vs semantics; **canonical `P1`–`P13`**; authority hierarchy `A1`–`A8`; knowledge lifecycle |
-| [execution-and-review.md](execution-and-review.md) | **Normative** | **Canonical `I1`–`I15`**; attempts as repair history; review-purpose registry; parent's authority boundary |
-| [artifacts-and-provenance.md](artifacts-and-provenance.md) | **Normative** | Canonical text identity; ledger v1; derived validity and closure; trust boundary; dependency ≠ applicability; the M2B change graph |
-| [freeze-and-binding.md](freeze-and-binding.md) | **Normative** | Accepted engineering binding; freeze v1 schema and identity; validation layers; what a freeze does *not* authorize |
-| [long-running-autonomy.md](long-running-autonomy.md) | **Normative + rationale** | Promotion ladder; escalation; decision provenance direction; baseline supersession; erosion vs drift; coherence audit; **canonical `T1`–`T10`** |
+| [execution-and-review.md](execution-and-review.md) | **Normative** | **Canonical `I1`–`I15`**; attempts as repair history; review-purpose registry; the parent's authority boundary |
+| [artifacts-and-provenance.md](artifacts-and-provenance.md) | **Normative** | Canonical text identity; ledger v1; derived validity and closure; trust boundary; dependency ≠ applicability; the M2B graph |
+| [freeze-and-binding.md](freeze-and-binding.md) | **Normative** | Accepted engineering binding; freeze v1 schema and identity; admission; what a freeze does *not* authorize |
+| [long-running-autonomy.md](long-running-autonomy.md) | **Normative + rationale** | Promotion ladder; escalation; decision provenance; baseline supersession; erosion vs drift; coherence audit; **canonical `T1`–`T10`** |
 | [evaluation.md](evaluation.md) | **Design track** | How one run is measured: scenarios, trials, mechanical vs semantic grading, multi-property completeness. Observes Proofbound; never part of its authority chain. |
-| [evaluation-comparison.md](evaluation-comparison.md) | **Design track** | Whether a suite can tell two systems apart, and what comparing two runs may claim. Model comparison is never a leaderboard. |
+| [evaluation-comparison.md](evaluation-comparison.md) | **Design track** | Whether a suite can tell two systems apart, and what comparing two runs may claim. Never a leaderboard. |
 | [system-craft.md](system-craft.md) | **Design track** | Whether a system stays understandable and changeable across many valid changes. Craft findings never gate a change. |
-| [context-economy.md](context-economy.md) | **Research** | External evidence and hypotheses. Not production behavior. Supports `P13`, which is defined in core-model. |
+| [context-economy.md](context-economy.md) | **Research** | External evidence and hypotheses. Not production behavior. Supports `P13`, defined in core-model. |
 | [evidence/implementation-findings.md](evidence/implementation-findings.md) | **Historical evidence** | What M0–M2A proved and where it corrected the design. Why we trust the rules. |
-| [evidence/evaluation-runs.md](evidence/evaluation-runs.md) | **Historical evidence** | What individual evaluation runs established: the V1 implementation outcome, baseline zero, calibration outcomes. Never protocol. |
-| [evidence/original-rfc.md](evidence/original-rfc.md) | **Historical, superseded** | Pre-implementation design intent. Known wrong in several places. Never authoritative. |
-| [evidence/lifecycle-field-check.md](evidence/lifecycle-field-check.md) | **Historical evidence** | `pb-lifecycle-field-check-1`: the protocol and outcome of the attempt-deadline field check. An engineering validation, never a treatment sample. |
-| [evidence/authority-workflow-demonstration.md](evidence/authority-workflow-demonstration.md) | **Historical evidence** | `pb-authority-demo-1`: the design of the first real-agent run of the full authority chain, and the manual decisions it needs. It ran; the specification challenge found a real defect and the run stopped there under its own no-repair rule. |
-| [evidence/authority-workflow-successor.md](evidence/authority-workflow-successor.md) | **Historical evidence** | Dated corrections to `pb-authority-demo-1`'s preparation, and the questions its plan left unanswered. Corrects by addition; that demonstration's records are unmodified. |
-| [evidence/authority-workflow-intent-defect.md](evidence/authority-workflow-intent-defect.md) | **Historical evidence** | `pb-authority-demo-2` stopped because the parent intent it was built on was internally inconsistent. What the inconsistency was, how it survived six paid attempts, and what would have caught it. |
-| [evidence/readme-usability-check.md](evidence/readme-usability-check.md) | **Historical evidence** | Can a stranger answer five questions from the documentation alone? What one fresh reader got right, what it exposed, and what changed. |
-| [evidence/authority-workflow-demo-2-audit.md](evidence/authority-workflow-demo-2-audit.md) | **Historical evidence** | Dated post-run audit of `pb-authority-demo-2`: the interrupted call was never bounded, search exhaustion is not nonexistence, and D1/D4 were protocol departures. Corrects by addition; that run's records are unmodified. |
+| [evidence/evaluation-runs.md](evidence/evaluation-runs.md) | **Historical evidence** | What individual evaluation runs established: the V1 outcome, baseline zero, calibration outcomes. Never protocol. |
+| [evidence/original-rfc.md](evidence/original-rfc.md) | **Historical, superseded** | Pre-implementation design intent. Wrong in several places. Never authoritative. |
+| [evidence/lifecycle-field-check.md](evidence/lifecycle-field-check.md) | **Historical evidence** | `pb-lifecycle-field-check-1`: protocol and outcome of the attempt-deadline field check. Engineering validation, never a treatment sample. |
+| [evidence/authority-workflow-demonstration.md](evidence/authority-workflow-demonstration.md) | **Historical evidence** | `pb-authority-demo-1`: the first real-agent run of the full authority chain and the manual decisions it needs. Its specification challenge found a real defect and it stopped there under its own no-repair rule. |
+| [evidence/authority-workflow-successor.md](evidence/authority-workflow-successor.md) | **Historical evidence** | Dated corrections to `pb-authority-demo-1`'s preparation and the questions its plan left open. Corrects by addition; that demonstration's records are unmodified. |
+| [evidence/authority-workflow-intent-defect.md](evidence/authority-workflow-intent-defect.md) | **Historical evidence** | `pb-authority-demo-2` stopped because the parent intent it was built on was internally inconsistent: what it was, how it survived six paid attempts, what would have caught it. |
+| [evidence/readme-usability-check.md](evidence/readme-usability-check.md) | **Historical evidence** | Can a stranger answer five questions from the documentation alone? What one fresh reader got right, what it exposed, what changed. |
+| [evidence/authority-workflow-demo-2-audit.md](evidence/authority-workflow-demo-2-audit.md) | **Historical evidence** | Dated audit of `pb-authority-demo-2`: the interrupted call was never bounded, search exhaustion is not nonexistence, D1/D4 were departures. Corrects by addition only. |
+| [evidence/admission-bypass-reproduction.md](evidence/admission-bypass-reproduction.md) | **Historical evidence** | The guarded launch path did not enforce authorization: the credential-free reproduction, the repair, and what it does and does not establish. |
 | [../specification-reflection-harness-implementation-plan.md](../specification-reflection-harness-implementation-plan.md) | **Roadmap** | Milestone status, acceptance criteria, dependencies, deferrals, threat mitigation status |
 
-**Precedence.** Normative beats rationale beats research beats history. Within normative documents, no
-rule is defined twice, so there is nothing to arbitrate. If two documents appear to disagree, that is a
-bug in the documentation, not a judgement call — report it.
+**Precedence.** Normative beats rationale beats research beats history. No rule is defined twice within
+normative documents, so there is nothing to arbitrate. Two documents appearing to disagree is a bug in the
+documentation, not a judgement call — report it.
 
 ## Identifier namespaces
 
 Section numbers are **inherited stable identifiers**, not positions in a file; they did not change when
-documents were split, and they carry no ordering meaning across documents. Prefer a durable identifier
-over a section number whenever the concept has one — cite `P7`, not the section that happens to contain it.
+documents were split, and carry no ordering meaning across documents. Prefer a durable identifier over a
+section number whenever the concept has one — cite `P7`, not whichever section contains it.
 
 | Namespace | Meaning | Canonical home |
 |---|---|---|
@@ -112,7 +110,7 @@ Do not add another single-letter namespace without a reason that survives the fi
 
 ## Principles index
 
-One line each. **The canonical definitions, with their falsifiers, are in
+One line each. **Canonical definitions, with falsifiers, are in
 [core-model.md §33](core-model.md#33-consolidated-principles)** — cite that, not this index.
 
 | | | | |
@@ -138,21 +136,21 @@ One line each. **The canonical definitions, with their falsifiers, are in
 | Eval V5 — system-craft calibration | **Implemented**; instrument not ready — sensitivity 3/5, specificity 7/9 |
 | Eval V6 — craft question-routing control | **Implemented**; hypothesis rejected — routing changed no degradation verdict, and the instrument disagrees with itself on 4 of 13 repeats |
 | Eval V7 — craft instrument repeatability | **Implemented**; both layers material — reflector conclusion moves on 43% of identical repeats, grader on 17%, end to end 28% |
-| Multi-sample semantic evaluation | **Designed**; aggregation is layer-specific and the craft unit is the wrong shape — future unit is per-pressure discovery frequency |
-| Semantic discovery, finding identity and coverage | **Designed**; closed-world calibration needs no cross-sample finding identity — open-world consolidation is a separate, later problem |
-| Closed-world multi-sample evaluation substrate | **Implemented**; pre-registered experiments, preallocated sample slots, per-pressure discovery grading, full distributions retained |
+| Multi-sample semantic evaluation | **Designed**; aggregation is layer-specific and the craft unit is the wrong shape — the future unit is per-pressure discovery frequency |
+| Semantic discovery, finding identity and coverage | **Designed**; closed-world calibration needs no cross-sample finding identity — open-world consolidation is a later problem |
+| Closed-world multi-sample evaluation substrate | **Implemented**; pre-registered experiments, preallocated slots, per-pressure discovery grading, distributions retained |
 | Calibration V3 criterion | **Designed; case disqualified** — the probe change rewards the planted degradation, and no entailed discriminating consequence exists on this fixture |
-| Calibration case repair | **Encoded and frozen**; deterministic validity established, and no test separates sound from degraded |
-| Repaired-case baseline | **Run**; pressure non-specific — sound states detected 7/9 and 5/10, degraded at ceiling, and the entry-point clause explains all of it |
-| Atomic pressure and fresh baseline | **Run**; column repaired — sound states 1/10 and 2/9, degraded 10/10, so the case discriminates but leaves no treatment headroom |
+| Calibration case repair | **Encoded and frozen**; deterministic validity established, no test separates sound from degraded |
+| Repaired-case baseline | **Run**; pressure non-specific — sound states detected 7/9 and 5/10, degraded at ceiling, all explained by the entry-point clause |
+| Atomic pressure and fresh baseline | **Run**; column repaired — sound 1/10 and 2/9, degraded 10/10: the case discriminates but leaves no treatment headroom |
 | System Craft observable | **Decided**; craft returns discovered evolvability consequences, never verdicts — a verdict needs a referent craft is defined not to have |
-| Modularity and local reasoning | **Mechanics validated** (MLR-C2); the C1 treatment was recoverable with one `inspect` call, so the runtime is now compiled and the measurand revised before evidence |
-| MLR paired `q1`, on the qualified stack | **Run**; family E · Heterogeneous — 12/12 valid, 6/6 pairs both correct, `contract` direct source zero in every pair, and the compensating runtime channel spans 102 to 39,231 bytes and is not arm-determined |
-| MLR cross-fixture `eventbus-b1` | **Run** (2026-09-15/16); twelve slots, twelve valid trajectories, no retries, $0.238762 of $0.50 — family R1, the core phenomenon replicates and the secondary procedural pattern is heterogeneous and unlike q1's. A later dated audit corrects the run report's attempt-ceiling reasoning and leaves the result standing |
-| Authority evidence audit (`pb-authority-demo-2`) | **Complete**; two claims withdrawn and `D1`/`D4` reclassified as departures, so neither demonstration is a conforming run |
-| Authority slice — four cases, valid and invalid | **Validated credential-free**, 4/4 mechanical; the agent-facing half is **not observed** |
-| Fresh-context authority recovery (`pb-handoff-1`) | **Live, once per condition** (2026-09-18): one coordinator carried a bound implementation to acceptance, another refused a mutated state without launching. $0.020516, 2 of 5 slots. Two observations, not a rate |
-| Intent challenge as an ordinary artifact | **Decided**: `proposal-reflection`, no new kind, role or purpose |
+| Modularity and local reasoning | **Mechanics validated** (MLR-C2); C1's treatment was recoverable with one `inspect` call, so the runtime is compiled and the measurand revised before evidence |
+| MLR paired `q1`, on the qualified stack | **Run**; family E · Heterogeneous — 12/12 valid, 6/6 pairs both correct, `contract` direct source zero in every pair, and the compensating runtime channel spans 102 to 39,231 bytes, not arm-determined |
+| MLR cross-fixture `eventbus-b1` | **Run** (2026-09-15/16); twelve slots, twelve valid trajectories, no retries, $0.238762 of $0.50 — family R1, the core phenomenon replicates and the secondary pattern is heterogeneous, unlike q1's. A dated audit corrected the report's attempt-ceiling reasoning; the result stands |
+| Authority evidence audit (`pb-authority-demo-2`) | **Complete**; two claims withdrawn and `D1`/`D4` reclassified as departures, so neither demonstration is conforming |
+| Authority slice — four cases, valid and invalid | **Validated credential-free**, 4/4 mechanical; the agent-facing half **not observed** |
+| Fresh-context authority recovery (`pb-handoff-1`) | **Live, once per condition** (2026-09-18): one coordinator carried a bound implementation to acceptance, another refused a mutated state without launching. $0.020516, 2 of 5 slots. Two observations, not a rate. It found authorization advisory; **repaired offline** (A6.10) — `admit` binds and authorizes in one act, and a launch without a matching record is refused |
+| Intent challenge as an ordinary artifact | **Decided**: `proposal-reflection`; no new kind, role or purpose |
 | Decision provenance, coherence audit, context telemetry | Direction only; see the plan's dependency graph |
 
 Canonical test command: `python3 -m unittest discover -s tests -t .` (Python ≥3.10).

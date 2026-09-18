@@ -18,6 +18,9 @@ from pathlib import Path
 from typing import Any
 
 from _roles import ROLE_NAMES
+# One definition, in the module that owns run state: admission compares the project it was
+# granted for against the project a launch would actually touch.
+from dsd_state import project_root_from_run
 
 
 
@@ -27,20 +30,6 @@ def read_json(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError(f"expected JSON object: {path}")
     return data
-
-
-def project_root_from_run(run_root: Path, state: dict[str, Any]) -> Path:
-    raw = state.get("project_worktree")
-    if isinstance(raw, str) and raw.strip():
-        path = Path(raw)
-        if not path.is_absolute():
-            path = (run_root / path).resolve()
-        if path.is_dir():
-            return path.resolve()
-    for ancestor in [run_root, *run_root.parents]:
-        if ancestor.name == "DeepSeekAndDestroy":
-            return ancestor.parent.resolve()
-    raise ValueError("cannot derive project root from run; state.project_worktree is missing/invalid")
 
 
 def phase_task(state: dict[str, Any], phase_id: str, task_id: str) -> dict[str, Any]:

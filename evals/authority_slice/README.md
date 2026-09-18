@@ -72,9 +72,10 @@ python3 evals/authority_slice/pb_slice.py report --out evals/results/authority-s
 ```
 
 Each case builds its own disposable project and drives the **shipped** scripts: `dsd_state.py
-bind-contract`, `dsd_attempt.py launch|gate`, `dsd_state.py accept-task`, `pb_ledger.py record`,
-`pb_graph.py validate`, `pb_freeze.py create`, `pb_consistency.py record` and `pb_execution.py
-authorize`. The executor is a fake resolved by path *and* content in a constructed environment with
+bind-contract`, `pb_execution.py admit` (for the implementation task, which is candidate-bound
+execution and cannot be bound directly), `dsd_attempt.py launch|gate`, `dsd_state.py accept-task`,
+`pb_ledger.py record`, `pb_graph.py validate`, `pb_freeze.py create`, `pb_consistency.py record` and
+`pb_execution.py authorize`. The executor is a fake resolved by path *and* content in a constructed environment with
 `PATH` replaced, `HOME` empty and `OPENCODE_*` dropped.
 
 Recorded run, 2026-09-17 — four cases, four `completed`, zero provider calls:

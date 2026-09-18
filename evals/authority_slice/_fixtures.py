@@ -367,9 +367,27 @@ class Fixture:
         return target
 
     def bind(self, phase: str, task: str, contract: Path) -> None:
-        must(sh([sys.executable, SCRIPTS / "dsd_state.py", "bind-contract",
+        """Bind a contract to a task by whichever route the contract's own kind requires.
+
+        A coordinator does not get to choose. A contract that names a candidate and writes the
+        project is candidate-bound execution and enters through `pb_execution.py admit`, which
+        authorizes and binds in one act; anything else binds with `dsd_state.py bind-contract`.
+        Dispatching here rather than at each call site means the fixtures exercise the same
+        supported route a real coordinator has, and cannot accidentally take a route that no
+        longer exists.
+        """
+        sys.path.insert(0, str(SCRIPTS))
+        from _contract import requires_admission
+        if not requires_admission(contract.read_text(encoding="utf-8", errors="replace")):
+            must(sh([sys.executable, SCRIPTS / "dsd_state.py", "bind-contract",
+                     "--run-root", self.run, "--phase-id", phase, "--task-id", task,
+                     "--contract", contract]), f"bind {phase}/{task}")
+            return
+        must(sh([sys.executable, SCRIPTS / "pb_execution.py", "admit",
                  "--run-root", self.run, "--phase-id", phase, "--task-id", task,
-                 "--contract", contract]), f"bind {phase}/{task}")
+                 "--contract", contract, "--graph", self.graph, "--ledger", self.ledger,
+                 "--project-root", self.project, "--consistency", self.consistency]),
+             f"admit {phase}/{task}")
 
     def work(self, phase: str, task: str, role: str,
              inputs: "list[Path] | None" = None) -> Path:

@@ -94,9 +94,16 @@ def control_wrong_candidate(into: Path) -> dict[str, Any]:
     # reviewer produced records the contract path it ran under, so a task now bound to another
     # contract has no review of itself. Rewriting the same path in place does not demonstrate
     # this: `bind-contract` restores the recorded digest and the path never changes.
+    #
+    # The altered contract permits no project writes, which keeps it a review contract and keeps
+    # this control about acceptance. A candidate-bearing contract that *did* permit writes would be
+    # candidate-bound execution and would now be refused a step earlier, at admission, because the
+    # fabricated candidate below is not what the project produces — a different fact, checked in
+    # `tests/test_m4_admission.py`, not here.
     altered = r.contracts / "RG-spec-c2.md"
     altered.write_text(
         (HERE / "contracts" / "RG-spec.md").read_text(encoding="utf-8")
+        .replace("## Allowed source changes\n- `spec.md`", "## Allowed source changes\nNONE")
         + "\n## Proofbound candidate\n- " + "c" * 64 + "\n", encoding="utf-8")
     r.bind("design", "RG-spec", altered)
 

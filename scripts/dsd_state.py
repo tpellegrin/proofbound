@@ -16,7 +16,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from _contract import declared_review_purpose
+from _contract import declared_candidate, declared_review_purpose, requires_admission
+from _execution import admission_findings
 from _review_purpose import assert_role_qualifies
 from _roles import INDEPENDENT_REVIEW_ROLES
 
@@ -180,6 +181,26 @@ def find_attempt_binding(run_root: Path, task: dict[str, Any], reservation: Path
     return None, False
 
 
+def project_root_from_run(run_root: Path, state: dict[str, Any]) -> Path:
+    """The project a run mutates, from the run's own state.
+
+    Defined here rather than in the launcher because it is a fact about run state, and because
+    admission has to compare the project it was granted for against the project a launch would
+    actually touch.
+    """
+    raw = state.get("project_worktree")
+    if isinstance(raw, str) and raw.strip():
+        path = Path(raw)
+        if not path.is_absolute():
+            path = (run_root / path).resolve()
+        if path.is_dir():
+            return path.resolve()
+    for ancestor in [run_root, *run_root.parents]:
+        if ancestor.name == "DeepSeekAndDestroy":
+            return ancestor.parent.resolve()
+    raise ValueError("cannot derive project root from run; state.project_worktree is missing/invalid")
+
+
 def state_and_task(run_root: Path, phase_id: str, task_id: str, *, create: bool = False) -> tuple[Path, dict[str, Any], dict[str, Any]]:
     state_path = run_root / "state.json"
     if not state_path.is_file():
@@ -222,33 +243,61 @@ def load_optional_json(raw: str | None) -> dict[str, Any]:
     return data
 
 
-def bind_contract(args: argparse.Namespace) -> dict[str, Any]:
-    run_root = args.run_root.resolve()
-    state_path, state, task = state_and_task(run_root, args.phase_id, args.task_id, create=True)
-    contract = run_path(run_root, args.contract)
+def bind_contract_core(*, run_root: Path, phase_id: str, task_id: str, contract: Path,
+                       status: str, next_action: str | None, supersede_incomplete: bool,
+                       admission: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Bind a contract to a task, and — for candidate-bound execution — admit it in the same write.
+
+    Binding and admission are one atomic state update on purpose. Two writes would leave an
+    instant in which a contract is bound and unadmitted, and a crash there would be
+    indistinguishable from a bypass. `task.clear()` also means a later rebinding drops the
+    admission, so a new contract revision cannot inherit the old one's authority.
+    """
+    run_root = run_root.resolve()
+    state_path, state, task = state_and_task(run_root, phase_id, task_id, create=True)
+    contract = run_path(run_root, contract)
     if not contract.is_file():
         raise ValueError(f"contract missing: {contract}")
-    revision = contract_revision(contract.read_text(encoding="utf-8", errors="replace"))
+    text = contract.read_text(encoding="utf-8", errors="replace")
+    revision = contract_revision(text)
+    if requires_admission(text) and admission is None:
+        raise ValueError(
+            "this contract is candidate-bound execution and cannot be bound directly: it names a "
+            "Proofbound candidate and permits project writes. Admit it instead, which authorizes "
+            "against the current graph, ledger and consistency records and binds in one step:\n"
+            "  python3 scripts/pb_execution.py admit --run-root ... --phase-id ... --task-id ... "
+            "--contract ... --graph ... --ledger ... --project-root ... --consistency ...")
     if isinstance(task.get("current_attempt"), dict):
-        archive_current_attempt(run_root, task, allow_incomplete=args.supersede_incomplete)
+        archive_current_attempt(run_root, task, allow_incomplete=supersede_incomplete)
     last_attempt = task.get("last_attempt") if isinstance(task.get("last_attempt"), dict) else None
     task.clear()
     task.update({
-        "status": args.status,
+        "status": status,
         "current_contract": {"revision": revision, "path": str(contract), "sha256": sha256(contract)},
     })
+    if admission is not None:
+        task["admission"] = admission
     if last_attempt:
         task["last_attempt"] = last_attempt
-    if args.next_action:
-        state["next_action"] = args.next_action
+    if next_action:
+        state["next_action"] = next_action
     atomic_json(state_path, state)
-    return {"task": f"{args.phase_id}/{args.task_id}", "contract": str(contract), "revision": revision, "status": task["status"], "next_action": state.get("next_action")}
+    return {"task": f"{phase_id}/{task_id}", "contract": str(contract), "revision": revision,
+            "status": task["status"], "admitted": admission is not None,
+            "next_action": state.get("next_action")}
+
+
+def bind_contract(args: argparse.Namespace) -> dict[str, Any]:
+    return bind_contract_core(
+        run_root=args.run_root, phase_id=args.phase_id, task_id=args.task_id,
+        contract=args.contract, status=args.status, next_action=args.next_action,
+        supersede_incomplete=args.supersede_incomplete)
 
 
 def preflight_attempt(args: argparse.Namespace) -> dict[str, Any]:
     """Validate that a new attempt can be launched before any worker starts."""
     run_root = args.run_root.resolve()
-    _, _, task = state_and_task(run_root, args.phase_id, args.task_id)
+    _, state, task = state_and_task(run_root, args.phase_id, args.task_id)
     intended = run_path(run_root, args.contract)
     current_contract = task.get("current_contract") or {}
     raw = current_contract.get("path")
@@ -259,6 +308,22 @@ def preflight_attempt(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError("launch contract does not match task.current_contract")
     if not intended.is_file() or sha256(intended) != current_contract.get("sha256"):
         raise ValueError("task.current_contract is missing or changed")
+
+    # Candidate-bound execution launches only from an admitted task. The record is compared, not
+    # the contract's own declaration: a contract naming a candidate is a declaration, and the
+    # question here is whether the admission transition actually happened for *this* task, this
+    # revision and this project. Currentness is deliberately not rechecked — authority is fixed at
+    # admission, so a task admitted under C1 keeps running after the project moves to C2.
+    text = intended.read_text(encoding="utf-8", errors="replace")
+    if requires_admission(text):
+        findings = admission_findings(
+            task.get("admission"), candidate=declared_candidate(text),
+            contract_sha256=sha256(intended),
+            project_root=project_root_from_run(run_root, state))
+        if findings:
+            raise ValueError(
+                "refusing to launch candidate-bound execution: "
+                + "; ".join(f"{f['code']}: {f['reason']}" for f in findings))
 
     current = task.get("current_attempt")
     if isinstance(current, dict):

@@ -150,6 +150,26 @@ class M2CCSliceTest(unittest.TestCase):
         (ctx["run"] / "state.json").write_text(json.dumps(state))
         return p
 
+    def admit(self, ctx, task_id, text, revision):
+        """Bind a candidate-bound implementation contract through the route that exists for it.
+
+        `bind`'s hand-written state entry is enough for a spec task and is not enough here: since
+        A6.10 an implementation contract that names a candidate and writes the project must carry an
+        admission record, written by `pb_execution.py admit` in the same act that binds it, and a
+        launch without one is refused before any worker starts. Returns the admission verdict, which
+        is the authorization verdict plus the binding.
+        """
+        p = ctx["run"] / "phases" / "spec" / "tasks" / task_id / "contracts" / f"r{revision:04d}.md"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(text, encoding="utf-8")
+        cp = self.sh([PYTHON, str(ROOT / "scripts" / "pb_execution.py"), "admit",
+                      "--run-root", str(ctx["run"].resolve()), "--phase-id", "spec",
+                      "--task-id", task_id, "--contract", str(p.resolve()),
+                      "--graph", str(ctx["graph"]), "--ledger", str(ctx["ledger"]),
+                      "--project-root", str(ctx["project"].resolve()),
+                      "--consistency", str(ctx["consistency"])])
+        return cp, (json.loads(cp.stdout) if cp.stdout.strip().startswith("{") else {}), p
+
     def launch(self, ctx, task_id, role, env_extra=None, inputs=()):
         env = dict(ctx["env"]); env.update(env_extra or {})
         cmd = [PYTHON, str(ROOT / "scripts" / "dsd_attempt.py"), "launch",
@@ -226,8 +246,8 @@ class M2CCSliceTest(unittest.TestCase):
         return cp, (json.loads(cp.stdout) if cp.stdout.strip().startswith("{") else {})
 
     def implement_and_accept(self, ctx, task_id, candidate, revision=1):
-        contract = self.bind(ctx, task_id, impl_contract(task_id, candidate, revision), revision)
-        cp, got = self.authorize(ctx, contract=contract)
+        cp, got, _contract = self.admit(
+            ctx, task_id, impl_contract(task_id, candidate, revision), revision)
         env = {"DSD_FAKE_TARGET": f"src/{task_id}.py", "DSD_FAKE_BODY": f"V = '{task_id}'\n"}
         impl = self.launch(ctx, task_id, "implementer", env)
         self.assertEqual(self.gate(ctx, task_id).returncode, 0)
@@ -307,7 +327,11 @@ class M2CCSliceTest(unittest.TestCase):
             self.assertNotIn("invalid", json.dumps(rep))
 
             # 9. THE REPLAY PROOF: T1's accepted review cannot be accepted for a C2 contract.
-            self.bind(ctx, "T1", impl_contract("T1", C2, 2), 2)
+            # Rebinding goes through admission like any other candidate-bound execution: C2 is
+            # current and challenged, so this legitimately succeeds — and the C1 review still
+            # cannot qualify the task it now governs.
+            readmitted, _, _ = self.admit(ctx, "T1", impl_contract("T1", C2, 2), 2)
+            self.assertEqual(readmitted.returncode, 0, readmitted.stdout + readmitted.stderr)
             replay = self.accept(ctx, "T1", rev1 / "evidence-gate.json")
             self.assertNotEqual(replay.returncode, 0, "C1 evidence must never qualify a C2 task")
             self.assertIn("not bound to task.current_contract", replay.stderr)
@@ -365,7 +389,8 @@ class M2CCSliceTest(unittest.TestCase):
             self.accept_artifact(ctx, "b", deps=["a"])
             C1 = self.freeze(ctx)
             self.challenge_and_record(ctx, C1, 1)
-            contract = self.bind(ctx, "T1", impl_contract("T1", C1), 1)
+            admitted, _, contract = self.admit(ctx, "T1", impl_contract("T1", C1), 1)
+            self.assertEqual(admitted.returncode, 0, admitted.stdout + admitted.stderr)
             env = {"DSD_FAKE_TARGET": "src/T1.py", "DSD_FAKE_BODY": "V = 1\n"}
             impl = self.launch(ctx, "T1", "implementer", env)
             self.assertEqual(self.gate(ctx, "T1").returncode, 0)

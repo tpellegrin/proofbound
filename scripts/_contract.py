@@ -167,6 +167,29 @@ def declared_candidate(text: str) -> str | None:
     return candidate
 
 
+def requires_admission(text: str) -> bool:
+    """Whether this contract describes **candidate-bound execution** that must be admitted first.
+
+    Candidate presence alone cannot select this. A consistency-reflection contract also names a
+    candidate — it is the task that *produces* the acceptance implementation later consumes, so
+    requiring acceptance before it could run would make the acceptance unreachable.
+
+    What separates them is already declared by authority in the contract: whether the task may
+    change the project. An explicit `## Allowed source changes` of `NONE` is upstream review work
+    and needs no admission. Anything else that names a candidate is execution against engineering
+    authority, including a contract that declares no write boundary at all — inherent writer roles
+    choose their own surface, so silence there means "may write", and admission is required rather
+    than skipped.
+
+    Nothing here reads a task id, a role or a filename: only the two sections authority declares.
+    """
+    if not declares_candidate(text):
+        return False
+    if has_explicit_write_restriction(text) and not allowed_source_changes(text):
+        return False
+    return True
+
+
 def proof_pattern_tags(text: str) -> list[str]:
     """Explicit loading hints only; tags are not acceptance semantics."""
     return _bullet_values(text, "Proof patterns")

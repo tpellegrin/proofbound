@@ -106,22 +106,20 @@ Nothing prevents a human editing a committed file. A freeze is immutable in the 
 truthful: **identity is content.** Editing the file produces a different freeze; the old identity still
 names the old contract. `F2` never rewrites `F1` (`P9`).
 
-Freezes are therefore content-addressed and append-only — `specs/<change>/freezes/<identity>.json` — which
-gives supersession with no stored `supersedes` field and no mutable `current_freeze` pointer (`P3`).
-**There is no persisted "current freeze."** A task contract names an exact freeze; "latest" is a parent
-convenience, never protocol.
+Freezes are therefore content-addressed and append-only, giving supersession with no stored `supersedes`
+field and no mutable `current_freeze` pointer (`P3`). **There is no persisted "current freeze."** A task
+contract names an exact freeze; "latest" is a parent convenience, never protocol.
 
 Freeze content is **machine-generated**, unlike the human-authored graph, so canonical serialization is
 justified here where semantic graph hashing was not: UTF-8, sorted keys, `indent=2`, sorted dependency
-keys, trailing newline, duplicate paths rejected, unknown fields rejected, unknown version fails closed.
-Identity is SHA-256 over those canonical bytes — no salt, no path in the hash, so a copied freeze is the
-same freeze. Generation must be deterministic: identical graph and ledger produce byte-identical output.
+keys, trailing newline, duplicate paths and unknown fields rejected, unknown version fails closed.
+Identity is SHA-256 over those bytes — no salt, no path in the hash, so a copied freeze is the same
+freeze. Generation is deterministic: identical graph and ledger produce byte-identical output.
 
-**Historical semantics (`P6`).** A v1 freeze is verified under v1 rules. In particular its
-`review_purpose` values are checked against the **vocabulary v1 pinned**, never against the live
-registry — otherwise adding a purpose later would silently reinterpret old contracts, which is precisely
-the M0 failure. Freeze validation never re-authorizes purpose against roles; authorization already
-happened at acceptance.
+**Historical semantics (`P6`).** A v1 freeze is verified under v1 rules: its `review_purpose` values are
+checked against the **vocabulary v1 pinned**, never the live registry — otherwise adding a purpose later
+would silently reinterpret old contracts, precisely the M0 failure. Freeze validation never re-authorizes
+purpose against roles; that happened at acceptance.
 
 ### A4.6 What a freeze does not prove
 
@@ -169,16 +167,14 @@ binding semantics survived unaltered.
 1. **External dependency closure: members are exactly the graph's declared artifacts.** The design
    check left this open as the largest edge case, with three candidate models. Resolved in favour of
    graph membership, because **membership is authority's declaration of what constitutes the contract**.
-   Including the transitive closure would put artifacts into the frozen contract that no authority
-   declared, letting Proofbound infer contract membership from dependency structure rather than from
-   declaration — an inversion of `P7` and `P11`. A dependency target outside the graph stays a recorded
-   identity the contract was reviewed against; its own binding belongs to whatever contract declared it.
-   Consequently **no `roots` field is needed**, and the two-field schema stands.
+   Including the transitive closure would put artifacts no authority declared into the frozen contract,
+   inferring membership from dependency structure rather than declaration — an inversion of `P7` and
+   `P11`. A dependency target outside the graph stays a recorded identity the contract was reviewed
+   against. Consequently **no `roots` field is needed**, and the two-field schema stands.
 
-   The honest limit: a freeze pins an external target's *content* (the dependency hash is that content
-   identity) but not its provenance. If the external artifact's own accepted dependencies move while its
-   bytes do not, the freeze is unaffected — that staleness is M2A closure's question against the current
-   ledger, which is a different layer.
+   The honest limit: a freeze pins an external target's *content* but not its provenance. If that
+   artifact's own accepted dependencies move while its bytes do not, the freeze is unaffected — that
+   staleness is M2A closure's question against the current ledger, a different layer.
 
 2. **A non-computable candidate is a finding, not success.** Found by the vertical slice: after a
    withdrawal the graph is unsatisfied and no candidate exists, and returning "no differences" would
@@ -194,8 +190,8 @@ binding semantics survived unaltered.
 
 **Storage.** `specs/<change>/freezes/<identity>.json` — content-addressed and append-only, so
 supersession needs no `supersedes` field and no mutable pointer (`P3`). Re-deriving an unchanged contract
-rewrites nothing. Validation reports a `filename-identity-mismatch` when a 64-character filename does not
-match its content, which catches a renamed or hand-edited file without making the filename authoritative:
+rewrites nothing. Validation reports `filename-identity-mismatch` when a 64-character filename does not
+match its content, catching a renamed or hand-edited file without making the filename authoritative:
 identity is content, so a copy under any name is the same freeze.
 
 **Not implemented, and not implied.** M2C-A authorizes nothing. There is no task freeze reference, no run
@@ -310,32 +306,30 @@ freshness since the beginning. **No reservation field, no candidate nonce, no fr
 
 The contract binds an *identity*; the reviewer needs *material*. Nobody can judge a SHA-256.
 
-The subject is the engineering meaning the candidate denotes: the member artifacts' accepted content,
-the dependency relationships between them, and the declared purpose each was accepted under. The
-reviewer reads the freeze for the exact membership and bindings, and the member artifact files for
-substance. Retrieval material is context, never identity — the order files are read in must never enter
-what `C` means.
+The subject is the engineering meaning the candidate denotes: the members' accepted content, the
+dependencies between them, and the declared purpose each was accepted under. The reviewer reads the
+freeze for membership and bindings, and the member files for substance. Retrieval material is context,
+never identity — the order files are read in must never enter what `C` means.
 
 Its questions are the ones no single-artifact reflection can reach: do these artifacts contradict each
 other, does the design actually satisfy the proposal it depends on, are assumptions consistent across the
 set, is the aggregate coherent enough to become the baseline for implementation. It is **bounded to
 `C`** — repository-wide architectural coherence is a different capability and stays out.
 
-**A stated v1 limitation.** A freeze pins content *hashes*, not content *bytes*. So a candidate whose
-artifacts still match on disk can be reviewed directly, while re-reviewing a historical candidate whose
-artifacts have since moved would require recovering those bytes from Git. M2C-B v1 therefore reviews the
-**current** candidate, derived at launch time and bound by identity. Embedding artifact bytes in a freeze
-to remove this limitation would be a large and speculative change to a shipped format; the limitation is
-better stated than designed around.
+**A stated v1 limitation.** A freeze pins content *hashes*, not *bytes*. A candidate whose artifacts
+still match on disk can be reviewed directly; re-reviewing a historical one whose artifacts have moved
+would require recovering those bytes from Git. M2C-B v1 therefore reviews the **current** candidate,
+derived at launch and bound by identity. Embedding bytes in a freeze would be a large, speculative change
+to a shipped format; the limitation is better stated than designed around.
 
 **Graph-external dependencies remain sound.** A member may depend on an accepted artifact outside the
 graph ([A3.4](artifacts-and-provenance.md#a34-membership-dependency-targets-and-what-exact-means)), and
 that artifact is not a freeze member. Verified empirically: if such a dependency's bytes drift, the
 member becomes `needs-revalidation` through ledger closure, the graph stops being satisfied, and the
 current candidate becomes **non-computable** — so whenever a current candidate exists, every external
-dependency is still at the content it was pinned against. The reviewer may therefore read it as context
-and rely on it. The review claims nothing about *that artifact's own* coherence, which belongs to
-whatever contract declared it. M2C-A's membership decision does not need reopening.
+dependency is still at the content it was pinned against, and the reviewer may rely on it as context.
+The review claims nothing about *that artifact's own* coherence, which belongs to whatever contract
+declared it.
 
 ### A5.7 Findings return to artifact level
 
@@ -399,11 +393,10 @@ was independently challenged as a whole, and that the challenge qualified.
 The design survived implementation intact — schema, storage, authority model, freshness reuse and the
 purpose/role exclusions all shipped as designed. Three points were sharpened by building it.
 
-1. **The record must verify that the freeze it names is real.** Recording takes the freeze whose identity
-   the contract declared and refuses unless `freeze_identity(freeze) == declared candidate`. Without it an
-   acceptance could be recorded for an identity that never denoted anything — the record would be
-   syntactically fine and about nothing. This is a creation-time check only; the record itself still
-   stores no freeze path, so it stays independent of storage layout.
+1. **The record must verify that the freeze it names is real.** Recording refuses unless
+   `freeze_identity(freeze) == declared candidate`. Without it an acceptance could be recorded for an
+   identity that never denoted anything — syntactically fine and about nothing. A creation-time check
+   only; the record stores no freeze path, so it stays independent of storage layout.
 
 2. **Creation checks the v1 constants, not the live registry.** The design said verification must pin
    them; implementation showed *creation* must too, or a record could be written today that fails to
@@ -411,20 +404,19 @@ purpose/role exclusions all shipped as designed. Three points were sharpened by 
    does not recognize is the correct asymmetry.
 
 3. **Re-review refreshes provenance in place, and the record's bytes legitimately change.** The candidate
-   is one subject, so a second qualifying challenge repoints `gate`/`gate_sha256` at the newer evidence
-   while `candidate` is unchanged. The durable *subject* is stable; what evidences it is not, and Git
-   carries that history. Nothing accrues: one candidate, one file.
+   is one subject, so a second qualifying challenge repoints `gate`/`gate_sha256` at newer evidence while
+   `candidate` is unchanged. The durable *subject* is stable; what evidences it is not, and Git carries
+   that history. Nothing accrues: one candidate, one file.
 
 **The replay proof is inherited, not new.** The slice takes a genuinely accepted `C1` review and attempts
 to accept it against a contract naming `C2`; it is refused by `accept_task` with *"source gate is not
 bound to task.current_contract"*. Contracts naming different candidates are different files with
 different hashes, so no nonce, reservation field or freshness token was added.
 
-**Authority.** A reflector that writes into the consistency directory trips the inherited read-only scope
-check, its gate is unclean, acceptance refuses, and recording then refuses because there is no acceptance
-to record — three independent barriers, none of them new. The CLI is two commands: `record` (parent-owned)
-and `status`, so callers ask a domain question rather than using `Path.exists()` as the definition of
-acceptance.
+**Authority.** A reflector writing into the consistency directory trips the inherited read-only scope
+check, its gate is unclean, acceptance refuses, and recording refuses because there is no acceptance to
+record — three independent barriers, none new. The CLI is `record` (parent-owned) and `status`, so callers
+ask a domain question rather than using `Path.exists()` as the definition of acceptance.
 
 **Still not authorization.** A candidate with an acceptance record has been *challenged*, not authorized
 to execute. Binding implementation work to an exact contract remains M2C-C.
@@ -477,17 +469,18 @@ Three checks, all derived, none stored:
 `contradicted` refuses.
 
 `unavailable` must authorize, and the reason is structural. Execution evidence is expendable *by design*;
-if losing it blocked all future implementation, then deleting an old run tree would silently destroy the
-operational value of the durable acceptance it can no longer verify. That would make provenance
-*availability* into authority, contradicting both `P5` and the `L3`/`L4` separation the whole architecture
-rests on. `contradicted` is different in kind: retained evidence actively disagrees with the record, and
-authorizing new work on it would launder a known inconsistency.
+if losing it blocked all future implementation, deleting an old run tree would silently destroy the
+operational value of the durable acceptance it can no longer verify — making provenance *availability*
+into authority, against both `P5` and the `L3`/`L4` separation the architecture rests on. `contradicted`
+is different in kind: retained evidence actively disagrees with the record, and authorizing new work on
+it would launder a known inconsistency.
 
 A candidate that is not currently derivable cannot authorize anything, because check 1 cannot pass. A
 freeze without a consistency acceptance cannot either — that is exactly the gap M2C-B exists to close.
 
-These are **parent-side guards, not gates** (`P5`). Nothing prevents a determined operator from writing a
-contract by hand; the guard exists so the normal path is the correct one.
+These were **parent-side guards, not gates** (`P5`) — corrected in A6.10 for candidate-bound execution,
+which is now gated at the supported launch path. `P5` still holds at the outer boundary: nothing prevents
+an operator from running an executor directly.
 
 ### A6.4 Authority is fixed at launch — the central decision
 
@@ -505,10 +498,10 @@ Three independent reasons, none of them convenience:
   project moves to `C2`. Rechecking currentness at acceptance would make implementation the only layer
   that retroactively invalidates completed work.
 - **The alternative requires forbidden inference.** Rejecting `T` only when `C2` *matters to it* is an
-  applicability judgement, and applicability is explicitly deferred
-  ([artifacts-and-provenance.md §36.3](artifacts-and-provenance.md#363-applicability-is-not-a-dependency-edge)). Rejecting `T` whenever any
-  unrelated artifact moved would discard hours of correct work and teach people to route around the
-  system.
+  applicability judgement, explicitly deferred
+  ([artifacts-and-provenance.md §36.3](artifacts-and-provenance.md#363-applicability-is-not-a-dependency-edge)).
+  Rejecting `T` whenever any unrelated artifact moved would discard correct work and teach people to
+  route around the system.
 - **The contract is immutable.** Its identity already includes `C1`. A task whose authority could change
   after launch would have a contract that no longer describes it.
 
@@ -525,26 +518,24 @@ So M2C-C supplies a **read-only report**: enumerate the accepted tasks in a run 
 contract names. Divergence is a finding the parent acts on, not a barrier.
 
 Gating would require a mechanical phase-close, and there is none — phase status is set to `in-progress`
-at task creation and never mechanically closed, with
-`test_v15_5_adversarial::test_new_phase_state_does_not_create_barrier_machine` existing specifically to
-stop gating state accumulating in phases. Inventing one is a separate architectural decision with its own
-design check, not something to acquire as a side effect of binding work.
+at task creation and never closed, with
+`test_v15_5_adversarial::test_new_phase_state_does_not_create_barrier_machine` existing to stop gating
+state accumulating in phases. Inventing one is a separate architectural decision, not a side effect of
+binding work.
 
 ### A6.6 Execution binding only — the durability limitation, stated
 
 **M2C-C provides execution binding, not durable implementation provenance.** This is a real limitation and
 is recorded rather than hidden.
 
-Verified from code: task contracts live at `run/phases/<phase>/tasks/<task>/contracts/rNNNN.md` and
-acceptance is written into `run_root/state.json` — both inside the run tree, which must live under
-`<project>/DeepSeekAndDestroy/`. Both are `L3`. After the run tree is deleted, **no file in project state
+Verified from code: task contracts and acceptance both live inside the run tree, under
+`<project>/DeepSeekAndDestroy/`. Both are `L3`. After that tree is deleted, **no file in project state
 records that accepted task `T` was governed by `C`**. The ledger records accepted artifacts, the freeze
 records candidates, the consistency record records challenges; none records implementation tasks.
 
-This is the same gap M2C-B found for aggregate challenges and closed with a durable record. It is
-deliberately *not* closed here, because no current invariant consumes it: the things that would — a
-completion theorem over required implementation tasks, or a cumulative coherence audit — are separate,
-deferred capabilities. Adding a durable record now would be speculative state under the field test.
+This is the same gap M2C-B found for aggregate challenges and closed with a durable record, deliberately
+*not* closed here: no invariant consumes it. The things that would — a completion theorem over required
+implementation tasks, a cumulative coherence audit — are separate, deferred capabilities.
 
 The canonical thesis is scoped to match: *divergent freeze usage **across a run** is detectable*. When a
 completion theorem is genuinely wanted, the missing fact is precisely "accepted implementation task `T`
@@ -558,13 +549,14 @@ established.
 | **Pure composition** (current candidate + consistency acceptance + candidate in the immutable contract) | **Adopted.** No new state; every fact derived from shipped primitives. |
 | Composition + acceptance-time currentness recheck | **Rejected** — see A6.4. Requires either discarding correct work or forbidden applicability inference. |
 | Composition + reporting | **Adopted as part of the above**; the report is derived, not stored. |
-| Durable implementation-binding record | **Rejected for M2C-C** — no current invariant consumes it (A6.6). |
+| Durable implementation-binding record | **Rejected for M2C-C** — no invariant consumed it (A6.6). A6.10 later added a *run-tree* admission record, which an invariant does consume; the durable one is still absent. |
 | Phase-level freeze reservation | **Rejected** — needs a barrier that does not exist and that an adversarial test guards against. |
 | Reuse stale-prerequisite machinery | **Rejected — nothing to reuse.** Verified: the inherited core has no stale-prerequisite or revalidation mechanism. Candidate movement is a distinct dimension, not another task dependency. |
 
 ### A6.8 What M2C-C does not do
 
-No new persistent state, no `current_freeze` or `active_candidate` pointer, no new identity — the
+No new persistent state (A6.10 adds one field of run-tree state), no `current_freeze` or
+`active_candidate` pointer, no new identity — the
 implementation contract's existing hash already composes task instructions with engineering authority, so
 hashing a hash would add nothing. No phase barrier, no mixed-candidate gate, no applicability, no
 inherited-core change, no completion theorem, no coherence audit.
@@ -575,21 +567,48 @@ that the change is finished.
 
 ### A6.9 Implementation outcome
 
-Shipped as designed: **no new identity, no persistent state, no inherited-core change.**
-`authorize` composes current-candidate derivation, the consistency lookup and provenance;
-`report` derives task bindings from the immutable contracts a run already holds. The only other
-change was moving current-candidate derivation out of the freeze CLI into `_freeze` so it could be
-composed rather than duplicated — behaviour-neutral, verified against the unchanged suite.
+Shipped as designed: **no new identity, no persistent state, no inherited-core change.** `authorize`
+composes current-candidate derivation, the consistency lookup and provenance; `report` derives task
+bindings from the immutable contracts a run already holds. The only other change moved current-candidate
+derivation out of the freeze CLI into `_freeze` so it could be composed rather than duplicated —
+behaviour-neutral, verified against the unchanged suite.
 
-Two refinements from implementation. Authorization accepts a **contract** as well as a bare candidate,
-because the contract is the artifact that becomes the authority and a contract declaring no candidate
-must be reported as unbound rather than silently authorized — that is the explicit compatibility
-boundary for inherited tasks. And a wrong candidate legitimately yields *two* findings (not current, and
-never challenged), which is more informative than the first failure alone.
+Two refinements from implementation. Authorization accepts a **contract** as well as a bare candidate:
+the contract is the artifact that becomes the authority, and one declaring no candidate is reported
+unbound rather than silently authorized — the explicit compatibility boundary for inherited tasks. And a
+wrong candidate yields *two* findings (not current, never challenged), more informative than the first.
 
-The slice proves the chain against real mechanics, including that a freeze alone does not authorize, that
-`C1` review evidence is refused for a `C2` contract, and that a worker rewriting the candidate in its own
-contract breaks acceptance with *"current contract missing or changed"*.
+The slice proves the chain against real mechanics: a freeze alone does not authorize, `C1` review evidence
+is refused for a `C2` contract, and a worker rewriting the candidate in its own contract breaks acceptance
+with *"current contract missing or changed"*.
 
 **Unchanged boundary.** Execution binding only. Task contracts and acceptance both live in the run tree,
 so nothing durably records that an accepted task was governed by `C` once that tree is gone (A6.6).
+
+### A6.10 Correction: authorization was advisory (M4 — IMPLEMENTED)
+
+A6.3 called the checks guards and not gates, as a design choice. `pb-handoff-1` showed the cost. Its
+control condition refused correctly — but the refusal was the *coordinator's*: `authorize` printed
+`authorized: false` and nothing consulted that answer again. Binding accepted any contract and launch ran
+anything bound, so a refused run and an honoured one left identical state. Reproduced credential-free:
+guard refuses, launcher exits 0, project mutated.
+
+**Admission is the repair.** `pb_execution.py admit` runs A6.3's checks and, only if they pass, binds the
+contract in the **same atomic state write**, recording `task.admission`: candidate, contract path and
+digest, project root, and the authorization's provenance and current candidate. `dsd_attempt.py launch`
+refuses candidate-bound execution whose task carries no record matching *this* contract revision,
+candidate and project. Two commands would be the defect again: a printed `authorized: true` is not a
+transition, and a coordinator carrying one command's output into another's input is the thing enforcing
+the rule.
+
+**Scope, from the contract's own content:** it names a candidate *and* permits project writes. Consistency
+reflection names a candidate and writes nothing — upstream work, bound as before. Contracts predating
+candidates are outside the subject. Omitting the candidate evades the rule and forfeits what it was for:
+the task then carries none, so no acceptance can claim it implemented one.
+
+**A6.4 is preserved exactly.** Authority is fixed at admission and never rechecked: a task admitted under
+`C1` continues, is reviewed, repairs and is accepted after the project becomes `C2`. Review and repair run
+under the one admission; re-admitting per attempt would make a long task's authority drift.
+
+**A6.6 is unchanged.** `task.admission` is `L3` run-tree state, gone when the tree is. It records that a
+launch was authorized, not durably that accepted task `T` was governed by `C`.

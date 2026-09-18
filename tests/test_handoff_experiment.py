@@ -322,7 +322,10 @@ class ContinuationRehearsalTest(unittest.TestCase):
         self.assertEqual(result["artifact_check"], _checker.PASS)
 
         steps = {s["step"]: s for s in result["steps"]}
-        self.assertTrue(steps["authorization"]["authorized"])
+        # Admission, not authorization: the rehearsal takes the supported route, in which the
+        # check and the binding are one act rather than an answer the caller may ignore.
+        self.assertTrue(steps["admission"]["admitted"])
+        self.assertEqual(steps["admission"]["provenance"], "verified")
         self.assertEqual(steps["implementer launched"]["classification"],
                          _guard.EXECUTOR_REACHED)
         self.assertTrue(steps["implementation gated"]["integrity_ok"])
