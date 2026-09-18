@@ -1,0 +1,120 @@
+{
+  "launches": {
+    "ceiling": 5,
+    "path": "/private/tmp/pbh1-valid/workspace/work/launch-ledger.json",
+    "pre_executor_failures": 0,
+    "slots": [
+      {
+        "classification": "executor-reached",
+        "classified_at": "2026-09-18T12:09:30.444154+00:00",
+        "event_dir": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1",
+        "launcher_output": "{\"attempt\":\"implementer-1\",\"event_dir\":\"/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1\",\"exit_code\":0,\"status\":\"completed\",\"terminal_event\":\"/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/terminal.json\"}",
+        "launcher_returncode": 0,
+        "note": "live launch of implementer on build/RQ-impl",
+        "phase": "build",
+        "reservation_present": true,
+        "reserved_at": "2026-09-18T12:08:25.518338+00:00",
+        "role": "implementer",
+        "session_title": "dsd:RQ-impl:implementer:1",
+        "slot": 1,
+        "task": "RQ-impl",
+        "terminal_status": "completed"
+      },
+      {
+        "classification": "executor-reached",
+        "classified_at": "2026-09-18T12:11:13.952824+00:00",
+        "event_dir": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1",
+        "launcher_output": "{\"attempt\":\"reviewer-1\",\"event_dir\":\"/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1\",\"exit_code\":0,\"status\":\"completed\",\"terminal_event\":\"/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/terminal.json\"}",
+        "launcher_returncode": 0,
+        "note": "live launch of reviewer on build/RQ-impl",
+        "phase": "build",
+        "reservation_present": true,
+        "reserved_at": "2026-09-18T12:10:00.005734+00:00",
+        "role": "reviewer",
+        "session_title": "dsd:RQ-impl:reviewer:1",
+        "slot": 2,
+        "task": "RQ-impl",
+        "terminal_status": "completed"
+      }
+    ],
+    "slots_spent": 2,
+    "unresolved": []
+  },
+  "mode": "live",
+  "spend": {
+    "attempts": [
+      {
+        "attributed_by": "recorded in the terminal record",
+        "attributed_session": "ses_f4b94f876fferdNP8WCZwI4KKT",
+        "event_dir": "implementer-1",
+        "path": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1",
+        "readable": true,
+        "reservation": true,
+        "session_id": "ses_f4b94f876fferdNP8WCZwI4KKT",
+        "started_at": "2026-09-18T12:08:26.079540+00:00",
+        "terminal_present": true,
+        "terminal_status": "completed",
+        "title": "dsd:RQ-impl:implementer:1"
+      },
+      {
+        "attributed_by": "recorded in the terminal record",
+        "attributed_session": "ses_f4b938cdbffek3aDcOq4ldYAon",
+        "event_dir": "reviewer-1",
+        "path": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1",
+        "readable": true,
+        "reservation": true,
+        "session_id": "ses_f4b938cdbffek3aDcOq4ldYAon",
+        "started_at": "2026-09-18T12:10:00.567554+00:00",
+        "terminal_present": true,
+        "terminal_status": "completed",
+        "title": "dsd:RQ-impl:reviewer:1"
+      }
+    ],
+    "claim": "the run tree's launches and the session's usage agree; this is the whole of what this run's measured usage prices to",
+    "complete": true,
+    "cost": {
+      "amount": 0.020516,
+      "basis": "input billed as cache-miss, cache_read billed on top as cache-hit (measured: provider reports input excluding cache)",
+      "billed": {
+        "cache_read": 651264.0,
+        "output": 13803.0,
+        "uncached_input": 31123.0
+      },
+      "currency": "USD",
+      "model": "deepseek-v4-flash",
+      "price_id": "deepseek-2026-09-09",
+      "rates": {
+        "cache_hit": 0.007,
+        "cache_miss": 0.22,
+        "output": 0.66
+      },
+      "retrieved": "2026-09-09",
+      "source": "https://api-docs.deepseek.com/quick_start/pricing",
+      "window": "off-peak"
+    },
+    "derived": 0.020516,
+    "executor_reported_cost": 0.02042464,
+    "headroom": 0.219484,
+    "interrupted_attempts": [],
+    "launched_attempts": 2,
+    "limit": 0.3,
+    "model_calls": {
+      "finished": 33,
+      "started": 33
+    },
+    "priced_at": "2026-09-18T12:08:26.079540+00:00",
+    "quantity": "derived: measured token usage priced at a dated table; not provider billing",
+    "reserve": 0.06,
+    "scope": "the launches this ledger reserved; seeded attempts are excluded from attribution and remain in the run tree",
+    "usage": {
+      "cache_read": 651264,
+      "cache_write": 0,
+      "calls_finished": 33,
+      "calls_started": 33,
+      "executor_cost": 0.02042464,
+      "input": 31123,
+      "output": 13803,
+      "reasoning": 9201
+    }
+  }
+}

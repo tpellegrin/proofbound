@@ -1,0 +1,54 @@
+{
+  "artifact_check": {
+    "artifact": {
+      "bytes": 946,
+      "exists": true,
+      "path": "/private/tmp/pbh1-valid/workspace/work/project/dispatch.py",
+      "sha256": "d998c0eaff9fbc2be8a601d809ae43102afebbe2fc60f4f92a2f67c527a890af"
+    },
+    "authority": {
+      "note": "the accepted requirements in the project under change",
+      "path": "/private/tmp/pbh1-valid/workspace/work/project/requirements.md",
+      "sha256": "9a4b9568775ecaa675f39cc8d89b06a8ed2a43f0ff72d8b18c4fe7d83e674db3"
+    },
+    "checked_calls": 363,
+    "coverage": "every arrival sequence the requirements' declared domain admits; the API checks are finite probes over those same calls, and say nothing about inputs outside the domain",
+    "domain": {
+      "keys": [
+        "a",
+        "b",
+        "c"
+      ],
+      "max_items": 5,
+      "sequences": 363
+    },
+    "findings": [],
+    "obligations": {
+      "R1": "exactly-once",
+      "R2": "fifo-per-key",
+      "R3": "round-robin",
+      "R4": "head-first"
+    },
+    "prose_to_model_judgements": [
+      "AC-001's `list of (key, n) items` is read as: the returned object is a list, and each item is a 2-tuple or 2-list of (str, int)",
+      "purity, idempotence and behaviour on malformed input are not stated by the contract and are not checked"
+    ],
+    "verdict": "pass"
+  },
+  "checked_at": "2026-09-18T12:11:35.497449+00:00",
+  "experiment": "pb-handoff-1",
+  "findings": [],
+  "note": "external to the worker chain: neither the implementer nor the reviewer saw this checker, and a mechanical integrity gate never established that a review report contained an adequate semantic judgement",
+  "scope_check": {
+    "allowed": [
+      "dispatch.py"
+    ],
+    "changed": [
+      "dispatch.py"
+    ],
+    "findings": [],
+    "undeclared": [],
+    "verdict": "pass"
+  },
+  "verdict": "pass"
+}

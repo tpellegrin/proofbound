@@ -151,8 +151,7 @@ One line each. **The canonical definitions, with their falsifiers, are in
 | MLR cross-fixture `eventbus-b1` | **Run** (2026-09-15/16); twelve slots, twelve valid trajectories, no retries, $0.238762 of $0.50 — family R1, the core phenomenon replicates and the secondary procedural pattern is heterogeneous and unlike q1's. A later dated audit corrects the run report's attempt-ceiling reasoning and leaves the result standing |
 | Authority evidence audit (`pb-authority-demo-2`) | **Complete**; two claims withdrawn and `D1`/`D4` reclassified as departures, so neither demonstration is a conforming run |
 | Authority slice — four cases, valid and invalid | **Validated credential-free**, 4/4 mechanical; the agent-facing half is **not observed** |
-| Fresh-context authority recovery | **Two read-only observations**, plus **two coordinators that drove the whole continuation** against a stand-in. No live run |
-| `pb-handoff-1` continuation experiment | **Frozen, rehearsed, not run**; awaiting spending authorization |
+| Fresh-context authority recovery (`pb-handoff-1`) | **Live, once per condition** (2026-09-18): one coordinator carried a bound implementation to acceptance, another refused a mutated state without launching. $0.020516, 2 of 5 slots. Two observations, not a rate |
 | Intent challenge as an ordinary artifact | **Decided**: `proposal-reflection`, no new kind, role or purpose |
 | Decision provenance, coherence audit, context telemetry | Direction only; see the plan's dependency graph |
 

@@ -1,0 +1,12 @@
+# Direct boundary measurement, control runtime, before any launch
+
+Probe summary field boundary_holds=False, flagged on 'real_home_readable'.
+That check runs 'ls $HOME/...' and HOME inside the view is the view's own home,
+which deliberately holds the staged executor credential. Direct absolute-path tests:
+
+/Users/thiago/.local/share/opencode/auth.json -> sed: /Users/thiago/.local/share/opencode/auth.json: Operation not permitted
+/Users/thiago/Projects/proofbound/evals/authority_slice/cases/coherent-requirements/case.json -> sed: /Users/thiago/Projects/proofbound/evals/authority_slice/cases/coherent-requirements/case.json: Operation not permitted
+/Users/thiago/Projects/proofbound/evals/authority_slice/_implementations.py -> sed: /Users/thiago/Projects/proofbound/evals/authority_slice/_implementations.py: Operation not permitted
+/Users/thiago/Projects/proofbound/evals/authority_slice/_checker_corpus.py -> sed: /Users/thiago/Projects/proofbound/evals/authority_slice/_checker_corpus.py: Operation not permitted
+/Users/thiago/Projects/proofbound/evals/authority_slice/next-live-experiment.md -> sed: /Users/thiago/Projects/proofbound/evals/authority_slice/next-live-experiment.md: Operation not permitted
+/Users/thiago/Projects/proofbound/README.md -> sed: /Users/thiago/Projects/proofbound/README.md: Operation not permitted

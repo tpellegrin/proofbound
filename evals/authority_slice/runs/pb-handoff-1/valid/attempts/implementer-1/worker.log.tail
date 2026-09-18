@@ -1,0 +1,55 @@
+-porcelain 2>/dev/null; echo '--- tracked diff names ---'; git diff --name-only 2>/dev/null; echo '--- hashes ---'; shasum -a 256 goal.md requirements.md dispatch.py 2>/dev/null; echo '--- HEAD requirements hash ---'; git show HEAD:requirements.md 2>/dev/null | shasum -a 256; git show HEAD:goal.md 2>/dev/null | shasum -a 256
+?? dispatch.py
+--- tracked diff names ---
+--- hashes ---
+5c7840395b5d4b057bda83f78aee7b11dce0fc9d7c8e3c170ebc13a97457227d  goal.md
+9a4b9568775ecaa675f39cc8d89b06a8ed2a43f0ff72d8b18c4fe7d83e674db3  requirements.md
+d998c0eaff9fbc2be8a601d809ae43102afebbe2fc60f4f92a2f67c527a890af  dispatch.py
+--- HEAD requirements hash ---
+9a4b9568775ecaa675f39cc8d89b06a8ed2a43f0ff72d8b18c4fe7d83e674db3  -
+5c7840395b5d4b057bda83f78aee7b11dce0fc9d7c8e3c170ebc13a97457227d  -
+[0m
+All 364 domain sequences pass; negative controls are caught. Let me confirm the project scope and capture illustrative cases.
+[0m$ [0mcd /private/tmp/pbh1-valid/workspace/work/project && python3 -c "
+from dispatch import dispatch
+cases = [[], ['a'], ['a','a','a'], ['a','a','b'], ['a','b','a','b'], ['a','a','b','b','a'], ['a','b','c','a','b'], ['c','c','b','a','a']]
+for c in cases:
+    print(c, '->', dispatch(c))
+"
+[] -> []
+['a'] -> [('a', 1)]
+['a', 'a', 'a'] -> [('a', 1), ('a', 2), ('a', 3)]
+['a', 'a', 'b'] -> [('a', 1), ('b', 1), ('a', 2)]
+['a', 'b', 'a', 'b'] -> [('a', 1), ('b', 1), ('a', 2), ('b', 2)]
+['a', 'a', 'b', 'b', 'a'] -> [('a', 1), ('b', 1), ('a', 2), ('b', 2), ('a', 3)]
+['a', 'b', 'c', 'a', 'b'] -> [('a', 1), ('b', 1), ('c', 1), ('a', 2), ('b', 2)]
+['c', 'c', 'b', 'a', 'a'] -> [('c', 1), ('b', 1), ('a', 1), ('c', 2), ('a', 2)]
+[0m
+Scope is clean: only `dispatch.py` added, no tracked files changed, and `goal.md` matches the contract hash. Let me persist the verifier and its output as durable evidence in the attempt directory.
+[0m$ [0mcp /private/tmp/pbh1-valid/tmp/opencode/verify_rq_impl.py /private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/verify_rq_impl.py && python3 /private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/verify_rq_impl.py > /private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/verify-output.txt 2>&1; echo "exit=$?"; ls -la /private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/
+exit=0
+total 96
+drwxr-xr-x  10 thiago  wheel    320 18 Sep 09:09 .
+drwxr-xr-x   6 thiago  wheel    192 18 Sep 09:08 ..
+-rw-r--r--   1 thiago  wheel    782 18 Sep 09:08 attempt.json
+-rw-r--r--   1 thiago  wheel    964 18 Sep 09:08 launch-prompt.txt
+-rw-------   1 thiago  wheel   1774 18 Sep 09:08 launch-reservation.json
+-rw-r--r--   1 thiago  wheel   1756 18 Sep 09:08 report.md
+-rw-r--r--   1 thiago  wheel    371 18 Sep 09:08 scope-baseline.json
+-rw-r--r--   1 thiago  wheel   4628 18 Sep 09:09 verify_rq_impl.py
+-rw-r--r--   1 thiago  wheel   3147 18 Sep 09:09 verify-output.txt
+-rw-r--r--   1 thiago  wheel  13831 18 Sep 09:09 worker.log
+[0m
+[0m← [0mWrite DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/report.md
+Wrote file successfully.
+[0m
+[0m$ [0mpython3 /private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/verify_rq_impl.py 2>&1 | tail -1; cd /private/tmp/pbh1-valid/workspace/work/project && echo "porcelain:" && git status --porcelain 2>/dev/null && echo "diff:" && git diff --name-only 2>/dev/null && echo "done"
+RESULT: dispatch_ok=True negative_controls_detected=True
+porcelain:
+?? dispatch.py
+diff:
+done
+[0m
+Report: `/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/report.md`
+
+Conclusion: `dispatch.py` implements fair round-robin `dispatch(arrivals)`; exhaustively verified over all 364 declared-domain sequences (0 failures) with non-vacuous negative controls, and only `dispatch.py` changed.

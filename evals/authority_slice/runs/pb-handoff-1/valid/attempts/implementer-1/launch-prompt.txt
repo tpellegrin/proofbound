@@ -1,0 +1,10 @@
+DSD IMPLEMENTER for RQ-impl.
+Read, in order:
+1. /private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/worker-rules/r0001/WORKER_RULES.md
+2. /private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/worker-rules/r0001/protocol/COMMON.md
+3. /private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/worker-rules/r0001/protocol/roles/dsd-implementer/SKILL.md
+4. /private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/contracts/RQ-impl.md
+Report: /private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/report.md
+This attempt has its own report path. Make that report self-contained; start it early and keep it current.
+Do the bounded role task from authority. Preserve truthful semantic evidence; report formatting is not a protocol.
+Final stdout: report path plus at most one short conclusion.

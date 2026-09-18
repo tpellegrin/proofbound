@@ -1,0 +1,26 @@
+{
+  "change_graph_sha256": "f2965041227fb4efae306f4d4fabeff32994bd070137a7f67637eac6296bf3b1",
+  "checker_sha256": "5c193959fa4ae61a94207382851f6a39bdc2f473da8dae845d56e3a27c966437",
+  "consistency_sha256": "a89f1a17804cff542056a16882c4bb7e010d9c720538463577295f313d7d8fbf",
+  "contracts_tree_sha256": "d0343b88ae2da96cc10213533d41d65995dd6d173a66616470a61db28b18547a",
+  "executor_sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+  "experiment": "pb-handoff-1",
+  "freeze_sha256": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad",
+  "goal_sha256": "5c7840395b5d4b057bda83f78aee7b11dce0fc9d7c8e3c170ebc13a97457227d",
+  "harness": {
+    "clean": true,
+    "commit": "5a5235d1d891c763fa5557f2a1c986ce6aeb22a5",
+    "dirty_paths": []
+  },
+  "interpreter": {
+    "executable": "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "note": "sys.executable as it actually resolved, not a nominal path",
+    "version": "3.14.7"
+  },
+  "ledger_sha256": "2b39454d99d847ceef7321eff7e0607385245813295ee7cedce913350d1ce524",
+  "mode": "live",
+  "oracle_sha256": "982e236664abb15876b656e5f7e7f352a740beb687c8aa5468cb940558f074ab",
+  "project_commit": "a38f30236253c0160b229d44ef82d70eb5865b29",
+  "requirements_sha256": "9a4b9568775ecaa675f39cc8d89b06a8ed2a43f0ff72d8b18c4fe7d83e674db3",
+  "seeded_candidate": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad"
+}

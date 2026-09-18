@@ -1,0 +1,71 @@
+ks.py"[0m, line [35m14[0m, in [35m<module>[0m
+    assert [1;31mgot == exp[0m, (a, got, exp)
+           [1;31m^^^^^^^^^^[0m
+[1;35mAssertionError[0m: [35m([(1, 2), (1, 2), (3,)], [((1, 2), 1), ((3,), 1), ((1, 2), 2)], [((1, 2), 1), (3, 1), ((1, 2), 2)])[0m
+[0m
+[0m← [0mEdit DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/extra_checks.py
+Index: /private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/extra_checks.py
+===================================================================
+--- /private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/extra_checks.py
++++ /private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/extra_checks.py
+@@ -3,9 +3,9 @@
+ from dispatch import dispatch
+ 
+ cases = [
+     ([1, 1, 2], [(1, 1), (2, 1), (1, 2)]),
+-    ([(1, 2), (1, 2), (3,)], [((1, 2), 1), (3, 1), ((1, 2), 2)]),
++    ([(1, 2), (1, 2), (3,)], [((1, 2), 1), ((3,), 1), ((1, 2), 2)]),
+     ([None, None, "x"], [(None, 1), ("x", 1), (None, 2)]),
+     ([], []),
+     (["a"], [("a", 1)]),
+ ]
+
+[0m
+[0m$ [0mcd /private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1 && python3 extra_checks.py
+ok [1, 1, 2] -> [(1, 1), (2, 1), (1, 2)]
+ok [(1, 2), (1, 2), (3,)] -> [((1, 2), 1), ((3,), 1), ((1, 2), 2)]
+ok [None, None, 'x'] -> [(None, 1), ('x', 1), (None, 2)]
+ok [] -> []
+ok ['a'] -> [('a', 1)]
+purity/shape ok [('a', 1), ('b', 1), ('c', 1), ('a', 2), ('b', 2)]
+out-of-domain length 50 out 50
+[0m
+[0m→ [0mRead .gitignore
+[0m
+[0m$ [0mcd /private/tmp/pbh1-valid/workspace/work/project && ls -la __pycache__ && echo "---tracked files---" && git ls-files 2>/dev/null && echo "---status ignored---" && git status --porcelain --ignored 2>/dev/null
+total 8
+drwxr-xr-x   3 thiago  wheel    96 18 Sep 09:09 .
+drwxr-xr-x  11 thiago  wheel   352 18 Sep 09:09 ..
+-rw-r--r--   1 thiago  wheel  1425 18 Sep 09:09 dispatch.cpython-314.pyc
+---tracked files---
+.gitignore
+PLAN.md
+change-graph.json
+goal.md
+requirements.md
+---status ignored---
+?? dispatch.py
+!! DeepSeekAndDestroy/
+!! __pycache__/
+[0m
+[0m$ [0mcd /private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1 && shasum -a 256 verify_rq_impl_reviewer.py verify-output.txt extra_checks.py && echo "---final project state---" && cd /private/tmp/pbh1-valid/workspace/work/project && shasum -a 256 dispatch.py requirements.md goal.md && git status --porcelain 2>/dev/null
+e277a542d030905dc3ccfd2ee295ded3a7073cb106b49d525464846312d5ed57  verify_rq_impl_reviewer.py
+23fcbab2152385efe50296ce32731943e2a1061760041fa763d568dee934356e  verify-output.txt
+391307a1bd551706f3229ba57dacfe1483b8ad9b418697564a938039be8cd04d  extra_checks.py
+---final project state---
+d998c0eaff9fbc2be8a601d809ae43102afebbe2fc60f4f92a2f67c527a890af  dispatch.py
+9a4b9568775ecaa675f39cc8d89b06a8ed2a43f0ff72d8b18c4fe7d83e674db3  requirements.md
+5c7840395b5d4b057bda83f78aee7b11dce0fc9d7c8e3c170ebc13a97457227d  goal.md
+?? dispatch.py
+[0m
+[0m← [0mWrite DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/report.md
+Wrote file successfully.
+[0m
+[0m$ [0mcd /private/tmp/pbh1-valid/workspace/work/project && shasum -a 256 DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/report.md && git status --porcelain 2>/dev/null && echo "(project tracked/untracked unchanged: only dispatch.py)"
+b2906b12974ae5b527cee07e6ed41287b4015af3897ed7e5b4c0f0297cff8bef  DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/report.md
+?? dispatch.py
+(project tracked/untracked unchanged: only dispatch.py)
+[0m
+Report: `/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/report.md`
+
+PASS — independent exhaustive check of all 364 domain sequences plus non-vacuous negative controls confirms AC-001/002/003; only `dispatch.py` added, no defects found.

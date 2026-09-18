@@ -1,0 +1,6 @@
+{
+  "candidate": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad",
+  "format": "proofbound-consistency-acceptance-v1",
+  "gate": "attempts/spec-reflector-2/evidence-gate.json",
+  "gate_sha256": "9a2edffb99ed3eb843ae8a257f531f9c99ddba97db9df37dec03e4f3466d1172"
+}

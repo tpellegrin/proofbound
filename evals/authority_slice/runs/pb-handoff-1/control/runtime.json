@@ -1,0 +1,76 @@
+{
+  "boundary": "processes launched inside the view. A coordinator whose own tool calls run on the host is outside it; what it actually accessed is reported rather than assumed",
+  "credential_staged": "home/.local/share/opencode/auth.json",
+  "environment": {
+    "HOME": "/private/tmp/pbh1-control/home",
+    "PATH": "/private/tmp/pbh1-control-tools:/usr/bin:/bin:/usr/sbin:/sbin",
+    "TMPDIR": "/private/tmp/pbh1-control/tmp"
+  },
+  "harness": {
+    "staged": [
+      "AGENTS.md",
+      "CLAUDE.md",
+      "CODEX.md",
+      "COMPACTION.md",
+      "CONFIG.example.md",
+      "CONTRIBUTING.md",
+      "HARNESS.md",
+      "KILO.md",
+      "OPENCODE.md",
+      "PROMPTS.md",
+      "SKILL.md",
+      "WORKSPACE.md",
+      "evals/_pricing.py",
+      "evals/_profile.py",
+      "evals/authority_slice/_checker.py",
+      "evals/authority_slice/_fixtures.py",
+      "evals/authority_slice/_guard.py",
+      "evals/authority_slice/_launch_paths.py",
+      "evals/authority_slice/_live.py",
+      "evals/authority_slice/_obligations.py",
+      "evals/authority_slice/cases/coherent-requirements/requirements.md",
+      "evals/authority_slice/contracts",
+      "evals/authority_slice/goal.md",
+      "evals/authority_slice/pb_slice.py",
+      "scripts",
+      "templates",
+      "worker"
+    ],
+    "withheld": [
+      "README.md",
+      "_checker_corpus.py",
+      "_implementations.py",
+      "cases/coherent-requirements/case.json",
+      "cases/contradictory-requirements/case.json",
+      "next-live-experiment.md",
+      "probe-observations.md"
+    ]
+  },
+  "harness_root": "/private/tmp/pbh1-control/workspace/harness",
+  "interpreter": {
+    "executable": "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "exposed_prefixes": [
+      "/opt/homebrew/Cellar",
+      "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14",
+      "/opt/homebrew/lib",
+      "/opt/homebrew/opt"
+    ],
+    "shim": "/private/tmp/pbh1-control-tools/python3",
+    "version": "3.14.7"
+  },
+  "mode": "live",
+  "policy_identity": "be39caaaaa8e22a97d14a6d74efd01d8ed5b5463750545d9ea3e00ee832a8165",
+  "prepared": {
+    "candidate": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad",
+    "config": "/private/tmp/pbh1-control/workspace/work/run-config.json",
+    "identities": "/private/tmp/pbh1-control.identities.json",
+    "mode": "live",
+    "project_commit": "84442d0aced11b41b09d8216d01587e9d3c4661b",
+    "workdir": "/private/tmp/pbh1-control/workspace/work"
+  },
+  "profile": "/private/tmp/pbh1-control/.profile.sb",
+  "root": "/private/tmp/pbh1-control",
+  "tools_root": "/private/tmp/pbh1-control-tools",
+  "workdir": "/private/tmp/pbh1-control/workspace/work",
+  "wrapper": "/private/tmp/pbh1-control-run"
+}

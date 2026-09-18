@@ -134,18 +134,18 @@ distinction is easy to blur, so it is stated here:
 | | `coherent` | `contradictory` | `ready-handoff` | `blocked-handoff` |
 |---|---|---|---|---|
 | Mechanical path, fake executor | `completed` | `completed` | `completed` | `completed` |
-| Workflow run by a real model | `not-observed` | `not-observed` | `not-observed` | `not-observed` |
 | Read-only recovery probe | `not-observed` | `not-observed` | **1 observation** | **1 observation** |
 | Fresh coordinator driving the workflow, stand-in executor | `not-observed` | `not-observed` | **2 observations** | `not-observed` |
+| **Live, provider-backed workflow** | `not-observed` | `not-observed` | **1 observation — accepted** | **1 observation — refused correctly** |
 
-So: **no case's workflow has been executed by a real model.** The two handoff fixtures have each
-been read once by a genuinely fresh context that recovered the required facts and stopped correctly
-([probe-observations.md](probe-observations.md)), and two further fresh contexts drove the whole
-continuation — authorize, launch, gate, review, external check, accept — against a stand-in
-executor. A read-only probe is not a workflow execution; a rehearsal against a stand-in is not a
-live observation; and neither is a reliability estimate. The live experiment that would move the
-second row is frozen in [`next-live-experiment.md`](next-live-experiment.md) and awaits a separate
-spending authorization.
+So: **the handoff pair has now run live, once each**, on 2026-09-18 — the valid case reaching a
+checked, accepted implementation and the blocked case refusing without launching anything
+([`runs/pb-handoff-1/run-report.md`](runs/pb-handoff-1/run-report.md)). The requirements pair has
+**not** run against a model: its challenge verdicts remain simulated by the oracle.
+
+Each row is a different kind of evidence and none substitutes for another. A read-only probe is not
+a workflow execution; a rehearsal against a stand-in is not a live observation; and one live
+observation per condition is not a reliability estimate. Two observations are two observations.
 
 ## The continuation experiment: `pb-handoff-1`
 

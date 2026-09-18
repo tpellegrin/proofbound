@@ -1,0 +1,35 @@
+{
+  "allowed_source_changes": [
+    "dispatch.py"
+  ],
+  "errors": [],
+  "format": "dsd-integrity-gate-v2",
+  "integrity_ok": true,
+  "launch_reservation": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/launch-reservation.json",
+  "launch_reservation_sha256": "2709fdf487bf62ab1c5e696fbe4eb0933562c3500bd93745b9eb335b46ec6647",
+  "log": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/worker.log",
+  "needs_report_recovery": false,
+  "ready_for_interpretation": true,
+  "report": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/report.md",
+  "report_sha256": "b2906b12974ae5b527cee07e6ed41287b4015af3897ed7e5b4c0f0297cff8bef",
+  "report_state": "present",
+  "role": "reviewer",
+  "scope": {
+    "added_count": 0,
+    "baseline": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/scope-baseline.json",
+    "changed_count": 0,
+    "diff": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/scope-diff.json",
+    "diff_sha256": "c6048d7e50a8c74a340afdd925df6b813b26ecd466ed2fa7472bd60f2b665bb0",
+    "extra_inventory": [],
+    "git_head_changed": false,
+    "modified_count": 0,
+    "removed_count": 0
+  },
+  "task": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/contracts/RQ-impl.md",
+  "task_sha256": "3b4ea71b6b547d396b6d8e19edc917ddfe34439948d388bf1f4e6df5984ce071",
+  "terminal_event": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/terminal.json",
+  "terminal_event_sha256": "97b7ca3082d74b80b7b3e2dcd02b5d4d7b8c9a447194a6f647527583869bc1c9",
+  "warnings": [],
+  "write_restriction_declared": true,
+  "writes_project": false
+}

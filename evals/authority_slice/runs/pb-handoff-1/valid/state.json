@@ -1,0 +1,133 @@
+{
+  "execution_status": "active",
+  "next_action": "route gated reviewer attempt /private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1",
+  "orchestrator_wait": {
+    "active": false
+  },
+  "phases": {
+    "build": {
+      "status": "pending",
+      "tasks": {
+        "RQ-impl": {
+          "accepted": {
+            "semantic_gate": {
+              "path": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/evidence-gate.json",
+              "sha256": "9b8f679e1a70b0bec947c4f0ebe291708f85bf8ffb0dc554ae05cff9530add47"
+            },
+            "semantic_report": {
+              "path": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/report.md",
+              "sha256": "b2906b12974ae5b527cee07e6ed41287b4015af3897ed7e5b4c0f0297cff8bef"
+            },
+            "source_gate": {
+              "path": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/evidence-gate.json",
+              "sha256": "9b8f679e1a70b0bec947c4f0ebe291708f85bf8ffb0dc554ae05cff9530add47"
+            }
+          },
+          "current_contract": {
+            "path": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/contracts/RQ-impl.md",
+            "revision": 1,
+            "sha256": "3b4ea71b6b547d396b6d8e19edc917ddfe34439948d388bf1f4e6df5984ce071"
+          },
+          "status": "accepted"
+        }
+      }
+    },
+    "design": {
+      "status": "in-progress",
+      "tasks": {
+        "RQ-consistency": {
+          "accepted": {
+            "semantic_gate": {
+              "path": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/evidence-gate.json",
+              "sha256": "9a2edffb99ed3eb843ae8a257f531f9c99ddba97db9df37dec03e4f3466d1172"
+            },
+            "semantic_report": {
+              "path": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/report.md",
+              "sha256": "aad6bd7c9d23b65a9e1a712db90eccaf5161e80002eb65077c1011f12e623b2c"
+            },
+            "source_gate": {
+              "path": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/evidence-gate.json",
+              "sha256": "9a2edffb99ed3eb843ae8a257f531f9c99ddba97db9df37dec03e4f3466d1172"
+            }
+          },
+          "current_contract": {
+            "path": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/contracts/RQ-consistency.md",
+            "revision": 1,
+            "sha256": "6cb4ffbe66ab4444a3fa409e140f3fb1b85daae6382f911c303ee47a0d582fe0"
+          },
+          "status": "accepted"
+        },
+        "RQ-intent": {
+          "accepted": {
+            "semantic_gate": {
+              "path": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-1/evidence-gate.json",
+              "sha256": "d3264312aa737d344622841d33670f549d1c8b14c090edfc52f828924ae38aa2"
+            },
+            "semantic_report": {
+              "path": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-1/report.md",
+              "sha256": "0799902738607d793a0943aa37fdf89191d3f64f2e5bff19e2ff4f7d04bf9131"
+            },
+            "source_gate": {
+              "path": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-1/evidence-gate.json",
+              "sha256": "d3264312aa737d344622841d33670f549d1c8b14c090edfc52f828924ae38aa2"
+            }
+          },
+          "current_contract": {
+            "path": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/contracts/RQ-intent.md",
+            "revision": 1,
+            "sha256": "b5f0b84ed5012ca7170cb4b1aa86e7bc8b34dc5c6c9e22933200858a275c6072"
+          },
+          "status": "accepted"
+        }
+      }
+    }
+  },
+  "project_worktree": "/private/tmp/pbh1-valid/workspace/work/project",
+  "worker_rules": {
+    "format": "dsd-worker-rules-manifest-v3",
+    "manifest": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/worker-rules/r0001/MANIFEST.json",
+    "manifest_sha256": "c42534064c22e1534a1fc224143bccd536f2681e40ff6582146b4a8caa0fff59",
+    "path": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/worker-rules/r0001/WORKER_RULES.md",
+    "protocol": {
+      "COMMON.md": "2213689ec756dafe63dd78ea3f1b5e79cbdefbaccb493f191002ed862b12bbaf",
+      "PROOF-PATTERNS.md": "eba28d92091d8c24fdfe2131c61ced64b6a86e26bad4482bafbd51b052ff5a3c",
+      "roles/dsd-discovery/SKILL.md": "313fd15e347c2166224b2683c46382c8ce782cf09746f765cffa89aff746c056",
+      "roles/dsd-evidence-clerk/SKILL.md": "5cf013bce26413698581d797f2754aa06c4154a593ac4241b94006845293549a",
+      "roles/dsd-fixer/SKILL.md": "bcd4a0c8a1d16aab5e4aeb7a729e62d9f2198d72449ccec46a99c369b93e4b16",
+      "roles/dsd-implementer/SKILL.md": "8b03e3c5fcb48a9c6b66c91c81206cef9e053275936e0bd340573a76360ec4f7",
+      "roles/dsd-phase-auditor/SKILL.md": "15507b38ed38d8c25f5d6b43a36abeba284bc2eec815471053ac9bd7c610eedd",
+      "roles/dsd-phase-surveyor/SKILL.md": "89f0e820398ad4f9c4671e19a66ed6132209000756da970ab9be92555a5e9b2e",
+      "roles/dsd-recovery/SKILL.md": "e9a5a3d05ea0492e042f1da2be8ee49c1983bb1198ba5c82f1d676b54b7081be",
+      "roles/dsd-reviewer/SKILL.md": "ab5b7a36273c49bef906b72e1b09cd13c16a69293d528d73ae566613a9787ef0",
+      "roles/dsd-spec-author/SKILL.md": "2d5983dd15c0f72079cf46d3ea1574c9bae38bc995abeb3955750fa7d930ce4f",
+      "roles/dsd-spec-reflector/SKILL.md": "bd5c136e16a067d0d6e6fddb8420197f05fc122f82222bbaa6a42af850109c49",
+      "roles/dsd-verification/SKILL.md": "96855b33589ebd4e8d49c47bdf758d78be68126a0f8363528dc0e37605976f7f"
+    },
+    "protocol_dir": "/private/tmp/pbh1-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/worker-rules/r0001/protocol",
+    "protocol_fingerprint": "d93df26b80b8b5f495d5aa7806b8232779d26c8b32e3acfc305c584d10114da7",
+    "protocol_names": [
+      "COMMON.md",
+      "PROOF-PATTERNS.md",
+      "roles/dsd-implementer/SKILL.md",
+      "roles/dsd-fixer/SKILL.md",
+      "roles/dsd-reviewer/SKILL.md",
+      "roles/dsd-verification/SKILL.md",
+      "roles/dsd-discovery/SKILL.md",
+      "roles/dsd-phase-surveyor/SKILL.md",
+      "roles/dsd-recovery/SKILL.md",
+      "roles/dsd-phase-auditor/SKILL.md",
+      "roles/dsd-evidence-clerk/SKILL.md",
+      "roles/dsd-spec-author/SKILL.md",
+      "roles/dsd-spec-reflector/SKILL.md"
+    ],
+    "revision": 1,
+    "sha256": "7bad0790cd73a7c8e8c8f23bd999355ae0105be0cedf3b049b2e538f528b2584"
+  },
+  "worker_runtime": {
+    "harness": "opencode-cli",
+    "model": "deepseek/deepseek-v4-flash",
+    "opencode": {
+      "run_db": "/private/tmp/pbh1-valid/workspace/work/session/live.db"
+    }
+  }
+}

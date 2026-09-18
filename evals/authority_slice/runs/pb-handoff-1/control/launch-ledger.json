@@ -1,0 +1,9 @@
+{
+  "ceiling": 5,
+  "experiment": "pb-handoff-1",
+  "format": "proofbound-launch-ledger-v1",
+  "limit": 0.3,
+  "mode": "live",
+  "reserve": 0.06,
+  "slots": []
+}

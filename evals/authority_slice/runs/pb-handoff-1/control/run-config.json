@@ -1,0 +1,68 @@
+{
+  "auto_flag": "--auto",
+  "credential_free_home": false,
+  "deadline": {
+    "clock": "monotonic, enforced by the attempt monitor that owns the worker's process group; the launcher's wait is sized to outlast it",
+    "seconds": 900
+  },
+  "executor": {
+    "kind": "pinned opencode build",
+    "path": "/private/tmp/pbh1-control-tools/opencode",
+    "sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669"
+  },
+  "experiment": "pb-handoff-1",
+  "fake_env": {},
+  "home": "/private/tmp/pbh1-control/home",
+  "interpreter": {
+    "executable": "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "note": "sys.executable as it actually resolved, not a nominal path",
+    "version": "3.14.7"
+  },
+  "mode": "live",
+  "model": "deepseek/deepseek-v4-flash",
+  "paths": {
+    "baseline_manifest": "/private/tmp/pbh1-control/workspace/work/baseline-manifest.json",
+    "consistency": "/private/tmp/pbh1-control/workspace/work/consistency",
+    "freezes": "/private/tmp/pbh1-control/workspace/work/freezes",
+    "graph": "/private/tmp/pbh1-control/workspace/work/project/change-graph.json",
+    "launch_ledger": "/private/tmp/pbh1-control/workspace/work/launch-ledger.json",
+    "ledger": "/private/tmp/pbh1-control/workspace/work/ledger.json",
+    "project": "/private/tmp/pbh1-control/workspace/work/project",
+    "run_root": "/private/tmp/pbh1-control/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1",
+    "seeded_session_db": "/private/tmp/pbh1-control/workspace/work/session/worker.db",
+    "session_db": "/private/tmp/pbh1-control/workspace/work/session/live.db"
+  },
+  "policy": {
+    "admission_quantity": "derived cost from measured usage at a dated price table",
+    "aggregate_limit": 0.3,
+    "ceiling_derivation": [
+      "recovered",
+      "authorized",
+      "implemented",
+      "reviewed",
+      "repaired",
+      "re-reviewed",
+      "accepted"
+    ],
+    "interrupted_call": "terminal; an unfinished model call has no enforced ceiling, so the spend figure is incomplete and no further launch is admitted",
+    "launch_ceiling": 5,
+    "repair_cycles": 1,
+    "reserve": 0.06
+  },
+  "prepared_at": "2026-09-18T02:14:58.856333+00:00",
+  "seeded": {
+    "by": "fake executor; no provider call produced any upstream artifact",
+    "stages": [
+      "proposed requirements placed",
+      "proposal-reflection challenge",
+      "acceptance",
+      "ledger record",
+      "graph validation",
+      "freeze",
+      "consistency-reflection",
+      "consistency acceptance"
+    ]
+  },
+  "variant": "high",
+  "workdir": "/private/tmp/pbh1-control/workspace/work"
+}

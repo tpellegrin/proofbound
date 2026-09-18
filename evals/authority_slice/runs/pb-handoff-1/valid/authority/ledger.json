@@ -1,0 +1,16 @@
+{
+  "artifact_identity": "proofbound-artifact-text-v1",
+  "artifacts": {
+    "requirements.md": {
+      "content_sha256": "9a4b9568775ecaa675f39cc8d89b06a8ed2a43f0ff72d8b18c4fe7d83e674db3",
+      "depends_on": {},
+      "review": {
+        "gate": "attempts/spec-reflector-1/evidence-gate.json",
+        "gate_sha256": "d3264312aa737d344622841d33670f549d1c8b14c090edfc52f828924ae38aa2",
+        "purpose": "proposal-reflection",
+        "role": "spec-reflector"
+      }
+    }
+  },
+  "format": "proofbound-change-ledger-v1"
+}

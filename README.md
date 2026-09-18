@@ -257,10 +257,10 @@ where a column says "1–2 per case" the denominator is the point, not the numer
 | Canonical artifact identity; ledger; derived validity; provenance | yes | yes | yes — demo-2 recorded `spec.md` | once | — |
 | Declared change graph, mechanical graph satisfaction | yes | yes | yes — demo-2 | once | — |
 | Freeze: one canonical contract identity | yes | yes | yes — demo-2 froze a candidate | once | — |
-| **Aggregate consistency acceptance** (`pb_consistency record`) | yes | yes | **no** — demo-2's consistency attempt ran and found a real defect, so no acceptance was ever recorded | — | — |
-| **Execution authorization** (`pb_execution authorize`) | yes | yes — rehearsals and the slice, both paths | **no** | — | — |
-| **Candidate-bound implementation → review → acceptance** | yes | yes — fake executor only | **no. Both authority demonstrations stopped before implementation** | — | — |
-| **Fresh-context handoff of authority state** | n/a (a procedure) | yes — slice fixtures | **partially**: two read-only recovery probes, and two fresh coordinators that drove the whole continuation against a **stand-in executor**. No live run | 1–2 per case, all against a stand-in | — |
+| **Aggregate consistency acceptance** (`pb_consistency record`) | yes | yes | **no** — demo-2's consistency attempt found a real defect so none was recorded, and `pb-handoff-1`'s was seeded by a stand-in | — | — |
+| **Execution authorization** (`pb_execution authorize`) | yes | yes — rehearsals and the slice, both paths | **yes** — `pb-handoff-1`, live: authorized in the valid condition, refused `no-consistency-acceptance` in the control | 1 per condition | — |
+| **Candidate-bound implementation → review → acceptance** | yes | yes | **yes** — `pb-handoff-1`, once: implemented, independently reviewed, externally checked on the delivered bytes, accepted | once | — |
+| **Fresh-context handoff of authority state** | n/a (a procedure) | yes — slice fixtures | **yes** — one live continuation and one live correct refusal, plus two read-only probes and two stand-in rehearsals | 1 live per condition | — |
 | **The guard that makes the launch policy govern launches** | yes | yes — ceiling, budget, repair allowance, unreconciled slot, pre-executor evidence | **no** | — | — |
 | **External check of the delivered artifact** | yes | yes — 3 sound implementations accepted, 12 defective rejected | **no** | — | — |
 | Per-execution profile — calls, tokens, tools, time, context by origin | yes | yes | yes | yes | — |
@@ -271,11 +271,19 @@ where a column says "1–2 per case" the denominator is the point, not the numer
 | Per-role provider/model routing | **no** — architecture protects it | — | — | — | — |
 | Decision provenance, cumulative coherence auditing | **no** — direction only | — | — | — | — |
 
-**The load-bearing gap, stated plainly.** The authority chain's *second half* has never run with a
-real agent. Both demonstrations stopped at genuine review findings — which is the chain working, and
-is a result about **refusal**. A successful rejection and a successful continuation are different
-capabilities, and only one of them has evidence. Everything about implementation, review and
-acceptance under a frozen candidate has been exercised only with a fake executor.
+**The gap that was load-bearing, and what closed it.** For two demonstrations the authority chain's
+*second half* had never run with a real agent: both stopped at genuine review findings, which is the
+chain working and is a result about **refusal**. On 2026-09-18 `pb-handoff-1` ran it — a fresh
+coordinator recovered seeded authority state, obtained authorization through the shipped guard,
+carried a candidate-bound implementation through independent review and a deterministic check of the
+delivered bytes, and recorded acceptance, for $0.020516. A second fresh coordinator, on a state with
+one prerequisite removed, refused without launching anything.
+
+That is **one observation per condition** — not a rate, not reliability, and not a claim that the
+software produced is good beyond the domain the checks cover. The upstream authority it continued
+from was seeded by a stand-in, so nothing here says that state was well produced. And the run found
+that the guarded launch path does not itself call the authorization guard: the refusal was honoured
+by the coordinator's judgement, not enforced by the mechanism.
 
 **Neither demonstration is a controlled observation.** Both amended frozen rules mid-run; demo-2's
 departures `D1` and `D4` resolved a rule contradiction in favour of continuing and raised a launch
@@ -648,9 +656,9 @@ arithmetic. A report is evidence; if proof is genuinely absent, it stays absent.
 
 ## Current limitations
 
-1. **The authority chain's second half has never run with a real agent** — no recorded consistency
-   acceptance, no live authorization, no candidate-bound implementation, no fresh-context
-   continuation.
+1. **The authority chain's second half has run once**, not repeatedly: one live continuation and one
+   live refusal, from seeded upstream authority. No recorded consistency acceptance has ever been
+   produced by a real agent, and the guarded launch path does not itself enforce authorization.
 2. **Every freeze so far has had exactly one member**, so "aggregate coherence" is currently a
    judgement about one artifact against intent.
 3. **Neither authority demonstration conformed to its own frozen protocol**; both amended rules

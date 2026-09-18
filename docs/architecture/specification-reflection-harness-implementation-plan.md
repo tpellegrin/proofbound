@@ -2126,12 +2126,30 @@ Ordered by what most changes what Proofbound can claim. Every item is a hypothes
 Recorded as costs to measure rather than overhead to hide: coordinator interventions, human
 adjudications, and the context a fresh session must reconstruct.
 
-## 7U. `pb-handoff-1` — the continuation experiment, frozen and unrun  *(preparation complete)*
+## 7U. `pb-handoff-1` — the continuation experiment  *(executed 2026-09-18)*
 
 **2026-09-18.** §7T left one gap load-bearing: the authority chain's second half had never run, and
 the experiment that would test it was specified in prose. Prose is not a freeze. This milestone
-built the machinery, rehearsed it, and froze it; it did **not** run it, because running it spends
-provider money and that needs its own authorization.
+built the machinery, rehearsed it, froze it — and then, under separate explicit authorization,
+**ran it once**.
+
+**Result: both conditions passed.** The control recovered a state with its durable consistency
+acceptance removed, invoked the guard three ways, received `no-consistency-acceptance` each time,
+and stopped without launching a worker or writing a file. The valid condition recovered the state,
+obtained authorization, launched an implementer and a fresh reviewer through the guarded path,
+gated both, ran the external check over the delivered bytes, and recorded acceptance — 2 of 5
+slots, $0.020516 derived of $0.30, 33 model calls all finished, accounting complete, repair cycle
+unused. Report and retained evidence:
+[`evals/authority_slice/runs/pb-handoff-1/`](../../evals/authority_slice/runs/pb-handoff-1/run-report.md).
+
+**One observation per condition.** Not a rate, not reliability, and not evidence about the seeded
+upstream authority, which no agent produced.
+
+**What the run found.** `_live.launch` enforces slots, budget, repair allowance and reconciliation —
+and never calls `pb_execution.py authorize`. In the control condition the guard refused while the
+launch ledger would still have admitted a paid worker; only the coordinator's judgement stopped it,
+and it said so unprompted. That is the clearest candidate for the next change and it was **not**
+altered during or after the run.
 
 ### What the preparation added
 
@@ -2174,8 +2192,9 @@ includes an interpreter mismatch and any operator intervention in the run's subs
 
 | # | Work | Gate | Status |
 |---|---|---|---|
-| 1 | Reliable valid path through recovery and delivery | A fresh coordinator recovers the state and carries one bound implementation to acceptance **against a provider**, with correct refusals on mutated states | **Frozen and rehearsed; awaiting spending authorization** |
-| 2 | Repetition | The same two conditions repeated enough to say how often, with a declared decision rule | Blocked on 1 |
+| 1 | Reliable valid path through recovery and delivery | A fresh coordinator recovers the state and carries one bound implementation to acceptance **against a provider**, with correct refusals on mutated states | **Met once per condition, 2026-09-18.** One observation is not reliability |
+| 1a | Couple the launch path to the authorization guard | A launch attempted without a current authorization is refused by the mechanism, not only by judgement | **Next.** Found by the control condition |
+| 2 | Repetition | The same two conditions repeated enough to say how often, with a declared decision rule | Now unblocked |
 | 3 | Real upstream authorship | The upstream artifacts authored and reviewed by agents rather than seeded | Blocked on 1 |
 | 4 | A second change to accepted software | Supersession and `needs-revalidation` closure measured when intent moves | Blocked on 3 |
 | 5 | Multi-artifact coherence | An aggregate consistency challenge over a multi-member candidate catching a real cross-artifact contradiction | Not started; every freeze so far has one member |

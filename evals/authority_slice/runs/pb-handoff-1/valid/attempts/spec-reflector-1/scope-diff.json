@@ -1,0 +1,21 @@
+{
+  "added": [],
+  "baseline_captured_at": "2026-09-18T12:00:24.273652+00:00",
+  "changed": [],
+  "compared_at": "2026-09-18T12:00:24.674353+00:00",
+  "exclude_prefixes": [
+    "DeepSeekAndDestroy"
+  ],
+  "extra_inventory_specs": [],
+  "format": "deepseek-and-destroy-scope-comparison-v5",
+  "git_head_after": "e41d8dbb30caa3b0a52ba554f5386efe55e1d2c7",
+  "git_head_before": "e41d8dbb30caa3b0a52ba554f5386efe55e1d2c7",
+  "git_head_changed": false,
+  "inventory_mode": "git-dirty",
+  "modified": [],
+  "project_root": "/private/tmp/pbh1-valid/workspace/work/project",
+  "removed": [],
+  "unchanged": [
+    "requirements.md"
+  ]
+}

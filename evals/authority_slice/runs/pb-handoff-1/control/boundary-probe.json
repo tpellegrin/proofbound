@@ -1,0 +1,73 @@
+{
+  "boundary_holds": false,
+  "checks": {
+    "answer_key_readable": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "cat: /Users/thiago/Projects/proofbound/evals/authority_slice/cases/coherent-requirements/case.json: Operation not permitted"
+    },
+    "cat_to_a_pipe": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "##"
+    },
+    "checker_corpus_readable": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "cat: /Users/thiago/Projects/proofbound/evals/authority_slice/_checker_corpus.py: Operation not permitted"
+    },
+    "experiment_plan_readable": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "cat: /Users/thiago/Projects/proofbound/evals/authority_slice/next-live-experiment.md: Operation not permitted"
+    },
+    "harness_readable": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "# Proofbound \u2014 instructions for coding agents"
+    },
+    "interpreter_available": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "3.14.7"
+    },
+    "interpreter_writes_to_a_pipe": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "1"
+    },
+    "real_home_readable": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "auth.json"
+    },
+    "reference_implementation_readable": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "cat: /Users/thiago/Projects/proofbound/evals/authority_slice/_implementations.py: Operation not permitted"
+    },
+    "search_finds_withheld_names": {
+      "found_paths": [],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    "source_checkout_readable": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "cat: /Users/thiago/Projects/proofbound/README.md: Operation not permitted"
+    }
+  },
+  "hermeticity": {
+    "claim": "no unintended copy of the controlled evidence was found under the scanned roots; nothing is claimed about roots that were excluded or could not be read",
+    "findings": []
+  },
+  "note": "measured by running ordinary commands inside the view, not by inspecting the profile text",
+  "reachable_from_inside": [
+    "real_home_readable",
+    "harness_readable"
+  ],
+  "withheld_material_reachable": [
+    "real_home_readable"
+  ]
+}

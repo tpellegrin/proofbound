@@ -1,7 +1,10 @@
 # `pb-handoff-1` — the frozen protocol
 
-**Status: prepared, rehearsed, and not run. No provider call has been made.** This document and the
-code it names are the freeze. Executing it needs a separate, explicit spending authorization.
+**Status: EXECUTED on 2026-09-18, once, under separate explicit authorization.** Both conditions
+ran; the run report is [`runs/pb-handoff-1/run-report.md`](runs/pb-handoff-1/run-report.md) and the
+retained evidence is beside it. This document is the freeze the run was executed against, unchanged
+during execution — no ceiling raised, no criterion weakened, no repair added, no terminal outcome
+repeated. It is preserved as the protocol, not rewritten into a record.
 
 An earlier draft of this file described the design in prose. It has been replaced rather than
 amended, because prose was the defect: a freeze that does not cover the runner is not a freeze.

@@ -1,0 +1,34 @@
+{
+  "added": [
+    "requirements.md"
+  ],
+  "baseline_captured_at": "2026-09-18T02:14:52.628619+00:00",
+  "changed": [
+    {
+      "after": {
+        "exists": true,
+        "kind": "file",
+        "sha256": "9a4b9568775ecaa675f39cc8d89b06a8ed2a43f0ff72d8b18c4fe7d83e674db3",
+        "size": 2817
+      },
+      "before": {
+        "state": "clean-at-baseline"
+      },
+      "path": "requirements.md"
+    }
+  ],
+  "compared_at": "2026-09-18T02:14:53.463145+00:00",
+  "exclude_prefixes": [
+    "DeepSeekAndDestroy"
+  ],
+  "extra_inventory_specs": [],
+  "format": "deepseek-and-destroy-scope-comparison-v5",
+  "git_head_after": "ee3d3d89292d59a1c6e1d4ae0dcddec1d8de4bd0",
+  "git_head_before": "ee3d3d89292d59a1c6e1d4ae0dcddec1d8de4bd0",
+  "git_head_changed": false,
+  "inventory_mode": "git-dirty",
+  "modified": [],
+  "project_root": "/private/tmp/pbh1-control/workspace/work/project",
+  "removed": [],
+  "unchanged": []
+}
