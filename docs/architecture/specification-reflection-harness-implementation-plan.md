@@ -2126,6 +2126,60 @@ Ordered by what most changes what Proofbound can claim. Every item is a hypothes
 Recorded as costs to measure rather than overhead to hide: coordinator interventions, human
 adjudications, and the context a fresh session must reconstruct.
 
+## 7U. `pb-handoff-1` — the continuation experiment, frozen and unrun  *(preparation complete)*
+
+**2026-09-18.** §7T left one gap load-bearing: the authority chain's second half had never run, and
+the experiment that would test it was specified in prose. Prose is not a freeze. This milestone
+built the machinery, rehearsed it, and froze it; it did **not** run it, because running it spends
+provider money and that needs its own authorization.
+
+### What the preparation added
+
+| Gap | Closed by |
+|---|---|
+| The launch policy was enumerated, not enforced | `_guard`: a slot reserved **durably before** the executor is reached, no admission while a previous slot is unreconciled, the derived ceiling applied, the repair allowance counted from producer attempts, and an unfinished model call treated as terminal |
+| Nothing checked the artifact that was actually delivered | `_checker`: loads the delivered file by resolved path, hashes it, runs it in a subprocess under a time bound, and checks the public API separately from the ordering model — which alone accepts a generator where `AC-001` asks for a list |
+| The checkout contains this slice's own answers | `_runtime`: an allowlisted evidence surface on `_semantic_view`, with exposure **measured** from inside rather than asserted |
+| The rehearsal stopped at authorization | `_live.rehearse`: four paths — clean, repair, blocked, interrupted — through the same entry points the live run uses |
+| Seeded and live work were accounted together | The live half writes its own session database, and the guard reconciles only the slots its ledger reserved |
+
+### What the rehearsals established, and what they did not
+
+Four fresh-context observations were taken, all against a **stand-in executor**: two read-only
+recovery probes (§7T) and two coordinators that drove the whole continuation to a recorded
+acceptance. Both continuation coordinators reached the right outcome for the right reason — each
+noticed that the review declared coverage narrower than the requirements' domain and relied on the
+deterministic external check to close it.
+
+Each also found preparation defects the author had not, which is the whole argument for rehearsing:
+`python3` inside the boundary resolved to an interpreter that could not run, an entire continuation
+ran under an unsupported version with nothing noticing, and the seeded candidate — the fact a
+coordinator is asked to establish — sat in a configuration file in its own working directory. All
+three are fixed, and the interpreter identity is now re-checked at launch.
+
+**None of this is evidence about agent behaviour under a provider.** A stand-in executor produces a
+report the fixture wrote. The question stays `not observed`.
+
+### The frozen protocol
+
+[`evals/authority_slice/next-live-experiment.md`](../../evals/authority_slice/next-live-experiment.md),
+with the machine record in
+[`evals/results/handoff-1-readiness-v1.json`](../../evals/results/handoff-1-readiness-v1.json).
+Two conditions, counted separately: a missing-prerequisite control where a correct refusal is the
+success, and the valid continuation. $0.30 admission limit, $0.06 reserve, five launch slots
+derived from enumerated paths, one repair cycle, eight stop conditions, and an invalidity list that
+includes an interpreter mismatch and any operator intervention in the run's substance.
+
+### Evidence gates, restated after this milestone
+
+| # | Work | Gate | Status |
+|---|---|---|---|
+| 1 | Reliable valid path through recovery and delivery | A fresh coordinator recovers the state and carries one bound implementation to acceptance **against a provider**, with correct refusals on mutated states | **Frozen and rehearsed; awaiting spending authorization** |
+| 2 | Repetition | The same two conditions repeated enough to say how often, with a declared decision rule | Blocked on 1 |
+| 3 | Real upstream authorship | The upstream artifacts authored and reviewed by agents rather than seeded | Blocked on 1 |
+| 4 | A second change to accepted software | Supersession and `needs-revalidation` closure measured when intent moves | Blocked on 3 |
+| 5 | Multi-artifact coherence | An aggregate consistency challenge over a multi-member candidate catching a real cross-artifact contradiction | Not started; every freeze so far has one member |
+
 ## 7B. Threat mitigation status
 
 RFC [§39](proofbound/long-running-autonomy.md#39-long-running-autonomy-threat-model) states the threats. This table is their single mitigation record, kept here rather than in the RFC

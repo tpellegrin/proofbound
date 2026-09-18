@@ -1,0 +1,221 @@
+{
+  "artifact_checker": {
+    "all_as_declared": true,
+    "defective": [
+      "generator",
+      "tuple-container",
+      "global-fifo",
+      "lifo-per-key",
+      "drops-last",
+      "duplicates-head",
+      "key-sorted",
+      "string-items",
+      "raises",
+      "no-callable",
+      "does-not-terminate",
+      "import-raises"
+    ],
+    "defective_rejected": true,
+    "sound": [
+      "round-robin",
+      "fewest-remaining",
+      "pairs-as-lists"
+    ],
+    "sound_accepted": true
+  },
+  "experiment": "pb-handoff-1",
+  "harness": {
+    "clean": false,
+    "commit": "e9e762ddec5775ff4610aaa5571fc3abb0f85677"
+  },
+  "harness_note": "this record is produced while validating the preparation, so the tree it measures is normally uncommitted. A *live* preparation refuses an uncommitted harness, so the run's own frozen identity is always a committed one",
+  "interpreter": {
+    "executable": "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "version": "3.14.7"
+  },
+  "launch_arithmetic": {
+    "ceiling": 5,
+    "enumerated": [
+      {
+        "launches": 4,
+        "path": [
+          "recovered",
+          "authorized",
+          "implemented",
+          "reviewed",
+          "repaired",
+          "re-reviewed",
+          "accepted"
+        ]
+      },
+      {
+        "launches": 4,
+        "path": [
+          "recovered",
+          "authorized",
+          "implemented",
+          "reviewed",
+          "repaired",
+          "re-reviewed",
+          "stopped-allowance-spent"
+        ]
+      },
+      {
+        "launches": 2,
+        "path": [
+          "recovered",
+          "authorized",
+          "implemented",
+          "reviewed",
+          "accepted"
+        ]
+      },
+      {
+        "launches": 0,
+        "path": [
+          "recovered",
+          "stopped-refused"
+        ]
+      }
+    ],
+    "max_launches_on_a_path": 4,
+    "mechanical_relaunch_allowance": 1,
+    "paths": 4,
+    "terminal_not_survivable": "a deadline expiry with a model call still in flight ends the run: with no enforced per-call limit the cost of that call is unknown, the figure is incomplete, and stop condition 1 refuses further launches",
+    "worst_path": [
+      "recovered",
+      "authorized",
+      "implemented",
+      "reviewed",
+      "repaired",
+      "re-reviewed",
+      "accepted"
+    ]
+  },
+  "not_established": [
+    "any agent behaviour: every semantic decision in the rehearsals is simulated",
+    "that a real coordinator can recover this state and carry it to acceptance",
+    "anything about the quality of the seeded upstream authority, which no agent produced"
+  ],
+  "policy": {
+    "aggregate_limit": 0.3,
+    "launch_ceiling": 5,
+    "repair_cycles": 1,
+    "reserve": 0.06
+  },
+  "provider_calls": 0,
+  "rehearsal_paths": {
+    "blocked": {
+      "accepted": null,
+      "accounting_complete": true,
+      "artifact_check": null,
+      "derived": 0.0,
+      "outcome": "blocked",
+      "slots_spent": 0,
+      "steps": [
+        "one minimal mutation: the durable consistency acceptance is gone",
+        "authorization",
+        "stopped at the guard's refusal; no launch, no mutation"
+      ]
+    },
+    "clean": {
+      "accepted": true,
+      "accounting_complete": true,
+      "artifact_check": "pass",
+      "derived": 0.026904,
+      "outcome": "accepted",
+      "slots_spent": 2,
+      "steps": [
+        "authorization",
+        "implementer launched",
+        "implementation gated",
+        "review launched",
+        "review reported",
+        "external artifact check",
+        "parent acceptance recorded"
+      ]
+    },
+    "interrupted": {
+      "accepted": null,
+      "accounting_complete": false,
+      "artifact_check": null,
+      "derived": 0.008968,
+      "outcome": "terminal-unknown-spend",
+      "slots_spent": 1,
+      "steps": [
+        "authorization",
+        "implementer launched",
+        "implementation gated",
+        "relaunch after an interrupted attempt"
+      ]
+    },
+    "repair": {
+      "accepted": true,
+      "accounting_complete": true,
+      "artifact_check": "pass",
+      "derived": 0.053808,
+      "outcome": "accepted",
+      "slots_spent": 4,
+      "steps": [
+        "authorization",
+        "implementer launched",
+        "implementation gated",
+        "review launched",
+        "review reported",
+        "repair launched",
+        "the review predating the repair is no longer acceptable",
+        "fresh review launched",
+        "fresh review reported",
+        "external artifact check",
+        "parent acceptance recorded"
+      ]
+    }
+  },
+  "runtime": {
+    "boundary_holds": true,
+    "boundary_scope": "processes launched inside the view. A coordinator whose own tool calls run on the host is outside it; what it actually accessed is reported rather than assumed",
+    "hermeticity_findings": [],
+    "interpreter_inside": "3.14.7",
+    "policy_identity": "ab28398b8d6cb386232ed95682206bdd9ed26252239473d518c1d1f9d61f86fc",
+    "staged": [
+      "AGENTS.md",
+      "CLAUDE.md",
+      "CODEX.md",
+      "COMPACTION.md",
+      "CONFIG.example.md",
+      "CONTRIBUTING.md",
+      "HARNESS.md",
+      "KILO.md",
+      "OPENCODE.md",
+      "PROMPTS.md",
+      "SKILL.md",
+      "WORKSPACE.md",
+      "evals/_pricing.py",
+      "evals/_profile.py",
+      "evals/authority_slice/_checker.py",
+      "evals/authority_slice/_fixtures.py",
+      "evals/authority_slice/_guard.py",
+      "evals/authority_slice/_launch_paths.py",
+      "evals/authority_slice/_live.py",
+      "evals/authority_slice/_obligations.py",
+      "evals/authority_slice/cases/coherent-requirements/requirements.md",
+      "evals/authority_slice/contracts",
+      "evals/authority_slice/goal.md",
+      "evals/authority_slice/pb_slice.py",
+      "scripts",
+      "templates",
+      "worker"
+    ],
+    "withheld": [
+      "README.md",
+      "_checker_corpus.py",
+      "_implementations.py",
+      "cases/coherent-requirements/case.json",
+      "cases/contradictory-requirements/case.json",
+      "next-live-experiment.md",
+      "probe-observations.md"
+    ],
+    "withheld_material_reachable": []
+  },
+  "status": "prepared; not run against a provider"
+}

@@ -32,7 +32,7 @@ credentials; `PAID` invokes real models through the worker harness.
 | [`pb_craft.py`](pb_craft.py) | System craft: does architecture stay changeable? Calibration and repeatability | `validate <case-dir>` — *unpaid*. `run`, `reflect`, `regrade`, `repeat-reflect`, `sample` — **PAID** |
 | [`pb_mlr.py`](pb_mlr.py) | Modularity and local reasoning: does reading a module's implementation contribute to a change outside it? | `preflight`, `b1-preflight`, `analyse`, `retrospect` — *unpaid*. `pilot`, `paired`, `b1` — **PAID** |
 | [`pb_lifecycle_field_check.py`](pb_lifecycle_field_check.py) | Whether the attempt deadline actually stops a real worker | **PAID** — two provider-backed trials. An engineering validation, never a treatment sample |
-| [`authority_slice/pb_slice.py`](authority_slice/README.md) | The four-case authority slice: challenge and handoff, valid and invalid | `validate`, `replay`, `build`, `probe-input`, `launch-arithmetic`, `report` — *unpaid*, all of them |
+| [`authority_slice/pb_slice.py`](authority_slice/README.md) | The four-case authority slice, and the `pb-handoff-1` continuation experiment | `validate`, `replay`, `build`, `probe-input`, `launch-arithmetic`, `report`, `validate-checker`, `rehearse-live`, `readiness`, `prepare-live`, `build-runtime`, `probe-runtime`, `live-input`, `check-artifact`, `account` — *unpaid*. `launch` — *unpaid* in a rehearsal runtime, **PAID** in a live one |
 
 Supporting modules, none of them an entry point: `_scenario` (cases and their identities), `_trial`
 (one execution through the real pipeline), `_grade` (mechanical and blind semantic grading),
@@ -52,6 +52,9 @@ python3 evals/pb_mlr.py preflight                                 # hermeticity 
 python3 evals/authority_slice/pb_slice.py validate                # the slice's oracle
 python3 evals/authority_slice/pb_slice.py replay                  # four cases, fake executor
 python3 evals/authority_slice/pb_slice.py launch-arithmetic       # derive a launch ceiling
+python3 evals/authority_slice/pb_slice.py validate-checker        # the artifact checker's corpus
+python3 evals/authority_slice/pb_slice.py rehearse-live --into /tmp/pbh --path clean
+python3 evals/authority_slice/pb_slice.py readiness               # all four paths + the runtime
 ```
 
 `pb_craft.py validate` takes a **path**, not a bare case name. Commands are written out in full
@@ -101,6 +104,45 @@ variation under identical conditions. Measured here: a craft reflector's conclus
 byte-identical repeats and the grader on 17%. Consistency is not correctness — a system can repeat
 the same wrong answer indefinitely.
 
+## What a change has to show
+
+The kind of change decides the evidence. Demanding a controlled comparison for a bug fix is how a
+discipline becomes theatre; accepting a bug fix's evidence for a context-policy change is how a
+harness acquires beliefs it never tested. Canonically:
+[evaluation.md §E24.6](../docs/architecture/proofbound/evaluation.md#e246-four-kinds-of-change-and-what-each-has-to-show).
+
+| Change | Evidence needed | Looks like |
+|---|---|---|
+| **Deterministic defect repair** | Reproduce the defect against committed code; add a regression that can falsify the guarantee rather than restate the formula; verify the guarantees and compatibility it touches | `tests/test_authority_demo2_accounting.py` prices a plausible unfinished call and shows the "ceiling" beneath it |
+| **Newly supported workflow** | One representative valid path completed, the invalid paths that must refuse exercised, existing guarantees intact — one observation per condition, with its denominator | `pb-handoff-1`: a valid continuation and a missing-prerequisite control, counted separately |
+| **Semantic policy, context, model or efficiency change** | Named baseline and treatment on matched tasks, calibrated graders, repetitions, uncertainty, resource accounting, adoption rule — declared before the observations | the MLR paired series, where `_experiment.py` refuses an incomplete manifest |
+| **Architectural or maintainability improvement** | *Subsequent* changes to the retained agent-produced code: previous obligations still met, new correctness, regressions, and the human effort each cost | not built. This is the gap in the fourth question above |
+
+**Declare before observing, for a comparative change:** the task population and how it was drawn,
+the primary outcome, what size of benefit would be practically meaningful, the regression margins
+that would make a gain unacceptable, allocation and interleaving, the retry policy, the analysis,
+and the adoption decision. Then report one of: **improvement**, **regression**, **tradeoff**,
+**invalid**, or **inconclusive**. If several components changed together, report a *configuration*
+comparison and do not attribute the effect to whichever mechanism is most interesting.
+
+### Reading a difference
+
+Reliability still comes before validity, and a measurement repeated on unchanged input is still how
+you learn what the instrument does on its own. But the floor —
+*do not interpret a difference smaller than run-to-run variation* — is **not** a general rule, and
+[§E24.7](../docs/architecture/proofbound/evaluation.md#e247-reading-a-difference-corrected)
+narrows it:
+
+- under pairing, the quantity carrying an uncertainty is the **paired difference**, not the spread
+  of either arm;
+- **name the unit of independence**: calls within one trajectory are not independent trials, and
+  repeated tasks from one repository are not independent repository samples;
+- judge the effect against its uncertainty *and* against what would be practically meaningful;
+- more observations cannot repair a biased oracle, and absence of an observed regression is not
+  equivalence;
+- a **qualification observation** — does the valid path work at all — has an outcome and a
+  denominator, and needs no significance test at all.
+
 ## What to report
 
 A small set of decision-relevant measures, deliberately **not** collapsed into one score. Nothing
@@ -114,7 +156,10 @@ supplies the exchange rates that would require.
 | Authority and recovery accuracy | Did a fresh coordinator recover the real state, and stop when it should? |
 | Execution failures | An infrastructure failure is not a semantic verdict, and it is still operational reliability |
 | Cost, and accounting completeness | Unknown expenditure is unknown, never zero. Measured usage, derived cost, estimated reserve, justified bound and provider-confirmed billing are five different facts |
-| Coordinator and human interventions | The manual effort a run required is a product cost, not overhead to leave out |
+| Coordinator and human interventions | The manual effort a run required is a product cost, not overhead to leave out. Count them, and say in what units — attempts re-driven, decisions adjudicated, minutes of operator time |
+| Whole-workflow success, separately from stage success | A run whose every stage was clean and which delivered nothing has not succeeded. Report the workflow outcome and the stage outcomes as different numbers |
+| Supported and unsupported refusals | **A system that refuses every task must not score as a successful harness.** A refusal is supported when the thing it refused was genuinely not permitted, and unsupported otherwise; collapsing the two makes abstention look free |
+| Missing evidence | What could not be established, kept distinct from what was established as negative |
 
 Architectural quality connects to an accepted consequence under a *later* change — never to
 resemblance to a preferred design.

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """The four-case authority slice: offline validation, mechanical replay, and handoff fixtures.
 
-    WARNING, in the other direction: **nothing here spends money.** Every command runs against a
-    fake executor in a constructed credential-free environment, and no command reaches a provider.
-    That is the point — the questions below are separable from agent behaviour, and the parts that
-    are not are marked `not observed` rather than simulated into a result.
+    **One command can spend money: `launch`, against a runtime built with `--mode live`.**
+    Everything else here — and `launch` in a rehearsal runtime — runs against a fake executor in a
+    constructed credential-free environment and reaches no provider. That separation is the point:
+    the questions below are answerable without an agent, and the parts that are not are marked
+    `not observed` rather than simulated into a result.
 
 Four questions, deliberately four *cases* and not one chain: each builds its own fixture, so a
 failure in one still leaves the other three observable.
@@ -17,8 +18,24 @@ failure in one still leaves the other three observable.
     validate      the oracle, its domain, and what it discriminates. No subprocess, no fixture
     replay        all four cases through the shipped scripts with the fake executor
     build         leave one handoff fixture on disk for a fresh-context probe
-    probe-input   the initial input a fresh coordinator gets, with the answer key withheld
+    probe-input   the initial input a read-only recovery probe gets
     report        validate + replay, written as a readiness record
+
+The `pb-handoff-1` continuation experiment adds a second surface. Its protocol is frozen in
+`next-live-experiment.md`; these commands are the runner that freeze covers.
+
+    validate-checker  the external artifact checker against its own corpus
+    launch-arithmetic enumerate permitted paths and derive the launch ceiling
+    prepare-live      seed the upstream state, commit it, and freeze the identities
+    build-runtime     construct the restricted runtime and prepare inside it
+    probe-runtime     measure what that runtime exposes, from inside it
+    live-input        the live coordinator's initial input
+    place-contract    put a task contract into the run root, binding a candidate
+    launch            the guarded launch path — the only way a worker starts
+    account           spend and launch slots; costs nothing
+    check-artifact    the external check on the delivered artifact
+    rehearse-live     drive the whole continuation with a fake at the executor seam
+    readiness         every path, the checker and the runtime, as one record
 """
 from __future__ import annotations
 
@@ -35,9 +52,12 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 
-import _implementations as impl           # noqa: E402
 import _obligations as oracle             # noqa: E402
 from _fixtures import Fixture             # noqa: E402
+
+# `_implementations` holds working implementations of the task under evaluation and is deliberately
+# absent from a subject runtime. Only the evaluator-side validation needs it, so it is imported
+# where it is used rather than at module scope, and the operational commands run without it.
 
 CASES = ("coherent-requirements", "contradictory-requirements",
          "ready-handoff", "blocked-handoff")
@@ -77,6 +97,7 @@ def validate() -> "dict[str, Any]":
 
     # Discrimination: sound implementations must pass and defective ones must fail, on the case
     # that is supposed to be satisfiable. A suite that accepts everything measures nothing.
+    import _implementations as impl
     model = oracle.parse_model(case_text("coherent-requirements"))
     rows = {}
     for name, fn in impl.CONFORMING.items():
@@ -338,6 +359,50 @@ def main() -> int:
     probe_cmd.add_argument("--into", type=Path, required=True)
     sub.add_parser("launch-arithmetic",
                    help="enumerate the allowed paths and derive the launch ceiling")
+    sub.add_parser("validate-checker", help="check the artifact checker against its own corpus")
+
+    prep = sub.add_parser("prepare-live", help="seed and freeze pb-handoff-1 (no provider call)")
+    prep.add_argument("--into", type=Path, required=True)
+    prep.add_argument("--mode", choices=["rehearsal", "live"], default="rehearsal")
+
+    runtime = sub.add_parser("build-runtime", help="construct the restricted runtime and prepare")
+    runtime.add_argument("--root", type=Path, default=None)
+    runtime.add_argument("--mode", choices=["rehearsal", "live"], default="rehearsal")
+
+    probe_rt = sub.add_parser("probe-runtime", help="measure what the runtime exposes")
+    probe_rt.add_argument("--root", type=Path, required=True)
+
+    live_in = sub.add_parser("live-input", help="the live coordinator's initial input")
+    live_in.add_argument("--workdir", type=Path, required=True)
+    live_in.add_argument("--harness", type=Path, default=None)
+    live_in.add_argument("--wrapper", type=Path, default=None)
+
+    place = sub.add_parser("place-contract", help="put a task contract into the run root")
+    place.add_argument("--workdir", type=Path, required=True)
+    place.add_argument("--task", required=True)
+    place.add_argument("--candidate", default=None)
+
+    launch_cmd = sub.add_parser("launch", help="the guarded launch path (SPENDS, in live mode)")
+    launch_cmd.add_argument("--workdir", type=Path, required=True)
+    launch_cmd.add_argument("--phase", required=True)
+    launch_cmd.add_argument("--task", required=True)
+    launch_cmd.add_argument("--role", required=True)
+    launch_cmd.add_argument("--input", action="append", default=[])
+
+    acct = sub.add_parser("account", help="spend and launch slots; costs nothing")
+    acct.add_argument("--workdir", type=Path, required=True)
+
+    check = sub.add_parser("check-artifact", help="external check on the delivered artifact")
+    check.add_argument("--workdir", type=Path, required=True)
+
+    ready = sub.add_parser("readiness", help="rehearse every path and record what is established")
+    ready.add_argument("--out", type=Path, default=None)
+    ready.add_argument("--keep", type=Path, default=None)
+
+    reh = sub.add_parser("rehearse-live", help="drive the whole continuation with a fake executor")
+    reh.add_argument("--into", type=Path, required=True)
+    reh.add_argument("--path", choices=["clean", "repair", "blocked", "interrupted"],
+                     default="clean")
     report_cmd = sub.add_parser("report", help="validate + replay, as a readiness record")
     report_cmd.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
@@ -361,6 +426,65 @@ def main() -> int:
         import _launch_paths
         print(json.dumps(_launch_paths.ceiling(), indent=2, sort_keys=True))
         return 0
+    if args.command == "validate-checker":
+        import _checker_corpus
+        result = _checker_corpus.validate()
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return 0 if result["all_as_declared"] else 1
+    if args.command in ("prepare-live", "build-runtime", "probe-runtime", "live-input",
+                        "place-contract", "launch", "account", "check-artifact",
+                        "rehearse-live", "readiness"):
+        import _live
+        if args.command == "prepare-live":
+            print(json.dumps(_live.prepare(args.into, mode=args.mode), indent=2, sort_keys=True))
+            return 0
+        if args.command == "build-runtime":
+            import _runtime
+            print(json.dumps(_runtime.build(mode=args.mode, root=args.root), indent=2,
+                             sort_keys=True))
+            return 0
+        if args.command == "probe-runtime":
+            import _runtime
+            found = _runtime.probe(args.root)
+            print(json.dumps(found, indent=2, sort_keys=True))
+            return 0 if found["boundary_holds"] else 1
+        if args.command == "live-input":
+            print(_live.live_input(args.workdir, harness=args.harness, wrapper=args.wrapper))
+            return 0
+        if args.command == "place-contract":
+            config = _live.load_config(args.workdir)
+            path = _live.place_contract(config, args.task, args.candidate)
+            print(json.dumps({"contract": str(path)}, indent=2))
+            return 0
+        if args.command == "launch":
+            result = _live.launch(args.workdir, phase=args.phase, task=args.task,
+                                  role=args.role, inputs=args.input)
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0 if result.get("admitted") and result.get("returncode") == 0 else 1
+        if args.command == "account":
+            print(json.dumps(_live.account(args.workdir), indent=2, sort_keys=True))
+            return 0
+        if args.command == "check-artifact":
+            report = _live.check_artifact(args.workdir)
+            print(json.dumps(report, indent=2, sort_keys=True))
+            return 0 if report["verdict"] == "pass" else 1
+        if args.command == "readiness":
+            record = _live.readiness(keep=args.keep)
+            text = json.dumps(record, indent=2, sort_keys=True)
+            if args.out:
+                Path(args.out).write_text(text + "\n", encoding="utf-8")
+                print(f"wrote {args.out}")
+            else:
+                print(text)
+            ok = (record["artifact_checker"]["all_as_declared"]
+                  and record["runtime"]["boundary_holds"]
+                  and record["rehearsal_paths"]["clean"]["outcome"] == "accepted")
+            return 0 if ok else 1
+        if args.command == "rehearse-live":
+            result = _live.rehearse(args.into, path=args.path)
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0 if result["outcome"] in ("accepted", "blocked",
+                                              "terminal-unknown-spend") else 1
     if args.command == "report":
         checked = validate()
         ran = replay()

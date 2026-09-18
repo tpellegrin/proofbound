@@ -38,14 +38,55 @@ CASES = HERE / "cases"
 RUN_RELATIVE = Path("DeepSeekAndDestroy/plans/slice/runs/r1")
 
 FAKE = r'''#!/usr/bin/env python3
-"""A fake `opencode` for the authority slice. Branches on ROLE and on artifact content only."""
-import json, os, pathlib, re, sys
+"""A fake `opencode` for the authority slice. Branches on role, declared purpose and content.
+
+It never branches on a task or case name: a stand-in that passed because its task was called
+"coherent" would measure the harness's naming convention. It also writes a session database with
+the shape the real accounting reads — `session`, `message` and `part` rows, `step-start` and
+`step-finish` — so a rehearsal exercises reconciliation rather than skipping it.
+"""
+import hashlib, json, os, pathlib, re, sqlite3, sys, time
 
 args = sys.argv[1:]
 db = pathlib.Path(os.environ["OPENCODE_DB"]); db.parent.mkdir(parents=True, exist_ok=True)
+
+
+def session_id(title):
+    return "ses_" + hashlib.sha256(title.encode()).hexdigest()[:12]
+
+
+def record_calls(title, calls, unfinished=0):
+    """Write a session the real profiler can read. `unfinished` calls get no step-finish."""
+    sid = session_id(title)
+    conn = sqlite3.connect(db)
+    conn.execute("create table if not exists session (id text, title text)")
+    conn.execute("create table if not exists message "
+                 "(id text, session_id text, time_created integer, data text)")
+    conn.execute("create table if not exists part (id text, message_id text, data text)")
+    if not conn.execute("select 1 from session where id = ?", (sid,)).fetchall():
+        conn.execute("insert into session values (?, ?)", (sid, title))
+    now = int(time.time() * 1000)
+    for n in range(calls):
+        mid = f"{sid}_m{n}_{now}"
+        finished = n >= unfinished
+        conn.execute("insert into message values (?, ?, ?, ?)", (mid, sid, now + n, json.dumps(
+            {"role": "assistant", "modelID": "deepseek-v4-flash", "providerID": "deepseek",
+             "time": {"created": now + n, **({"completed": now + n + 1} if finished else {})}})))
+        conn.execute("insert into part values (?, ?, ?)",
+                     (f"{mid}_s", mid, json.dumps({"type": "step-start"})))
+        if finished:
+            conn.execute("insert into part values (?, ?, ?)", (f"{mid}_f", mid, json.dumps(
+                {"type": "step-finish", "cost": 0.0021,
+                 "tokens": {"input": 6800, "output": 950, "reasoning": 400,
+                            "cache": {"read": 17000, "write": 0}}})))
+    conn.commit()
+    conn.close()
+
+
 if args[:2] == ["session", "list"]:
     t = db.with_suffix(".title")
-    print(json.dumps([{"id": "ses_fake", "title": t.read_text() if t.exists() else ""}]))
+    title = t.read_text() if t.exists() else ""
+    print(json.dumps([{"id": session_id(title), "title": title}]))
     raise SystemExit(0)
 if not args or args[0] != "run":
     raise SystemExit(2)
@@ -54,6 +95,15 @@ db.with_suffix(".title").write_text(title)
 prompt = args[-1]
 report = pathlib.Path(re.search(r"^Report: (.+)$", prompt, re.M).group(1).strip())
 role, attempt = title.split(":")[2], title.split(":")[3]
+
+# An attempt whose model call never finished: the session records a start with no finish, which is
+# exactly what a deadline stop leaves behind. The run stops there, because nothing bounds what that
+# call cost.
+if os.environ.get("PB_SLICE_INTERRUPT") == title.split(":")[1]:
+    record_calls(title, 3, unfinished=1)
+    report.write_text("# interrupted\n\nStopped with a model call in flight.\n", encoding="utf-8")
+    raise SystemExit(1)
+record_calls(title, 3)
 
 # What this attempt was actually asked to do, read from the contract the prompt hands it — the
 # same way a real worker learns its purpose. Branching on the declared purpose is the worker doing
@@ -129,6 +179,77 @@ elif role == "spec-reflector":
             f"Minimal conflicting set(s): {cores}. The remaining requirements are not involved.\n\n"
             "This is an authority question: which of the conflicting requirements is intended is "
             "not mine to decide, and I have not rewritten the document.\n", encoding="utf-8")
+elif role == "implementer":
+    # A defective first attempt when the rehearsal asks for the repair path, so the review has
+    # something real to find. Later attempts are sound: a repair that changed nothing would
+    # rehearse nothing.
+    faulty = os.environ.get("PB_SLICE_IMPL_MODE") == "faulty" and attempt == "1"
+    body = ("    return _items(arrivals)\n" if faulty else
+            "    keys, queues = _queues(arrivals)\n"
+            "    out = []\n"
+            "    while any(queues[k] for k in keys):\n"
+            "        for key in keys:\n"
+            "            if queues[key]:\n"
+            "                out.append(queues[key].pop(0))\n"
+            "    return out\n")
+    pathlib.Path("dispatch.py").write_text(
+        '"""Dispatch order for the shared work queue."""\n\n\n'
+        "def _items(arrivals):\n"
+        "    seen, out = {}, []\n"
+        "    for key in arrivals:\n"
+        "        seen[key] = seen.get(key, 0) + 1\n"
+        "        out.append((key, seen[key]))\n"
+        "    return out\n\n\n"
+        "def _queues(arrivals):\n"
+        "    order, queues = [], {}\n"
+        "    for item in _items(arrivals):\n"
+        "        if item[0] not in queues:\n"
+        "            queues[item[0]] = []\n"
+        "            order.append(item[0])\n"
+        "        queues[item[0]].append(item)\n"
+        "    return order, queues\n\n\n"
+        "def dispatch(arrivals):\n" + body, encoding="utf-8")
+    report.write_text(
+        f"# Implementation attempt {attempt}\n\nWrote `dispatch.py` with `dispatch(arrivals)` "
+        "returning the dispatch order as a list of `(key, n)` items. "
+        + ("It serves items in arrival order.\n" if faulty else
+           "It serves keys in rotation, first-in-first-out within each key.\n"),
+        encoding="utf-8")
+elif role == "reviewer":
+    # An independent read of the delivered file, over a sample rather than the whole domain: a
+    # reviewer reasons, it does not enumerate. That the external check is wider is the point of
+    # having both.
+    import importlib.util
+    findings = []
+    artifact = pathlib.Path("dispatch.py")
+    if not artifact.is_file():
+        findings.append("no `dispatch.py` was delivered")
+    else:
+        model = O.parse_model(pathlib.Path("requirements.md").read_text(encoding="utf-8"))
+        spec = importlib.util.spec_from_file_location("delivered", artifact)
+        module = importlib.util.module_from_spec(spec)
+        try:
+            spec.loader.exec_module(module)
+            fn = getattr(module, "dispatch", None)
+            if fn is None:
+                findings.append("`dispatch.py` defines no `dispatch`")
+            else:
+                for arrivals in [s for s in O.domain(model) if len(s) <= 3]:
+                    broke = O.violations(list(fn(list(arrivals))), arrivals, model["obligations"])
+                    if broke:
+                        findings.append(
+                            f"arrivals {arrivals}: breaks {', '.join(broke)} "
+                            f"({', '.join(model['obligations'][r] for r in broke)})")
+                        break
+        except Exception as exc:
+            findings.append(f"`dispatch.py` raised {type(exc).__name__}: {exc}")
+    verdict = ("**Blocking finding.** " + findings[0]) if findings else (
+        "No task-relevant defect found in the coverage I checked.")
+    report.write_text(
+        f"# Implementation review attempt {attempt}\n\n{verdict}\n\n"
+        "I read the delivered `dispatch.py` and exercised it against the accepted requirements "
+        "over arrival sequences of up to three items. That is a sample, not the declared domain, "
+        "and it is silent about longer sequences.\n", encoding="utf-8")
 else:
     report.write_text(f"# {role} attempt {attempt}\n\nNothing to do in this fixture.\n",
                       encoding="utf-8")
@@ -191,6 +312,11 @@ class Fixture:
         shutil.copyfile(self.case_dir.parent.parent / "goal.md", self.project / "goal.md")
         (self.project / "PLAN.md").write_text(
             "# Plan\n\nOne accepted change: fair dispatch. See `goal.md`.\n", encoding="utf-8")
+        # The run tree is execution evidence, not project content. The repository ignores its own
+        # for the same reason, and excluding it here keeps it out of scope diffs and out of the
+        # project history a reviewer reads.
+        (self.project / ".gitignore").write_text("DeepSeekAndDestroy/\n__pycache__/\n",
+                                                 encoding="utf-8")
         sys.path.insert(0, str(SCRIPTS))
         from _change_graph import GRAPH_FORMAT, canonical_graph_text
         (self.graph).write_text(

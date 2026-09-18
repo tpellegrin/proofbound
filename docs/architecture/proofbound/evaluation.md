@@ -454,6 +454,43 @@ specificity controls that let a treatment lose, an invalidating-conditions list 
 run uninterpretable rather than negative, and a holdout domain that nothing in the programme has
 inspected. A result that survives none of these is a result about the corpus.
 
+### E24.6 Four kinds of change, and what each has to show
+
+`§E24.1` states what a *comparative* increment declares. Demanding that of a bug fix is theatre;
+accepting a bug fix's evidence for a context-policy change is how a harness acquires beliefs it
+never tested. The kind of change decides the evidence; operational form in
+[`evals/README.md`](../../../evals/README.md).
+
+| Change | Evidence needed |
+|---|---|
+| **Deterministic defect repair** | Reproduce it against committed code; a regression that can falsify the guarantee, not restate the formula; affected guarantees verified |
+| **Newly supported workflow** | A representative valid path completed, the invalid paths that must refuse exercised, existing guarantees intact — one observation per condition, with its denominator |
+| **Semantic policy, context, model or efficiency change** | Named baseline and treatment, matched tasks, calibrated graders, repetitions, uncertainty, cost, adoption rule — declared first |
+| **Architectural or maintainability improvement** | *Subsequent* changes to the retained code: previous obligations still met, new correctness, regressions, human effort |
+
+The last row has no shortcut: an architecture claim resting on how code reads is about taste, and
+the consequence that makes it engineering arrives with the next change. When several components
+move together, report a **configuration comparison**, never one mechanism's effect.
+
+### E24.7 Reading a difference, corrected
+
+[§E22.3](evaluation-comparison.md#e223-the-rule-this-produces) sets a floor: do not interpret a
+difference smaller than the instrument's own variation under identical conditions. As a guard
+against reading a redraw as a result it holds. As a blanket rule it is **too blunt**:
+
+**Pairing changes the question.** With arms interleaved on the same retained evidence, the quantity
+carrying an uncertainty is the *paired difference*; a per-arm spread that swamps it says nothing
+about whether that difference is stable. Match the analysis to the design, and **name the unit of
+independence**: calls within one trajectory are not independent trials, nor repeated tasks from one
+repository independent repository samples. Judge the effect against its uncertainty *and*
+against what would be practically meaningful — a stable effect too small to matter is a tradeoff,
+not an improvement. Two limits stand whatever the analysis: more observations cannot repair a
+biased oracle, and absence of an observed regression is not equivalence, which needs a margin
+declared in advance.
+
+**A qualification observation needs none of this.** *Does the valid path work at all* has no
+baseline and no effect to estimate — only an outcome and a denominator.
+
 ## E25. The instrument is part of the experiment
 
 Every section before this one treats measurement mechanics as something to hold fixed while a

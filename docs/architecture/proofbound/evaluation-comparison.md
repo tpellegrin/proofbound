@@ -494,11 +494,11 @@ the reasoning underneath it. That is a reason to report all three, not to prefer
 > **Do not interpret a difference smaller than the instrument's own measured variation under
 > identical conditions.**
 
-Not a significance test and not a power calculation — at these sample sizes both would import
-precision the evidence does not have. It is a floor: before an arm-to-arm difference means
-anything, the same measurement must be repeated on unchanged input often enough to know how much
-it moves on its own. An evaluation that has never done that cannot claim an improvement, because
-it cannot distinguish one from a redraw.
+A floor, not a significance test: before an arm-to-arm difference means anything, the same
+measurement must be repeated on unchanged input often enough to know how much it moves on its own.
+An evaluation that has never done that cannot distinguish an improvement from a redraw.
+**Narrowed by [evaluation.md §E24.7](evaluation.md#e247-reading-a-difference-corrected)**, which is
+what to read before applying this to a paired comparison.
 
 Two disciplines follow, and both are cheap:
 

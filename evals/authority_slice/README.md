@@ -136,12 +136,45 @@ distinction is easy to blur, so it is stated here:
 | Mechanical path, fake executor | `completed` | `completed` | `completed` | `completed` |
 | Workflow run by a real model | `not-observed` | `not-observed` | `not-observed` | `not-observed` |
 | Read-only recovery probe | `not-observed` | `not-observed` | **1 observation** | **1 observation** |
+| Fresh coordinator driving the workflow, stand-in executor | `not-observed` | `not-observed` | **2 observations** | `not-observed` |
 
-So: **no case's workflow has been executed by a real model**, and the two handoff fixtures have each
+So: **no case's workflow has been executed by a real model.** The two handoff fixtures have each
 been read once by a genuinely fresh context that recovered the required facts and stopped correctly
-([probe-observations.md](probe-observations.md)). A read-only recovery probe is neither a workflow
-execution nor a reliability estimate. The next live experiment — which would move the top row's
-`ready-handoff` column — is specified in [`next-live-experiment.md`](next-live-experiment.md).
+([probe-observations.md](probe-observations.md)), and two further fresh contexts drove the whole
+continuation — authorize, launch, gate, review, external check, accept — against a stand-in
+executor. A read-only probe is not a workflow execution; a rehearsal against a stand-in is not a
+live observation; and neither is a reliability estimate. The live experiment that would move the
+second row is frozen in [`next-live-experiment.md`](next-live-experiment.md) and awaits a separate
+spending authorization.
+
+## The continuation experiment: `pb-handoff-1`
+
+The four cases answer whether the *decisions* are right. They do not answer whether a fresh
+coordinator can carry a bound implementation to acceptance, which is what
+[`next-live-experiment.md`](next-live-experiment.md) freezes. Its machinery is here and runs
+credential-free:
+
+```bash
+python3 evals/authority_slice/pb_slice.py validate-checker          # the artifact checker's corpus
+python3 evals/authority_slice/pb_slice.py rehearse-live --into <dir> --path clean
+python3 evals/authority_slice/pb_slice.py readiness --out evals/results/handoff-1-readiness-v1.json
+python3 evals/authority_slice/pb_slice.py build-runtime --mode rehearsal --root <runtime>
+python3 evals/authority_slice/pb_slice.py probe-runtime --root <runtime>
+```
+
+Three pieces are worth knowing about separately:
+
+* **`_guard`** makes the frozen policy govern launches rather than describe them: a slot is
+  reserved durably *before* the executor is reached, nothing is admitted while a previous slot is
+  unreconciled, the ceiling is the one `_launch_paths` derives, and an unfinished model call is
+  terminal because nothing bounds its cost.
+* **`_checker`** checks the artifact that was actually delivered — loaded by resolved path, hashed,
+  run in a subprocess under a time bound — against what the implementer's contract asks for. The
+  ordering model alone would accept a generator; `AC-001` asks for a list, so the API is checked
+  separately. Its corpus lives in `_checker_corpus.py` and is never staged where a worker could
+  read it.
+* **`_runtime`** builds the evidence surface and then **measures** it: reading the source checkout,
+  each withheld file, a bounded search, and a hermeticity scan, all from inside.
 
 ## Files
 

@@ -72,18 +72,75 @@ exact fixture and its expected refusal, and it said so unprompted — adding tha
 finding from the run tree first, and that the documents could not settle the one question it could
 not answer (whether the consistency record was deleted or never written).
 
-So the repository is an answer key for its own recovery cases. The mitigation here is evidential
-rather than physical: a fact asserted without a command that produced it is recorded as supplied.
-For a live experiment that is not enough, and
-[`next-live-experiment.md`](next-live-experiment.md) records it as a known limitation to fix by
-building the fixture from content that is not in the checkout.
+So the repository is an answer key for its own recovery cases. For these read-only probes the
+mitigation was evidential: a fact asserted without a command that produced it is recorded as
+supplied.
+
+**That is no longer the only mitigation.** The continuation rehearsals ran inside a constructed
+evidence surface where the source checkout, both answer keys, the reference implementations and the
+experiment plan are all denied — measured from inside, not asserted — and the frozen protocol
+requires it. See [`next-live-experiment.md`](next-live-experiment.md).
+
+## Continuation rehearsals — 2026-09-18
+
+Two further fresh contexts drove the **whole continuation** rather than reading it: recover, invoke
+the guard, launch an implementer and a reviewer through the guarded path, gate both, run the
+external check, and decide. Same accounting scope as above: subagents launched by the author's
+session, billed to the same subscription, 116,475 and 116,872 tokens over 69 and 57 tool calls.
+
+**The executor was a stand-in.** It reaches no provider, and the reports it produced are fixture
+prose. What these observations establish is that the *procedure* is executable by a fresh context
+and that the machinery around it behaves as declared. They establish nothing about how a real model
+performs any of the roles.
+
+| | Rehearsal 1 | Rehearsal 2 |
+|---|---|---|
+| Five recovery facts | all established, derived rather than read | all established, plus **negative controls**: an all-zeros candidate refused with `candidate-not-current` and `no-consistency-acceptance`; dropping `--run-root` degraded provenance to `unavailable` while still authorizing |
+| Guard invoked by the coordinator | yes, `authorized: true` | yes, twice, plus the controls above |
+| Launches | 2 slots — implementer, then a fresh reviewer on the same immutable contract | 2 slots, same shape |
+| External check | `pass`, 363 sequences | `pass`, and the coordinator **verified the checker** before trusting it: read its source, confirmed the obligations encode the four numbered requirements, and hashed both copies of `requirements.md` to see which authority it reads |
+| Decision | accepted | accepted |
+| Reasoning | noticed the review declared coverage to three items against a five-item domain, and relied on the deterministic check to close `AC-002` | the same, independently |
+| Cost | `$0.026904` derived, 2 of 5 slots, accounting complete | identical |
+| Graph and ledger | unchanged; the implementation was correctly not inserted | verified unchanged by re-hashing |
+
+Both coordinators reached the right outcome for the right reason, and the reason is the one the
+design intends: a reviewer reasons over a sample, the external check enumerates the declared domain,
+and the coordinator uses the second to close what the first honestly declared it had not covered.
+
+### What they found that the author had not
+
+Nine defects across the two rounds, every one of them in the preparation rather than in the
+harness. The load-bearing ones:
+
+| Found | Why it mattered | Fixed |
+|---|---|---|
+| `python3` inside the boundary resolved to Apple's shim, which dies writing an `xcrun` cache to a denied directory; the only usable interpreter was an unsupported 3.9 | the live run would have been unrunnable, or run on the wrong interpreter | the recorded interpreter is exposed and shimmed onto the runtime's `PATH` |
+| A whole continuation ran under 3.9 while the record said 3.14, and nothing noticed | an identity in the record that nothing enforces is decoration | the launch path re-checks the interpreter and refuses on mismatch |
+| `run-config.json` carried the seeded candidate in the coordinator's own working directory | the coordinator is asked to *establish* the candidate; an answer beside the question makes the exercise unfalsifiable from outside | identities moved outside the runtime, and denied from inside |
+| The external check parsed its model from the **fixture's** requirements, not the project's accepted copy | byte-identical today, and silently grading the wrong authority the moment they diverge | the check reads the project's accepted requirements and records the digest it read; regression added |
+| Three seeded attempt directories sit in the run tree next to a "5 launch slots" policy | a coordinator could reasonably conclude most of its budget was gone before starting | the brief states that seeded attempts consume no slots, and `account` is named as the authority |
+
+The rest were procedural and are fixed in the brief: `cat` to a pipe fails inside the boundary and
+looks like a denied read; the working directory and the harness are siblings; "provenance of the
+recorded artifact" was ambiguous between two different provenance fields; there was no refusal
+branch at the decision step; and nothing said whether the parent may read the delivered source, or
+when.
+
+One gap in the guard was found by the author rather than by a rehearsal, and is worth recording
+beside them: a pre-executor failure consumed no slot, which made the "one evidenced relaunch"
+allowance unlimited — the same arithmetic hole that let a previous demonstration discover mid-run
+that its ceiling omitted a path its own text granted. The ceiling now counts slots **reserved**.
 
 ## What these observations do not establish
 
 * **Not a reliability estimate.** One attempt per case. The denominator is 1.
 * **Not evidence about upstream quality.** The accepted state was seeded mechanically by this
   harness with a fake executor; no agent authored or reviewed the requirements document.
-* **Not the live experiment.** Both probes were read-only and launched no worker. Whether a fresh
-  coordinator can carry an implementation through to acceptance remains **not observed**.
+* **Not the live experiment.** The read-only probes launched no worker; the continuation
+  rehearsals launched workers that were stand-ins. Whether a fresh coordinator can carry an
+  implementation through to acceptance **against a provider** remains not observed.
+* **Not a measurement of any model.** A stand-in executor produces the report the fixture wrote.
+  Nothing here says anything about how a model implements, reviews, or judges.
 * **Not independent of this repository's documentation.** Both probes read repository files
   describing the fixture, one of them the answer.

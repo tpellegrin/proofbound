@@ -243,6 +243,10 @@ implemented and never observed; observed once and never repeated; repeated and n
 against an alternative. Reading the first column as "done" is the error this table exists to
 prevent.
 
+"Repeated" here means *the same condition measured more than once* — twelve slots of one
+configuration, five trials of one scenario. It does not mean twelve independent demonstrations, and
+where a column says "1–2 per case" the denominator is the point, not the numerator.
+
 | Capability | Implemented | Exercised deterministically | Observed with real agents | Repeated | Controlled comparison |
 |---|---|---|---|---|---|
 | Bounded workers, parent orchestration, immutable contracts | yes (inherited) | yes, canonical suite | yes — evals, MLR series, both authority demos | yes | — |
@@ -256,10 +260,12 @@ prevent.
 | **Aggregate consistency acceptance** (`pb_consistency record`) | yes | yes | **no** — demo-2's consistency attempt ran and found a real defect, so no acceptance was ever recorded | — | — |
 | **Execution authorization** (`pb_execution authorize`) | yes | yes — rehearsals and the slice, both paths | **no** | — | — |
 | **Candidate-bound implementation → review → acceptance** | yes | yes — fake executor only | **no. Both authority demonstrations stopped before implementation** | — | — |
-| **Fresh-context handoff of authority state** | n/a (a procedure) | yes — slice fixtures | **partially**: two read-only recovery probes, [recorded](evals/authority_slice/probe-observations.md). No live continuation | 1 per case | — |
+| **Fresh-context handoff of authority state** | n/a (a procedure) | yes — slice fixtures | **partially**: two read-only recovery probes, and two fresh coordinators that drove the whole continuation against a **stand-in executor**. No live run | 1–2 per case, all against a stand-in | — |
+| **The guard that makes the launch policy govern launches** | yes | yes — ceiling, budget, repair allowance, unreconciled slot, pre-executor evidence | **no** | — | — |
+| **External check of the delivered artifact** | yes | yes — 3 sound implementations accepted, 12 defective rejected | **no** | — | — |
 | Per-execution profile — calls, tokens, tools, time, context by origin | yes | yes | yes | yes | — |
 | Evaluation of the harness: scenarios, trials, blind grading | yes | yes | yes — V1–V3 | yes | — |
-| Independence control (`P12`): withhold the author's reasoning | yes | yes | yes — V4 | yes | **yes** — withholding produced *higher* observed completeness |
+| Independence control (`P12`): withhold the author's reasoning | yes | yes | yes — V4 | yes | **yes**, under V4's scenarios, model and grader — withholding produced *higher* observed completeness there, which is a result about that configuration |
 | Comparative pipeline evaluation, paired and interleaved | yes | yes | yes — MLR `q1` 12/12 valid; `eventbus-b1` 12/12 valid | yes | **yes**, for one fixture and one question |
 | System-craft measurement | yes | yes | yes — V5–V7 | yes | instrument **not reliable**: reflector conclusion moves on 43% of identical repeats |
 | Per-role provider/model routing | **no** — architecture protects it | — | — | — | — |
@@ -293,12 +299,18 @@ Three tiers, and confusing them is how a long run loses its authority.
 | Tier | What it holds | Lifetime |
 |---|---|---|
 | **Durable, in Git** | Requirements and other accepted artifacts; the ledger's record of what was accepted, against which dependency identities, under which review purpose; freezes; declared graphs; protocols and reports | Permanent, versioned, reviewable |
-| **Execution evidence, outside Git** | Run trees: attempts, prompts, worker reports, gates, scope diffs, terminal records, session databases. Large, machine-specific, in `DeepSeekAndDestroy/` or a workspace path | Until deleted. **Deletion is expected** |
+| **Execution evidence, outside Git** | Run trees: attempts, prompts, worker reports, gates, scope diffs, terminal records, session databases — **and the task contracts that bind work to a candidate**. Large, machine-specific, in `DeepSeekAndDestroy/` or a workspace path | Until deleted. **Deletion is expected** |
 | **Working notes and agent context** | Conversations, summaries, compaction checkpoints, an agent's reasoning | Gone when the session ends. Never authority |
 
 **When execution evidence is gone**, the durable record still says what was accepted. What is lost
 is the ability to *re-verify the execution*, and that is reported as `provenance: unavailable` —
-explicitly neither "fine" nor "broken". A recovery probe confirmed the distinction behaves as
+explicitly neither "fine" nor "broken".
+
+**One limit worth stating precisely**, because it is easy to over-read the word durable: *execution
+binding is not durable provenance*. Task contracts and acceptance live inside the run tree, so once
+that tree is deleted no project file records that an accepted implementation task was governed by a
+particular candidate. The ledger's durability is about **artifacts** — content, dependencies and
+review purpose — not about which contract authorised which attempt. A recovery probe confirmed the distinction behaves as
 documented: dropping the run root turns provenance from `verified` to `unavailable` while validity
 stays `valid`, so `verified` is earned rather than assumed.
 
@@ -522,9 +534,11 @@ a roadmap commitment.**
 
 1. **A reliable valid path through authority recovery and delivery.** *Gate:* a fresh coordinator
    recovers authority state and carries one bound implementation to acceptance, repeatedly, with
-   correct refusals on mutated states. The procedure is specified and validated in
-   [next-live-experiment.md](evals/authority_slice/next-live-experiment.md); it has not run. Until
-   it does, the chain's second half is untested with real agents.
+   correct refusals on mutated states. The protocol is **frozen** in
+   [next-live-experiment.md](evals/authority_slice/next-live-experiment.md) — policy enforced by a
+   launch guard, an external check on the delivered artifact, a measured information boundary — and
+   two fresh coordinators have driven the whole continuation against a stand-in executor. It has
+   not run against a provider, so the chain's second half remains untested with real agents.
 2. **A second change to already-accepted software.** *Gate:* supersession, `needs-revalidation`
    closure and re-review behave as designed when intent moves — measured, not rehearsed. This is
    where decision compounding first becomes observable.
@@ -642,7 +656,9 @@ arithmetic. A report is evidence; if proof is genuinely absent, it stays absent.
 3. **Neither authority demonstration conformed to its own frozen protocol**; both amended rules
    mid-run.
 4. **Reviewer independence is contextual, not architectural** — the same model in different roles
-   with different inputs.
+   with different inputs. Running a reviewer on a *different* model would change the context, not
+   establish independence: two models sharing training data, tokenisation or failure modes are not
+   demonstrably independent, and nothing here has measured that.
 5. **The craft instrument is not reliable enough to interpret**, and its successor comparison has
    not been run.
 6. **Per-role routing is not implemented.**
