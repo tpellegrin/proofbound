@@ -203,6 +203,7 @@ python3 evals/authority_slice/pb_evidence.py export --run-root R --into P \
     --experiment X --condition valid --session-db D --project J --config C \
     --artifact J/dispatch.py --requirements J/requirements.md
 python3 evals/authority_slice/pb_evidence.py verify --package P [--recheck-artifact]
+python3 evals/authority_slice/pb_evidence.py qualify --package P
 ```
 
 Every check declares one of four kinds, and they never combine into a single verdict:
@@ -210,6 +211,13 @@ Every check declares one of four kinds, and they never combine into a single ver
 mechanical quantity re-derived from retained inputs), **reported** (a semantic judgment,
 transcribed and attributable, never confirmed here), and **unavailable** (the evidence a check
 needs is absent — not a pass, not a failure).
+
+A fifth status, **not-observed**, is kept apart from `unavailable`: a run that launched nothing
+did not *refuse*, and saying so needs a retained refusal record, not an empty attempts directory.
+
+`verify` reports mismatches; `qualify` asks the different question of whether a condition reached
+its declared outcome **and** whether the observations that outcome requires are available and
+passing. `verify` exiting zero answers neither — a package of nothing but `unavailable` exits zero.
 
 Usage is exported through a field allowlist, so per-call accounting can be retained without
 publishing prompts, tool arguments or tool output. What is left out is named in the manifest

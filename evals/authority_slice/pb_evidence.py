@@ -57,6 +57,14 @@ def do_adapt(args: argparse.Namespace) -> int:
     return 0
 
 
+def do_qualify(args: argparse.Namespace) -> int:
+    """Two predicates, reported apart. Exit 1 when either fails; a result, not an error."""
+    report = _package.qualify(args.package, recheck_artifact=not args.no_recheck_artifact,
+                              timeout=args.timeout)
+    print(json.dumps(report, indent=2, sort_keys=True))
+    return 0 if report["qualified"] else 1
+
+
 def do_verify(args: argparse.Namespace) -> int:
     report = _package.verify(args.package, recheck_artifact=args.recheck_artifact,
                              timeout=args.timeout)
@@ -71,12 +79,15 @@ def do_verify(args: argparse.Namespace) -> int:
         width = max(len(c["id"]) for c in report["checks"])
         for entry in report["checks"]:
             mark = {"ok": "  ", "mismatch": "!!", "unavailable": "··",
-                    "reported": "››"}.get(entry["status"], "??")
+                    "reported": "››", "not-observed": "‑‑"}.get(entry["status"], "??")
             print(f"{mark} {entry['id']:<{width}}  {entry['kind']:<12} {entry['status']:<12} "
                   f"{entry['detail']}")
         print()
         print("  ".join(f"{k}={v}" for k, v in sorted(report["counts"].items())))
         print(report["note"])
+    # Zero means "reported no mismatch". It does not mean the package established anything: a
+    # package of nothing but `unavailable` exits zero too, which is why qualification reads the
+    # required-observation predicate rather than this exit code.
     return 1 if report["counts"].get(_package.MISMATCH) else 0
 
 
@@ -106,6 +117,13 @@ def main() -> int:
                    help="evals/authority_slice/runs/pb-handoff-1/{valid,control}")
     a.add_argument("--into", type=Path, required=True)
     a.set_defaults(handler=do_adapt)
+
+    q = sub.add_parser("qualify",
+                       help="did this condition reach its declared outcome, with the evidence?")
+    q.add_argument("--package", type=Path, required=True)
+    q.add_argument("--no-recheck-artifact", action="store_true")
+    q.add_argument("--timeout", type=float, default=10.0)
+    q.set_defaults(handler=do_qualify)
 
     v = sub.add_parser("verify", help="recompute what a package supports, offline")
     v.add_argument("--package", type=Path, required=True)

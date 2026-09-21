@@ -118,6 +118,46 @@ def usage(events: list[dict[str, Any]]) -> dict[str, Any]:
     return totals
 
 
+def call_reconciliation(events: list[dict[str, Any]]) -> dict[str, Any]:
+    """Whether the calls that started are the calls that finished — not merely how many of each.
+
+    Equal totals are a *balance*, and a balance is not a reconciliation. A session carrying a
+    `step-start` in one message and a `step-finish` in another sums to one started and one finished
+    while no call is known to have completed, which is exactly the shape an interrupted call plus a
+    stray finish leaves behind.
+
+    OpenCode records both parts of a call under the message that carries it, so the message is the
+    grouping the source actually exposes. Within one message it does **not** expose which start
+    pairs with which finish, so no such pairing is invented here: a message is reconciled when its
+    starts and finishes are equal in number, and reported when they are not.
+    """
+    groups: dict[tuple[Any, Any], dict[str, int]] = {}
+    for event in events:
+        kind = event["part"].get("type")
+        if kind not in ("step-start", "step-finish"):
+            continue
+        key = (event.get("session_id"), event.get("message_id"))
+        slot = groups.setdefault(key, {"starts": 0, "finishes": 0})
+        slot["starts" if kind == "step-start" else "finishes"] += 1
+
+    unmatched = []
+    for (session, message), counts in sorted(groups.items(), key=lambda kv: str(kv[0])):
+        if counts["starts"] != counts["finishes"]:
+            unmatched.append({"session_id": session, "message_id": message, **counts})
+    starts = sum(g["starts"] for g in groups.values())
+    finishes = sum(g["finishes"] for g in groups.values())
+    return {
+        "messages": len(groups),
+        "starts": starts,
+        "finishes": finishes,
+        "balanced": starts == finishes,
+        "unmatched_messages": unmatched,
+        "reconciled": not unmatched,
+        "grouping": "by the message that carries both parts, which is what the executor records; "
+                    "call-to-call pairing within a message is not exposed and is not inferred",
+    }
+
+
 def tool_activity(events: list[dict[str, Any]]) -> dict[str, Any]:
     """What the agent did with its hands, and how long it spent doing it.
 

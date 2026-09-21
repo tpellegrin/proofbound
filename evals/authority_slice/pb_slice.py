@@ -368,6 +368,8 @@ def main() -> int:
     runtime = sub.add_parser("build-runtime", help="construct the restricted runtime and prepare")
     runtime.add_argument("--root", type=Path, default=None)
     runtime.add_argument("--mode", choices=["rehearsal", "live"], default="rehearsal")
+    runtime.add_argument("--experiment", default=None,
+                         help="the experiment identity this runtime prepares for")
 
     probe_rt = sub.add_parser("probe-runtime", help="measure what the runtime exposes")
     probe_rt.add_argument("--root", type=Path, required=True)
@@ -440,7 +442,9 @@ def main() -> int:
             return 0
         if args.command == "build-runtime":
             import _runtime
-            print(json.dumps(_runtime.build(mode=args.mode, root=args.root), indent=2,
+            print(json.dumps(_runtime.build(mode=args.mode, root=args.root,
+                                            experiment=args.experiment or _live.EXPERIMENT),
+                             indent=2,
                              sort_keys=True))
             return 0
         if args.command == "probe-runtime":

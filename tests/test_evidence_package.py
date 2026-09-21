@@ -155,7 +155,8 @@ class UsageEventsTest(unittest.TestCase):
                     {"event_dir": "reviewer-1", "session_id": None}]
         verdict = _package.attribution(rows, attempts)
         self.assertFalse(verdict["per_attempt_attribution_established"])
-        self.assertEqual(verdict["attempts_without_a_session"], ["implementer-1", "reviewer-1"])
+        self.assertEqual([u["event_dir"] for u in verdict["unresolved"]],
+                         ["implementer-1", "reviewer-1"])
 
         named = [{"event_dir": "implementer-1", "session_id": "ses_fixture"}]
         self.assertTrue(
@@ -500,12 +501,23 @@ class HandoffOneCompatibilityTest(unittest.TestCase):
         self.assertEqual(entry["status"], _package.MISMATCH)
         self.assertIn(str(recorded), entry["detail"])
 
-    def test_the_control_supports_its_refusal_without_a_provider_session(self):
+    def test_the_historical_controls_refusal_is_reported_not_mechanically_recorded(self):
+        """A correction to this reader's own first assessment.
+
+        `pb-handoff-1`'s control launched nothing, and the earlier version of this reader read that
+        absence as a refusal. It is not: an untouched run and a refused one leave the same empty
+        tree. That run's coordinator did state the refusal, in prose, and its `no-consistency-
+        acceptance` finding is real — but the retained evidence carries no refusal *record*, so the
+        claim is `reported`, and the absence of launches is `not-observed`.
+        """
         report = _package.verify(self.build("control"))
         entry = next(c for c in report["checks"] if c["id"] == "launch.attempts")
-        self.assertEqual(entry["own"], [])
-        self.assertEqual(self.status(report, "launch.lifecycle")[1], _package.OK)
+        self.assertEqual(entry["own"], [], "the control launched no worker of its own")
+        self.assertEqual(self.status(report, "launch.lifecycle")[1], _package.NOT_OBSERVED)
+        self.assertEqual(self.status(report, "control.refusal")[1], _package.NOT_OBSERVED)
         self.assertEqual(self.status(report, "usage.recompute")[1], _package.UNAVAILABLE)
+        # The coordinator's own account survives and remains attributable.
+        self.assertEqual(self.status(report, "decision.coordinator")[1], _package.REPORTED)
 
     def test_a_run_predating_admission_is_not_reported_as_failing_it(self):
         """Absent machinery is unavailable, never a mismatch. That distinction is the whole file."""
@@ -538,3 +550,384 @@ class HandoffOneCompatibilityTest(unittest.TestCase):
         after = {p.relative_to(self.RUNS).as_posix(): _package.sha256_file(p)
                  for p in sorted(self.RUNS.rglob("*")) if p.is_file()}
         self.assertEqual(before, after, "retained run evidence must be immutable")
+
+
+class AttributionAndReconciliationTest(unittest.TestCase):
+    """The counterexamples that passed at `4133e70`, and the positives that must still pass.
+
+    Each expected outcome is stated from the fixture's own construction, not from what the code
+    returns. A checker that rejected everything would satisfy the negatives alone, so the positive
+    cases are kept beside them.
+    """
+
+    def setUp(self) -> None:
+        self.tmp = Path(tempfile.mkdtemp(prefix="pb-attrib-"))
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+
+    def run_tree(self, attempts: dict, *, name: str = "run") -> Path:
+        """A run tree with one directory per attempt, each naming whatever session it claims."""
+        run = self.tmp / name
+        for event, session in attempts.items():
+            directory = run / "attempts" / event
+            directory.mkdir(parents=True)
+            (directory / "attempt.json").write_text(
+                json.dumps({"started_at": "2026-09-21T12:00:00+00:00"}))
+            terminal = {"status": "completed"}
+            if session is not None:
+                terminal["session_id"] = session
+            (directory / "terminal.json").write_text(json.dumps(terminal))
+        return run
+
+    def package(self, run: Path, db: Path | None, *, own: list[str]) -> Path:
+        import _guard
+
+        into = self.tmp / f"pkg-{run.name}-{len(list(self.tmp.iterdir()))}"
+        _package.export(run_root=run, into=into, experiment="probe", condition="c",
+                        session_db=db, event_dirs=own,
+                        config={"model": _guard.MODEL, "paths": {"run_root": str(run)}})
+        return into
+
+    def status(self, report: dict, check_id: str) -> str:
+        return next(c for c in report["checks"] if c["id"] == check_id)["status"]
+
+    # -- a session the database does not contain -------------------------------------------
+    def test_a_named_session_absent_from_the_database_is_not_attribution(self):
+        import _guard
+
+        run = self.run_tree({"implementer-1": "ses_missing"})
+        db = self.tmp / "a.db"
+        write_session(db, [{"tokens": {"input": 100, "output": 10,
+                                       "cache": {"read": 0, "write": 0}}}], session="ses_actual")
+        spend = _guard.spend(run, db)
+        self.assertFalse(spend["complete"], "an unresolvable attempt cannot settle the figure")
+        self.assertIn("ses_missing", spend["claim"])
+
+        report = _package.verify(self.package(run, db, own=["implementer-1"]))
+        self.assertEqual(self.status(report, "usage.attribution"), _package.UNAVAILABLE)
+
+    def test_a_resolvable_session_still_attributes(self):
+        """The positive case, so the repair is a discrimination and not a refusal to answer."""
+        import _guard
+
+        run = self.run_tree({"implementer-1": "ses_actual"})
+        db = self.tmp / "b.db"
+        write_session(db, [{"tokens": {"input": 100, "output": 10,
+                                       "cache": {"read": 0, "write": 0}}}], session="ses_actual")
+        self.assertTrue(_guard.spend(run, db)["complete"], _guard.spend(run, db)["claim"])
+        report = _package.verify(self.package(run, db, own=["implementer-1"]))
+        self.assertEqual(self.status(report, "usage.attribution"), _package.OK)
+
+    def test_a_session_no_attempt_claims_is_unexplained(self):
+        import _guard
+
+        run = self.run_tree({"implementer-1": "ses_one"})
+        db = self.tmp / "c.db"
+        write_session(db, [{"tokens": {"input": 1, "output": 1,
+                                       "cache": {"read": 0, "write": 0}}}], session="ses_one")
+        write_session(db, [{"tokens": {"input": 1, "output": 1,
+                                       "cache": {"read": 0, "write": 0}}}], session="ses_two")
+        spend = _guard.spend(run, db)
+        self.assertFalse(spend["complete"])
+        self.assertIn("ses_two", spend["claim"])
+
+    def test_one_session_claimed_by_two_attempts_blocks_the_split_not_the_total(self):
+        """A split problem and a total problem are different, and conflating them is expensive.
+
+        Both attempts are this run's and so is the session, so the aggregate is whole: refusing
+        the next launch over it would stop a run for a division nobody needed. What is genuinely
+        unavailable is *which* attempt spent what.
+        """
+        import _guard
+
+        run = self.run_tree({"implementer-1": "ses_one", "reviewer-1": "ses_one"})
+        db = self.tmp / "d.db"
+        write_session(db, [{"tokens": {"input": 1, "output": 1,
+                                       "cache": {"read": 0, "write": 0}}}], session="ses_one")
+        spend = _guard.spend(run, db)
+        self.assertTrue(spend["complete"], spend["claim"])
+        self.assertEqual(spend["session_attribution"]["reused"],
+                         {"ses_one": ["implementer-1", "reviewer-1"]})
+        self.assertFalse(spend["session_attribution"]["per_attempt_attribution_established"])
+
+        report = _package.verify(self.package(run, db, own=["implementer-1", "reviewer-1"]))
+        self.assertEqual(self.status(report, "usage.attribution"), _package.UNAVAILABLE)
+        self.assertEqual(self.status(report, "price.recompute"), _package.OK)
+
+    def test_an_attempt_with_no_identifier_at_all_is_unattributed(self):
+        import _guard
+
+        run = self.run_tree({"implementer-1": None})
+        db = self.tmp / "e.db"
+        write_session(db, [{"tokens": {"input": 1, "output": 1,
+                                       "cache": {"read": 0, "write": 0}}}], session="ses_one")
+        self.assertFalse(_guard.spend(run, db)["complete"])
+
+    # -- balanced totals that do not reconcile ---------------------------------------------
+    def test_balanced_totals_with_unpaired_calls_do_not_settle(self):
+        """A start in one message and a finish in another: one of each, no call known to finish."""
+        import _guard
+
+        run = self.run_tree({"implementer-1": "ses_split"})
+        db = self.tmp / "f.db"
+        conn = sqlite3.connect(db)
+        conn.execute("create table session (id text, title text)")
+        conn.execute("create table message "
+                     "(id text, session_id text, time_created integer, data text)")
+        conn.execute("create table part (id text, message_id text, data text)")
+        conn.execute("insert into session values ('ses_split','t')")
+        meta = json.dumps({"role": "assistant", "modelID": "deepseek-v4-flash"})
+        conn.execute("insert into message values ('m1','ses_split',1,?)", (meta,))
+        conn.execute("insert into message values ('m2','ses_split',2,?)", (meta,))
+        conn.execute("insert into part values ('p1','m1',?)",
+                     (json.dumps({"type": "step-start"}),))
+        conn.execute("insert into part values ('p2','m2',?)", (json.dumps(
+            {"type": "step-finish",
+             "tokens": {"input": 10, "output": 1, "cache": {"read": 0, "write": 0}}}),))
+        conn.commit()
+        conn.close()
+
+        spend = _guard.spend(run, db)
+        self.assertEqual(spend["usage"]["calls_started"], spend["usage"]["calls_finished"])
+        self.assertFalse(spend["complete"], "balanced is not reconciled")
+
+        report = _package.verify(self.package(run, db, own=["implementer-1"]))
+        self.assertEqual(self.status(report, "usage.completeness"), _package.UNAVAILABLE)
+        # The partial total is still useful and is reported separately from whether spend is
+        # established — losing it would be its own kind of dishonesty.
+        self.assertEqual(self.status(report, "price.recompute"), _package.OK)
+
+    # -- the manifest's own conclusion is not evidence --------------------------------------
+    def test_editing_the_manifests_attribution_conclusion_is_caught(self):
+        run = self.run_tree({"implementer-1": "ses_actual"})
+        db = self.tmp / "g.db"
+        write_session(db, [{"tokens": {"input": 1, "output": 1,
+                                       "cache": {"read": 0, "write": 0}}}], session="ses_actual")
+        package = self.package(run, db, own=["implementer-1"])
+        manifest_path = package / "manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        self.assertTrue(manifest["attribution"]["per_attempt_attribution_established"])
+
+        # Flip the conclusion without touching the records it was drawn from.
+        manifest["attribution"]["per_attempt_attribution_established"] = False
+        manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True))
+        report = _package.verify(package)
+        self.assertEqual(self.status(report, "usage.attribution"), _package.MISMATCH)
+
+    def test_claiming_attribution_the_records_do_not_support_is_caught(self):
+        """The same edit in the other direction, which is the one worth worrying about."""
+        run = self.run_tree({"implementer-1": "ses_missing"})
+        db = self.tmp / "h.db"
+        write_session(db, [{"tokens": {"input": 1, "output": 1,
+                                       "cache": {"read": 0, "write": 0}}}], session="ses_actual")
+        package = self.package(run, db, own=["implementer-1"])
+        manifest_path = package / "manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest["attribution"]["per_attempt_attribution_established"] = True
+        manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True))
+        report = _package.verify(package)
+        self.assertEqual(self.status(report, "usage.attribution"), _package.MISMATCH)
+
+    # -- ledger and tree must agree ---------------------------------------------------------
+    def test_a_ledger_reserving_an_attempt_the_tree_lacks_is_caught(self):
+        run = self.run_tree({"implementer-1": "ses_actual"})
+        (run.parent / "launch-ledger.json").write_text(json.dumps({
+            "format": "proofbound-launch-ledger-v1",
+            "slots": [{"slot": 1, "event_dir": str(run / "attempts" / "implementer-1"),
+                       "classification": "executor-reached"},
+                      {"slot": 2, "event_dir": str(run / "attempts" / "reviewer-1"),
+                       "classification": "executor-reached"}]}))
+        package = self.package(run, None, own=["implementer-1"])
+        report = _package.verify(package)
+        entry = next(c for c in report["checks"] if c["id"] == "launch.ledger-agreement")
+        self.assertEqual(entry["status"], _package.MISMATCH)
+        self.assertIn("reviewer-1", entry["detail"])
+
+    def test_an_unclassified_slot_is_caught(self):
+        run = self.run_tree({"implementer-1": "ses_actual"})
+        (run.parent / "launch-ledger.json").write_text(json.dumps({
+            "format": "proofbound-launch-ledger-v1",
+            "slots": [{"slot": 1, "event_dir": str(run / "attempts" / "implementer-1"),
+                       "classification": "unresolved"}]}))
+        report = _package.verify(self.package(run, None, own=["implementer-1"]))
+        entry = next(c for c in report["checks"] if c["id"] == "launch.ledger-agreement")
+        self.assertEqual(entry["status"], _package.MISMATCH)
+        self.assertIn("never classified", entry["detail"])
+
+    # -- a refusal, and a run in which nothing happened --------------------------------------
+    def test_an_untouched_run_is_not_observed_rather_than_a_refusal(self):
+        run = self.run_tree({}, name="empty")
+        (run / "attempts").mkdir(parents=True, exist_ok=True)
+        (run / "state.json").write_text(json.dumps({"phases": {}}))
+        report = _package.verify(self.package(run, None, own=[]))
+        self.assertEqual(self.status(report, "control.refusal"), _package.NOT_OBSERVED)
+        self.assertEqual(self.status(report, "launch.lifecycle"), _package.NOT_OBSERVED)
+
+    def test_a_recorded_refusal_with_no_execution_supports_the_claim(self):
+        import _guard
+
+        run = self.run_tree({}, name="refused")
+        (run / "attempts").mkdir(parents=True, exist_ok=True)
+        (run / "state.json").write_text(json.dumps({"phases": {}}))
+        refusal = self.tmp / "authorization-refusal.json"
+        refusal.write_text(json.dumps({
+            "admitted": False, "candidate": "a" * 64,
+            "findings": [{"code": "no-consistency-acceptance", "reason": "none recorded"}]}))
+        into = self.tmp / "pkg-refused"
+        _package.export(run_root=run, into=into, experiment="probe", condition="control",
+                        event_dirs=[], refusal=refusal,
+                        config={"model": _guard.MODEL, "paths": {"run_root": str(run)}})
+        report = _package.verify(into)
+        entry = next(c for c in report["checks"] if c["id"] == "control.refusal")
+        self.assertEqual(entry["status"], _package.OK)
+        self.assertEqual(entry["findings"], ["no-consistency-acceptance"])
+
+    def test_a_refusal_claimed_alongside_launches_is_caught(self):
+        """Both halves are required: a record *and* the absence of execution."""
+        import _guard
+
+        run = self.run_tree({"implementer-1": "ses_actual"}, name="refused-but-ran")
+        refusal = self.tmp / "refusal2.json"
+        refusal.write_text(json.dumps({
+            "admitted": False, "candidate": "a" * 64,
+            "findings": [{"code": "no-consistency-acceptance"}]}))
+        into = self.tmp / "pkg-contradictory"
+        _package.export(run_root=run, into=into, experiment="probe", condition="control",
+                        event_dirs=["implementer-1"], refusal=refusal,
+                        config={"model": _guard.MODEL, "paths": {"run_root": str(run)}})
+        entry = next(c for c in _package.verify(into)["checks"] if c["id"] == "control.refusal")
+        self.assertEqual(entry["status"], _package.MISMATCH)
+        self.assertIn("execution was not withheld", entry["detail"])
+
+    # -- required metadata --------------------------------------------------------------------
+    def test_missing_required_metadata_becomes_a_named_omission(self):
+        run = self.run_tree({}, name="bare")
+        (run / "attempts").mkdir(parents=True, exist_ok=True)
+        (run / "state.json").write_text(json.dumps({"phases": {}}))
+        manifest = json.loads((self.package(run, None, own=[]) / "manifest.json").read_text())
+        missing = {o["what"] for o in manifest["omitted"]}
+        self.assertIn("launch-ledger.json", missing)
+        self.assertIn("run-config.json", missing)
+        for entry in manifest["omitted"]:
+            if entry["what"] == "launch-ledger.json":
+                self.assertIn("launch.ledger-agreement", entry["blocks"])
+
+    def test_a_credential_is_refused_rather_than_packaged(self):
+        home = self.tmp / "home" / ".local" / "share" / "opencode"
+        home.mkdir(parents=True)
+        credential = home / "auth.json"
+        credential.write_text('{"key": "secret"}')
+        with self.assertRaises(_package.PreservationFailure):
+            _package._copy(credential, self.tmp / "pkg-cred", "run/auth.json", "x", [])
+
+
+class QualificationPredicateTest(unittest.TestCase):
+    """Outcome and evidence are separate predicates, and neither is `verify`'s exit code.
+
+    The case worth guarding is a run that finishes cleanly and should still fail: a completed
+    trajectory is not a correct one, and a criterion that cannot say so is decoration.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        sys.path.insert(0, str(SLICE))
+        import _live
+
+        cls.work = Path(tempfile.mkdtemp(prefix="pb-qual-"))
+        _live.rehearse(cls.work / "valid", path="clean")
+        cls.valid = Path(_live.finalize(cls.work / "valid", condition="valid",
+                                        into=cls.work / "pkg-valid")["evidence"]["package"])
+        _live.rehearse(cls.work / "control", path="blocked")
+        cls.control = Path(_live.finalize(cls.work / "control", condition="control",
+                                          into=cls.work / "pkg-control")["evidence"]["package"])
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        shutil.rmtree(cls.work, ignore_errors=True)
+
+    def copy(self, source: Path) -> Path:
+        target = Path(tempfile.mkdtemp(prefix="pb-qual-copy-")) / "package"
+        self.addCleanup(shutil.rmtree, target.parent, True)
+        shutil.copytree(source, target)
+        return target
+
+    def test_the_valid_condition_qualifies(self):
+        report = _package.qualify(self.valid)
+        self.assertTrue(report["outcome_success"]["passed"], report["outcome_success"]["why"])
+        self.assertTrue(report["evidence_success"]["passed"], report["evidence_success"]["why"])
+        self.assertTrue(report["qualified"])
+
+    def test_the_control_qualifies_on_a_recorded_refusal(self):
+        report = _package.qualify(self.control, recheck_artifact=False)
+        self.assertTrue(report["outcome_success"]["passed"], report["outcome_success"]["why"])
+        self.assertTrue(report["qualified"])
+
+    def test_a_completed_run_that_delivered_the_wrong_thing_does_not_qualify(self):
+        """The adversarial alternative: every step ran, and the result is wrong."""
+        package = self.copy(self.valid)
+        artifact = package / _package.FILES_DIR / "delivered" / "dispatch.py"
+        artifact.write_text("def dispatch(arrivals):\n    return []\n", encoding="utf-8")
+        # The manifest's digest is updated too, so this is not merely an integrity failure: the
+        # package is internally consistent and describes a delivery that does not work.
+        manifest_path = package / "manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        for entry in manifest["files"]:
+            if entry["role"] == "delivered-artifact":
+                entry["sha256"] = _package.sha256_file(artifact)
+                entry["bytes"] = artifact.stat().st_size
+        manifest["extra"].pop("artifact_check", None)
+        manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True))
+
+        report = _package.qualify(package)
+        self.assertEqual(self.status(report, "artifact.recheck"), _package.MISMATCH)
+        self.assertFalse(report["outcome_success"]["passed"])
+        self.assertIn("artifact.recheck", report["outcome_success"]["why"])
+        self.assertFalse(report["qualified"])
+
+    def test_a_control_that_merely_did_nothing_does_not_qualify(self):
+        package = self.copy(self.control)
+        (package / _package.FILES_DIR / "run" / "authorization-refusal.json").unlink()
+        manifest_path = package / "manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest["files"] = [f for f in manifest["files"]
+                             if f["role"] != "authorization-refusal"]
+        manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True))
+
+        report = _package.qualify(package, recheck_artifact=False)
+        self.assertFalse(report["outcome_success"]["passed"])
+        self.assertIn("control.refusal", report["outcome_success"]["why"])
+        self.assertIn("control.refusal", report["evidence_success"]["missing"])
+
+    def test_unavailable_required_evidence_fails_the_evidence_predicate(self):
+        package = self.copy(self.valid)
+        (package / _package.EVENTS).unlink()
+        manifest_path = package / "manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest["files"] = [f for f in manifest["files"] if f["path"] != _package.EVENTS]
+        manifest["omitted"].append({"what": "per-call usage events", "why": "removed",
+                                    "blocks": ["usage.recompute"]})
+        manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True))
+
+        report = _package.qualify(package)
+        self.assertFalse(report["evidence_success"]["passed"])
+        self.assertIn("usage.recompute", report["evidence_success"]["missing"])
+
+    def test_expected_omissions_are_labelled_and_do_not_fail_evidence(self):
+        report = _package.qualify(self.valid)
+        self.assertIn("coverage.tool-exposure", report["evidence_success"]["expected_omissions"])
+        self.assertTrue(report["evidence_success"]["passed"])
+
+    def test_verify_exiting_zero_does_not_satisfy_qualification(self):
+        """A package of nothing but `unavailable` reports no mismatch and establishes nothing."""
+        package = self.copy(self.control)
+        report = _package.verify(package)
+        self.assertIsNone(report["counts"].get(_package.MISMATCH))
+        stripped = self.copy(self.control)
+        shutil.rmtree(stripped / _package.FILES_DIR)
+        (stripped / _package.FILES_DIR).mkdir()
+        empty = _package.qualify(stripped, recheck_artifact=False)
+        self.assertFalse(empty["qualified"])
+        self.assertTrue(empty["evidence_success"]["missing"])
+
+    def status(self, report: dict, check_id: str) -> str:
+        detail = _package.verify(Path(report["package"]), recheck_artifact=True, timeout=10)
+        return next(c for c in detail["checks"] if c["id"] == check_id)["status"]

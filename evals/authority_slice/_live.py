@@ -44,8 +44,19 @@ import _guard                         # noqa: E402
 import _launch_paths                  # noqa: E402
 from _fixtures import Fixture, sh, must               # noqa: E402
 
+#: The default experiment identity. Historical runs and their retained records carry it, so it
+#: stays the default for compatibility; a new qualification passes its own and every artifact that
+#: names an experiment reads it back from the run configuration rather than from this constant.
 EXPERIMENT = "pb-handoff-1"
+
+#: The protocol a run is executed against. Its bytes are digested at preparation so a later reader
+#: can tell whether the document it is holding is the one the run was frozen against.
+PROTOCOL_BY_EXPERIMENT = {
+    "pb-handoff-1": "next-live-experiment.md",
+    "pb-handoff-2": "pb-handoff-2-protocol.md",
+}
 CONFIG_NAME = "run-config.json"
+IDENTITIES_NAME = "frozen-identities.json"
 LEDGER_NAME = "launch-ledger.json"
 BASELINE_NAME = "baseline-manifest.json"
 
@@ -88,6 +99,7 @@ def prepare(into: "str | Path", *, mode: str = REHEARSAL,
             harness_root: "str | Path | None" = None,
             identities_into: "str | Path | None" = None,
             model: str = _guard.MODEL, variant: str = _guard.VARIANT,
+            experiment: str = EXPERIMENT,
             deadline_seconds: int = DEADLINE_SECONDS) -> "dict[str, Any]":
     """Seed the upstream state, commit it, and freeze every identity the run will be read against.
 
@@ -140,10 +152,11 @@ def prepare(into: "str | Path", *, mode: str = REHEARSAL,
     resolved_home = (str(home) if home else
                      (str(Path.home()) if mode == LIVE else str(into / "credential-free-home")))
     config = {
-        "experiment": EXPERIMENT,
+        "experiment": experiment,
         "mode": mode,
         "prepared_at": datetime.now(tz=timezone.utc).isoformat(),
         "workdir": str(into),
+        "identities": None,          # filled in below, once the path is decided
         "interpreter": {"executable": sys.executable,
                         "version": sys.version.split()[0],
                         "note": "sys.executable as it actually resolved, not a nominal path"},
@@ -200,8 +213,13 @@ def prepare(into: "str | Path", *, mode: str = REHEARSAL,
     # that leaving it in the working directory makes the exercise unfalsifiable from outside, so it
     # is written wherever the caller says and a runtime builder says "not in there".
     identities = {
-        "experiment": EXPERIMENT, "mode": mode,
+        "experiment": experiment, "mode": mode,
         "harness": revision,
+        # The document this run is executed against, and the text the coordinator will receive.
+        # Digested before anything is launched: a protocol edited afterwards is a different
+        # protocol, and a reader holding one copy has no other way to tell.
+        "protocol": _protocol_identity(experiment, harness_root),
+        "coordinator_input_sha256": None,
         "seeded_candidate": candidate,
         "project_commit": project_head,
         "goal_sha256": digest_file(fixture.project / "goal.md"),
@@ -217,10 +235,13 @@ def prepare(into: "str | Path", *, mode: str = REHEARSAL,
         "interpreter": config["interpreter"],
     }
     identities_path = (Path(identities_into) if identities_into
-                       else into / "frozen-identities.json")
+                       else into / IDENTITIES_NAME)
     identities_path.parent.mkdir(parents=True, exist_ok=True)
     identities_path.write_text(json.dumps(identities, indent=2, sort_keys=True) + "\n",
                                encoding="utf-8")
+    config["identities"] = str(identities_path)
+    (into / CONFIG_NAME).write_text(json.dumps(config, indent=2, sort_keys=True) + "\n",
+                                    encoding="utf-8")
 
     # The live half must not inherit the seeded state's fake model identity, and it writes to its
     # own session database: the seeded attempts are in the same run tree, and pricing them would
@@ -233,13 +254,34 @@ def prepare(into: "str | Path", *, mode: str = REHEARSAL,
     state_path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     ledger = _guard.LaunchLedger(into / LEDGER_NAME)
-    ledger.data["experiment"] = EXPERIMENT
+    ledger.data["experiment"] = experiment
     ledger.data["mode"] = mode
     ledger._flush()
 
     return {"workdir": str(into), "mode": mode, "candidate": candidate,
             "config": str(into / CONFIG_NAME), "identities": str(identities_path),
             "project_commit": project_head, "seeded_steps": fixture.steps}
+
+
+def _protocol_identity(experiment: str, harness_root: "str | Path | None") -> "dict[str, Any]":
+    """The protocol document's own identity, frozen before execution.
+
+    Read from the **controller's** checkout, never from the staged harness. The experiment plan is
+    deliberately withheld from the coordinator's boundary, so resolving it there would record
+    `None` for precisely the documents that are correctly hidden — a missing digest caused by the
+    boundary working.
+    """
+    name = PROTOCOL_BY_EXPERIMENT.get(experiment)
+    if name is None:
+        return {"document": None, "sha256": None,
+                "note": f"no protocol document is registered for {experiment!r}"}
+    path = HERE / name
+    if not path.is_file():
+        return {"document": name, "sha256": None,
+                "note": "the registered protocol document is not present in the controller's "
+                        "checkout"}
+    return {"document": name, "sha256": digest_file(path), "bytes": path.stat().st_size,
+            "read_from": "the controller's checkout; withheld from the subject runtime"}
 
 
 def _slice_root(harness_root: "str | Path | None") -> Path:
@@ -389,7 +431,9 @@ def check_artifact(workdir: "str | Path", *, artifact: str = "dispatch.py",
     verdict = (_checker.CHECKER_ERROR if delivered["verdict"] == _checker.CHECKER_ERROR else
                _checker.PASS if delivered["verdict"] == _checker.PASS
                and scope["verdict"] == _checker.PASS else _checker.FAIL)
-    report = {"experiment": EXPERIMENT, "checked_at": datetime.now(tz=timezone.utc).isoformat(),
+    report = {"experiment": config.get("experiment", EXPERIMENT),
+              "condition": config.get("condition"),
+              "checked_at": datetime.now(tz=timezone.utc).isoformat(),
               "artifact_check": delivered, "scope_check": scope, "verdict": verdict,
               "findings": [*delivered["findings"], *scope["findings"]],
               "note": "external to the worker chain: neither the implementer nor the reviewer saw "
@@ -434,8 +478,9 @@ def _admit(config: "dict[str, Any]", *, contract: Path, phase: str,
                "--consistency", paths["consistency"]])
 
 
-def preserve(workdir: "str | Path", *, experiment: str, condition: str,
-             into: "str | Path | None" = None) -> "dict[str, Any]":
+def preserve(workdir: "str | Path", *, experiment: "str | None" = None,
+             condition: "str | None" = None, into: "str | Path | None" = None,
+             refusal: "str | Path | None" = None) -> "dict[str, Any]":
     """Export this run's evidence while its disposable data still exists.
 
     Called on **every** exit path, including refusals and interrupted attempts: a run that refused
@@ -451,6 +496,10 @@ def preserve(workdir: "str | Path", *, experiment: str, condition: str,
     workdir = Path(workdir).expanduser().resolve()
     config = load_config(workdir)
     paths = config["paths"]
+    # One identity, recorded at preparation and read back here. A caller that had to retype it
+    # could disagree with the configuration, the ledger and the artifact-check record.
+    experiment = experiment or config.get("experiment") or EXPERIMENT
+    condition = condition or config.get("condition") or "unnamed"
     target = Path(into) if into is not None else workdir / "evidence-package"
     db = Path(paths["session_db"])
     # Scope attribution to the launches this run's own ledger reserved. Without it the seeded
@@ -480,7 +529,10 @@ def preserve(workdir: "str | Path", *, experiment: str, condition: str,
             session_db=db if db.is_file() else None, project=paths["project"], config=config,
             artifact=artifact if artifact.is_file() else None,
             requirements=requirements if requirements.is_file() else None, extra=extra,
-            event_dirs=own)
+            event_dirs=own, workdir=workdir,
+            refusal=Path(refusal) if refusal else (
+                workdir / "authorization-refusal.json"
+                if (workdir / "authorization-refusal.json").is_file() else None))
         return {"preserved": True, **result}
     except Exception as exc:                      # noqa: BLE001 - visible, never fatal to the run
         return {"preserved": False,
@@ -502,6 +554,49 @@ def rehearse(into: "str | Path", *, path: str = "clean",
     result["evidence"] = preserve(
         result["workdir"], experiment="rehearsal", condition=path, into=preserve_into)
     return result
+
+
+def finalize(workdir: "str | Path", *, condition: str,
+             into: "str | Path | None" = None) -> "dict[str, Any]":
+    """End one live condition: preserve its evidence, then say what is established.
+
+    The supported end of a condition, whatever brought it there — a refusal, a pre-executor
+    failure, an interrupted attempt or a normal completion. Collection happens here, while the
+    session database and run tree still exist, because after cleanup there is nothing to collect.
+
+    **What this does not promise.** It runs on a normal return. A controller killed with SIGKILL,
+    or a machine that loses power, does not reach it, and no exporter reached from a return
+    statement ever could. What survives such a kill is whatever the run tree and session database
+    already hold on disk — which is why they are not deleted until a package has been verified.
+    """
+    workdir = Path(workdir).expanduser().resolve()
+    config = load_config(workdir)
+    ledger = _guard.LaunchLedger(workdir / LEDGER_NAME)
+    own = ledger.own_event_dirs()
+    facts = _guard.launch_facts(config["paths"]["run_root"], own)
+    reserved_without_executor = [
+        s for s in ledger.slots if s.get("classification") == _guard.PRE_EXECUTOR_FAILURE]
+    incomplete = [a["event_dir"] for a in facts["attempts"] if not a.get("terminal_present")]
+
+    evidence = preserve(workdir, condition=condition, into=into)
+    disposition = (
+        "refused" if not own and (workdir / "authorization-refusal.json").is_file() else
+        "not-observed" if not own else
+        "interrupted" if incomplete else
+        "completed")
+    return {
+        "condition": condition,
+        "experiment": config.get("experiment"),
+        "disposition": disposition,
+        "own_attempts": own,
+        "pre_executor_failures": [s.get("slot") for s in reserved_without_executor],
+        "attempts_without_a_terminal_record": incomplete,
+        "evidence": evidence,
+        # A preservation failure stops paid work and protects the source records. Routine cleanup
+        # must not delete the only copy of evidence that was never successfully collected.
+        "safe_to_clean_up": bool(evidence.get("preserved")),
+        "account": account(workdir),
+    }
 
 
 def _rehearse(into: "str | Path", *, path: str = "clean") -> "dict[str, Any]":
@@ -552,7 +647,18 @@ def _rehearse(into: "str | Path", *, path: str = "clean") -> "dict[str, Any]":
          findings=[f.get("code") for f in payload.get("findings", [])])
 
     if not authorized:
-        note("stopped at the admission refusal; nothing bound, no launch, no mutation")
+        # The refusal is written down. A run that refused and a run in which nothing was ever
+        # requested leave the same empty run tree, and only this record separates them.
+        record = dict(payload)
+        record.setdefault("candidate", candidate)
+        record["contract"] = str(contract)
+        record["refused_at"] = datetime.now(tz=timezone.utc).isoformat()
+        record["command"] = "pb_execution.py admit"
+        record["exit_code"] = verdict.returncode
+        (into / "authorization-refusal.json").write_text(
+            json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        note("stopped at the admission refusal; nothing bound, no launch, no mutation",
+             refusal_record=str(into / "authorization-refusal.json"))
         return {"path": path, "mode": REHEARSAL, "workdir": str(into), "candidate": candidate,
                 "authorized": False, "steps": steps, "account": account(into),
                 "outcome": "blocked", "simulated": ["every semantic decision"]}
@@ -799,18 +905,38 @@ rather than discovered, and name any command you ran outside the wrapper.
 
 
 def live_input(workdir: "str | Path", *, harness: "str | Path | None" = None,
-               wrapper: "str | Path | None" = None) -> str:
-    """The text a fresh coordinator receives. Contains no candidate, no verdict, no conclusion."""
+               wrapper: "str | Path | None" = None, record: bool = True) -> str:
+    """The text a fresh coordinator receives. Contains no candidate, no verdict, no conclusion.
+
+    Rendering it also **records** it: the exact bytes are written beside the run and digested into
+    the frozen identities, because what a coordinator was told is part of what the run means, and
+    a template edited afterwards leaves no other trace.
+    """
     workdir = Path(workdir).expanduser().resolve()
     config = load_config(workdir)
     paths = config["paths"]
-    return LIVE_INPUT.format(
+    text = LIVE_INPUT.format(
         wrapper=wrapper or "<wrapper>", harness=harness or ROOT,
         workdir=workdir, project=paths["project"], run_root=paths["run_root"],
         ledger=paths["ledger"], graph=paths["graph"], freezes=paths["freezes"],
         consistency=paths["consistency"],
         limit=config["policy"]["aggregate_limit"], reserve=config["policy"]["reserve"],
         ceiling=config["policy"]["launch_ceiling"], deadline=config["deadline"]["seconds"])
+    if record:
+        target = workdir / "coordinator-input.md"
+        target.write_text(text, encoding="utf-8")
+        digest = digest_file(target)
+        identities = Path(config.get("identities") or (workdir / IDENTITIES_NAME))
+        if identities.is_file():
+            try:
+                frozen = json.loads(identities.read_text(encoding="utf-8"))
+                frozen["coordinator_input_sha256"] = digest
+                frozen["coordinator_input_path"] = str(target)
+                identities.write_text(json.dumps(frozen, indent=2, sort_keys=True) + "\n",
+                                      encoding="utf-8")
+            except (OSError, ValueError):
+                pass
+    return text
 
 
 # -- readiness -------------------------------------------------------------------------------------

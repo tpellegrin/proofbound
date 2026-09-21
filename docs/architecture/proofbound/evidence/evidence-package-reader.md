@@ -43,9 +43,27 @@ aggregate verdict.
 ## The control condition
 
 Zero launches attributable to the run, three seeded attempts retained, and no provider session
-invented to explain the absence. `launch.lifecycle` reports that there is no lifecycle to settle:
-**a refusal is established by the absence of a launch**, which is exactly what that condition
-claimed. Its accounting checks are unavailable for the same reason the valid condition's are.
+invented to explain the absence. What that absence *means* is not established from it — see the
+correction below. Its accounting checks are unavailable for the same reason the valid condition's
+are.
+
+## Correction, 2026-09-21: the control's refusal is reported, not recorded
+
+The table above says of the control that *"a refusal is established by the absence of a launch"*.
+**That was wrong, and this reader was the thing that was wrong.** An untouched run and a refused one
+leave the same empty tree, so an absence establishes nothing on its own; the same output would have
+described a coordinator that crashed before its first command.
+
+What `pb-handoff-1`'s control retained is its coordinator's **prose account** of invoking the guard
+three ways and receiving `no-consistency-acceptance`. That account is real, attributable and
+retained — and it is a report. The reader now says so: `launch.lifecycle` is `not-observed`,
+`control.refusal` is `not-observed` for want of a refusal record, and `decision.coordinator` is
+`reported`.
+
+Nothing about that run's own conclusions changes. Its run report already said the refusal was the
+coordinator's judgement rather than a mechanism's, and this is the same fact reaching the reader.
+The successor writes an `authorization-refusal.json` at the moment of refusal, so its control
+condition can support the claim mechanically.
 
 ## The boundary, precisely
 

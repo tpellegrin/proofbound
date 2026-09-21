@@ -112,15 +112,50 @@ def _priced_at(facts: "dict[str, Any]") -> datetime:
     return datetime.now(tz=timezone.utc)
 
 
-def _session_by_title(db: Path, title: str) -> "str | None":
+def sessions_in(db: Path) -> "dict[str, list[str]]":
+    """Every session the database actually holds, id -> titles.
+
+    Read once and compared against, because an attempt naming a session is a *claim*. A terminal
+    record carrying `ses_missing` against a database holding only `ses_actual` used to attribute
+    cleanly and report the run complete: the identifier was nonempty, and nothing looked it up.
+    """
     import sqlite3
     from contextlib import closing
+    out: "dict[str, list[str]]" = {}
     try:
         with closing(sqlite3.connect(f"file:{db}?mode=ro", uri=True)) as conn:
-            rows = conn.execute("select id from session where title = ?", (title,)).fetchall()
+            for sid, title in conn.execute("select id, title from session").fetchall():
+                out.setdefault(str(sid), []).append(str(title))
     except sqlite3.Error:
-        return None
-    return str(rows[0][0]) if len(rows) == 1 else None
+        return {}
+    return out
+
+
+def _resolve_session(attempt: "dict[str, Any]", present: "dict[str, list[str]]",
+                     ) -> "tuple[str | None, str, str | None]":
+    """Which retained session this attempt's usage belongs to — or why that is not established.
+
+    Returns `(session_id, how, problem)`. A recorded identifier must exist in the retained
+    database; a title recovery must be unambiguous. Anything else leaves the attempt
+    unattributed, which is a different fact from "attributed to nothing".
+    """
+    recorded = attempt.get("session_id")
+    if recorded:
+        if str(recorded) in present:
+            return str(recorded), "recorded in the terminal record and present in the session "\
+                                  "database", None
+        return None, "recorded in the terminal record", (
+            f"names session {recorded!r}, which the retained database does not contain")
+    title = attempt.get("title")
+    if title:
+        matches = [sid for sid, titles in present.items() if str(title) in titles]
+        if len(matches) == 1:
+            return matches[0], "recovered from the session database by exact title", None
+        if len(matches) > 1:
+            return None, "title recovery", (
+                f"title {title!r} matches {len(matches)} sessions; recovery is ambiguous")
+        return None, "title recovery", f"no session carries the title {title!r}"
+    return None, "no identifier", "the attempt records neither a session id nor a title"
 
 
 def spend(run_root: "str | Path", db: "str | Path", *, model: str = MODEL,
@@ -179,21 +214,53 @@ def spend(run_root: "str | Path", db: "str | Path", *, model: str = MODEL,
         a["event_dir"] for a in facts["attempts"]
         if a.get("terminal_present") and a.get("terminal_status") not in (None, "completed")]
 
+    present = sessions_in(db)
+    account["sessions_in_database"] = sorted(present)
     unattributed = []
+    claimed: "dict[str, list[str]]" = {}
     for attempt in facts["attempts"]:
         if not attempt.get("readable"):
             continue
-        resolved, how = attempt.get("session_id"), "recorded in the terminal record"
-        if not resolved and attempt.get("title"):
-            resolved = _session_by_title(db, str(attempt["title"]))
-            how = "recovered from the session database by exact title"
+        resolved, how, problem = _resolve_session(attempt, present)
         attempt["attributed_session"] = resolved
         attempt["attributed_by"] = how if resolved else None
-        if not resolved:
-            unattributed.append(attempt["event_dir"])
+        attempt["attribution_problem"] = problem
+        if resolved:
+            claimed.setdefault(resolved, []).append(attempt["event_dir"])
+        else:
+            unattributed.append({"event_dir": attempt["event_dir"], "why": problem})
     if unattributed:
-        unsettled.append(f"attempt(s) whose usage cannot be attributed to a session: "
-                         f"{unattributed}")
+        unsettled.append(
+            "attempt(s) whose usage cannot be attributed to a retained session: "
+            + "; ".join(f"{u['event_dir']} {u['why']}" for u in unattributed))
+
+    # Two attempts claiming one session is a **split** problem, not a total problem: both attempts
+    # are this run's and so is the session, so the aggregate is still whole and only the per-attempt
+    # division is unavailable. A session *no* attempt claims is different — its usage is being
+    # priced here with nothing to attach it to, which means either an attempt is missing or the
+    # figure includes work that is not this run's.
+    reused = {sid: dirs for sid, dirs in claimed.items() if len(dirs) > 1}
+    unaccounted = sorted(set(present) - set(claimed))
+    if unaccounted and facts["attempts"]:
+        unsettled.append(f"session(s) in the database that no attempt claims, whose usage is "
+                         f"nonetheless priced here: {unaccounted}")
+    account["session_attribution"] = {
+        "claimed": claimed, "unaccounted": unaccounted, "reused": reused,
+        "unattributed_attempts": unattributed,
+        "per_attempt_attribution_established": not (unattributed or reused or unaccounted),
+        "why": ("each attempt resolves to its own retained session"
+                if not (unattributed or reused or unaccounted) else
+                "usage cannot be divided per attempt; the aggregate may still be settled"),
+    }
+
+    # Balanced totals are not a reconciliation: a start and a finish in different messages sum to
+    # one of each while no call is known to have completed.
+    reconciliation = _profile.call_reconciliation(_profile.read_parts(db))
+    account["call_reconciliation"] = reconciliation
+    if not reconciliation["reconciled"]:
+        unsettled.append(
+            f"{len(reconciliation['unmatched_messages'])} message(s) whose model-call starts and "
+            f"finishes do not balance; equal totals do not establish that the same calls finished")
 
     priced = _pricing.cost(usage, model=model.split("/", 1)[-1], when=_priced_at(facts))
     amount = (priced or {}).get("amount")

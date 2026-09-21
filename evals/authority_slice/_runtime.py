@@ -58,7 +58,7 @@ WITHHELD = (
     "_checker_corpus.py",           # more of the same, plus expected verdicts
     "cases/coherent-requirements/case.json",
     "cases/contradictory-requirements/case.json",
-    "README.md", "next-live-experiment.md", "probe-observations.md",
+    "README.md", "next-live-experiment.md", "pb-handoff-2-protocol.md", "probe-observations.md",
 )
 
 
@@ -120,10 +120,11 @@ def sensitive() -> "list[Any]":
 
 
 def build(*, mode: str = _live.REHEARSAL, root: "str | Path | None" = None,
-          executor: "str | Path | None" = None) -> "dict[str, Any]":
+          executor: "str | Path | None" = None,
+          experiment: str = _live.EXPERIMENT) -> "dict[str, Any]":
     """Construct the runtime, prepare the experiment inside it, and measure what it exposes."""
     root = Path(root) if root else (_semantic_view.DEFAULT_PARENT
-                                    / f"pb-handoff-1-{os.getpid()}")
+                                    / f"{experiment}-{os.getpid()}")
     root = Path(root).resolve()
     if root.exists():
         raise SystemExit(f"{root} already exists; refusing to reuse a runtime")
@@ -193,6 +194,7 @@ def build(*, mode: str = _live.REHEARSAL, root: "str | Path | None" = None,
 
     prepared = _live.prepare(view.workspace / "work", mode=mode, executor=staged_executor,
                              home=view.home, harness_root=view.workspace / "harness",
+                             experiment=experiment,
                              identities_into=root.parent / f"{root.name}.identities.json")
 
     wrapper = root.parent / f"{root.name}-run"
@@ -214,6 +216,7 @@ def build(*, mode: str = _live.REHEARSAL, root: "str | Path | None" = None,
     wrapper.chmod(0o755)
 
     described = {
+        "experiment": experiment,
         "mode": mode,
         "root": str(root),
         "tools_root": str(tools_root),

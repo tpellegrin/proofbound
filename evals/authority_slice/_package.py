@@ -79,6 +79,10 @@ UNAVAILABLE = "unavailable"
 
 OK = "ok"
 MISMATCH = "mismatch"
+#: The claim's subject was never observed at all. An untouched run did not "refuse"; it did
+#: nothing, and those are different results. Kept apart from `unavailable`, which says the event
+#: may have happened and the evidence for it is missing.
+NOT_OBSERVED = "not-observed"
 
 
 #: Exactly the session columns an accounting recomputation needs. Everything else in an OpenCode
@@ -230,33 +234,60 @@ def usage_from_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def attribution(rows: list[dict[str, Any]], attempts: list[dict[str, Any]]) -> dict[str, Any]:
-    """What can and cannot be said about which attempt spent what.
+    """Which attempt spent what — established against the sessions actually retained.
 
-    Equal aggregate start and finish counts say the session is internally consistent. They say
-    nothing about *which attempt* a call belongs to — an inference `pb-authority-demo-2`'s audit
-    already caught being made once. Per-attempt attribution needs a session id per attempt, so it
-    is reported as established only when every attempt has one.
+    Naming a session is a claim, not a resolution. An attempt whose terminal record cites
+    `ses_missing` against a trace holding only `ses_actual` used to attribute cleanly, because the
+    identifier was nonempty and nothing looked it up.
+
+    Equal aggregate start and finish counts say the totals balance. They say nothing about which
+    attempt a call belongs to — an inference `pb-authority-demo-2`'s audit already caught being
+    made once — and nothing about whether the same calls finished.
     """
     sessions = sorted({r["session_id"] for r in rows if r.get("session_id")})
-    # `attributed_session` is what `_guard.spend` resolves (recorded, or recovered by exact title);
-    # `session_id` is what the attempt's own terminal record carries. Either identifies the
-    # session, and reading only the first silently reported every run as unattributable.
-    def resolved(a: dict[str, Any]) -> Any:
-        return a.get("attributed_session") or a.get("session_id")
+    present = set(sessions)
+    resolved: dict[str, str] = {}
+    problems: list[dict[str, Any]] = []
+    for attempt in attempts:
+        event = attempt.get("event_dir")
+        claimed = attempt.get("attributed_session") or attempt.get("session_id")
+        if not claimed:
+            problems.append({"event_dir": event,
+                             "why": "the attempt records no session identifier"})
+            continue
+        if str(claimed) not in present:
+            problems.append({"event_dir": event,
+                             "why": f"names session {claimed!r}, absent from the retained trace"})
+            continue
+        resolved[str(event)] = str(claimed)
 
-    attributed = [a for a in attempts if resolved(a)]
-    unattributed = [a.get("event_dir") for a in attempts if not resolved(a)]
-    per_attempt = bool(attempts) and not unattributed and len(sessions) >= 1
+    claimed_by: dict[str, list[str]] = {}
+    for event, sid in resolved.items():
+        claimed_by.setdefault(sid, []).append(event)
+    reused = {sid: dirs for sid, dirs in claimed_by.items() if len(dirs) > 1}
+    unaccounted = sorted(present - set(claimed_by))
+    established = bool(attempts) and not problems and not reused and not unaccounted
+    reasons = []
+    if problems:
+        reasons.append(f"{len(problems)} attempt(s) resolve to no retained session")
+    if reused:
+        reasons.append(f"session(s) claimed by more than one attempt: {sorted(reused)}")
+    if unaccounted:
+        reasons.append(f"retained session(s) no attempt claims: {unaccounted}")
+    if not attempts:
+        reasons.append("no attempt was attributable to this run")
     return {
         "sessions_in_package": sessions,
         "attempts": len(attempts),
-        "attempts_with_a_session": len(attributed),
-        "attempts_without_a_session": unattributed,
-        "per_attempt_attribution_established": per_attempt,
-        "why": ("every attempt names a session, so usage can be attributed per attempt"
-                if per_attempt else
-                "at least one attempt names no session; aggregate totals remain usable, "
-                "per-attempt attribution does not follow from them"),
+        "resolved": resolved,
+        "unresolved": problems,
+        "sessions_claimed_twice": reused,
+        "sessions_no_attempt_claims": unaccounted,
+        "per_attempt_attribution_established": established,
+        "why": ("every attempt resolves to exactly one retained session and every retained "
+                "session is claimed" if established else
+                "; ".join(reasons) + "; aggregate totals remain usable, per-attempt attribution "
+                "does not follow from them"),
     }
 
 
@@ -264,18 +295,29 @@ def attribution(rows: list[dict[str, Any]], attempts: list[dict[str, Any]]) -> d
 
 #: Files copied from a run, by role. The role travels with the file so a reader does not have to
 #: infer meaning from a path that was only ever meaningful on the machine that made it.
+#: Files copied from a run, by role, and whether their absence is a collection defect. A file
+#: marked required and not found becomes an omission naming the checks it blocks; an optional one
+#: is simply absent, because not every condition produces one.
 COLLECT = (
-    ("state.json", "authority-state"),
-    ("launch-ledger.json", "launch-ledger"),
-    ("run-config.json", "run-configuration"),
-    ("frozen-identities.json", "frozen-identities"),
-    ("baseline-manifest.json", "baseline-manifest"),
-    ("final-account.json", "final-account"),
-    ("artifact-check.json", "artifact-check"),
-    ("runtime.json", "runtime"),
-    ("coordinator-input.md", "coordinator-input"),
-    ("coordinator-report.md", "coordinator-report"),
+    ("state.json", "authority-state", True),
+    ("launch-ledger.json", "launch-ledger", True),
+    ("run-config.json", "run-configuration", True),
+    ("frozen-identities.json", "frozen-identities", True),
+    ("baseline-manifest.json", "baseline-manifest", False),
+    ("final-account.json", "final-account", False),
+    ("artifact-check.json", "artifact-check", False),
+    ("runtime.json", "runtime", False),
+    ("coordinator-input.md", "coordinator-input", False),
+    ("coordinator-report.md", "coordinator-report", False),
 )
+
+#: What a missing required file costs, named at export so a reader never has to guess.
+REQUIRED_BLOCKS = {
+    "state.json": ["authority.binding", "authority.admission", "decision.acceptance"],
+    "launch-ledger.json": ["launch.ledger-agreement"],
+    "run-config.json": ["price.recompute", "identity.configured"],
+    "frozen-identities.json": ["identity.frozen"],
+}
 
 #: Per-attempt files. `report.md` is the worker's own prose and is retained because a semantic
 #: judgment has to be *readable* to be reported at all — but it is labelled `REPORTED`, never
@@ -288,8 +330,24 @@ class PreservationFailure(RuntimeError):
     """Evidence collection failed. Visible, never swallowed, never a reason to erase an attempt."""
 
 
+#: Names and path segments that must never enter a package. The constructed runtime stages the
+#: executor's credential into its own home, and a package is a thing people copy around; a guard
+#: that fails loudly costs nothing and does not have to be remembered.
+CREDENTIAL_NAMES = ("auth.json", "credentials.json", ".netrc", "id_rsa")
+CREDENTIAL_SEGMENTS = (".local/share/opencode", ".ssh", ".aws", ".config/gh")
+
+
+def _refuse_credentials(source: Path) -> None:
+    text = source.as_posix()
+    if source.name in CREDENTIAL_NAMES or any(seg in text for seg in CREDENTIAL_SEGMENTS):
+        raise PreservationFailure(
+            f"refusing to place {source} in an evidence package: it is a credential or sits in a "
+            f"credential location. Evidence is shareable; this is not.")
+
+
 def _copy(source: Path, package: Path, rel: str, role: str,
           files: list[dict[str, Any]]) -> None:
+    _refuse_credentials(source)
     target = package / FILES_DIR / rel
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(source, target)
@@ -301,7 +359,8 @@ def export(*, run_root: Path, into: Path, experiment: str, condition: str,
            session_db: Path | None = None, project: Path | None = None,
            config: dict[str, Any] | None = None, artifact: Path | None = None,
            requirements: Path | None = None, extra: dict[str, Any] | None = None,
-           event_dirs: list[str] | None = None) -> dict[str, Any]:
+           event_dirs: list[str] | None = None, refusal: Path | None = None,
+           workdir: Path | None = None) -> dict[str, Any]:
     """Collect one condition's evidence into a relocatable package.
 
     Called while the run's data is still there. A missing optional input is **recorded as omitted
@@ -318,14 +377,38 @@ def export(*, run_root: Path, into: Path, experiment: str, condition: str,
     files: list[dict[str, Any]] = []
     omitted: list[dict[str, Any]] = []
 
-    workdir = run_root
-    for name, role in COLLECT:
-        for base in (run_root, run_root.parent, (Path(config["paths"]["run_root"]).parent
-                                                 if config else run_root)):
-            candidate = Path(base) / name
+    # Where preparation actually writes. `run-config.json`, `launch-ledger.json` and
+    # `frozen-identities.json` live at the **workdir**, four levels above the run root, and
+    # searching only the run root and its parent silently retained none of them — a package
+    # missing its own identities and ledger, with nothing saying so.
+    bases: list[Path] = []
+    for base in (workdir, run_root, run_root.parent,
+                 Path(config["paths"]["project"]).parent if config and config.get("paths", {}).get(
+                     "project") else None):
+        if base is not None and Path(base).is_dir() and Path(base) not in bases:
+            bases.append(Path(base))
+    # A file the configuration names explicitly is fetched from where the configuration says it
+    # is. Inside a constructed runtime the frozen identities are written *outside* the workdir on
+    # purpose — they are controller-side evidence — so searching directories alone never finds
+    # them, and the package silently loses the record of what the run was frozen against.
+    named = {"frozen-identities.json": config.get("identities") if config else None}
+    for name, role, required in COLLECT:
+        explicit = named.get(name)
+        if explicit and Path(explicit).is_file():
+            _copy(Path(explicit), into, f"run/{name}", role, files)
+            continue
+        for base in bases:
+            candidate = base / name
             if candidate.is_file():
                 _copy(candidate, into, f"run/{name}", role, files)
                 break
+        else:
+            if required:
+                omitted.append({
+                    "what": name,
+                    "why": (f"not found at {explicit}" if explicit
+                            else f"not found under {[str(b) for b in bases]}"),
+                    "blocks": REQUIRED_BLOCKS.get(name, [])})
 
     # Seeded and live attempts share one run tree, and conflating them would charge this run for
     # work no provider ever did. `event_dirs` names the launches this run's ledger reserved; the
@@ -360,6 +443,13 @@ def export(*, run_root: Path, into: Path, experiment: str, condition: str,
     if requirements is not None and Path(requirements).is_file():
         _copy(Path(requirements), into, "delivered/accepted-requirements.md",
               "checker-requirements", files)
+    if refusal is not None and Path(refusal).is_file():
+        _copy(Path(refusal), into, "run/authorization-refusal.json",
+              "authorization-refusal", files)
+    elif refusal is not None:
+        omitted.append({"what": "the authorization refusal record",
+                        "why": f"no record at {refusal}",
+                        "blocks": ["control.refusal"]})
 
     events: dict[str, Any] = {"available": False, "rows": [], "anomalies": []}
     if session_db is not None:
@@ -533,6 +623,7 @@ def verify(package: Path, *, recheck_artifact: bool = False,
     checks.extend(_check_usage(package, manifest))
     checks.extend(_check_authority(package, manifest))
     checks.extend(_check_artifact(package, manifest, recheck=recheck_artifact, timeout=timeout))
+    checks.extend(_check_refusal(package, manifest))
     checks.extend(_check_reported(package, manifest))
     checks.extend(_check_coverage(package, manifest))
 
@@ -615,16 +706,66 @@ def _check_launch(package: Path, manifest: dict[str, Any]) -> list[dict[str, Any
                          f"attempt(s) with no terminal record remain incomplete: {incomplete}",
                          incomplete=incomplete))
     elif not considered:
-        out.append(check("launch.lifecycle", RECOMPUTE, OK,
-                         "this run launched no worker of its own, so there is no lifecycle to "
-                         "settle; a refusal is established by the absence of a launch"))
+        # An absence is not an act. This run launched nothing, and whether that is a refusal, a
+        # crash before the first command, or a coordinator that never started is decided by
+        # `control.refusal` against a retained refusal record — not by this check.
+        out.append(check("launch.lifecycle", RECOMPUTE, NOT_OBSERVED,
+                         "this run launched no worker of its own; what that means is not "
+                         "established here — see control.refusal"))
     else:
         out.append(check("launch.lifecycle", RECOMPUTE, OK,
                          f"every attempt this run launched has a terminal record ({len(terminal)})"))
     out.append(check("launch.reservations", RECOMPUTE, OK,
                      f"{len(reserved)} of {len(considered)} attempt(s) reserved a slot before the "
                      f"executor was reached", reserved=reserved))
+    out.append(_check_ledger_agreement(package, manifest, recomputed))
     return out
+
+
+def _check_ledger_agreement(package: Path, manifest: dict[str, Any],
+                            recomputed: dict[str, Any]) -> dict[str, Any]:
+    """Rebuild the owned attempt set from the retained ledger and reconcile it with the tree.
+
+    The manifest supplies a membership list; taking it at face value would mean a package whose
+    scope was miscomputed at export is never contradicted. The ledger is the durable record of what
+    this run reserved, so the set is rebuilt from it and compared against what the tree actually
+    holds. Equal counts are not the relationship: which directories, and in which state.
+    """
+    ledger_path = _resolve(package, "run/launch-ledger.json")
+    if not ledger_path.is_file():
+        return check("launch.ledger-agreement", UNAVAILABLE, UNAVAILABLE,
+                     "no launch ledger was retained, so the owned attempt set cannot be rebuilt")
+    try:
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return check("launch.ledger-agreement", INTEGRITY, MISMATCH,
+                     f"the retained launch ledger is unreadable: {exc}")
+    slots = ledger.get("slots") or []
+    from_ledger = {Path(str(s.get("event_dir"))).name for s in slots if s.get("event_dir")}
+    reserved_but_unclassified = [s.get("slot") for s in slots
+                                 if s.get("classification") in (None, "unresolved")]
+    pre_executor = {Path(str(s.get("event_dir"))).name for s in slots
+                    if s.get("classification") == "pre-executor-failure" and s.get("event_dir")}
+    declared = set((manifest.get("attribution_scope") or {}).get("own_attempts") or [])
+    in_tree = {a["event_dir"] for a in recomputed["attempts"]}
+
+    problems = []
+    if from_ledger != declared:
+        problems.append(f"the ledger reserved {sorted(from_ledger)} but the package declares "
+                        f"{sorted(declared)} as its own")
+    missing_from_tree = sorted(from_ledger - in_tree - pre_executor)
+    if missing_from_tree:
+        problems.append(f"the ledger reserved slots whose attempt directories are not in the "
+                        f"retained tree: {missing_from_tree}")
+    if reserved_but_unclassified:
+        problems.append(f"slot(s) reserved and never classified: {reserved_but_unclassified}")
+    if problems:
+        return check("launch.ledger-agreement", RECOMPUTE, MISMATCH, "; ".join(problems))
+    return check("launch.ledger-agreement", RECOMPUTE, OK,
+                 f"the retained ledger's {len(from_ledger)} reserved slot(s) reconcile with the "
+                 f"retained tree; {len(pre_executor)} pre-executor failure(s), "
+                 f"{len(in_tree - from_ledger)} seeded attempt(s) not attributed to this run",
+                 reserved=sorted(from_ledger), pre_executor_failures=sorted(pre_executor))
 
 
 def _check_usage(package: Path, manifest: dict[str, Any]) -> list[dict[str, Any]]:
@@ -667,11 +808,24 @@ def _check_usage(package: Path, manifest: dict[str, Any]) -> list[dict[str, Any]
                          f"usage recomputed from {len(rows)} retained event(s) matches the "
                          f"manifest", usage=recomputed))
 
+    import _profile
+
     started, finished = recomputed.get("calls_started"), recomputed.get("calls_finished")
+    reconciliation = _profile.call_reconciliation(
+        [{"ordinal": i, "session_id": r.get("session_id"), "message_id": r.get("message_id"),
+          "part": {"type": r.get("type")}} for i, r in enumerate(rows)])
     if isinstance(started, int) and isinstance(finished, int) and started != finished:
         out.append(check("usage.completeness", RECOMPUTE, UNAVAILABLE,
                          f"{started - finished} call(s) started and did not finish; their usage is "
                          f"unknown, not zero"))
+    elif not reconciliation["reconciled"]:
+        # The totals balance and the calls do not. Reporting this as complete is how a session
+        # carrying an interrupted call plus a stray finish passes for a settled one.
+        out.append(check("usage.completeness", RECOMPUTE, UNAVAILABLE,
+                         f"totals balance at {started}, but "
+                         f"{len(reconciliation['unmatched_messages'])} message(s) carry unequal "
+                         f"starts and finishes; equal totals do not establish that the same calls "
+                         f"finished", unmatched=reconciliation["unmatched_messages"]))
     elif anomalies:
         out.append(check("usage.completeness", RECOMPUTE, UNAVAILABLE,
                          f"{len(anomalies)} anomalous row(s) recorded at export; totals are a "
@@ -679,17 +833,56 @@ def _check_usage(package: Path, manifest: dict[str, Any]) -> list[dict[str, Any]
                          anomalies=sorted({a["kind"] for a in anomalies})))
     else:
         out.append(check("usage.completeness", RECOMPUTE, OK,
-                         f"{started} call(s) started and {finished} finished, no anomalies"))
+                         f"{started} call(s) started and {finished} finished, reconciled across "
+                         f"{reconciliation['messages']} message(s), no anomalies"))
 
-    price = _recompute_price(manifest, recomputed)
-    out.append(price)
-    attrib = manifest.get("attribution") or {}
-    if attrib.get("per_attempt_attribution_established"):
-        out.append(check("usage.attribution", RECOMPUTE, OK, attrib.get("why", "")))
-    else:
-        out.append(check("usage.attribution", UNAVAILABLE, UNAVAILABLE,
-                         attrib.get("why", "per-attempt attribution was not established")))
+    out.append(_recompute_price(manifest, recomputed))
+    out.append(_recompute_attribution(package, manifest, rows))
     return out
+
+
+def _recompute_attribution(package: Path, manifest: dict[str, Any],
+                           rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Re-derive per-attempt attribution from the retained records, not from the manifest.
+
+    The manifest's own conclusion is an assertion by whatever produced the package. Reading it back
+    as a check would mean an exporter that decided wrongly — or a hand-edited boolean — is never
+    contradicted. So the attempts are re-read from their retained terminal records and resolved
+    against the sessions the retained trace actually contains.
+    """
+    staged = package / FILES_DIR / "run"
+    scope = manifest.get("attribution_scope") or {}
+    own = scope.get("own_attempts")
+    attempts: list[dict[str, Any]] = []
+    attempts_dir = staged / "attempts"
+    if attempts_dir.is_dir():
+        for event in sorted(attempts_dir.iterdir()):
+            if not event.is_dir() or (own is not None and event.name not in own):
+                continue
+            terminal = event / "terminal.json"
+            record: dict[str, Any] = {"event_dir": event.name}
+            if terminal.is_file():
+                try:
+                    data = json.loads(terminal.read_text(encoding="utf-8"))
+                    record["session_id"] = data.get("session_id")
+                    record["title"] = data.get("title")
+                except (OSError, ValueError):
+                    record["session_id"] = None
+            attempts.append(record)
+
+    recomputed = attribution(rows, attempts)
+    declared = bool((manifest.get("attribution") or {}).get(
+        "per_attempt_attribution_established"))
+    if recomputed["per_attempt_attribution_established"] != declared:
+        return check("usage.attribution", RECOMPUTE, MISMATCH,
+                     f"the manifest declares attribution established={declared}; the retained "
+                     f"records give {recomputed['per_attempt_attribution_established']} — "
+                     f"{recomputed['why']}", recomputed=recomputed)
+    if not recomputed["per_attempt_attribution_established"]:
+        return check("usage.attribution", UNAVAILABLE, UNAVAILABLE, recomputed["why"],
+                     recomputed=recomputed)
+    return check("usage.attribution", RECOMPUTE, OK, recomputed["why"],
+                 resolved=recomputed["resolved"])
 
 
 def _recompute_price(manifest: dict[str, Any], usage: dict[str, Any]) -> dict[str, Any]:
@@ -876,18 +1069,85 @@ def _check_artifact(package: Path, manifest: dict[str, Any], *, recheck: bool,
     result = _checker.check_delivered(path, model=model, timeout=int(timeout))
     status = result.get("verdict")
     historical = (recorded or {}).get("result") if recorded is not None else None
+
+    # The verdict is the finding. An earlier version reported `ok` whenever there was no historical
+    # result to disagree with, so a delivery that fails the accepted requirements passed silently
+    # — the check answered "did these two agree?" when the question is "do these bytes work?".
+    if status == _checker.CHECKER_ERROR:
+        out.append(check("artifact.recheck", UNAVAILABLE, UNAVAILABLE,
+                         f"the checker could not reach a verdict over the retained bytes: "
+                         f"{result.get('findings')}"))
+        return out
+    if status != _checker.PASS:
+        out.append(check("artifact.recheck", RECOMPUTE, MISMATCH,
+                         f"a fresh bounded check of the retained bytes returns {status!r} against "
+                         f"the retained accepted requirements",
+                         requirements_sha256=requirements["sha256"],
+                         findings=result.get("findings")))
+        return out
     if historical is not None and historical != status:
         out.append(check("artifact.recheck", RECOMPUTE, MISMATCH,
                          f"a fresh check of the retained bytes returns {status!r}; the run "
                          f"recorded {historical!r}",
                          requirements_sha256=requirements["sha256"]))
-    else:
-        out.append(check("artifact.recheck", RECOMPUTE, OK,
-                         f"a fresh bounded check of the retained bytes returns {status!r}; this is "
-                         f"a new check of those bytes, not evidence that the historical check ran",
-                         requirements_sha256=requirements["sha256"],
-                         findings=result.get("findings")))
+        return out
+    out.append(check("artifact.recheck", RECOMPUTE, OK,
+                     f"a fresh bounded check of the retained bytes returns {status!r} against the "
+                     f"retained accepted requirements; this is a new check of those bytes, not "
+                     f"evidence that the historical check ran",
+                     requirements_sha256=requirements["sha256"]))
     return out
+
+
+def _check_refusal(package: Path, manifest: dict[str, Any]) -> list[dict[str, Any]]:
+    """Was a request actually refused, or did nothing happen?
+
+    A control condition claims that the mechanism refused. Supporting that needs three things
+    together: a **retained refusal record** naming what was requested and why it was refused, the
+    **absence of worker execution**, and no replacement permission created to route around it. An
+    untouched run supplies only the second, and an untouched run is `not-observed` — it did not
+    refuse, it did nothing, and reporting those alike would let a coordinator that crashed before
+    its first command pass for a successful negative control.
+    """
+    record = next((f for f in manifest.get("files") or [] if f.get("role") == "authorization-refusal"),
+                  None)
+    scope = manifest.get("attribution_scope") or {}
+    own = scope.get("own_attempts") or []
+    if record is None:
+        return [check("control.refusal", NOT_OBSERVED, NOT_OBSERVED,
+                      "no refusal record was retained; this package does not distinguish a refused "
+                      "request from a run in which nothing was ever requested"
+                      + ("" if not own else f", and {len(own)} launch(es) did occur"))]
+    path = _resolve(package, record["path"])
+    if not path.is_file() or sha256_file(path) != record["sha256"]:
+        return [check("control.refusal", INTEGRITY, MISMATCH,
+                      "the retained refusal record is missing or its bytes changed")]
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return [check("control.refusal", INTEGRITY, MISMATCH,
+                      f"the retained refusal record is unreadable: {exc}")]
+
+    findings = [f.get("code") for f in (payload.get("findings") or []) if isinstance(f, dict)]
+    subject = payload.get("candidate") or payload.get("contract")
+    refused = payload.get("admitted") is False or payload.get("authorized") is False
+    problems = []
+    if not refused:
+        problems.append("the retained record does not state a refusal")
+    if not findings:
+        problems.append("the record names no reason")
+    if not subject:
+        problems.append("the record names no subject")
+    if own:
+        problems.append(f"{len(own)} launch(es) are attributed to this run, so execution was not "
+                        f"withheld")
+    if problems:
+        return [check("control.refusal", RECOMPUTE, MISMATCH, "; ".join(problems),
+                      findings=findings)]
+    return [check("control.refusal", RECOMPUTE, OK,
+                  f"a refusal of {str(subject)[:12]} was recorded for {findings}, and no worker "
+                  f"execution is attributed to this run",
+                  findings=findings, subject=str(subject))]
 
 
 def _check_reported(package: Path, manifest: dict[str, Any]) -> list[dict[str, Any]]:
@@ -1085,3 +1345,124 @@ def adapt_handoff_1(condition_dir: Path, into: Path, *,
     (into / MANIFEST).write_bytes(raw)
     return {"package": str(into), "files": len(files), "omitted": len(omitted),
             "manifest_sha256": sha256_bytes(raw)}
+
+
+# -- qualification: did this condition do what it was supposed to do? ----------------------------
+
+#: What each condition must be able to show. Frozen here rather than judged afterwards, because a
+#: criterion chosen once results are visible is not a criterion.
+REQUIRED_OBSERVATIONS = {
+    "control": ("files.integrity", "launch.attempts", "launch.ledger-agreement",
+                "control.refusal", "authority.binding"),
+    "valid": ("files.integrity", "launch.attempts", "launch.ledger-agreement",
+              "launch.lifecycle", "usage.recompute", "usage.completeness", "price.recompute",
+              "usage.attribution", "authority.binding", "authority.admission",
+              "artifact.retained", "artifact.recheck", "decision.acceptance"),
+}
+
+#: Checks whose unavailability is expected and does not fail evidence success. Content-exposure
+#: telemetry is the standing example: the export allowlist deliberately keeps tool output out, so
+#: `coverage.tool-exposure` bounds exposure at best and is often unavailable by design.
+EXPECTED_OMISSIONS = ("coverage.tool-exposure", "artifact.historical-result",
+                      "decision.coordinator", "review.findings")
+
+
+def qualify(package: Path, *, recheck_artifact: bool = True,
+            timeout: float = 10.0) -> dict[str, Any]:
+    """Three predicates, reported separately. None of them is `verify`'s exit code.
+
+    `verify` returning zero means it found no mismatch. A package consisting entirely of
+    `unavailable` also returns zero, and would be worthless. Qualification therefore asks a
+    different question — *are the required observations actually available and passing* — and asks
+    it per condition, because a control that launched nothing and a valid condition that delivered
+    nothing are not the same outcome.
+
+    A completed run can fail qualification and still be a valuable recorded result. That is the
+    point of separating them.
+    """
+    package = Path(package)
+    manifest = load(package)
+    condition = str(manifest.get("condition") or "")
+    report = verify(package, recheck_artifact=recheck_artifact, timeout=timeout)
+    by_id = {c["id"]: c for c in report["checks"]}
+
+    required = REQUIRED_OBSERVATIONS.get(condition)
+    evidence: dict[str, Any] = {"required": list(required or ()), "missing": [], "failing": [],
+                                "expected_omissions": []}
+    if required is None:
+        evidence["passed"] = False
+        evidence["why"] = (f"condition {condition!r} declares no required observations; "
+                           f"qualification is defined for {sorted(REQUIRED_OBSERVATIONS)}")
+    else:
+        for check_id in required:
+            entry = by_id.get(check_id)
+            if entry is None or entry["status"] in (UNAVAILABLE, NOT_OBSERVED):
+                evidence["missing"].append(check_id)
+            elif entry["status"] == MISMATCH:
+                evidence["failing"].append(check_id)
+        evidence["expected_omissions"] = [
+            c for c in EXPECTED_OMISSIONS
+            if c in by_id and by_id[c]["status"] in (UNAVAILABLE, NOT_OBSERVED)]
+        evidence["passed"] = not evidence["missing"] and not evidence["failing"]
+        evidence["why"] = ("every required observation is available and passing"
+                           if evidence["passed"] else
+                           f"missing={evidence['missing']} failing={evidence['failing']}")
+
+    outcome = _condition_outcome(condition, by_id, manifest)
+    return {
+        "package": str(package),
+        "experiment": manifest.get("experiment"),
+        "condition": condition,
+        "outcome_success": outcome,
+        "evidence_success": evidence,
+        "qualified": bool(outcome.get("passed") and evidence.get("passed")),
+        "counts": report["counts"],
+        "note": "outcome and evidence are separate predicates; a completed run that fails either "
+                "is still a recorded result, and `verify` exiting zero satisfies neither",
+    }
+
+
+def _condition_outcome(condition: str, by_id: dict[str, Any],
+                       manifest: dict[str, Any]) -> dict[str, Any]:
+    """Did the condition reach the outcome it was declared to test?"""
+    scope = manifest.get("attribution_scope") or {}
+    own = scope.get("own_attempts") or []
+    reasons: list[str] = []
+
+    if condition == "control":
+        refusal = by_id.get("control.refusal") or {}
+        if refusal.get("status") != OK:
+            reasons.append(f"control.refusal is {refusal.get('status', 'absent')}; a refusal must "
+                           f"be recorded, not inferred from an empty run")
+        if own:
+            reasons.append(f"{len(own)} worker launch(es) are attributed to this run")
+        state = manifest.get("attempts_in_tree") or {}
+        return {"predicate": "control", "passed": not reasons,
+                "why": "; ".join(reasons) or
+                       "the mechanism recorded a refusal, its subject and reason, and no worker "
+                       "execution is attributed to this run",
+                "launches": len(own), "attempts_in_tree": state.get("launched")}
+
+    if condition == "valid":
+        for check_id, why in (("authority.admission", "admission did not go through the "
+                                                      "supported path"),
+                              ("artifact.recheck", "the delivered bytes do not satisfy the "
+                                                   "accepted requirements"),
+                              ("authority.binding", "the accepted contract does not match what "
+                                                    "was bound"),
+                              ("decision.acceptance", "no acceptance is recorded")):
+            entry = by_id.get(check_id) or {}
+            if entry.get("status") != OK:
+                reasons.append(f"{check_id} is {entry.get('status', 'absent')}: {why}")
+        if len(own) < 2:
+            reasons.append(f"{len(own)} launch(es); a valid condition needs at least an "
+                           f"implementation and an independent review")
+        return {"predicate": "valid", "passed": not reasons,
+                "why": "; ".join(reasons) or
+                       "authority was recovered and admitted through supported paths, the "
+                       "delivered bytes passed the external check against the accepted "
+                       "requirements, and acceptance refers to that result",
+                "launches": len(own)}
+
+    return {"predicate": condition or "unnamed", "passed": False,
+            "why": "no outcome predicate is defined for this condition"}
