@@ -1,0 +1,38 @@
+{
+  "attempt": 2,
+  "ended_at": "2026-09-21T18:37:33.480003+00:00",
+  "exit_code": 0,
+  "format": "dsd-worker-terminal-v3",
+  "launch_reservation": "/private/tmp/pbh2-control/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/launch-reservation.json",
+  "launch_reservation_sha256": "3b1979093f462da0ca0d53ca13219722529c5e96f7d0cf6d5dae2fdcf22f8225",
+  "launcher_pid": 11815,
+  "model": "fake/none",
+  "process_ended_at": "2026-09-21T18:37:33.313603+00:00",
+  "reserved_at": "2026-09-21T18:37:33.107448+00:00",
+  "role": "spec-reflector",
+  "session_id": "ses_10ddb10eedb0",
+  "session_lookup_error": null,
+  "started_at": "2026-09-21T18:37:33.183490+00:00",
+  "status": "completed",
+  "task_id": "RQ-consistency",
+  "terminal_report": {
+    "path": "/private/tmp/pbh2-control/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/report.md",
+    "sha256": "aad6bd7c9d23b65a9e1a712db90eccaf5161e80002eb65077c1011f12e623b2c",
+    "state": "present"
+  },
+  "terminal_report_error": null,
+  "terminal_scope": {
+    "compared_at": "2026-09-21T18:37:33.426502+00:00",
+    "path": "/private/tmp/pbh2-control/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/scope-diff.json",
+    "sha256": "d9cfc7bd1a06d1ee02efbe7e320519b274226ecf715c795cd827fc8cd5141935"
+  },
+  "terminal_scope_error": null,
+  "termination": null,
+  "timed_out": false,
+  "timeout_seconds": 120.0,
+  "title": "dsd:RQ-consistency:spec-reflector:2",
+  "worker_monotonic_seconds": 0.127,
+  "worker_pid": 11817,
+  "worker_stopped": null,
+  "worker_wall_seconds": 0.127
+}

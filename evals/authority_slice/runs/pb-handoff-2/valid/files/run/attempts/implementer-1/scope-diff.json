@@ -1,0 +1,34 @@
+{
+  "added": [
+    "dispatch.py"
+  ],
+  "baseline_captured_at": "2026-09-21T18:53:24.244532+00:00",
+  "changed": [
+    {
+      "after": {
+        "exists": true,
+        "kind": "file",
+        "sha256": "8afa7491c7db479a1dcb4b3a07f369a8a590131158916c06d1204f748aa84e9d",
+        "size": 677
+      },
+      "before": {
+        "state": "clean-at-baseline"
+      },
+      "path": "dispatch.py"
+    }
+  ],
+  "compared_at": "2026-09-21T18:54:27.021020+00:00",
+  "exclude_prefixes": [
+    "DeepSeekAndDestroy"
+  ],
+  "extra_inventory_specs": [],
+  "format": "deepseek-and-destroy-scope-comparison-v5",
+  "git_head_after": "f9ef843375aa5af2a0478f89df4f65761ad14e9b",
+  "git_head_before": "f9ef843375aa5af2a0478f89df4f65761ad14e9b",
+  "git_head_changed": false,
+  "inventory_mode": "git-dirty",
+  "modified": [],
+  "project_root": "/private/tmp/pbh2-valid/workspace/work/project",
+  "removed": [],
+  "unchanged": []
+}

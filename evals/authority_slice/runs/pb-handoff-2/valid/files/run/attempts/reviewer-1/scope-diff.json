@@ -1,0 +1,21 @@
+{
+  "added": [],
+  "baseline_captured_at": "2026-09-21T18:54:44.434242+00:00",
+  "changed": [],
+  "compared_at": "2026-09-21T18:55:37.006793+00:00",
+  "exclude_prefixes": [
+    "DeepSeekAndDestroy"
+  ],
+  "extra_inventory_specs": [],
+  "format": "deepseek-and-destroy-scope-comparison-v5",
+  "git_head_after": "f9ef843375aa5af2a0478f89df4f65761ad14e9b",
+  "git_head_before": "f9ef843375aa5af2a0478f89df4f65761ad14e9b",
+  "git_head_changed": false,
+  "inventory_mode": "git-dirty",
+  "modified": [],
+  "project_root": "/private/tmp/pbh2-valid/workspace/work/project",
+  "removed": [],
+  "unchanged": [
+    "dispatch.py"
+  ]
+}

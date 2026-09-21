@@ -1,0 +1,19 @@
+{
+  "captured_at": "2026-09-21T18:54:44.434242+00:00",
+  "entries": {
+    "dispatch.py": {
+      "exists": true,
+      "kind": "file",
+      "sha256": "8afa7491c7db479a1dcb4b3a07f369a8a590131158916c06d1204f748aa84e9d",
+      "size": 677
+    }
+  },
+  "exclude_prefixes": [
+    "DeepSeekAndDestroy"
+  ],
+  "extra_inventory_specs": [],
+  "format": "deepseek-and-destroy-scope-snapshot-v5",
+  "git_head": "f9ef843375aa5af2a0478f89df4f65761ad14e9b",
+  "inventory_mode": "git-dirty",
+  "project_root": "/private/tmp/pbh2-valid/workspace/work/project"
+}

@@ -1,0 +1,43 @@
+{
+  "condition": "valid",
+  "counts": {
+    "not-observed": 1,
+    "ok": 15,
+    "reported": 2,
+    "unavailable": 1
+  },
+  "evidence_success": {
+    "expected_omissions": [
+      "decision.coordinator"
+    ],
+    "failing": [],
+    "missing": [],
+    "passed": true,
+    "required": [
+      "files.integrity",
+      "launch.attempts",
+      "launch.ledger-agreement",
+      "launch.lifecycle",
+      "usage.recompute",
+      "usage.completeness",
+      "price.recompute",
+      "usage.attribution",
+      "authority.binding",
+      "authority.admission",
+      "artifact.retained",
+      "artifact.recheck",
+      "decision.acceptance"
+    ],
+    "why": "every required observation is available and passing"
+  },
+  "experiment": "pb-handoff-2",
+  "note": "outcome and evidence are separate predicates; a completed run that fails either is still a recorded result, and `verify` exiting zero satisfies neither",
+  "outcome_success": {
+    "launches": 2,
+    "passed": true,
+    "predicate": "valid",
+    "why": "authority was recovered and admitted through supported paths, the delivered bytes passed the external check against the accepted requirements, and acceptance refers to that result"
+  },
+  "package": "/private/tmp/pbh2-valid-package",
+  "qualified": true
+}

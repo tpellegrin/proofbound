@@ -1,0 +1,18 @@
+{
+  "attempt": 2,
+  "db": "/private/tmp/pbh2-valid/workspace/work/session/worker.db",
+  "format": "dsd-worker-attempt-v3",
+  "launch_reservation": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/launch-reservation.json",
+  "launch_reservation_sha256": "46751a32e849e686659701936b920f944c631292cf20a7b1c28e3c6a2c64650e",
+  "launcher_pid": 13305,
+  "model": "fake/none",
+  "project_root": "/private/tmp/pbh2-valid/workspace/work/project",
+  "reserved_at": "2026-09-21T18:49:22.184513+00:00",
+  "resume_session": null,
+  "role": "spec-reflector",
+  "started_at": "2026-09-21T18:49:22.258367+00:00",
+  "task_id": "RQ-consistency",
+  "title": "dsd:RQ-consistency:spec-reflector:2",
+  "worker_pid": 13307,
+  "writes_project": false
+}

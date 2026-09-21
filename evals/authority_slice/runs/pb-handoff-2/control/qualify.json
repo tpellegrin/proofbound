@@ -1,0 +1,38 @@
+{
+  "condition": "control",
+  "counts": {
+    "not-observed": 1,
+    "ok": 15,
+    "reported": 2,
+    "unavailable": 1
+  },
+  "evidence_success": {
+    "expected_omissions": [
+      "decision.coordinator"
+    ],
+    "failing": [],
+    "missing": [
+      "control.refusal"
+    ],
+    "passed": false,
+    "required": [
+      "files.integrity",
+      "launch.attempts",
+      "launch.ledger-agreement",
+      "control.refusal",
+      "authority.binding"
+    ],
+    "why": "missing=['control.refusal'] failing=[]"
+  },
+  "experiment": "pb-handoff-2",
+  "note": "outcome and evidence are separate predicates; a completed run that fails either is still a recorded result, and `verify` exiting zero satisfies neither",
+  "outcome_success": {
+    "attempts_in_tree": 5,
+    "launches": 2,
+    "passed": false,
+    "predicate": "control",
+    "why": "control.refusal is not-observed; a refusal must be recorded, not inferred from an empty run; 2 worker launch(es) are attributed to this run"
+  },
+  "package": "/private/tmp/pbh2-control-package",
+  "qualified": false
+}

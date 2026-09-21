@@ -1,0 +1,35 @@
+{
+  "allowed_source_changes": [
+    "dispatch.py"
+  ],
+  "errors": [],
+  "format": "dsd-integrity-gate-v2",
+  "integrity_ok": true,
+  "launch_reservation": "/private/tmp/pbh2-control/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/launch-reservation.json",
+  "launch_reservation_sha256": "49ff11657ef35fdf4ec7b27b283e2f482bad7c36b12e83bff46402404fa96788",
+  "log": "/private/tmp/pbh2-control/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/worker.log",
+  "needs_report_recovery": false,
+  "ready_for_interpretation": true,
+  "report": "/private/tmp/pbh2-control/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/report.md",
+  "report_sha256": "f724e763a81ab059874196e0df3dba93c5e225a6d4497d5c0090411a4c4340e5",
+  "report_state": "present",
+  "role": "implementer",
+  "scope": {
+    "added_count": 1,
+    "baseline": "/private/tmp/pbh2-control/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/scope-baseline.json",
+    "changed_count": 1,
+    "diff": "/private/tmp/pbh2-control/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/scope-diff.json",
+    "diff_sha256": "045808d7dfd874de871241e83f19b29ced4f7f0ed1287994baa7f6ae73fb2e86",
+    "extra_inventory": [],
+    "git_head_changed": false,
+    "modified_count": 0,
+    "removed_count": 0
+  },
+  "task": "/private/tmp/pbh2-control/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/contracts/RQ-impl.md",
+  "task_sha256": "3b4ea71b6b547d396b6d8e19edc917ddfe34439948d388bf1f4e6df5984ce071",
+  "terminal_event": "/private/tmp/pbh2-control/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/terminal.json",
+  "terminal_event_sha256": "9666c58424c63277718c2a00208bb1b843b0afd7528b175bd5f148865aee98fd",
+  "warnings": [],
+  "write_restriction_declared": true,
+  "writes_project": true
+}

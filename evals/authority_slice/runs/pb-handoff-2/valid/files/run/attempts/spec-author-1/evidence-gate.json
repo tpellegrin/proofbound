@@ -1,0 +1,35 @@
+{
+  "allowed_source_changes": [
+    "requirements.md"
+  ],
+  "errors": [],
+  "format": "dsd-integrity-gate-v2",
+  "integrity_ok": true,
+  "launch_reservation": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-author-1/launch-reservation.json",
+  "launch_reservation_sha256": "e452d5487c17ea3bd065d2129212bfcccbbda264267a7406c0f539071cf85aca",
+  "log": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-author-1/worker.log",
+  "needs_report_recovery": false,
+  "ready_for_interpretation": true,
+  "report": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-author-1/report.md",
+  "report_sha256": "5acfe6a6bbc94b6a9c6725e950450a277a136a968d584089e0f9fb451c2a3bd1",
+  "report_state": "present",
+  "role": "spec-author",
+  "scope": {
+    "added_count": 1,
+    "baseline": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-author-1/scope-baseline.json",
+    "changed_count": 1,
+    "diff": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-author-1/scope-diff.json",
+    "diff_sha256": "d827707d4bb9ee03d3751e335d8c331a0fb289bd2db57d6d0e2dc90fedcecb69",
+    "extra_inventory": [],
+    "git_head_changed": false,
+    "modified_count": 0,
+    "removed_count": 0
+  },
+  "task": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/contracts/RQ-intent.md",
+  "task_sha256": "b5f0b84ed5012ca7170cb4b1aa86e7bc8b34dc5c6c9e22933200858a275c6072",
+  "terminal_event": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-author-1/terminal.json",
+  "terminal_event_sha256": "f8656b217375a2f168ca4401e3e1b0bc05a93a32be6e9ddfffc983ee74ad0df7",
+  "warnings": [],
+  "write_restriction_declared": true,
+  "writes_project": true
+}

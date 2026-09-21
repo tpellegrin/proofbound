@@ -1,7 +1,15 @@
 # `pb-handoff-2` — the successor protocol
 
-**Status: prepared, not authorized, not run. No provider call has been made.** Executing this needs
-a separate, explicit spending authorization, and that authorization must name `pb-handoff-2`.
+**Status: EXECUTED on 2026-09-21, once per condition, under separate explicit authorization
+naming `pb-handoff-2`.** The result is [`runs/pb-handoff-2/run-report.md`](runs/pb-handoff-2/run-report.md)
+and the retained evidence sits beside it. This document is the instrument the run was executed
+against, **unchanged during execution** — no limit raised, no criterion weakened, no repair added,
+no terminal outcome repeated. It is preserved as the protocol, not rewritten into a record.
+
+Three defects were found by executing it, including one that makes its own control predicate
+unreachable on the live path. They are recorded in
+[`runs/pb-handoff-2/findings/`](runs/pb-handoff-2/findings/) and deliberately **not** repaired
+here: repairing the instrument mid-experiment is the thing this status line exists to rule out.
 
 `pb-handoff-1` is a **different configuration** and its unused budget is not permission for this
 one. Two things changed since it ran: launch authorization became mechanical

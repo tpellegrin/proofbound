@@ -1,0 +1,675 @@
+{
+  "attempts_in_tree": {
+    "attempts": [
+      {
+        "event_dir": "implementer-1",
+        "path": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1",
+        "readable": true,
+        "reservation": true,
+        "session_id": "ses_f3aaf2236ffeVqdNWMJaxmAfyB",
+        "started_at": "2026-09-21T18:53:24.461719+00:00",
+        "terminal_present": true,
+        "terminal_status": "completed",
+        "title": "dsd:RQ-impl:implementer:1"
+      },
+      {
+        "event_dir": "reviewer-1",
+        "path": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1",
+        "readable": true,
+        "reservation": true,
+        "session_id": "ses_f3aaded94ffe6ZNorr6kuDmqv1",
+        "started_at": "2026-09-21T18:54:44.655164+00:00",
+        "terminal_present": true,
+        "terminal_status": "completed",
+        "title": "dsd:RQ-impl:reviewer:1"
+      },
+      {
+        "event_dir": "spec-author-1",
+        "path": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-author-1",
+        "readable": true,
+        "reservation": true,
+        "session_id": "ses_344179804ba0",
+        "started_at": "2026-09-21T18:49:18.116965+00:00",
+        "terminal_present": true,
+        "terminal_status": "completed",
+        "title": "dsd:RQ-intent:spec-author:1"
+      },
+      {
+        "event_dir": "spec-reflector-1",
+        "path": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-1",
+        "readable": true,
+        "reservation": true,
+        "session_id": "ses_0c257afa90d2",
+        "started_at": "2026-09-21T18:49:20.021355+00:00",
+        "terminal_present": true,
+        "terminal_status": "completed",
+        "title": "dsd:RQ-intent:spec-reflector:1"
+      },
+      {
+        "event_dir": "spec-reflector-2",
+        "path": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2",
+        "readable": true,
+        "reservation": true,
+        "session_id": "ses_10ddb10eedb0",
+        "started_at": "2026-09-21T18:49:22.258367+00:00",
+        "terminal_present": true,
+        "terminal_status": "completed",
+        "title": "dsd:RQ-consistency:spec-reflector:2"
+      }
+    ],
+    "launched": 5
+  },
+  "attribution": {
+    "attempts": 2,
+    "per_attempt_attribution_established": true,
+    "resolved": {
+      "implementer-1": "ses_f3aaf2236ffeVqdNWMJaxmAfyB",
+      "reviewer-1": "ses_f3aaded94ffe6ZNorr6kuDmqv1"
+    },
+    "sessions_claimed_twice": {},
+    "sessions_in_package": [
+      "ses_f3aaded94ffe6ZNorr6kuDmqv1",
+      "ses_f3aaf2236ffeVqdNWMJaxmAfyB"
+    ],
+    "sessions_no_attempt_claims": [],
+    "unresolved": [],
+    "why": "every attempt resolves to exactly one retained session and every retained session is claimed"
+  },
+  "attribution_scope": {
+    "note": "attempts this run's ledger reserved are its own; the rest were produced by a stand-in before the coordinator arrived and are retained without being attributed to it",
+    "own_attempts": [
+      "implementer-1",
+      "reviewer-1"
+    ],
+    "seeded_attempts": [
+      "spec-author-1",
+      "spec-reflector-1",
+      "spec-reflector-2"
+    ]
+  },
+  "condition": "valid",
+  "experiment": "pb-handoff-2",
+  "exported_at": "2026-09-21T18:56:46.339990+00:00",
+  "extra": {
+    "artifact_check": {
+      "artifact_sha256": "8afa7491c7db479a1dcb4b3a07f369a8a590131158916c06d1204f748aa84e9d",
+      "note": "as recorded by the run; re-running the checker is a separate check",
+      "result": "pass"
+    }
+  },
+  "files": [
+    {
+      "bytes": 2817,
+      "path": "delivered/accepted-requirements.md",
+      "role": "checker-requirements",
+      "sha256": "9a4b9568775ecaa675f39cc8d89b06a8ed2a43f0ff72d8b18c4fe7d83e674db3",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/requirements.md"
+    },
+    {
+      "bytes": 677,
+      "path": "delivered/dispatch.py",
+      "role": "delivered-artifact",
+      "sha256": "8afa7491c7db479a1dcb4b3a07f369a8a590131158916c06d1204f748aa84e9d",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/dispatch.py"
+    },
+    {
+      "bytes": 93,
+      "path": "project/change-graph.json",
+      "role": "project-authority",
+      "sha256": "f2965041227fb4efae306f4d4fabeff32994bd070137a7f67637eac6296bf3b1",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/change-graph.json"
+    },
+    {
+      "bytes": 1550,
+      "path": "project/goal.md",
+      "role": "project-authority",
+      "sha256": "5c7840395b5d4b057bda83f78aee7b11dce0fc9d7c8e3c170ebc13a97457227d",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/goal.md"
+    },
+    {
+      "bytes": 2817,
+      "path": "project/requirements.md",
+      "role": "project-authority",
+      "sha256": "9a4b9568775ecaa675f39cc8d89b06a8ed2a43f0ff72d8b18c4fe7d83e674db3",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/requirements.md"
+    },
+    {
+      "bytes": 1864,
+      "path": "run/artifact-check.json",
+      "role": "artifact-check",
+      "sha256": "41b03b1352258bf8dd007889123428a3e5872c2c83ecbd991abec83b40e7b106",
+      "source": "/private/tmp/pbh2-valid/workspace/work/artifact-check.json"
+    },
+    {
+      "bytes": 784,
+      "path": "run/attempts/implementer-1/attempt.json",
+      "role": "attempt-attempt",
+      "sha256": "604c63449fd6a4c1c62ba8e5439e03a87d8e4588c5d1e400413f7860d1a64597",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/attempt.json"
+    },
+    {
+      "bytes": 1942,
+      "path": "run/attempts/implementer-1/evidence-gate.json",
+      "role": "attempt-evidence-gate",
+      "sha256": "011a73a846893f98e2b19f47c7116ffe5d9fa811603f77cd682e8749237af5f6",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/evidence-gate.json"
+    },
+    {
+      "bytes": 1775,
+      "path": "run/attempts/implementer-1/launch-reservation.json",
+      "role": "attempt-launch-reservation",
+      "sha256": "b839489ec517e8fdd0e5bcc550b6a4a9c35e323a089f1f890f52cf6772e5848b",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/launch-reservation.json"
+    },
+    {
+      "bytes": 6610,
+      "path": "run/attempts/implementer-1/report.md",
+      "role": "attempt-report",
+      "sha256": "30d035b4691df6b33b1a0406a187f7e2bc0dfab22fa9a279ba88b5860d19cb47",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/report.md"
+    },
+    {
+      "bytes": 371,
+      "path": "run/attempts/implementer-1/scope-baseline.json",
+      "role": "attempt-scope-baseline",
+      "sha256": "03ae1254c6a40eafa62b52d4d2e5c257c70c803ad0e99734a76d9844b3ddbdc4",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/scope-baseline.json"
+    },
+    {
+      "bytes": 912,
+      "path": "run/attempts/implementer-1/scope-diff.json",
+      "role": "attempt-scope-diff",
+      "sha256": "13ad44941b049fa2a4f7bc43486ada1671b8dab4eaa3d38125c97e2e2235bdc6",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/scope-diff.json"
+    },
+    {
+      "bytes": 1637,
+      "path": "run/attempts/implementer-1/terminal.json",
+      "role": "attempt-terminal",
+      "sha256": "c30685429fdee83dbdb0388aa5704af3356f4e78928bdde31c5904dd43671ad7",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/terminal.json"
+    },
+    {
+      "bytes": 776,
+      "path": "run/attempts/reviewer-1/attempt.json",
+      "role": "attempt-attempt",
+      "sha256": "d2de556cb56a0486dc1e6a02754db638260f422fd61918db7c11fca252a88641",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/attempt.json"
+    },
+    {
+      "bytes": 1922,
+      "path": "run/attempts/reviewer-1/evidence-gate.json",
+      "role": "attempt-evidence-gate",
+      "sha256": "be603e964b6a4d4ea7570d8335d15916083a7fca7e885401e45f6f1d269a9f33",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/evidence-gate.json"
+    },
+    {
+      "bytes": 1761,
+      "path": "run/attempts/reviewer-1/launch-reservation.json",
+      "role": "attempt-launch-reservation",
+      "sha256": "1e9ab69e6995467254024f82e10e1a9011a9ddcdfa901d3856627611b52c31dd",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/launch-reservation.json"
+    },
+    {
+      "bytes": 6443,
+      "path": "run/attempts/reviewer-1/report.md",
+      "role": "attempt-report",
+      "sha256": "610572d3b40fbc136c3b24fd865385ca484f7aa7a60225b473dd1efd92555dfd",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/report.md"
+    },
+    {
+      "bytes": 547,
+      "path": "run/attempts/reviewer-1/scope-baseline.json",
+      "role": "attempt-scope-baseline",
+      "sha256": "0d739362b204aa829f59c54c36ce396e188cc2de57adc83923fa6f0d565f4713",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/scope-baseline.json"
+    },
+    {
+      "bytes": 625,
+      "path": "run/attempts/reviewer-1/scope-diff.json",
+      "role": "attempt-scope-diff",
+      "sha256": "b6f8070470b00bd17ef76b0bc753bd65b55738f6f8c6edab19f86c626e0792f6",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/scope-diff.json"
+    },
+    {
+      "bytes": 1622,
+      "path": "run/attempts/reviewer-1/terminal.json",
+      "role": "attempt-terminal",
+      "sha256": "8964f481c2a8fd4795257e51f2a38f9b9d0ef494947203bcd5ef535f1f1f3add",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/terminal.json"
+    },
+    {
+      "bytes": 773,
+      "path": "run/attempts/spec-author-1/attempt.json",
+      "role": "attempt-attempt",
+      "sha256": "987bdbf55860bca0f2eeb02553e01b7389fb5fdfb00cfc058bbfdff8595a294a",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-author-1/attempt.json"
+    },
+    {
+      "bytes": 1948,
+      "path": "run/attempts/spec-author-1/evidence-gate.json",
+      "role": "attempt-evidence-gate",
+      "sha256": "6cbda2e12de303011cb587383d4d17b87363fdf914691e81b0f44c6bb1058b5a",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-author-1/evidence-gate.json"
+    },
+    {
+      "bytes": 1779,
+      "path": "run/attempts/spec-author-1/launch-reservation.json",
+      "role": "attempt-launch-reservation",
+      "sha256": "e452d5487c17ea3bd065d2129212bfcccbbda264267a7406c0f539071cf85aca",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-author-1/launch-reservation.json"
+    },
+    {
+      "bytes": 178,
+      "path": "run/attempts/spec-author-1/report.md",
+      "role": "attempt-report",
+      "sha256": "5acfe6a6bbc94b6a9c6725e950450a277a136a968d584089e0f9fb451c2a3bd1",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-author-1/report.md"
+    },
+    {
+      "bytes": 371,
+      "path": "run/attempts/spec-author-1/scope-baseline.json",
+      "role": "attempt-scope-baseline",
+      "sha256": "4f99cc52f0064d220d500cd1884766ab8063a1100cb54896e0b3e5a4e0c9bc02",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-author-1/scope-baseline.json"
+    },
+    {
+      "bytes": 921,
+      "path": "run/attempts/spec-author-1/scope-diff.json",
+      "role": "attempt-scope-diff",
+      "sha256": "d827707d4bb9ee03d3751e335d8c331a0fb289bd2db57d6d0e2dc90fedcecb69",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-author-1/scope-diff.json"
+    },
+    {
+      "bytes": 1608,
+      "path": "run/attempts/spec-author-1/terminal.json",
+      "role": "attempt-terminal",
+      "sha256": "f8656b217375a2f168ca4401e3e1b0bc05a93a32be6e9ddfffc983ee74ad0df7",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-author-1/terminal.json"
+    },
+    {
+      "bytes": 783,
+      "path": "run/attempts/spec-reflector-1/attempt.json",
+      "role": "attempt-attempt",
+      "sha256": "b74d19f7eb8731aef76ae6fca29a8abb6c52d19a3d8adf9a99a2f4d2de03e5fa",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-1/attempt.json"
+    },
+    {
+      "bytes": 1970,
+      "path": "run/attempts/spec-reflector-1/evidence-gate.json",
+      "role": "attempt-evidence-gate",
+      "sha256": "6d760a4ca476ca584f5e350467f3e4989dce699ce60c46584edf6cc1b3f61f71",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-1/evidence-gate.json"
+    },
+    {
+      "bytes": 1795,
+      "path": "run/attempts/spec-reflector-1/launch-reservation.json",
+      "role": "attempt-launch-reservation",
+      "sha256": "4a81bd3c036c405765aec861a3e09720329d52c727c705aeb1569d1e505294c7",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-1/launch-reservation.json"
+    },
+    {
+      "bytes": 394,
+      "path": "run/attempts/spec-reflector-1/report.md",
+      "role": "attempt-report",
+      "sha256": "0799902738607d793a0943aa37fdf89191d3f64f2e5bff19e2ff4f7d04bf9131",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-1/report.md"
+    },
+    {
+      "bytes": 552,
+      "path": "run/attempts/spec-reflector-1/scope-baseline.json",
+      "role": "attempt-scope-baseline",
+      "sha256": "cba96670b72cd1a2656193299b90e8bd2f0501ea24b37ad8d89f5d465212aaec",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-1/scope-baseline.json"
+    },
+    {
+      "bytes": 629,
+      "path": "run/attempts/spec-reflector-1/scope-diff.json",
+      "role": "attempt-scope-diff",
+      "sha256": "9a78f8154eb4df0026e771f03286ba40bcd29982bc83c77232e5e037f5f08ae4",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-1/scope-diff.json"
+    },
+    {
+      "bytes": 1623,
+      "path": "run/attempts/spec-reflector-1/terminal.json",
+      "role": "attempt-terminal",
+      "sha256": "7c532c307feaaf21bd663fb54ec11352073a7195136ba5f3ebe009ba4eeb6dd2",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-1/terminal.json"
+    },
+    {
+      "bytes": 793,
+      "path": "run/attempts/spec-reflector-2/attempt.json",
+      "role": "attempt-attempt",
+      "sha256": "d67757fa56b8c4b96e55d2ca29cd943c7018c091709df580bcc1b9854c3f216d",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/attempt.json"
+    },
+    {
+      "bytes": 1950,
+      "path": "run/attempts/spec-reflector-2/evidence-gate.json",
+      "role": "attempt-evidence-gate",
+      "sha256": "f957a1b9e6b49dc17f4a4f6c3b7e78bac4c460a8ded8065d75f5369f42bfa1b9",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/evidence-gate.json"
+    },
+    {
+      "bytes": 1805,
+      "path": "run/attempts/spec-reflector-2/launch-reservation.json",
+      "role": "attempt-launch-reservation",
+      "sha256": "46751a32e849e686659701936b920f944c631292cf20a7b1c28e3c6a2c64650e",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/launch-reservation.json"
+    },
+    {
+      "bytes": 733,
+      "path": "run/attempts/spec-reflector-2/report.md",
+      "role": "attempt-report",
+      "sha256": "aad6bd7c9d23b65a9e1a712db90eccaf5161e80002eb65077c1011f12e623b2c",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/report.md"
+    },
+    {
+      "bytes": 552,
+      "path": "run/attempts/spec-reflector-2/scope-baseline.json",
+      "role": "attempt-scope-baseline",
+      "sha256": "1d3990a4bb2dbf6aca721655f00ff27a3eac6cb9989e506d79321f9952a52373",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/scope-baseline.json"
+    },
+    {
+      "bytes": 629,
+      "path": "run/attempts/spec-reflector-2/scope-diff.json",
+      "role": "attempt-scope-diff",
+      "sha256": "595883ea4bb718ffaca6cf193bf3d2453fd4fe7c6578908cf358849f717f694e",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/scope-diff.json"
+    },
+    {
+      "bytes": 1633,
+      "path": "run/attempts/spec-reflector-2/terminal.json",
+      "role": "attempt-terminal",
+      "sha256": "b49a7259fef887edbb329f955098a9216356766300e0189f646144b03c9383d6",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/terminal.json"
+    },
+    {
+      "bytes": 429,
+      "path": "run/baseline-manifest.json",
+      "role": "baseline-manifest",
+      "sha256": "b4a003b2d89766eadad781903c75bd6c5fa0cb36fcf28100613fdc623127050b",
+      "source": "/private/tmp/pbh2-valid/workspace/work/baseline-manifest.json"
+    },
+    {
+      "bytes": 1342,
+      "path": "run/contracts/RQ-consistency.md",
+      "role": "task-contract",
+      "sha256": "6cb4ffbe66ab4444a3fa409e140f3fb1b85daae6382f911c303ee47a0d582fe0",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/contracts/RQ-consistency.md"
+    },
+    {
+      "bytes": 1303,
+      "path": "run/contracts/RQ-impl.md",
+      "role": "task-contract",
+      "sha256": "3b4ea71b6b547d396b6d8e19edc917ddfe34439948d388bf1f4e6df5984ce071",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/contracts/RQ-impl.md"
+    },
+    {
+      "bytes": 2392,
+      "path": "run/contracts/RQ-intent.md",
+      "role": "task-contract",
+      "sha256": "b5f0b84ed5012ca7170cb4b1aa86e7bc8b34dc5c6c9e22933200858a275c6072",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/contracts/RQ-intent.md"
+    },
+    {
+      "bytes": 10657,
+      "path": "run/coordinator-input.md",
+      "role": "coordinator-input",
+      "sha256": "a18a9b4d61dd87565e8b92e906755ad01c41da9e102ccb07ecabab3b11879541",
+      "source": "/private/tmp/pbh2-valid/workspace/work/coordinator-input.md"
+    },
+    {
+      "bytes": 1846,
+      "path": "run/frozen-identities.json",
+      "role": "frozen-identities",
+      "sha256": "1c9c9d3cba67b2746bb707473be95aae5483954e4c4a5fd9511ab65936e8d0fa",
+      "source": "/private/tmp/pbh2-valid.identities.json"
+    },
+    {
+      "bytes": 2123,
+      "path": "run/launch-ledger.json",
+      "role": "launch-ledger",
+      "sha256": "8c4ff0496c83fcbfdb8ead47559916c105628fb57960fd9a5e2fe209ec2701a2",
+      "source": "/private/tmp/pbh2-valid/workspace/work/launch-ledger.json"
+    },
+    {
+      "bytes": 2635,
+      "path": "run/run-config.json",
+      "role": "run-configuration",
+      "sha256": "4e344f2ac365cbeb81454e6b93d42b4af5a0281630480713201d092c39854eec",
+      "source": "/private/tmp/pbh2-valid/workspace/work/run-config.json"
+    },
+    {
+      "bytes": 8178,
+      "path": "run/state.json",
+      "role": "authority-state",
+      "sha256": "299f102bb7a5d1c66ce0b8eba0881ee568dd2d9c6d8459f7b165dbb9c0930ab3",
+      "source": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/state.json"
+    },
+    {
+      "bytes": 82104,
+      "note": "allowlisted accounting fields only; no prompts, tool arguments or tool output",
+      "path": "usage-events.json",
+      "role": "usage-events",
+      "sha256": "b7b367d0888668132b6c46bcbc6461ceffcf2d7c92db8c1551af423039cc8663",
+      "source": "/private/tmp/pbh2-valid/workspace/work/session/live.db"
+    }
+  ],
+  "format": "proofbound-evidence-package-v1",
+  "identity": {
+    "configured": {
+      "deadline": {
+        "clock": "monotonic, enforced by the attempt monitor that owns the worker's process group; the launcher's wait is sized to outlast it",
+        "seconds": 900
+      },
+      "executor": {
+        "kind": "pinned opencode build",
+        "path": "/private/tmp/pbh2-valid-tools/opencode",
+        "sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669"
+      },
+      "interpreter": {
+        "executable": "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "note": "sys.executable as it actually resolved, not a nominal path",
+        "version": "3.14.7"
+      },
+      "mode": "live",
+      "model": "deepseek/deepseek-v4-flash",
+      "policy": {
+        "admission_quantity": "derived cost from measured usage at a dated price table",
+        "aggregate_limit": 0.3,
+        "ceiling_derivation": [
+          "recovered",
+          "authorized",
+          "implemented",
+          "reviewed",
+          "repaired",
+          "re-reviewed",
+          "accepted"
+        ],
+        "interrupted_call": "terminal; an unfinished model call has no enforced ceiling, so the spend figure is incomplete and no further launch is admitted",
+        "launch_ceiling": 5,
+        "repair_cycles": 1,
+        "reserve": 0.06
+      },
+      "tool_configuration": "not recorded by this run; not inferable from the executor version",
+      "variant": "high"
+    },
+    "observed": {
+      "observed_models": [
+        "deepseek-v4-flash"
+      ],
+      "observed_providers": [
+        "deepseek"
+      ],
+      "observed_variants": [
+        "high"
+      ],
+      "single_model": true,
+      "single_variant": true
+    }
+  },
+  "launch_facts": {
+    "attempts": [
+      {
+        "event_dir": "implementer-1",
+        "path": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1",
+        "readable": true,
+        "reservation": true,
+        "session_id": "ses_f3aaf2236ffeVqdNWMJaxmAfyB",
+        "started_at": "2026-09-21T18:53:24.461719+00:00",
+        "terminal_present": true,
+        "terminal_status": "completed",
+        "title": "dsd:RQ-impl:implementer:1"
+      },
+      {
+        "event_dir": "reviewer-1",
+        "path": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1",
+        "readable": true,
+        "reservation": true,
+        "session_id": "ses_f3aaded94ffe6ZNorr6kuDmqv1",
+        "started_at": "2026-09-21T18:54:44.655164+00:00",
+        "terminal_present": true,
+        "terminal_status": "completed",
+        "title": "dsd:RQ-impl:reviewer:1"
+      }
+    ],
+    "launched": 2
+  },
+  "omitted": [],
+  "pricing_basis": {
+    "note": "derived cost is measured usage priced at this dated table; it is neither the executor's own cost field nor provider-confirmed billing",
+    "table": "deepseek-2026-09-09"
+  },
+  "producer": {
+    "adapter": "authority-slice-handoff-v1",
+    "harness_revision": {
+      "clean": true,
+      "commit": "af10cbfb6e886eb82aafc04c329ec45979cb6ca8"
+    },
+    "interpreter": "3.14.7"
+  },
+  "spend": {
+    "attempts": [
+      {
+        "attributed_by": "recorded in the terminal record and present in the session database",
+        "attributed_session": "ses_f3aaf2236ffeVqdNWMJaxmAfyB",
+        "attribution_problem": null,
+        "event_dir": "implementer-1",
+        "path": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1",
+        "readable": true,
+        "reservation": true,
+        "session_id": "ses_f3aaf2236ffeVqdNWMJaxmAfyB",
+        "started_at": "2026-09-21T18:53:24.461719+00:00",
+        "terminal_present": true,
+        "terminal_status": "completed",
+        "title": "dsd:RQ-impl:implementer:1"
+      },
+      {
+        "attributed_by": "recorded in the terminal record and present in the session database",
+        "attributed_session": "ses_f3aaded94ffe6ZNorr6kuDmqv1",
+        "attribution_problem": null,
+        "event_dir": "reviewer-1",
+        "path": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1",
+        "readable": true,
+        "reservation": true,
+        "session_id": "ses_f3aaded94ffe6ZNorr6kuDmqv1",
+        "started_at": "2026-09-21T18:54:44.655164+00:00",
+        "terminal_present": true,
+        "terminal_status": "completed",
+        "title": "dsd:RQ-impl:reviewer:1"
+      }
+    ],
+    "call_reconciliation": {
+      "balanced": true,
+      "finishes": 26,
+      "grouping": "by the message that carries both parts, which is what the executor records; call-to-call pairing within a message is not exposed and is not inferred",
+      "messages": 26,
+      "reconciled": true,
+      "starts": 26,
+      "unmatched_messages": []
+    },
+    "claim": "the run tree's launches and the session's usage agree; this is the whole of what this run's measured usage prices to",
+    "complete": true,
+    "cost": {
+      "amount": 0.019058,
+      "basis": "input billed as cache-miss, cache_read billed on top as cache-hit (measured: provider reports input excluding cache)",
+      "billed": {
+        "cache_read": 548224.0,
+        "output": 10278.0,
+        "uncached_input": 38350.0
+      },
+      "currency": "USD",
+      "model": "deepseek-v4-flash",
+      "price_id": "deepseek-2026-09-09",
+      "rates": {
+        "cache_hit": 0.007,
+        "cache_miss": 0.22,
+        "output": 0.66
+      },
+      "retrieved": "2026-09-09",
+      "source": "https://api-docs.deepseek.com/quick_start/pricing",
+      "window": "off-peak"
+    },
+    "derived": 0.019058,
+    "executor_reported_cost": 0.01889917,
+    "headroom": 0.220942,
+    "interrupted_attempts": [],
+    "launched_attempts": 2,
+    "limit": 0.3,
+    "model_calls": {
+      "finished": 26,
+      "started": 26
+    },
+    "priced_at": "2026-09-21T18:53:24.461719+00:00",
+    "quantity": "derived: measured token usage priced at a dated table; not provider billing",
+    "reserve": 0.06,
+    "scope": "the launches this ledger reserved; seeded attempts are excluded from attribution and remain in the run tree",
+    "session_attribution": {
+      "claimed": {
+        "ses_f3aaded94ffe6ZNorr6kuDmqv1": [
+          "reviewer-1"
+        ],
+        "ses_f3aaf2236ffeVqdNWMJaxmAfyB": [
+          "implementer-1"
+        ]
+      },
+      "per_attempt_attribution_established": true,
+      "reused": {},
+      "unaccounted": [],
+      "unattributed_attempts": [],
+      "why": "each attempt resolves to its own retained session"
+    },
+    "sessions_in_database": [
+      "ses_f3aaded94ffe6ZNorr6kuDmqv1",
+      "ses_f3aaf2236ffeVqdNWMJaxmAfyB"
+    ],
+    "usage": {
+      "cache_read": 548224,
+      "cache_write": 0,
+      "calls_finished": 26,
+      "calls_started": 26,
+      "executor_cost": 0.01889917,
+      "input": 38350,
+      "output": 10278,
+      "reasoning": 8892
+    }
+  },
+  "subject": {
+    "project": "/private/tmp/pbh2-valid/workspace/work/project",
+    "run_root": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1",
+    "session_db": "/private/tmp/pbh2-valid/workspace/work/session/live.db"
+  },
+  "usage": {
+    "cache_read": 548224,
+    "cache_write": 0,
+    "calls_finished": 26,
+    "calls_started": 26,
+    "executor_cost": 0.01889917,
+    "input": 38350,
+    "output": 10278,
+    "reasoning": 8892
+  },
+  "usage_anomalies": []
+}

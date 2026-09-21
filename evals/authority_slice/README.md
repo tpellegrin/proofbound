@@ -186,8 +186,9 @@ Three pieces are worth knowing about separately:
 `pb-handoff-1` ran on 2026-09-18 and its result stands at its own scope; what its surviving files
 still support is assessed in
 [evidence/evidence-package-reader.md](../../docs/architecture/proofbound/evidence/evidence-package-reader.md).
-The successor, on the **admitted** workflow and with collection built in, is frozen and unauthorized
-in [`pb-handoff-2-protocol.md`](pb-handoff-2-protocol.md).
+The successor ran on 2026-09-21: [`runs/pb-handoff-2/run-report.md`](runs/pb-handoff-2/run-report.md).
+The valid condition qualified; the control did not, because its fixture turned out to be recoverable
+by a legitimate parent act. Its instrument is [`pb-handoff-2-protocol.md`](pb-handoff-2-protocol.md).
 
 ## Files
 

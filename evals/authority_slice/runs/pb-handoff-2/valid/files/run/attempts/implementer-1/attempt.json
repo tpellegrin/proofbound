@@ -1,0 +1,18 @@
+{
+  "attempt": 1,
+  "db": "/private/tmp/pbh2-valid/workspace/work/session/live.db",
+  "format": "dsd-worker-attempt-v3",
+  "launch_reservation": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/launch-reservation.json",
+  "launch_reservation_sha256": "b839489ec517e8fdd0e5bcc550b6a4a9c35e323a089f1f890f52cf6772e5848b",
+  "launcher_pid": 13642,
+  "model": "deepseek/deepseek-v4-flash",
+  "project_root": "/private/tmp/pbh2-valid/workspace/work/project",
+  "reserved_at": "2026-09-21T18:53:24.389424+00:00",
+  "resume_session": null,
+  "role": "implementer",
+  "started_at": "2026-09-21T18:53:24.461719+00:00",
+  "task_id": "RQ-impl",
+  "title": "dsd:RQ-impl:implementer:1",
+  "worker_pid": 13644,
+  "writes_project": true
+}

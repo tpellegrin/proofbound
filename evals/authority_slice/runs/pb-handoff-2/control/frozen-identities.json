@@ -1,0 +1,34 @@
+{
+  "change_graph_sha256": "f2965041227fb4efae306f4d4fabeff32994bd070137a7f67637eac6296bf3b1",
+  "checker_sha256": "5c193959fa4ae61a94207382851f6a39bdc2f473da8dae845d56e3a27c966437",
+  "consistency_sha256": "165a5cc6ac1d4c47a0a1c61a1dd3452fa32491addf12afe4b289495dc8709708",
+  "contracts_tree_sha256": "d0343b88ae2da96cc10213533d41d65995dd6d173a66616470a61db28b18547a",
+  "coordinator_input_path": "/private/tmp/pbh2-control/workspace/work/coordinator-input.md",
+  "coordinator_input_sha256": "20101ea264afe8cfc792d6c1782377072b83454c7ded4995e88b0b992b762067",
+  "executor_sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+  "experiment": "pb-handoff-2",
+  "freeze_sha256": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad",
+  "goal_sha256": "5c7840395b5d4b057bda83f78aee7b11dce0fc9d7c8e3c170ebc13a97457227d",
+  "harness": {
+    "clean": true,
+    "commit": "af10cbfb6e886eb82aafc04c329ec45979cb6ca8",
+    "dirty_paths": []
+  },
+  "interpreter": {
+    "executable": "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "note": "sys.executable as it actually resolved, not a nominal path",
+    "version": "3.14.7"
+  },
+  "ledger_sha256": "1b7641113d40b515828c6e7240ce7e5161325030e5ddc8cff77cf09153b25292",
+  "mode": "live",
+  "oracle_sha256": "982e236664abb15876b656e5f7e7f352a740beb687c8aa5468cb940558f074ab",
+  "project_commit": "281c2b662bd591a864d50052c4c48b9c1bebb61a",
+  "protocol": {
+    "bytes": 13785,
+    "document": "pb-handoff-2-protocol.md",
+    "read_from": "the controller's checkout; withheld from the subject runtime",
+    "sha256": "4d8c1ef85f615c424db135ac9cf748e8af71fb821f25c19f045985af5a17514f"
+  },
+  "requirements_sha256": "9a4b9568775ecaa675f39cc8d89b06a8ed2a43f0ff72d8b18c4fe7d83e674db3",
+  "seeded_candidate": "b665b146b5af82519f36eb15484a2666cc19d01d223828942732fa98a07c0fad"
+}

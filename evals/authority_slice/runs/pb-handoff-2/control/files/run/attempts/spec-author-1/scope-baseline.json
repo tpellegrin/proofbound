@@ -1,0 +1,12 @@
+{
+  "captured_at": "2026-09-21T18:37:28.783233+00:00",
+  "entries": {},
+  "exclude_prefixes": [
+    "DeepSeekAndDestroy"
+  ],
+  "extra_inventory_specs": [],
+  "format": "deepseek-and-destroy-scope-snapshot-v5",
+  "git_head": "a524f47c677e0d6157adbf831758af8210b2f5f6",
+  "inventory_mode": "git-dirty",
+  "project_root": "/private/tmp/pbh2-control/workspace/work/project"
+}

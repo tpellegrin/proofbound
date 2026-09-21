@@ -1,0 +1,22 @@
+{
+  "attempt": 2,
+  "format": "dsd-worker-launch-reservation-v2",
+  "log": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/worker.log",
+  "prompt_file": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/launch-prompt.txt",
+  "prompt_sha256": "2b16435d06598546b57bf61f8909620d15fc417c1aca1e4f2d136ee28eaee337",
+  "report": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/report.md",
+  "report_skeleton_sha256": "b784231d258d523e8820813941125d4ea6695becde13625eefd5e65f49b939f9",
+  "reserved_at": "2026-09-21T18:49:22.184513+00:00",
+  "reserved_by_pid": 13304,
+  "role": "spec-reflector",
+  "scope_baseline": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/spec-reflector-2/scope-baseline.json",
+  "scope_baseline_sha256": "1d3990a4bb2dbf6aca721655f00ff27a3eac6cb9989e506d79321f9952a52373",
+  "task_contract": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/contracts/RQ-consistency.md",
+  "task_contract_sha256": "6cb4ffbe66ab4444a3fa409e140f3fb1b85daae6382f911c303ee47a0d582fe0",
+  "task_id": "RQ-consistency",
+  "worker_rules": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/worker-rules/r0001/WORKER_RULES.md",
+  "worker_rules_manifest": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/worker-rules/r0001/MANIFEST.json",
+  "worker_rules_manifest_sha256": "c1a53b06e9b38bd659464f61de3d57533153a60e7c89fb1e6732b6cdca0d3921",
+  "worker_rules_sha256": "298d4c2d59c395fa527548fb5d26ca535fdc85d4d534d437f8afc62e06878a09",
+  "writes_project": false
+}

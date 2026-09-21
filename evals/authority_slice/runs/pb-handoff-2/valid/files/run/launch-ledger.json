@@ -1,0 +1,42 @@
+{
+  "ceiling": 5,
+  "experiment": "pb-handoff-2",
+  "format": "proofbound-launch-ledger-v1",
+  "limit": 0.3,
+  "mode": "live",
+  "reserve": 0.06,
+  "slots": [
+    {
+      "classification": "executor-reached",
+      "classified_at": "2026-09-21T18:54:28.099113+00:00",
+      "event_dir": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1",
+      "launcher_output": "{\"attempt\":\"implementer-1\",\"event_dir\":\"/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1\",\"exit_code\":0,\"status\":\"completed\",\"terminal_event\":\"/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/implementer-1/terminal.json\"}",
+      "launcher_returncode": 0,
+      "note": "live launch of implementer on build/RQ-impl",
+      "phase": "build",
+      "reservation_present": true,
+      "reserved_at": "2026-09-21T18:53:23.922697+00:00",
+      "role": "implementer",
+      "session_title": "dsd:RQ-impl:implementer:1",
+      "slot": 1,
+      "task": "RQ-impl",
+      "terminal_status": "completed"
+    },
+    {
+      "classification": "executor-reached",
+      "classified_at": "2026-09-21T18:55:38.271774+00:00",
+      "event_dir": "/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1",
+      "launcher_output": "{\"attempt\":\"reviewer-1\",\"event_dir\":\"/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1\",\"exit_code\":0,\"status\":\"completed\",\"terminal_event\":\"/private/tmp/pbh2-valid/workspace/work/project/DeepSeekAndDestroy/plans/slice/runs/r1/attempts/reviewer-1/terminal.json\"}",
+      "launcher_returncode": 0,
+      "note": "live launch of reviewer on build/RQ-impl",
+      "phase": "build",
+      "reservation_present": true,
+      "reserved_at": "2026-09-21T18:54:44.112389+00:00",
+      "role": "reviewer",
+      "session_title": "dsd:RQ-impl:reviewer:1",
+      "slot": 2,
+      "task": "RQ-impl",
+      "terminal_status": "completed"
+    }
+  ]
+}
