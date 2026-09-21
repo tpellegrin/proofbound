@@ -176,6 +176,16 @@ Three pieces are worth knowing about separately:
   read it.
 * **`_runtime`** builds the evidence surface and then **measures** it: reading the source checkout,
   each withheld file, a bounded search, and a hermeticity scan, all from inside.
+* **`_package`** exports what a run observed and rechecks it after the run is gone. Every rehearsal
+  path preserves its evidence on the way out, including refusals and interrupted attempts, and each
+  check declares whether it is integrity, a recomputation, a transcribed report, or unavailable —
+  never one `verified` flag.
+
+`pb-handoff-1` ran on 2026-09-18 and its result stands at its own scope; what its surviving files
+still support is assessed in
+[evidence/evidence-package-reader.md](../../docs/architecture/proofbound/evidence/evidence-package-reader.md).
+The successor, on the **admitted** workflow and with collection built in, is frozen and unauthorized
+in [`pb-handoff-2-protocol.md`](pb-handoff-2-protocol.md).
 
 ## Files
 
@@ -191,6 +201,9 @@ Three pieces are worth knowing about separately:
 | `_implementations.py` | Reference, sound alternative, and six defective variants |
 | `_fixtures.py` | Builds a project and drives the shipped scripts with the fake executor |
 | `pb_slice.py` | `validate`, `replay`, `build`, `probe-input`, `report` |
+| `_package.py` | Evidence packages: export, the four check kinds, and the `pb-handoff-1` compatibility adapter |
+| `pb_evidence.py` | `export`, `verify`, `adapt-handoff-1` — offline, read-only, never launches a model |
+| `pb-handoff-2-protocol.md` | The successor protocol: identities, collection policy, limits and stop conditions, frozen before any authorization |
 
-Regressions: `tests/test_authority_slice.py` (in the canonical suite; it builds the blocked-handoff
-fixture for real, which takes a few seconds).
+Regressions: `tests/test_authority_slice.py` and `tests/test_evidence_package.py` (both in the
+canonical suite; each builds fixtures for real, which takes a few seconds).

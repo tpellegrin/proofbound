@@ -193,6 +193,50 @@ outside this repository, and nothing here reads, stores or prints them. CI runs 
 only ([`.github/workflows/tests.yml`](../.github/workflows/tests.yml)) — no evaluation family runs
 in CI, and none should without an explicit cost decision.
 
+## Evidence packages: what survives a run
+
+A run's observations used to die with its temporary directory. `pb_evidence.py` exports a
+relocatable package during the run and rechecks it afterwards, offline and read-only:
+
+```bash
+python3 evals/authority_slice/pb_evidence.py export --run-root R --into P \
+    --experiment X --condition valid --session-db D --project J --config C \
+    --artifact J/dispatch.py --requirements J/requirements.md
+python3 evals/authority_slice/pb_evidence.py verify --package P [--recheck-artifact]
+```
+
+Every check declares one of four kinds, and they never combine into a single verdict:
+**integrity** (a record exists and its bytes hash to what was recorded), **recompute** (a
+mechanical quantity re-derived from retained inputs), **reported** (a semantic judgment,
+transcribed and attributable, never confirmed here), and **unavailable** (the evidence a check
+needs is absent — not a pass, not a failure).
+
+Usage is exported through a field allowlist, so per-call accounting can be retained without
+publishing prompts, tool arguments or tool output. What is left out is named in the manifest
+together with the checks it blocks. An archive of `L3` records is not `L4` provenance, and
+verification never authorizes, binds or asks whether a historical candidate is current today.
+
+What `pb-handoff-1`'s surviving files support is assessed at
+[evidence/evidence-package-reader.md](../docs/architecture/proofbound/evidence/evidence-package-reader.md).
+
+## Reading the literature without adopting it
+
+Concise implications drawn from external work, recorded **beside** the design rather than inside
+it. None of this is shipped behavior, and each row states the boundary that stops it becoming a
+shortcut.
+
+| Source | Implication taken | Boundary that stops it going further |
+|---|---|---|
+| [OverclaimBench](https://arxiv.org/html/2609.20812v1) | Measure exposure from retained tool output separately from what an agent claimed and from what it actually found. The package therefore keeps `coverage.tool-exposure` apart from `review.findings`. | Its "all files touched" criterion can be satisfied by one unique line per file, so it does not establish reading or understanding; its claim labels also come from an LLM judge. **File exposure, complete content delivery, semantic inspection, defect detection and reporting accuracy stay five constructs.** |
+| [DeltaSelect](https://arxiv.org/html/2609.19607v1) | Repeated task-by-configuration data can support a cheap development panel. Packages make such a matrix possible to assemble at all. | Proofbound's historical runs are heterogeneous and are **not** that matrix. Selection and calibration would need held-out decision checks before any panel could shorten a decision. |
+| [MAGS](https://arxiv.org/html/2609.19391v1) | A proof-producing stage is a possible future capability. | Verification depends on the accepted formalization *and* on preserving useful behavior: its robotics pipeline preserved task functionality in **0 of 20** cases while passing safety checks, reaching 11/20 only after steering. A proof is not a quality certificate. |
+| [Closed-World Resolution](https://arxiv.org/html/2609.19425v1) | Resolve concrete callable identity and arguments before effects, and preserve tool configuration as observed. The package records configured and observed identity separately and refuses to infer a tool surface from an executor version string. | Its gate-order argument assumes a partial, fail-open gate; it does not show that an existing fail-closed CLI needs another resolver. Registry-derived synthetic controls cannot expose errors they share with the registry. |
+| [Dirigo](https://arxiv.org/html/2609.19611v1) | Seek falsifiers in a different representation and replay concrete counterexamples — which is why the package tests hand-compute their expected totals instead of round-tripping the exporter. | Domain-specific. Its real-number abstraction omits floating-point precision bugs — the exact class that produced an earlier numerical fixture failure here. |
+
+**Deferred deliberately:** the coverage analyzer, an MCP resolver platform, a formal-verification
+backend and a statistical task selector. Deterministic cases can be falsified today; learning how
+agent behavior changes needs a separately declared comparison, not another instrument.
+
 ## Results and designs
 
 `results/` holds committed run **summaries**; raw evidence (prompts, reports, grader output, run

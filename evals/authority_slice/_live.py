@@ -434,11 +434,84 @@ def _admit(config: "dict[str, Any]", *, contract: Path, phase: str,
                "--consistency", paths["consistency"]])
 
 
-def rehearse(into: "str | Path", *, path: str = "clean") -> "dict[str, Any]":
+def preserve(workdir: "str | Path", *, experiment: str, condition: str,
+             into: "str | Path | None" = None) -> "dict[str, Any]":
+    """Export this run's evidence while its disposable data still exists.
+
+    Called on **every** exit path, including refusals and interrupted attempts: a run that refused
+    correctly and a run whose records were never kept are different facts, and only one of them is
+    still checkable a week later.
+
+    A preservation failure is reported, never raised past the caller and never swallowed. It does
+    not erase the attempt, does not authorize a replacement trajectory, and is never reported as a
+    successful capture — a collection defect must look like a collection defect.
+    """
+    import _package
+
+    workdir = Path(workdir).expanduser().resolve()
+    config = load_config(workdir)
+    paths = config["paths"]
+    target = Path(into) if into is not None else workdir / "evidence-package"
+    db = Path(paths["session_db"])
+    # Scope attribution to the launches this run's own ledger reserved. Without it the seeded
+    # upstream attempts — produced by a stand-in before the coordinator arrived — would be counted
+    # as this run's work, and a condition that launched nothing would look like one that launched
+    # three times.
+    import _guard
+    ledger = _guard.LaunchLedger(workdir / LEDGER_NAME)
+    own = ledger.own_event_dirs()
+    artifact = Path(paths["project"]) / "dispatch.py"
+    requirements = Path(paths["project"]) / "requirements.md"
+    extra: "dict[str, Any]" = {}
+    check_path = workdir / "artifact-check.json"
+    if check_path.is_file():
+        try:
+            recorded = json.loads(check_path.read_text(encoding="utf-8"))
+            extra["artifact_check"] = {
+                "result": recorded.get("verdict"),
+                "artifact_sha256": (recorded.get("artifact_check") or {}).get(
+                    "artifact", {}).get("sha256"),
+                "note": "as recorded by the run; re-running the checker is a separate check"}
+        except (OSError, ValueError):
+            extra["artifact_check"] = {"unreadable": True}
+    try:
+        result = _package.export(
+            run_root=paths["run_root"], into=target, experiment=experiment, condition=condition,
+            session_db=db if db.is_file() else None, project=paths["project"], config=config,
+            artifact=artifact if artifact.is_file() else None,
+            requirements=requirements if requirements.is_file() else None, extra=extra,
+            event_dirs=own)
+        return {"preserved": True, **result}
+    except Exception as exc:                      # noqa: BLE001 - visible, never fatal to the run
+        return {"preserved": False,
+                "error": f"{type(exc).__name__}: {exc}"[:400],
+                "claim": "evidence collection failed; the attempt and its records are untouched "
+                         "and nothing here may be read as a successful capture"}
+
+
+def rehearse(into: "str | Path", *, path: str = "clean",
+             preserve_into: "str | Path | None" = None) -> "dict[str, Any]":
+    """Drive one rehearsal path, then preserve its evidence.
+
+    The preservation step is here rather than at each `return` inside the driver because a driver
+    with five exit paths will eventually grow a sixth that forgets. Whatever the outcome — accepted,
+    blocked at the guard, or terminal with unknown spend — the package is written and its result is
+    reported beside the run's own.
+    """
+    result = _rehearse(into, path=path)
+    result["evidence"] = preserve(
+        result["workdir"], experiment="rehearsal", condition=path, into=preserve_into)
+    return result
+
+
+def _rehearse(into: "str | Path", *, path: str = "clean") -> "dict[str, Any]":
     """Drive the continuation the live run will drive, with a fake at the executor seam.
 
     Same entry points, same guard, same external check, same acceptance command. Only the executor
     is substituted, and every semantic decision a coordinator would make is marked as simulated.
+
+    Every exit path preserves its evidence before returning, so a refusal is as checkable later as
+    an acceptance.
     """
     into = Path(into).expanduser().resolve()
     if path not in ("clean", "repair", "blocked", "interrupted"):
