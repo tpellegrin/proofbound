@@ -159,45 +159,31 @@ Never one `freeze_valid` boolean. Four independent questions, each answered sepa
 A freeze can be internally valid, no longer satisfied by the repository, and still the correct binding for
 work already authorized under it. Collapsing these would make that state unrepresentable.
 
-### A4.8 Corrections from implementation
+<a id="a48-corrections-from-implementation"></a>
 
-Three things changed or were settled when M2C-A was built. The schema, identity model and
-binding semantics survived unaltered.
+### A4.8 What M2C-A settled, and what it does not authorize
 
-1. **External dependency closure: members are exactly the graph's declared artifacts.** The design
-   check left this open as the largest edge case, with three candidate models. Resolved in favour of
-   graph membership, because **membership is authority's declaration of what constitutes the contract**.
-   Including the transitive closure would put artifacts no authority declared into the frozen contract,
-   inferring membership from dependency structure rather than declaration — an inversion of `P7` and
-   `P11`. A dependency target outside the graph stays a recorded identity the contract was reviewed
-   against. Consequently **no `roots` field is needed**, and the two-field schema stands.
+Three obligations were settled when M2C-A was built; the schema, identity model and binding
+semantics were unaltered by it.
 
-   The honest limit: a freeze pins an external target's *content* but not its provenance. If that
-   artifact's own accepted dependencies move while its bytes do not, the freeze is unaffected — that
-   staleness is M2A closure's question against the current ledger, a different layer.
+1. **Members are exactly the graph's declared artifacts** — not the transitive closure. Membership
+   is authority's declaration of what constitutes the contract, so no `roots` field exists and the
+   two-field schema stands. A dependency target outside the graph is a recorded identity the
+   contract was reviewed against, nothing more.
+2. **A non-computable candidate is a finding, not success.** Not computable is not equivalence.
+3. **Provenance is policy at creation, never part of identity.** `verified` and `unavailable` may
+   be frozen; `contradicted` refuses creation. The check runs only when a run root is supplied — a
+   guard, not a gate (`P5`).
 
-2. **A non-computable candidate is a finding, not success.** Found by the vertical slice: after a
-   withdrawal the graph is unsatisfied and no candidate exists, and returning "no differences" would
-   have asserted the project still produces the freeze when nothing established it. Not computable is
-   not equivalence.
+**Storage.** `specs/<change>/freezes/<identity>.json`, content-addressed and append-only, so
+supersession needs no `supersedes` field and no mutable pointer (`P3`). Validation reports
+`filename-identity-mismatch` when a 64-character filename does not match its content.
 
-3. **Provenance policy at creation, never in identity.** `verified` and `unavailable` may be frozen;
-   `contradicted` refuses creation. Identity is unaffected either way, because freeze bytes derive from
-   graph and ledger alone — a contradiction cannot change what a freeze says, only whether a *new*
-   durable record should be minted from evidence that disagrees with itself. Absent evidence is not
-   disagreement, so an old repository with no run tree can still freeze. The check runs only when a run
-   root is supplied; it is a guard, not a gate (`P5`).
+**A freeze authorizes nothing.** Calling one "approved" or "authorized for execution" claims exactly
+what [A4.6](#a46-what-a-freeze-does-not-prove) says it cannot.
 
-**Storage.** `specs/<change>/freezes/<identity>.json` — content-addressed and append-only, so
-supersession needs no `supersedes` field and no mutable pointer (`P3`). Re-deriving an unchanged contract
-rewrites nothing. Validation reports `filename-identity-mismatch` when a 64-character filename does not
-match its content, catching a renamed or hand-edited file without making the filename authoritative:
-identity is content, so a copy under any name is the same freeze.
-
-**Not implemented, and not implied.** M2C-A authorizes nothing. There is no task freeze reference, no run
-or phase binding, no mixed-freeze reporting, no consistency reflection, and no cross-ledger composition.
-A freeze is a durable engineering-contract candidate; calling it "approved" or "authorized for execution"
-would claim exactly what [A4.6](#a46-what-a-freeze-does-not-prove) says it cannot.
+Why each of these was decided this way, and the honest limits of each, are recorded in
+[evidence/binding-implementation-outcomes.md](evidence/binding-implementation-outcomes.md#a48--m2c-a-freeze-identity).
 
 ---
 
@@ -388,38 +374,26 @@ moment it makes it, so the gate must be present.
 to an exact contract is M2C-C. What M2C-B establishes is precisely one thing: that this exact candidate
 was independently challenged as a whole, and that the challenge qualified.
 
-### A5.10 Corrections from implementation
+<a id="a510-corrections-from-implementation"></a>
 
-The design survived implementation intact — schema, storage, authority model, freshness reuse and the
-purpose/role exclusions all shipped as designed. Three points were sharpened by building it.
+### A5.10 What M2C-B settled
 
-1. **The record must verify that the freeze it names is real.** Recording refuses unless
-   `freeze_identity(freeze) == declared candidate`. Without it an acceptance could be recorded for an
-   identity that never denoted anything — syntactically fine and about nothing. A creation-time check
-   only; the record stores no freeze path, so it stays independent of storage layout.
+The design shipped intact. Three obligations were sharpened by building it.
 
-2. **Creation checks the v1 constants, not the live registry.** The design said verification must pin
-   them; implementation showed *creation* must too, or a record could be written today that fails to
-   verify tomorrow under the very semantics it claims. Refusing to write a v1 record for something v1
-   does not recognize is the correct asymmetry.
+1. **The record must verify that the freeze it names is real** — recording refuses unless
+   `freeze_identity(freeze) == declared candidate`. A creation-time check only; the record stores no
+   freeze path, so it stays independent of storage layout.
+2. **Creation checks the v1 constants, not the live registry**, so a record written today cannot
+   fail to verify tomorrow under the very semantics it claims.
+3. **Re-review refreshes provenance in place.** A second qualifying challenge repoints
+   `gate`/`gate_sha256` at newer evidence while `candidate` is unchanged. One candidate, one file.
 
-3. **Re-review refreshes provenance in place, and the record's bytes legitimately change.** The candidate
-   is one subject, so a second qualifying challenge repoints `gate`/`gate_sha256` at newer evidence while
-   `candidate` is unchanged. The durable *subject* is stable; what evidences it is not, and Git carries
-   that history. Nothing accrues: one candidate, one file.
+**An acceptance record is not authorization.** A candidate carrying one has been *challenged*.
+Binding implementation work to an exact contract is A6.
 
-**The replay proof is inherited, not new.** The slice takes a genuinely accepted `C1` review and attempts
-to accept it against a contract naming `C2`; it is refused by `accept_task` with *"source gate is not
-bound to task.current_contract"*. Contracts naming different candidates are different files with
-different hashes, so no nonce, reservation field or freshness token was added.
-
-**Authority.** A reflector writing into the consistency directory trips the inherited read-only scope
-check, its gate is unclean, acceptance refuses, and recording refuses because there is no acceptance to
-record — three independent barriers, none new. The CLI is `record` (parent-owned) and `status`, so callers
-ask a domain question rather than using `Path.exists()` as the definition of acceptance.
-
-**Still not authorization.** A candidate with an acceptance record has been *challenged*, not authorized
-to execute. Binding implementation work to an exact contract remains M2C-C.
+The rationale, the inherited replay proof and the three independent authority barriers none of which
+were new are in
+[evidence/binding-implementation-outcomes.md](evidence/binding-implementation-outcomes.md#a510--m2c-b-aggregate-consistency-acceptance).
 
 ---
 
@@ -565,25 +539,20 @@ Accepting a task bound to `C` proves that task was executed and reviewed under t
 **not** prove that every required implementation exists, that the repository globally coheres with `C`, or
 that the change is finished.
 
-### A6.9 Implementation outcome
+<a id="a69-implementation-outcome"></a>
 
-Shipped as designed: **no new identity, no persistent state, no inherited-core change.** `authorize`
-composes current-candidate derivation, the consistency lookup and provenance; `report` derives task
-bindings from the immutable contracts a run already holds. The only other change moved current-candidate
-derivation out of the freeze CLI into `_freeze` so it could be composed rather than duplicated —
-behaviour-neutral, verified against the unchanged suite.
+### A6.9 What M2C-C shipped
 
-Two refinements from implementation. Authorization accepts a **contract** as well as a bare candidate:
-the contract is the artifact that becomes the authority, and one declaring no candidate is reported
-unbound rather than silently authorized — the explicit compatibility boundary for inherited tasks. And a
-wrong candidate yields *two* findings (not current, never challenged), more informative than the first.
+**No new identity, no persistent state, no inherited-core change.** `authorize` composes
+current-candidate derivation, the consistency lookup and provenance; `report` derives task bindings
+from the immutable contracts a run already holds. Authorization accepts a **contract** as well as a
+bare candidate, and a contract declaring no candidate is reported unbound rather than silently
+authorized — the explicit compatibility boundary for inherited tasks.
 
-The slice proves the chain against real mechanics: a freeze alone does not authorize, `C1` review evidence
-is refused for a `C2` contract, and a worker rewriting the candidate in its own contract breaks acceptance
-with *"current contract missing or changed"*.
+**Unchanged boundary.** Execution binding only (A6.6), and — until A6.10 — advisory.
 
-**Unchanged boundary.** Execution binding only. Task contracts and acceptance both live in the run tree,
-so nothing durably records that an accepted task was governed by `C` once that tree is gone (A6.6).
+What implementation corrected, and what the slice proved against real mechanics, is in
+[evidence/binding-implementation-outcomes.md](evidence/binding-implementation-outcomes.md#a69--m2c-c-execution-binding).
 
 ### A6.10 Correction: authorization was advisory (M4 — IMPLEMENTED)
 

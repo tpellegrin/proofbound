@@ -42,12 +42,19 @@ def slug(text: str) -> str:
     return s.replace(" ", "-")
 
 
+#: An explicit forwarding anchor, written as `<a id="old-heading-slug"></a>`. A renamed heading
+#: would otherwise silently orphan every reference that cites its old name — including references
+#: from outside this corpus, which this checker cannot fix and must not quietly break.
+EXPLICIT_ANCHOR = re.compile(r'<a\s+id="([^"]+)"\s*>\s*</a>')
+
+
 def anchors(path: Path) -> set[str]:
     out = set()
     for line in path.read_text(encoding="utf-8").splitlines():
         m = HEADING.match(line)
         if m:
             out.add(slug(m.group(1).strip()))
+        out.update(EXPLICIT_ANCHOR.findall(line))
     return out
 
 
@@ -105,6 +112,60 @@ def check_canonical_identifiers(failures: list[str]) -> int:
                     f"{other.relative_to(CORPUS)}: redefines canonical {prefix} identifiers "
                     f"{sorted(set(here))}; the only home is {home.name}"
                 )
+    return checked
+
+
+def reachable_from_entry_point() -> tuple[set[Path], dict[Path, list[Path]]]:
+    """Every corpus document reachable from the entry point by following links.
+
+    Breadth-first over markdown links, which is what a reader actually does: the entry point
+    routes to the documents, and a document may route onward. A two-hop route through the
+    evidence index is a real route; the entry point does not have to name every historical file
+    to keep it findable.
+
+    Returns the reachable set and, for each, the shortest path taken to it — so a failure can say
+    *how* a document is currently found rather than only that it is.
+
+    Termination: a document is expanded once. Link cycles are normal in a cross-referenced corpus
+    and are not an error.
+    """
+    entry = (CORPUS / "README.md").resolve()
+    routes: dict[Path, list[Path]] = {entry: [entry]}
+    queue = [entry]
+    while queue:
+        current = queue.pop(0)
+        for line in current.read_text(encoding="utf-8").splitlines():
+            for target in LINK.findall(line):
+                if target.startswith(("http://", "https://", "mailto:")):
+                    continue
+                rel, _, _anchor = target.partition("#")
+                if not rel:
+                    continue
+                dest = (current.parent / rel).resolve()
+                if dest.suffix != ".md" or not dest.is_file() or dest in routes:
+                    continue
+                routes[dest] = routes[current] + [dest]
+                queue.append(dest)
+    return set(routes), routes
+
+
+def check_reachability(failures: list[str]) -> int:
+    """An unreachable document is one nobody will find, so nobody will obey it.
+
+    This replaces an earlier check that required every corpus path to appear *directly* in the
+    entry point's own text. That rule kept the corpus findable and also forced the router to grow
+    by one row per historical document forever, which is why it had to be compressed by hand
+    before anything could be added. Reachability is the property that was actually wanted.
+    """
+    reachable, _routes = reachable_from_entry_point()
+    checked = 0
+    for doc in sorted(CORPUS.rglob("*.md")):
+        checked += 1
+        if doc.resolve() not in reachable:
+            rel = doc.relative_to(CORPUS).as_posix()
+            failures.append(
+                f"{rel}: not reachable from the entry point by following links; "
+                f"link it, or list it in evidence/README.md")
     return checked
 
 
@@ -184,12 +245,14 @@ def main() -> int:
     sections = check_section_uniqueness(failures)
     bare = check_no_bare_cross_references(failures)
     syntax = check_link_syntax(failures)
+    docs = check_reachability(failures)
 
     print(f"links checked:              {links}")
     print(f"link syntax checked:        {syntax}")
     print(f"canonical identifiers:      {ids}")
     print(f"inherited sections indexed: {sections}")
     print(f"bare section references:    {bare}")
+    print(f"documents reachable:        {docs}")
     if failures:
         print(f"\n{len(failures)} FAILURE(S):", file=sys.stderr)
         for line in failures:

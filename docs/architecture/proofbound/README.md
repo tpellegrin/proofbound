@@ -37,21 +37,26 @@ evidence — never a cosmetic pass bundled into feature work.
 ## Read this if…
 
 Read the entry point plus the rows matching your task. Reading more is allowed; reading less is the
-point. Byte figures are each route's authoritative-architecture cost.
+point.
+
+Byte figures are the **unique bytes of required reading**, computed from the files by
+`python3 scripts/docs_route_cost.py` and checked by the suite, so they cannot drift into fiction the
+way the previous hand-written estimates did. A byte count of required reading is not a prediction of
+an agent's token usage, its context pressure, or how well it will do the task.
 
 | Your task | Read | Skip | ≈ bytes |
 |---|---|---|---|
-| **A.** Changing reviewer freshness, attempts, gates, roles, acceptance | README + [execution-and-review](execution-and-review.md) + [core-model](core-model.md) | everything else | ~28 KB |
-| **B.** Implementing the artifact graph or ledger | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + plan | freeze, autonomy, research, history | ~54 KB + plan |
-| **B2.** Implementing freeze / contract identity (M2C) | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [freeze-and-binding](freeze-and-binding.md) + plan | autonomy, research, history | ~64 KB + plan |
-| **C.** Implementing decision provenance | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [long-running-autonomy](long-running-autonomy.md) | research, history | ~68 KB |
-| **D.** Implementing context telemetry | README + [core-model](core-model.md) + [context-economy](context-economy.md) | artifacts, autonomy, history | ~34 KB |
-| **D2.** Authoring scenarios or grading a run | README + [evaluation](evaluation.md) | the binding chain, comparison rules, run history | ~36 KB |
-| **D3.** Calibrating a suite, comparing runs, or designing a control arm | README + [evaluation-comparison](evaluation-comparison.md) | scenario authoring, the binding chain | ~40 KB |
-| **D4.** Measuring what many changes do to a system, or calibrating that | README + [system-craft](system-craft.md) | the contract-binding chain, scenario authoring | ~39 KB |
-| **E.** Fixing a bug in inherited DSD mechanics | README + [execution-and-review](execution-and-review.md) | everything else | ~12 KB |
-| **F.** Asking "why is this rule like this?" | [evidence/implementation-findings](evidence/implementation-findings.md) | — | ~41 KB |
-| **G.** Archaeology on the original design | [evidence/original-rfc](evidence/original-rfc.md) | — | ~83 KB |
+| **A.** Changing reviewer freshness, attempts, gates, roles, acceptance | README + [execution-and-review](execution-and-review.md) + [core-model](core-model.md) | everything else | 45 KB |
+| **B.** Implementing the artifact graph or ledger | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [plan](../specification-reflection-harness-implementation-plan.md) | freeze, autonomy, research, history | 229 KB + plan |
+| **B2.** Implementing freeze / contract identity (M2C) | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [freeze-and-binding](freeze-and-binding.md) + [plan](../specification-reflection-harness-implementation-plan.md) | autonomy, research, history | 266 KB + plan |
+| **C.** Implementing decision provenance | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [long-running-autonomy](long-running-autonomy.md) | research, history | 88 KB |
+| **D.** Implementing context telemetry | README + [core-model](core-model.md) + [context-economy](context-economy.md) | artifacts, autonomy, history | 44 KB |
+| **D2.** Authoring scenarios or grading a run | README + [evaluation](evaluation.md) | the binding chain, comparison rules, run history | 54 KB |
+| **D3.** Calibrating a suite, comparing runs, or designing a control arm | README + [evaluation-comparison](evaluation-comparison.md) | scenario authoring, the binding chain | 54 KB |
+| **D4.** Measuring what many changes do to a system, or calibrating that | README + [system-craft](system-craft.md) | the contract-binding chain, scenario authoring | 54 KB |
+| **E.** Fixing a bug in inherited DSD mechanics | README + [execution-and-review](execution-and-review.md) | everything else | 29 KB |
+| **F.** Asking "why is this rule like this?" | [evidence/implementation-findings](evidence/implementation-findings.md) | — | 42 KB |
+| **G.** Archaeology on the original design | [evidence/original-rfc](evidence/original-rfc.md) | — | 84 KB |
 
 If your task touches a principle, read its canonical definition in
 [core-model.md](core-model.md#33-consolidated-principles), not a paraphrase found nearby (`P11`).
@@ -73,16 +78,7 @@ split.
 | [evaluation-comparison.md](evaluation-comparison.md) | **Design track** | Whether a suite can tell two systems apart, and what comparing two runs may claim. Never a leaderboard. |
 | [system-craft.md](system-craft.md) | **Design track** | Whether a system stays understandable and changeable across many valid changes. Craft findings never gate a change. |
 | [context-economy.md](context-economy.md) | **Research** | External evidence and hypotheses. Not production behavior. Supports `P13`, defined in core-model. |
-| [evidence/implementation-findings.md](evidence/implementation-findings.md) | **Historical evidence** | What M0–M2A proved and where it corrected the design. Why we trust the rules. |
-| [evidence/evaluation-runs.md](evidence/evaluation-runs.md) | **Historical evidence** | What individual evaluation runs established: the V1 outcome, baseline zero, calibration outcomes. Never protocol. |
-| [evidence/original-rfc.md](evidence/original-rfc.md) | **Historical, superseded** | Pre-implementation design intent. Wrong in several places. Never authoritative. |
-| [evidence/lifecycle-field-check.md](evidence/lifecycle-field-check.md) | **Historical evidence** | `pb-lifecycle-field-check-1`: protocol and outcome of the attempt-deadline field check. Engineering validation, never a treatment sample. |
-| [evidence/authority-workflow-demonstration.md](evidence/authority-workflow-demonstration.md) | **Historical evidence** | `pb-authority-demo-1`: the first real-agent run of the full authority chain and the manual decisions it needs. Its specification challenge found a real defect and it stopped there under its own no-repair rule. |
-| [evidence/authority-workflow-successor.md](evidence/authority-workflow-successor.md) | **Historical evidence** | Dated corrections to `pb-authority-demo-1`'s preparation and the questions its plan left open. Corrects by addition; that demonstration's records are unmodified. |
-| [evidence/authority-workflow-intent-defect.md](evidence/authority-workflow-intent-defect.md) | **Historical evidence** | `pb-authority-demo-2` stopped because the parent intent it was built on was internally inconsistent: what it was, how it survived six paid attempts, what would have caught it. |
-| [evidence/readme-usability-check.md](evidence/readme-usability-check.md) | **Historical evidence** | Can a stranger answer five questions from the documentation alone? What one fresh reader got right, what it exposed, what changed. |
-| [evidence/authority-workflow-demo-2-audit.md](evidence/authority-workflow-demo-2-audit.md) | **Historical evidence** | Dated audit of `pb-authority-demo-2`: the interrupted call was never bounded, search exhaustion is not nonexistence, D1/D4 were departures. Corrects by addition only. |
-| [evidence/admission-bypass-reproduction.md](evidence/admission-bypass-reproduction.md) | **Historical evidence** | The guarded launch path did not enforce authorization: the credential-free reproduction, the repair, and what it does and does not establish. |
+| [evidence/](evidence/README.md) | **Historical evidence** | Indexed separately: why a rule is the way it is, what each dated run observed, and corrections by addition. Read on demand, never as a precondition. **Adding a run's evidence needs a row there, not one here.** |
 | [../specification-reflection-harness-implementation-plan.md](../specification-reflection-harness-implementation-plan.md) | **Roadmap** | Milestone status, acceptance criteria, dependencies, deferrals, threat mitigation status |
 
 **Precedence.** Normative beats rationale beats research beats history. No rule is defined twice within
