@@ -1,120 +1,232 @@
 # Proofbound
 
-Proofbound helps an engineer carry a goal through proposed requirements, fresh challenge,
-controlled implementation, review and an inspectable handoff. Python checks identities,
-provenance and execution prerequisites; agents and people judge whether the change is good.
-It is a supervised workflow, not a correctness proof or an autonomous developer.
+**Keep engineering intent, accepted requirements, the change itself, its review and its evidence in
+alignment — while an agent does the work.**
 
-Use it when requirements and authority need to survive an engineering handoff. Its overhead is
-unlikely to help a small edit you can confidently inspect and test yourself. Better recordkeeping
-is useful, but does not establish better software or lower total effort.
+Proofbound carries a goal through proposed requirements, a fresh challenge to those requirements,
+controlled implementation, independent review, deterministic checks and an inspectable handoff.
+Python checks what is objectively checkable — identity, provenance, scope, lifecycle, accounting.
+People and agents judge whether the change is any good.
+
+It is a supervised workflow. It is not a correctness proof and not an autonomous developer.
+
+- **[Concepts](docs/concepts.md)** — what the pieces mean and why
+- **[Operator guide](docs/operator-guide.md)** — running a change, step by step
+- **[Installation](docs/installation.md)** — the worker backend, credentials, recovery
+- **[Coordinator protocol](docs/coordinator-protocol.md)** — the contract any frontier host satisfies
+- **[Evaluation](evals/README.md)** — how claims here are measured
+
+## The problem it addresses
+
+Agentic coding is fast at producing diffs and poor at keeping a project coherent across many of
+them. Four specific failures:
+
+| Failure | What it looks like |
+|---|---|
+| **Drift** | The code no longer does what the accepted requirements say, and nothing notices |
+| **Lost decisions** | A tradeoff was settled in week one; by week six nobody can find it, and it is silently re-decided |
+| **Self-approval** | The agent that wrote the change also declares it good |
+| **Unmeasured harness changes** | The tooling around the work changes, and whether that helped is never established |
+
+Proofbound targets these. **It does not claim to have eliminated them.** What it does today is make
+authority explicit, keep review structurally separate from production, refuse acceptance when
+prerequisites are missing, and retain evidence you can re-check afterwards. Whether that yields
+better software over months is an open question with an evidence gate, not a feature.
+
+## The cost-aware architecture
+
+**There is no default frontier orchestrator.** You choose it.
+
+```mermaid
+flowchart LR
+    O["<b>Owner</b><br/>a human<br/><i>goal, policy, spending</i>"]
+    C["<b>Coordinator</b><br/><i>your</i> frontier agent<br/>Codex · Claude Code/Opus · another<br/><i>decides, adjudicates, accepts</i>"]
+    W["<b>Worker</b><br/>DeepSeek<br/><i>explores, implements, reviews</i>"]
+    P["<b>Control plane</b><br/>Python<br/><i>identity, admission, scope,<br/>deadlines, accounting, evidence</i>"]
+    O --> C
+    C -->|"bounded tasks"| W
+    W -->|"reports + evidence"| C
+    C <--> P
+    W <--> P
+```
+
+| Layer | Does | Selection |
+|---|---|---|
+| **Owner** | Goal, consequential policy, resource authorization | You |
+| **Coordinator** | Decomposition, contracts, tradeoffs, adjudication, escalation, acceptance | **Your** frontier host. No product default |
+| **Worker** | Repository discovery, proposed requirements, implementation, repair, fresh review | DeepSeek by default, via the supported path |
+| **Control plane** | Identity, admission, lifecycle, scope, deadlines, accounting, deterministic checks | Shared Python helpers |
+
+**Why the coordinator need not redo the worker's investigation.** The worker explores the repository
+in its own context and returns a bounded report plus mechanical evidence — gates, scope diffs,
+contracts, accounting. The coordinator reads the *state surface* and the smallest evidence the
+current decision needs, not the transcript. That is what keeps frontier consumption down.
+
+**The economics are a measurement, not a promise.** Delegation can *increase* total tokens — more
+DeepSeek tokens may be entirely worthwhile — so frontier tokens, worker tokens, total cost and
+output quality are measured separately. No savings figure is claimed here, because none has been
+measured. See [evaluation](evals/README.md).
+
+## What works today
+
+One bounded goal-to-change workflow: **goal → proposed requirements → fresh challenge → accepted
+authority → admitted implementation → independent review → deterministic checks → sealed delivery.**
+
+- Workers run on **macOS arm64** under a `sandbox-exec` boundary, using pinned **OpenCode 1.18.29**
+  with **`deepseek/deepseek-v4-flash`, variant `high`**.
+- The delivery is a retained directory: the patch, the authority, the evidence and a handoff record.
+- A fresh coordinator resumes any run with one `status` command.
+
+This guided path is deliberately narrower than the underlying machinery. The artifact graph, ledger,
+freeze/candidate identity and consistency acceptance support richer structures than the three-stage
+path exposes; the broader architecture is described in
+[docs/architecture/proofbound/](docs/architecture/proofbound/README.md).
 
 ## First use
 
-Clone this repository and point Codex at it; Python **3.10+** and the standard library suffice for
-its helpers. The supported worker path is **macOS arm64**, pinned **OpenCode 1.18.29** with
-**`deepseek/deepseek-v4-flash`, variant `high`**. An existing credential and explicit spending
-authority are needed to launch workers. Readiness never makes a provider request.
+Python **3.10+**, standard library only. Install the worker backend once
+([details](docs/installation.md)):
+
+```bash
+python3 scripts/install_worker_backend.py     # pinned build, verified by hash, nothing global touched
+~/.proofbound/executors/opencode-1.18.29-darwin-arm64/opencode auth login    # choose DeepSeek
+python3 scripts/pb_workflow.py doctor         # readiness; makes no provider request
+```
+
+Then, with **either** coordinator — the commands are identical:
 
 ```bash
 PB=/absolute/path/to/proofbound
-PROJECT='/absolute/path/to/your project'
-python3 "$PB/scripts/pb_workflow.py" doctor
+PROJECT='/absolute/path/to/your project'      # clean Git worktree with an initial commit
+
 python3 "$PB/scripts/pb_workflow.py" start --project "$PROJECT" --change CH-001 \
-  --goal 'Describe the desired change and public compatibility constraints here.' \
+  --goal 'Describe the desired change and its public compatibility constraints.' \
   --check 'python3 -m unittest discover'
+
 RUN="$PROJECT/DeepSeekAndDestroy/plans/CH-001/runs/first"
-python3 "$PB/scripts/pb_workflow.py" status --run "$RUN"
-python3 "$PB/scripts/pb_workflow.py" continue --run "$RUN"
+python3 "$PB/scripts/pb_workflow.py" status   --run "$RUN"      # the next permitted action
+python3 "$PB/scripts/pb_workflow.py" continue --run "$RUN"      # mechanical steps + worker
 ```
 
-Start from a clean Git worktree with an initial commit. `start` preserves existing files, creates
-unaccepted requirements and run templates, and grants **zero spending authority**. `continue`
-performs one derived step, or returns the exact judgment/blocker. A fresh Codex session uses the
-same `status` command. No hook is required and no state JSON needs hand editing.
+`--change CH-001` is an identifier you choose; `first` is the run `start` creates under it, so the
+run path is `<project>/DeepSeekAndDestroy/plans/<change>/runs/first`. Use `--goal-file <path>`
+instead of `--goal` for a longer goal.
 
-Give Codex this prompt:
+`start` preserves existing files, creates **unaccepted** requirements, and grants **zero** spending
+authority. `continue` performs one derived step, or returns the judgment it needs from you.
 
-> Use Proofbound at `/absolute/path/to/proofbound` on my project. Read its operator guide and
-> CODEX.md, inspect readiness, and start from my goal and compatibility constraints. Propose and
-> freshly challenge requirements before accepting authority. Continue through implementation,
-> fresh review and project checks, adjudicating routine decisions within scope. Preserve evidence
-> and return the delivery patch or a precise blocker. Do not spend beyond my explicit authorization.
+<details>
+<summary><b>Starting with Codex</b></summary>
 
-The [operator guide](docs/operator-guide.md) covers spending configuration, semantic decisions,
-recovery and delivery. The [ordinary example and frozen paired pilot](examples/csv-summary/README.md)
-provide a reproducible project and a comparison that has **not yet run**.
+> Use Proofbound at `/absolute/path/to/proofbound` on my project at `/absolute/path/to/project`.
+> Read `CODEX.md` and `docs/coordinator-protocol.md`. You are the coordinator; DeepSeek workers do
+> the routine technical work through `pb_workflow.py continue` — do not use multi-agent for that.
+> Check readiness, start from my goal and compatibility constraints, and drive `status` / `continue`
+> / `decide`. Propose and freshly challenge requirements before accepting authority. Adjudicate
+> routine decisions within scope; escalate to me for goal or policy changes. Preserve evidence and
+> return the delivery patch or a precise blocker. Do not spend beyond my explicit authorization.
 
-## What the workflow means
+</details>
 
-For example, an owner asks a CSV summary tool to reject malformed input in a new strict mode while
-preserving its default behavior. The coordinator proposes requirements; a fresh spec reflector
-challenges their compatibility and consistency. After adjudication, accepted requirements become
-ledgered artifacts. The declared graph fixes membership and dependency edges. A freeze identifies
-the accepted candidate; an accepted aggregate consistency review earns implementation admission.
-The implementer and a fresh reviewer then work under that immutable contract. Project checks and
-the coordinator's judgment precede task acceptance and handoff.
+<details>
+<summary><b>Starting with Claude Code / Opus</b></summary>
 
-| Mechanism | What it establishes |
+> Use Proofbound at `/absolute/path/to/proofbound` on my project at `/absolute/path/to/project`.
+> Read `CLAUDE.md` and `docs/coordinator-protocol.md`. You are the coordinator; DeepSeek workers do
+> the routine technical work through `pb_workflow.py continue` — do not use subagents for that.
+> Check readiness, start from my goal and compatibility constraints, and drive `status` / `continue`
+> / `decide`. Propose and freshly challenge requirements before accepting authority. Adjudicate
+> routine decisions within scope; escalate to me for goal or policy changes. Preserve evidence and
+> return the delivery patch or a precise blocker. Do not spend beyond my explicit authorization.
+
+</details>
+
+<details>
+<summary><b>Another agent host</b></summary>
+
+Any host that can read files, run a command and follow a decision protocol can coordinate. It needs
+no hooks, no native subagents and no proprietary memory. Give it the goal, the run root and
+[docs/coordinator-protocol.md](docs/coordinator-protocol.md). **Not live-qualified** — see the
+support matrix.
+
+</details>
+
+The [ordinary example](examples/csv-summary/README.md) is a reproducible project to try it on.
+
+## What "proof" means here
+
+Proofbound separates what a program can check from what only judgment can settle. Both appear in the
+evidence, labelled, and neither is allowed to stand in for the other.
+
+| Mechanically checked | Judged |
 |---|---|
-| Artifact ledger and graph | Accepted content identities and declared dependency closure |
-| Candidate and admission | This implementation contract was admitted under this candidate |
-| Attempts, integrity gates and fresh review | Recorded lifecycle, scope, contract identity and qualifying role/purpose; not semantic adequacy |
-| Coordinator adjudication | A retained judgment, never inferred from persuasive prose |
-| Project checks and delivery | Observed check results, patch, governing bindings and report provenance |
+| Content identity, scope of changes, contract binding, admission, lifecycle, deadlines, accounting completeness, the project's own checks | Whether requirements capture the goal, whether a review is adequate, whether the change is good |
 
-An admitted C1 task remains a C1 task after a later C2. Missing derived consistency records can be
-legitimately restored from qualifying accepted evidence. A clean gate without the required
-purpose and acceptance cannot earn that authority.
+Three limits, stated once:
 
-## Boundaries and evidence
+- **A content hash is not authenticated authorship.** It establishes that bytes did not change
+  between two points, within a trust boundary that includes everyone who can write those records.
+- **A fresh context is not proven independence.** A reviewer in a clean context has a different
+  view; that is valuable and it is not a statistical claim.
+- **A clean integrity gate is not a good change.** It means the permitted process occurred.
 
-The supervised launcher reserves slots before execution and refuses unresolved usage or exhausted
-allowances. Its limit applies to **derived spend at a dated price table**, not provider billing;
-a single in-flight call is not capped by that figure. Aggregate usage and per-attempt attribution
-are separate. Unknown charges remain unknown. Direct executor invocation is outside this guard.
+Deeper: [concepts](docs/concepts.md) ·
+[core model](docs/architecture/proofbound/core-model.md) ·
+[what a freeze does not prove](docs/architecture/proofbound/freeze-and-binding.md#a46-what-a-freeze-does-not-prove)
 
-The macOS worker boundary restricts wrapped processes to declared paths, staged home and required
-system resources. It is an evidence boundary, not a hostile-code sandbox guarantee. It cannot
-observe the coordinator's host-side access. Run trees may contain private source, reports and
-prompts; runtime homes hold a staged credential. Retain them intentionally, do not publish them
-blindly, and clean up explicitly after handoff. SIGKILL finalization is not guaranteed.
+## Evaluation is part of the product
 
-Committed requirements, ledger, graph, freeze and consistency records can outlive deleting a run.
-Task contracts, acceptance and implementation binding remain L3 run evidence. **Copying an evidence
-package does not close the L3/L4 durable implementation-binding gap.** See the
-[canonical durability boundary](docs/architecture/proofbound/freeze-and-binding.md#a66-execution-binding-only--the-durability-limitation-stated).
+Different questions need different evidence, and conflating them is how tools come to be believed
+without cause:
 
-The inherited defaults in SKILL.md and helper configuration name
-`opencode-go/deepseek-v4-flash`; that is a different provider route from the qualified
-`deepseek/deepseek-v4-flash`. This front door selects the latter explicitly. `CONFIG.example.md`
-is prose guidance, not a parsed configuration file. Installed, configured, supported and
-experimentally qualified are different claims; `doctor` reports them separately. Codex with GPT-6
-coordinates development here; it is not thereby a qualified worker backend.
+| Question | Answered by |
+|---|---|
+| Do the mechanisms hold? | Credential-free regressions in the canonical suite |
+| Can real agents do this at all? | Recorded live runs, one observation per condition |
+| Is it better than the agent alone? | A matched direct-agent comparison, same coordinator both arms |
+| Does it reduce frontier cost? | Frontier tokens, worker tokens and total cost, measured apart |
+| Does architectural quality hold up? | Repeated changes to the same project over time |
 
-## What has been demonstrated
+Rules for reading any of it are in **[evals/README.md](evals/README.md)**.
+Past runs are in [evidence](docs/architecture/proofbound/evidence/README.md) — including the ones
+that found real defects.
 
-[`pb-handoff-2`](evals/authority_slice/runs/pb-handoff-2/run-report.md), frozen at `af10cbfb`,
-observed one real continuation from **seeded upstream authority** reaching accepted implementation
-with enforced admission and replayable artifact checks. It established neither reliability,
-superiority to a competent direct agent, nor good upstream authority production. Its control
-legitimately restored a derived record from retained accepted evidence and failed the frozen
-control predicate. Historical packages and outcomes remain unchanged.
+## Support matrix
 
-The new goal-to-change entry point is subject to offline integration validation. Stand-ins do not
-qualify real-agent use. The new live first-use and direct-agent comparison remain blocked on explicit worker spending authorization. Versioned observations belong in
-[the milestone record](docs/architecture/proofbound/evidence/supervised-workflow-2026-09-21.md).
-Interpret comparisons using the [canonical evaluation rules](docs/architecture/proofbound/evaluation-comparison.md).
+Separating what is implemented from what has been observed:
 
-## Read further
+| | Implemented | Offline-tested | Live-observed |
+|---|---|---|---|
+| Goal-to-change workflow | yes | yes, credential-free stand-ins | **no** |
+| DeepSeek worker path | yes | yes | yes, in `pb-handoff-2` (seeded authority, not goal-to-change) |
+| Codex as coordinator | yes | yes | **no** |
+| Claude Code/Opus as coordinator | yes | yes | **no** |
+| Another host as coordinator | protocol documented | **no** | **no** |
+| Deadline enforcement + teardown | yes | yes, macOS only | **no** |
+| Evidence export / replay | yes | yes | yes, in `pb-handoff-2` |
+| Frontier-cost comparison | protocol frozen | — | **no** |
 
-- [Operator guide](docs/operator-guide.md): commands, authority decisions and continuation.
-- [Current roadmap](docs/operator-roadmap.md): user benefits and evidence gates.
-- [Architecture router](docs/architecture/proofbound/README.md): normative definitions by task.
-- [Evidence index](docs/architecture/proofbound/evidence/README.md): dated observations and corrections.
-- [CONTRIBUTING.md](CONTRIBUTING.md): Python support and canonical serial test command.
-- [SKILL.md](SKILL.md) and [CODEX.md](CODEX.md): coordinating-agent instructions.
+"Offline-tested" means credential-free stand-ins exercised the mechanics. **A stand-in never
+establishes agent quality.**
+
+## Direction
+
+Goals with evidence gates, not a roadmap of features:
+
+1. **Sustained architectural coherence** — does quality hold across a *second* change to the same
+   agent-produced code? Gate: repeated fresh tasks in one project.
+2. **Useful handoff** — can a different coordinator resume without loss? Gate: a controlled handoff
+   that alters no accepted candidate, worker backend or remaining budget.
+3. **Durable implementation provenance** — today, binding lives in the run tree and dies with it.
+   Gate: an invariant that actually consumes a durable record.
+4. **Demonstrated quality/effort improvement** — gate: matched comparisons with predeclared outcome
+   checks, reporting the tradeoff rather than a composite score.
+
+[Operator roadmap](docs/operator-roadmap.md) · [architecture](docs/architecture/proofbound/README.md)
+
+## Contributing
+
+[CONTRIBUTING.md](CONTRIBUTING.md) for the interpreter and canonical test command;
+[AGENTS.md](AGENTS.md) for the policy every coding agent here follows.
 
 Derived from DeepSeek-and-Destroy (MIT, © FrozenPepper); not affiliated with or endorsed by it.
-Inherited `dsd_*` commands and `DeepSeekAndDestroy/` paths remain compatibility-sensitive wire
-identifiers. [License](LICENSE).

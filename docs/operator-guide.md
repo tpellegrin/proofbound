@@ -8,6 +8,11 @@ This guide is the operator route. Normative rules live in the
 The supported workflow has one requirements artifact, one aggregate consistency review and one
 implementation task. Decomposing a larger project remains coordinator work outside this front door.
 
+**Any capable frontier host can be the coordinator** — Codex, Claude Code/Opus, or another. The
+commands below are identical whichever you choose; the contract a host satisfies is
+[the coordinator protocol](coordinator-protocol.md). Getting the DeepSeek worker working is
+[installation](installation.md).
+
 ## Initialize and inspect
 
 Use the commands in the [root README](../README.md#first-use). `start` requires a clean Git worktree
@@ -112,7 +117,27 @@ fresh context does not establish statistical independence.
 
 ## Resume, interruption and delivery
 
-A fresh coordinator reads the run's `CONTINUE.md`, then runs `status`. It needs no preceding chat.
+Once a delivery is sealed, `status --run "$RUN"` returns `action: complete` and an `inspect`
+object — these are **fields of that JSON**, not files to guess at:
+
+```bash
+python3 "$PB/scripts/pb_workflow.py" status --run "$RUN"
+# {"action": "complete",
+#  "delivery": ".../runs/first/delivery",
+#  "inspect": {"patch": ".../delivery/change.patch",
+#              "handoff": ".../delivery/handoff.json",
+#              "manifest": ".../delivery/manifest.json",
+#              "apply": "git -C <project> apply .../delivery/change.patch"},
+#  "next": null}
+```
+
+Everything is under the run's `delivery/` directory. Raw runtime homes contain credentials and are
+never part of it, but inspect what you are about to share regardless.
+
+
+A fresh coordinator reads the run's `CONTINUE.md` — written by `start` into the run root — then runs `status`. It needs no preceding chat.
+
+`CONTINUE.md` is the supervised workflow's own note and is the one you want. The `HANDOVER.md` described in [WORKSPACE.md](../WORKSPACE.md) belongs to the inherited checkpoint mechanism, is optional continuity only, and never overrides live state.
 A terminal-less attempt or unreconciled launch reservation is a blocker: inspect process liveness,
 terminal evidence and session usage before deciding recovery. Do not delete evidence or buy another
 trajectory to get a clean result. SIGKILL-safe finalization is not demonstrated. See

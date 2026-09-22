@@ -206,9 +206,31 @@ class OperatorWorkflow(unittest.TestCase):
         self.assertEqual(sum(r['action']=='launch preflight' for r in receipts),2)
 
     def test_repeat_start_is_safe_and_goal_change_is_refused(self):
-        result=self.cli('start','--project',self.project,'--goal','Add a greeting function and tests.','--check','unused')
-        self.assertTrue(result['existing'])
+        """Repeating `start` identically is safe; a changed goal is refused."""
+        same=self.cli('start','--project',self.project,'--goal','Add a greeting function and tests.',
+                      '--check',self.config['check_command'],'--executor',self.fake)
+        self.assertTrue(same['existing'])
+        self.assertTrue(same['configuration_unchanged'])
         self.cli('start','--project',self.project,'--goal','A different goal','--check','unused',ok=False)
+
+    def test_repeat_start_with_a_different_check_names_the_conflict(self):
+        """It used to return `existing: true` and silently keep the old command.
+
+        The caller had no way to learn their new `--check` had been discarded, and the run went on
+        validating acceptance with a command they thought they had replaced.
+        """
+        cp=subprocess.run([sys.executable,str(CLI),'start','--project',str(self.project),
+                           '--goal','Add a greeting function and tests.',
+                           '--check',f'{sys.executable} -m pytest -q','--executor',str(self.fake)],
+                          capture_output=True,text=True)
+        self.assertEqual(cp.returncode,2,cp.stdout)
+        error=json.loads(cp.stdout)['error']
+        self.assertIn('NOT applied',error)
+        self.assertIn('--check',error)
+        self.assertIn('pytest',error)
+        # And nothing changed.
+        self.assertEqual(json.loads((self.runroot/'run-config.json').read_text())['check_command'],
+                         self.config['check_command'])
 
     def test_unresolved_launch_blocks_spending_on_resume(self):
         self.action('continue')
@@ -219,5 +241,75 @@ class OperatorWorkflow(unittest.TestCase):
         result=self.action('continue')['launch']
         self.assertFalse(result['admitted']); self.assertIn('never classified',' '.join(result['why']))
         self.assertFalse(list(self.runroot.rglob('terminal.json')))
+
+    def test_pending_repair_survives_a_fresh_status_until_it_is_carried_out(self):
+        """A decided repair used to vanish the moment the deciding process exited.
+
+        `decide --decision repair` on consistency returns a `revise` instruction and changes no
+        task state, so a fresh `status` re-proposed adjudication as though nothing had been
+        decided — inviting a resuming coordinator to adjudicate the same evidence twice.
+        """
+        self.reach('consistency')
+        self.action('decide','--decision','repair','--reason','REPAIR: requirement R2 contradicts R1 on ordering')
+        fresh=self.action()
+        self.assertEqual(fresh['action'],'blocked')
+        self.assertIn('R2 contradicts R1',fresh['pending_repair'])
+        self.assertTrue(fresh['request_receipt'])
+        self.assertIn('revise',fresh['next'])
+        # It survives repeated fresh reads, because it is derived from durable receipts.
+        self.assertEqual(self.action()['pending_repair'],fresh['pending_repair'])
+        # And carrying it out clears it.
+        self.action('revise','--reason','R2 reworded to defer ordering to R1; witness: both claimed precedence')
+        self.assertNotEqual(self.action().get('action'),'blocked')
+
+    def test_a_sealed_delivery_reports_completion_not_another_finish(self):
+        """`status` used to propose `finish`, which then refused to overwrite the delivery.
+
+        The next action a resuming coordinator was told to take could not succeed.
+        """
+        self.reach('implementation')
+        self.action('decide','--decision','accept','--reason','TEST ONLY scripted acceptance')
+        report=self.tmp/'final.md'; report.write_text('Stand-in mechanics; not real-agent evidence.')
+        sealed=self.action('finish','--report',report,'--report-source','relayed')
+        after=self.action()
+        self.assertEqual(after['action'],'complete')
+        self.assertEqual(after['delivery'],sealed['delivery'])
+        self.assertIsNone(after['next'])
+        self.assertTrue(Path(after['inspect']['patch']).is_file())
+        self.assertIn('git',after['inspect']['apply'])
+        self.assertEqual(after['report_source'],'relayed')
+        # A second finish says it is already done, not that acceptance is missing.
+        again=self.action('finish','--report',report,'--report-source','relayed',ok=False)
+        self.assertIn('already has a sealed delivery',again['error'])
+
+    def test_acceptance_check_does_not_invalidate_the_review_it_checks(self):
+        """An ordinary Python project that does not gitignore bytecode could not be accepted.
+
+        `decide accept` runs the project check, which wrote `__pycache__/*.pyc` into the project;
+        the stale-review guard then saw those bytes as a change and refused. Every fixture here
+        gitignored `__pycache__`, so the suite never noticed. This project deliberately does not.
+        """
+        (self.project/'.gitignore').write_text('DeepSeekAndDestroy/\n')
+        subprocess.run(['git','-C',str(self.project),'add','.gitignore'],check=True)
+        subprocess.run(['git','-C',str(self.project),'commit','-qm','stop ignoring bytecode'],check=True)
+        self.reach('implementation')
+        accepted=self.action('decide','--decision','accept','--reason','TEST ONLY scripted acceptance')
+        self.assertEqual(accepted['action'],'finish')
+        stray=sorted(p.name for p in self.project.rglob('*.pyc'))
+        self.assertEqual(stray,[],'the acceptance check must not write bytecode into the project')
+
+    def test_a_bounded_check_that_hangs_is_unknown_not_failed(self):
+        c=dict(self.config); c['check_command']=f'{sys.executable} -c "import time; time.sleep(600)"'
+        c['check_timeout_seconds']=3
+        (self.runroot/'run-config.json').write_text(json.dumps(c))
+        self.reach('implementation')
+        blocked=self.action('decide','--decision','accept','--reason','TEST ONLY scripted acceptance',ok=False)
+        self.assertIn('did not finish within 3s',blocked['error'])
+        receipts=[json.loads(p.read_text()) for p in (self.runroot/'receipts').glob('*.json')]
+        timed=[r for r in receipts if r['result'].get('timed_out')]
+        self.assertTrue(timed)
+        self.assertIsNone(timed[0]['result']['returncode'],'a check that did not finish has no verdict')
+        self.assertIn('is unknown',timed[0]['result']['note'])
+
 
 if __name__=='__main__': unittest.main()

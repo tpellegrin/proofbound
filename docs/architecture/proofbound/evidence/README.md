@@ -31,6 +31,7 @@ Each row is one dated observation. None is a rate, a reliability estimate or a c
 | [lifecycle-field-check.md](lifecycle-field-check.md) | `pb-lifecycle-field-check-1`: protocol and outcome of the attempt-deadline field check. Engineering validation, never a treatment sample. |
 | [authority-workflow-demonstration.md](authority-workflow-demonstration.md) | `pb-authority-demo-1`: the first real-agent run of the full authority chain and the manual decisions it needs. Its specification challenge found a real defect and it stopped there under its own no-repair rule. |
 | [authority-workflow-intent-defect.md](authority-workflow-intent-defect.md) | `pb-authority-demo-2` stopped because the parent intent it was built on was internally inconsistent: what it was, how it survived six paid attempts, what would have caught it. |
+| [workflow-readiness-2026-09-22.md](workflow-readiness-2026-09-22.md) | Reproduced deadline, resume and completion defects before first paid use — including one that made the acceptance check invalidate its own review, which every fixture dodged. |
 | [evidence-package-reader.md](evidence-package-reader.md) | What the offline evidence reader can and cannot recompute from `pb-handoff-1`'s retained files, and why the missing session databases bound it. |
 | [readme-usability-check.md](readme-usability-check.md) | Can a stranger answer five questions from the documentation alone? What one fresh reader got right, what it exposed, what changed. |
 

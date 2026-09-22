@@ -1,5 +1,12 @@
 # csv-summary-pilot-1 — freeze before either arm
 
+> **SUPERSEDED and NEVER RUN.** This preparation was frozen against harness `a119583`. The
+> readiness repairs of 2026-09-22 changed the instrument — deadline enforcement, the
+> acceptance check, and three resume/completion behaviours — so a run under it would not be a
+> run of this protocol. Preserved unmodified as the record of what was prepared;
+> [`protocol-v2.md`](protocol-v2.md) supersedes it. Its coordinator remains Codex/GPT-6:
+> developing the harness in another model does not change the pilot's coordinator.
+
 Status: prepared, neither arm run. This is one diagnostic paired task, not a reliability study.
 The common public task is `goal.md`, starting files `project/`; `prepare.py` creates a single seed
 commit and two isolated clones with that exact identity. `freeze.json` records file digests and

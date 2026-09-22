@@ -14,4 +14,11 @@ Neither a larger test count nor more agent activity establishes product value.
 Grow a held-out task panel only when repeated outcomes make selection and calibration meaningful.
 Track false acceptance and false rejection as well as completion. Do not select or retry tasks until
 the workflow wins. Use the [canonical comparison rules](architecture/proofbound/evaluation-comparison.md).
-See the [current dated observations](architecture/proofbound/evidence/supervised-workflow-2026-09-21.md).
+See the [current dated observations](architecture/proofbound/evidence/supervised-workflow-2026-09-21.md)
+and the [readiness repairs](architecture/proofbound/evidence/workflow-readiness-2026-09-22.md) that
+followed them.
+
+**Coordinator neutrality is a property of the workflow, not a milestone.** Both Codex and Claude
+Code/Opus are first-class entry points to the same commands and the same DeepSeek worker; neither is
+the product default, and neither requires the other's tooling. That is offline-tested and **not**
+live-observed for either host — see the README's support matrix.

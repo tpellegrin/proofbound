@@ -109,7 +109,28 @@ def start(args):
         if (run / "run-config.json").is_file():
             config = read(run / "run-config.json")
             if Path(config["goal"]).read_text() == goal and config["paths"]["project"] == str(project):
-                return {"initialized": False, "existing": True, "run": str(run), "next": command(run, "status")}
+                # Same goal, same project — but the rest of the requested configuration is
+                # immutable for a started run, and returning `existing: true` while silently
+                # keeping the old value told the caller their new `--check` had taken effect when
+                # it had not. Name every difference instead; change nothing.
+                conflicts = []
+                requested_check = args.check
+                if requested_check is not None and requested_check != config.get("check_command"):
+                    conflicts.append({"field": "--check", "requested": requested_check,
+                                      "in_effect": config.get("check_command")})
+                requested_exe = str(args.executor.expanduser().resolve())
+                if requested_exe != config.get("executor", {}).get("path"):
+                    conflicts.append({"field": "--executor", "requested": requested_exe,
+                                      "in_effect": config.get("executor", {}).get("path")})
+                if conflicts:
+                    raise ValueError(
+                        "this run already exists and its configuration is fixed; the requested "
+                        "value(s) were NOT applied: "
+                        + "; ".join(f"{c['field']} requested {c['requested']!r}, in effect "
+                                    f"{c['in_effect']!r}" for c in conflicts)
+                        + f". Inspect {run}, or start a different --change.")
+                return {"initialized": False, "existing": True, "run": str(run),
+                        "configuration_unchanged": True, "next": command(run, "status")}
         raise ValueError(f"existing or incomplete run at {run}; inspect it; nothing overwritten")
     if authority.exists(): raise ValueError(f"authority directory exists: {authority}; choose another --change")
     cp = subprocess.run(["git", "-C", str(project), "rev-parse", "--show-toplevel"], capture_output=True, text=True)
@@ -252,12 +273,74 @@ def _status(run):
             return {**common, "action": "blocked", "owner_request": pending["result"]["reason"],
                     "request_receipt": pending["path"],
                     "next": command(run, "resolve-owner", "--owner-response", "<actual owner decision>")}
+        outstanding = pending_repair(run, gate)
+        if outstanding:
+            return {**common, "action": "blocked",
+                    "pending_repair": outstanding["reason"],
+                    "decided_at": outstanding["decided_at"],
+                    "request_receipt": outstanding["path"],
+                    "reason": "a repair was already decided for this review and has not been "
+                              "carried out; revise the requirements it named, or supersede that "
+                              "decision explicitly with a reason",
+                    "next": command(run, "revise", "--reason", outstanding["reason"])}
         return {**common, "action": "adjudicate", "evidence": str(event / "report.md"), "gate": str(gate),
                 "decision": "Judge coverage, contradictions and findings against owner goal. Accept only adequate review and output; request repair for defects or owner decision for unresolved scope/policy.",
                 "next": command(run, "decide", "--decision", "accept", "--reason", "<your adjudication>")}
+    if base["delivery_state"] == "sealed":
+        # Proposing `finish` here and then refusing it was a loop with no exit: the next action a
+        # resuming coordinator was told to take could not succeed. A sealed delivery is the end.
+        delivery = run / "delivery"
+        # The manifest is a flat path->digest map; it carries no timestamp, so none is reported.
+        # What the delivery *does* record about itself is in handoff.json.
+        handoff = read(delivery / "handoff.json") if (delivery / "handoff.json").is_file() else {}
+        patch = next((p.name for p in delivery.glob("*.patch")), "change.patch")
+        return {**base, "action": "complete", "delivery": str(delivery),
+                "outcome": handoff.get("outcome"),
+                "report_source": handoff.get("report_source"),
+                "delivered_head": handoff.get("head"),
+                "inspect": {"patch": str(delivery / patch),
+                            "handoff": str(delivery / "handoff.json"),
+                            "manifest": str(delivery / "manifest.json"),
+                            "apply": shlex.join(["git", "-C", base["project"], "apply",
+                                                 str(delivery / patch)])},
+                "next": None}
+    if base["delivery_state"] == "incomplete":
+        return {**base, "action": "blocked",
+                "reason": "a delivery directory exists without a manifest, so sealing did not "
+                          "complete; inspect it and remove or complete it deliberately",
+                "delivery": str(run / "delivery"), "next": None}
     return {**base, "action": "finish", "next": command(run, "finish", "--report", "<coordinator-report.md>")}
 
 
+
+
+def pending_repair(run, gate):
+    """A repair the coordinator asked for and nothing has yet fulfilled.
+
+    Derived from the durable adjudication receipts, the same way `pending_owner` is, rather than
+    held in memory by the process that made the decision. A `decide --decision repair` on
+    consistency returns a `revise` instruction and changes no task state, so without this a fresh
+    `status` re-proposed adjudication as though the decision had never been made — and a resuming
+    coordinator would have adjudicated the same evidence twice.
+
+    Superseded only by an actual `requirements revision`, which is the act the instruction asked
+    for. Nothing here reads a reviewer's prose; it reads what the coordinator decided.
+    """
+    records = []
+    for path in (run / "receipts").glob("*.json"):
+        record = read(path)
+        record["path"] = str(path)
+        records.append(record)
+    decisions = [r for r in records if r["action"] == "coordinator adjudication"
+                 and r["identities"].get("gate") == str(gate)
+                 and r["result"].get("decision") == "repair"]
+    if not decisions: return None
+    latest = max(decisions, key=lambda r: r["observed_at"])
+    revised = [r for r in records if r["action"] == "requirements revision"
+               and r["observed_at"] > latest["observed_at"]]
+    if revised: return None
+    return {"path": latest["path"], "reason": latest["result"]["reason"],
+            "decided_at": latest["observed_at"]}
 
 
 def pending_owner(run, gate):
@@ -361,9 +444,69 @@ def assert_review_current(run, c, gate, paths=None):
         raise ValueError("project changed since the fresh review; review the new bytes before acceptance/delivery")
 
 
+#: The project's own check gets its own bound, separate from the worker deadline and from any
+#: teardown grace. A check that hangs is a different failure from a worker that hangs, and sharing
+#: one number would make the evidence say the wrong thing about which one it was.
+CHECK_TIMEOUT_SECONDS = 600
+
+
+def coordinator(args):
+    """Record who is coordinating this run, and how that was established.
+
+    Three separate facts, never merged. `requested` is the configuration you chose. `self_reported`
+    is what the coordinating agent says it is — a claim, retained as one, because an agent naming
+    its own model is not evidence. `observed` is runtime metadata the host actually exposes, which
+    most hosts do not; absent is recorded as absent rather than filled in from the other two.
+
+    Recording a coordinator changes nothing about the run: not the worker backend, not the
+    governing authority, not prior evidence, not the remaining allowances. A different capable
+    coordinator may continue the same run, and the record simply gains another entry.
+    """
+    run = args.run.resolve()
+    config_for(run)                              # refuse on a run this CLI does not understand
+    entry = {"requested": args.requested,
+             "self_reported": args.self_reported,
+             "observed": args.observed,
+             "evidence": ("host-provided runtime metadata" if args.observed else
+                          "none; this host exposes no coordinator identity to the run"),
+             "worker_backend_unchanged": True}
+    path = receipt(run, "coordinator identity", entry)
+    history = [read(p)["result"] for p in sorted((run / "receipts").glob("*.json"))
+               if read(p)["action"] == "coordinator identity"]
+    return {"recorded": entry, "receipt": path, "coordinators_recorded": len(history),
+            "note": "requested, self-reported and observed identity are distinct; no model "
+                    "identifier is inferred and none is substituted",
+            "next": command(run, "status")}
+
+
 def check_project(run, c):
-    cp = subprocess.run(shlex.split(c["check_command"]), cwd=c["paths"]["project"], capture_output=True, text=True)
+    """Run the project's declared check, bounded, without mutating the project.
+
+    `PYTHONDONTWRITEBYTECODE` because the check used to write `__pycache__/*.pyc` into the project
+    and the stale-review guard then compared those new bytes against the reviewer's scope baseline
+    and refused acceptance. The check invalidated the very review it was checking, and every
+    fixture in this repository happened to gitignore `__pycache__`, so nothing caught it. An
+    ordinary Python project could not be accepted at all.
+    """
+    timeout = c.get("check_timeout_seconds", CHECK_TIMEOUT_SECONDS)
+    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
+    try:
+        cp = subprocess.run(shlex.split(c["check_command"]), cwd=c["paths"]["project"],
+                            capture_output=True, text=True, timeout=timeout, env=env)
+    except subprocess.TimeoutExpired as expired:
+        def text(stream):
+            if stream is None: return ""
+            return stream.decode(errors="replace") if isinstance(stream, bytes) else stream
+        path = receipt(run, "project checks", {
+            "command": c["check_command"], "returncode": None, "timed_out": True,
+            "timeout_seconds": timeout, "stdout": text(expired.stdout)[-8000:],
+            "stderr": text(expired.stderr)[-8000:],
+            "note": "the check did not finish within its own bound; whether it would have passed "
+                    "is unknown, which is not the same as failing"})
+        raise ValueError(f"project checks did not finish within {timeout}s; evidence {path}; "
+                         f"no acceptance")
     path = receipt(run, "project checks", {"command": c["check_command"], "returncode": cp.returncode,
+                   "timeout_seconds": timeout,
                    "stdout": cp.stdout[-8000:], "stderr": cp.stderr[-8000:]})
     if cp.returncode: raise ValueError(f"project checks failed; evidence {path}; no acceptance")
     return path
@@ -371,7 +514,19 @@ def check_project(run, c):
 
 def finish(args):
     run = args.run.resolve(); c = config_for(run)
-    if args.outcome == "accepted" and status(run)["action"] != "finish": raise ValueError("all required tasks must be accepted before delivery")
+    if args.outcome == "accepted":
+        current = status(run)["action"]
+        if current == "complete":
+            # Distinguish "already done" from "not ready". Both used to say the latter.
+            raise ValueError(
+                f"this run already has a sealed delivery at {run / 'delivery'}; nothing was "
+                f"overwritten. Inspect it, or use --into for a separate copy.")
+        if current == "blocked" and (run / "delivery").exists():
+            raise ValueError(
+                f"a delivery directory exists at {run / 'delivery'} without a manifest, so an "
+                f"earlier sealing did not complete; inspect and remove it deliberately.")
+        if current != "finish":
+            raise ValueError("all required tasks must be accepted before delivery")
     task = read(run / "state.json")["phases"]["build"]["tasks"].get("implementation", {})
     gate = None
     if args.outcome == "accepted":
@@ -440,6 +595,10 @@ def main():
     group = st.add_mutually_exclusive_group(required=True); group.add_argument("--goal"); group.add_argument("--goal-file", type=Path)
     st.add_argument("--check", required=True, help="project check argv, shell-quoted; no shell operators")
     st.add_argument("--executor", type=Path, default=EXECUTOR)
+    co = sub.add_parser("coordinator"); co.add_argument("--run", type=Path, required=True)
+    co.add_argument("--requested", required=True, help="the coordinator configuration you selected")
+    co.add_argument("--self-reported", default=None, help="what the coordinating agent says it is")
+    co.add_argument("--observed", default=None, help="runtime metadata the host actually exposes")
     for name in ("status", "continue", "admit", "decide", "finish", "revise", "resolve-owner", "authorize-spending"):
         p = sub.add_parser(name); p.add_argument("--run", type=Path, required=True)
         if name == "decide":
@@ -457,6 +616,7 @@ def main():
     try:
         if args.command == "doctor": result = doctor(args)
         elif args.command == "start": result = start(args)
+        elif args.command == "coordinator": result = coordinator(args)
         elif args.command == "status": result = status(args.run.resolve())
         elif args.command == "continue": result = continue_run(args.run.resolve())
         elif args.command == "admit":

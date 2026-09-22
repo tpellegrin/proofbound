@@ -7,9 +7,16 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+from _attempt_teardown import stop_attempt, survivors_remain
 from _launch_budget import LaunchLedger
 from _receipts import receipt
 SCRIPTS = Path(__file__).resolve().parent
+
+#: How long the host waits past the worker deadline before it starts terminating, and how long it
+#: then allows between SIGTERM and SIGKILL. The in-boundary monitor is given its chance to finish
+#: cleanly first; the host only acts once that chance has demonstrably passed.
+TEARDOWN_MARGIN_SECONDS = 60
+TEARDOWN_GRACE_SECONDS = 10
 
 def digest_file(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
@@ -80,13 +87,45 @@ def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
     before = {str(p.parent) for p in run_root.rglob("launch-reservation.json")}
     slot = ledger.reserve(phase=phase, task=task, role=role,
                           note=f"{config['mode']} launch of {role} on {phase}/{task}")
+
+    # The worker's deadline is enforced *inside* the boundary, where the profile denies `signal`,
+    # so the in-boundary monitor cannot stop what it is monitoring. The host controller therefore
+    # keeps its own bound and owns termination. Reproduced before this existed: a 5s deadline
+    # returned after 26.7s having left the worker and a `setsid` grandchild running.
+    deadline = config["deadline"]["seconds"]
+    # Configurable so a regression can exercise the host bound without waiting a real minute for
+    # it. Production leaves it alone; the in-boundary monitor must get its full chance first.
+    margin = config["deadline"].get("host_margin_seconds", TEARDOWN_MARGIN_SECONDS)
+    grace = config["deadline"].get("teardown_grace_seconds", TEARDOWN_GRACE_SECONDS)
+    outer = deadline + margin
+    runtime_root = Path(config["home"]).parent
+    termination = None
+    timed_out = False
     try:
-        done = subprocess.run(argv, env=env, capture_output=True, text=True, check=False)
+        done = subprocess.run(argv, env=env, capture_output=True, text=True, check=False,
+                              timeout=outer)
+    except subprocess.TimeoutExpired as expired:
+        timed_out = True
+        termination = stop_attempt(runtime_root, run_root, grace=grace)
+        done = subprocess.CompletedProcess(
+            argv, 124,
+            (expired.stdout or b"").decode(errors="replace") if isinstance(expired.stdout, bytes)
+            else (expired.stdout or ""),
+            (expired.stderr or b"").decode(errors="replace") if isinstance(expired.stderr, bytes)
+            else (expired.stderr or ""))
     except OSError as exc:
         # subprocess did not create the launcher; retain that observed pre-execution failure.
         ledger.classify(slot["slot"], run_root=run_root, event_dir=None,
                         launcher_returncode=2, launcher_output=str(exc))
         return refuse(str(exc))
+
+    # Even when the launcher exits on its own, it may have left the worker behind: it exits on its
+    # deadline whether or not the signal it sent could be delivered. A sweep that finds nothing is
+    # cheap; assuming there is nothing to find is how the orphans happened.
+    if termination is None:
+        swept = stop_attempt(runtime_root, run_root, grace=grace)
+        if not swept.get("nothing_was_running"):
+            termination = swept
     payload = None
     if done.stdout.strip().startswith("{"):
         try:
@@ -104,11 +143,29 @@ def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
     classified = ledger.classify(slot["slot"], run_root=run_root, event_dir=event_dir,
                                  launcher_returncode=done.returncode,
                                  launcher_output=(done.stdout + done.stderr).strip())
-    return {"launched": True, "admitted": True, "slot": classified,
-            "returncode": done.returncode, "event_dir": event_dir,
-            "status": (payload or {}).get("status"),
-            "stderr": done.stderr.strip()[-800:] if done.returncode else "",
-            "ledger": ledger.describe()}
+    result = {"launched": True, "admitted": True, "slot": classified,
+              "returncode": done.returncode, "event_dir": event_dir,
+              "status": (payload or {}).get("status"),
+              "stderr": done.stderr.strip()[-800:] if done.returncode else "",
+              "ledger": ledger.describe()}
+    if timed_out:
+        result["deadline"] = {
+            "worker_seconds": deadline, "host_bound_seconds": outer, "expired": True,
+            "teardown_grace_seconds": grace,
+            "clock": "monotonic on the host controller; a host suspend inflates it, so elapsed "
+                     "wall time alone never establishes that the worker was working",
+            "note": "the host terminated the attempt; this says nothing about whether the provider "
+                    "stopped billing or cancelled work already in flight"}
+    if termination is not None:
+        result["termination"] = termination
+        if survivors_remain(termination):
+            # Not a clean attempt. Saying so is the point: an unreadable process table has not
+            # established that nothing survived, and spend attributable to a survivor is unknown.
+            result["unresolved"] = True
+            result["why"] = [termination["summary"]]
+    if timed_out:
+        receipt(run_root, "attempt deadline", result, phase=phase, task=task, role=role)
+    return result
 
 
 

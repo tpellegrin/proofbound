@@ -13,8 +13,9 @@ python3 examples/csv-summary/check_outcome.py /private/tmp/csv-summary-pilot-1/d
 ```
 
 The last command should fail on the unchanged starting project because strict mode is not implemented.
-It is a baseline check, not a failed agent trial. [The protocol](protocol.md) fixes budgets, handoff,
-repair/stopping rules and measurement. [The goal](goal.md) is identical for both arms.
+It is a baseline check, not a failed agent trial. **[protocol-v2.md](protocol-v2.md)** fixes budgets, handoff, the derived launch ceiling,
+repair/stopping rules and measurement. [protocol.md](protocol.md) is its superseded,
+never-run predecessor, retained unmodified. [The goal](goal.md) is identical for both arms.
 
 For treatment first use, after the freeze and applicable authorization:
 
@@ -32,6 +33,6 @@ Follow [the operator guide](../../docs/operator-guide.md), with the protocol's r
 after the owner authorizes them. Start neither arm until the freeze and qualification prerequisites
 are met. The direct prompt is: “Implement goal.md in this project, preserving its compatibility
 constraints. Inspect, plan, test and self-review as needed. Retain a plan before implementation for a
-fresh-context handoff, then return the change, checks and unresolved issues within protocol.md.”
+fresh-context handoff, then return the change, checks and unresolved issues within protocol-v2.md.”
 
 No real-agent first-use or paired result is claimed by this preparation.

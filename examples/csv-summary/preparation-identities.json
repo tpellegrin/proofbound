@@ -1,0 +1,45 @@
+{
+  "coordinator": {
+    "note": "held constant across both arms; the harness was developed in another model, which does not change the pilot's coordinator",
+    "requested": "codex/gpt-6"
+  },
+  "format": "proofbound-pilot-preparation-v1",
+  "goal": {
+    "path": "examples/csv-summary/goal.md",
+    "sha256": "107204b747b405ce04aeca4d3a0977c12d8e69423bb331cc6186a07e2aadf007"
+  },
+  "harness_commit_at_freeze": "a119583869b693151b45df95e74db91948f0b789",
+  "note": "the workspace a run builds under /private/tmp is disposable; these identities are not",
+  "outcome_check": {
+    "path": "examples/csv-summary/check_outcome.py",
+    "sha256": "7ac133330d36416db3aafb1f824db5f24d1f16d88e5369cb892c8c1413a281e2"
+  },
+  "pilot": "csv-summary-strict-mode",
+  "policy_proposed_not_authorized": {
+    "aggregate_derived": 1.2,
+    "attempt_deadline_seconds": 900,
+    "launch_ceiling": 10,
+    "repair_cycles": 1,
+    "requirements_revisions": 1,
+    "reserve": 0.1
+  },
+  "prepare": {
+    "path": "examples/csv-summary/prepare.py",
+    "sha256": "a82062d03142c253a6e986a68d714a5257f105eb8b2ca103b911cae2753aa781"
+  },
+  "protocol": {
+    "path": "examples/csv-summary/protocol-v2.md",
+    "sha256": "17e872f21e41c88dd057f27b3feb2fa329ab07d766891b2f163af049b46d0b37"
+  },
+  "status": "frozen; not authorized; not run; no provider request made",
+  "superseded_protocol": {
+    "path": "examples/csv-summary/protocol.md",
+    "sha256": "9857ba8a53072a07d0eec608724c5fa9faffcce825c2d9bea0952a7a4c79bf91",
+    "status": "never run"
+  },
+  "worker": {
+    "executor_sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+    "model": "deepseek/deepseek-v4-flash",
+    "variant": "high"
+  }
+}
