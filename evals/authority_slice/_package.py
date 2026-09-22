@@ -128,109 +128,9 @@ def check(cid: str, kind: str, status: str, detail: str, **extra: Any) -> dict[s
 
 # -- reading a session, within the allowlist ---------------------------------------------------
 
-def events_from_db(db: Path) -> dict[str, Any]:
-    """Allowlisted accounting rows from an OpenCode session database.
-
-    Anomalies are *recorded*, never dropped. A malformed row that vanishes silently turns a
-    collection defect into a cheap-looking run, and a duplicated row that is summed twice turns one
-    call into two. Both are reported so a reader can decide what the record supports.
-    """
-    db = Path(db)
-    if not db.is_file():
-        return {"available": False, "reason": f"no session database at {db}", "rows": [],
-                "anomalies": []}
-    uri = f"file:{db.as_posix()}?mode=ro"
-    conn = sqlite3.connect(uri, uri=True)
-    try:
-        raw = conn.execute(
-            "SELECT p.id, p.message_id, p.data, m.data, m.time_created, m.session_id "
-            "FROM part p JOIN message m ON m.id = p.message_id "
-            "ORDER BY m.time_created, p.message_id, p.id").fetchall()
-    except sqlite3.Error as exc:
-        conn.close()
-        return {"available": False, "reason": f"session database unreadable: {exc}", "rows": [],
-                "anomalies": []}
-    finally:
-        try:
-            conn.close()
-        except sqlite3.Error:                                  # pragma: no cover
-            pass
-
-    rows: list[dict[str, Any]] = []
-    anomalies: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    for part_id, message_id, part_raw, message_raw, created, session_id in raw:
-        try:
-            part = json.loads(part_raw)
-            message = json.loads(message_raw)
-        except (json.JSONDecodeError, TypeError) as exc:
-            anomalies.append({"part_id": part_id, "kind": "unparseable-row", "detail": str(exc)})
-            continue
-        if part_id in seen:
-            anomalies.append({"part_id": part_id, "kind": "duplicate-part-id",
-                              "detail": "the same part id appears more than once"})
-        seen.add(part_id)
-        row = {k: None for k in EVENT_ALLOWLIST}
-        row.update({
-            "session_id": session_id, "message_id": message_id, "part_id": part_id,
-            "time_created": created, "role": message.get("role"),
-            "type": part.get("type"),
-            "model": message.get("modelID") if isinstance(message.get("modelID"), str) else None,
-            "provider": message.get("providerID"), "variant": message.get("variant"),
-        })
-        if part.get("type") == "step-finish":
-            tokens = part.get("tokens")
-            cache = (tokens or {}).get("cache") or {}
-            if not isinstance(tokens, dict):
-                anomalies.append({"part_id": part_id, "kind": "step-finish-without-tokens",
-                                  "detail": "a finished call carries no token counts; its usage "
-                                            "is unknown, not zero"})
-            else:
-                for key, value in (("input", tokens.get("input")), ("output", tokens.get("output")),
-                                   ("reasoning", tokens.get("reasoning")),
-                                   ("cache_read", cache.get("read")),
-                                   ("cache_write", cache.get("write"))):
-                    if value is None:
-                        continue
-                    if not isinstance(value, (int, float)) or isinstance(value, bool):
-                        anomalies.append({"part_id": part_id, "kind": "non-numeric-token-count",
-                                          "detail": f"{key}={value!r}"})
-                        continue
-                    row[key] = int(value)
-            if isinstance(part.get("cost"), (int, float)):
-                row["executor_cost"] = float(part["cost"])
-        elif part.get("type") == "tool":
-            state = part.get("state") or {}
-            time_block = state.get("time") or {}
-            row.update({"tool": part.get("tool"), "tool_status": state.get("status"),
-                        "tool_started": time_block.get("start"),
-                        "tool_ended": time_block.get("end")})
-        rows.append(row)
-    return {"available": True, "rows": rows, "anomalies": anomalies,
-            "sessions": sorted({r["session_id"] for r in rows if r["session_id"]})}
-
-
-def usage_from_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Recompute usage totals from allowlisted rows, through the module the live guard uses.
-
-    `_profile.usage` is the one implementation of this summation. Re-deriving the arithmetic here
-    would let the exporter and the reader agree with each other while both disagreeing with what
-    the run actually spent.
-    """
-    import _profile
-
-    shaped = []
-    for i, row in enumerate(rows):
-        part: dict[str, Any] = {"type": row.get("type")}
-        if row.get("type") == "step-finish":
-            part["tokens"] = {
-                "input": row.get("input"), "output": row.get("output"),
-                "reasoning": row.get("reasoning"),
-                "cache": {"read": row.get("cache_read"), "write": row.get("cache_write")}}
-            if row.get("executor_cost") is not None:
-                part["cost"] = row["executor_cost"]
-        shaped.append({"ordinal": i, "part": part})
-    return _profile.usage(shaped)
+# Shared with the supported operator path; historical reader predicates are unchanged.
+sys.path.insert(0, str(ROOT / "scripts"))
+from _usage_events import events_from_db, usage_from_rows
 
 
 def attribution(rows: list[dict[str, Any]], attempts: list[dict[str, Any]]) -> dict[str, Any]:
@@ -836,7 +736,7 @@ def _check_usage(package: Path, manifest: dict[str, Any]) -> list[dict[str, Any]
                          f"{started} call(s) started and {finished} finished, reconciled across "
                          f"{reconciliation['messages']} message(s), no anomalies"))
 
-    out.append(_recompute_price(manifest, recomputed))
+    out.append(_recompute_price(manifest, recomputed, rows=rows))
     out.append(_recompute_attribution(package, manifest, rows))
     return out
 
@@ -885,7 +785,8 @@ def _recompute_attribution(package: Path, manifest: dict[str, Any],
                  resolved=recomputed["resolved"])
 
 
-def _recompute_price(manifest: dict[str, Any], usage: dict[str, Any]) -> dict[str, Any]:
+def _recompute_price(manifest: dict[str, Any], usage: dict[str, Any], *,
+                     rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """Re-derive cost from retained usage at the *pinned* historical table.
 
     Pinned deliberately: a later price change must never be able to reinterpret what a historical
@@ -902,7 +803,13 @@ def _recompute_price(manifest: dict[str, Any], usage: dict[str, Any]) -> dict[st
         moment = datetime.fromisoformat(str(when)) if when else None
     except ValueError:
         moment = None
-    priced = _pricing.cost(usage, model=model, when=moment)
+    if (spend.get("cost") or {}).get("method") == _pricing.CALL_PRICING:
+        if rows is None:
+            return check("price.recompute", UNAVAILABLE, UNAVAILABLE,
+                         "timestamp-window pricing requires retained per-call events")
+        priced = _pricing.cost_rows(rows, model=model)
+    else:
+        priced = _pricing.cost(usage, model=model, when=moment)
     amount = (priced or {}).get("amount")
     if not isinstance(amount, (int, float)):
         return check("price.recompute", UNAVAILABLE, UNAVAILABLE,

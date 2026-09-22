@@ -191,7 +191,7 @@ def prepare(into: "str | Path", *, mode: str = REHEARSAL,
         # Paths the fake resolves at run time. When the run happens inside a constructed runtime
         # these must name the *staged* copies: the control plane's own checkout is denied there,
         # and a path that only resolves outside the boundary is a path that does not resolve.
-        "fake_env": ({} if mode == LIVE else
+        "worker_env": ({} if mode == LIVE else
                      {"PB_SLICE_ORACLE": str(_slice_root(harness_root)),
                       "PB_SLICE_ARTIFACT": str(_slice_root(harness_root) / "cases"
                                                / "coherent-requirements" / "requirements.md")}),
@@ -320,74 +320,10 @@ def load_config(workdir: "str | Path") -> "dict[str, Any]":
 
 # -- the guarded launch --------------------------------------------------------------------------
 
-def launch(workdir: "str | Path", *, phase: str, task: str, role: str,
-           inputs: "list[str] | None" = None) -> "dict[str, Any]":
-    """The only path by which this experiment reaches a paid executor.
-
-    Admit, reserve the slot durably, run the shipped launcher, then classify from evidence. A
-    refusal returns without launching anything and says which rule refused.
-    """
-    workdir = Path(workdir).expanduser().resolve()
-    config = load_config(workdir)
-    run_root = Path(config["paths"]["run_root"])
-    db = Path(config["paths"]["session_db"])
-    ledger = _guard.LaunchLedger(workdir / LEDGER_NAME)
-
-    verdict = ledger.admit(phase=phase, task=task, role=role, run_root=run_root, db=db)
-    if not verdict["admit"]:
-        return {"launched": False, "admitted": False, **verdict}
-
-    slot = ledger.reserve(phase=phase, task=task, role=role,
-                          note=f"{config['mode']} launch of {role} on {phase}/{task}")
-
-    # The interpreter that launches must be the one the run was prepared on. A rehearsal drove an
-    # entire continuation under 3.9 while the record said 3.14, and nothing noticed.
-    recorded = str(config["interpreter"]["version"]).split(".")[:2]
-    running = [str(n) for n in sys.version_info[:2]]
-    if recorded != running:
-        raise SystemExit(
-            f"refusing to launch: this run was prepared on Python "
-            f"{config['interpreter']['version']} and is being driven by {'.'.join(running)}. "
-            f"Use {config['interpreter']['executable']}, or prepare a new run.")
-
-    executor_dir = str(Path(config["executor"]["path"]).parent)
-    env = {k: v for k, v in os.environ.items() if not k.startswith("OPENCODE")}
-    env["PATH"] = os.pathsep.join([executor_dir, "/usr/bin", "/bin", "/usr/sbin", "/sbin"])
-    env["HOME"] = config["home"]
-    env.update(config.get("fake_env") or {})
-    if config["mode"] == LIVE:
-        env = {k: v for k, v in env.items() if not k.startswith("PB_SLICE_")}
-    resolved = shutil.which("opencode", path=env["PATH"])
-    if resolved != config["executor"]["path"]:
-        raise SystemExit(f"refusing to launch: `opencode` resolves to {resolved}, not the frozen "
-                         f"executor {config['executor']['path']}")
-    if digest_file(resolved) != config["executor"]["sha256"]:
-        raise SystemExit("refusing to launch: the resolved executor's bytes are not the frozen "
-                         "identity")
-
-    argv = [sys.executable, str(SCRIPTS / "dsd_attempt.py"), "launch",
-            "--run-root", str(run_root), "--phase-id", phase, "--task-id", task,
-            "--role", role, "--model", config["model"], "--variant", config["variant"],
-            f"--auto-flag={config['auto_flag']}",
-            "--timeout", str(config["deadline"]["seconds"])]
-    for path in inputs or []:
-        argv += ["--input", str(path)]
-    done = sh(argv, env=env)
-    payload = None
-    if done.stdout.strip().startswith("{"):
-        try:
-            payload = json.loads(done.stdout)
-        except ValueError:
-            payload = None
-    event_dir = payload.get("event_dir") if payload else None
-    classified = ledger.classify(slot["slot"], run_root=run_root, event_dir=event_dir,
-                                 launcher_returncode=done.returncode,
-                                 launcher_output=(done.stdout + done.stderr).strip())
-    return {"launched": True, "admitted": True, "slot": classified,
-            "returncode": done.returncode, "event_dir": event_dir,
-            "status": (payload or {}).get("status"),
-            "stderr": done.stderr.strip()[-800:] if done.returncode else "",
-            "ledger": ledger.describe()}
+def launch(workdir, *, phase, task, role, inputs=None):
+    sys.path.insert(0, str(SCRIPTS))
+    from _supervised_launch import launch as supervised_launch
+    return supervised_launch(workdir, phase=phase, task=task, role=role, inputs=inputs)
 
 
 def account(workdir: "str | Path") -> "dict[str, Any]":
@@ -620,7 +556,7 @@ def _rehearse(into: "str | Path", *, path: str = "clean") -> "dict[str, Any]":
         knobs["PB_SLICE_INTERRUPT"] = "RQ-impl"
     config_path = into / CONFIG_NAME
     stored = json.loads(config_path.read_text(encoding="utf-8"))
-    stored["fake_env"] = {**stored.get("fake_env", {}), **knobs}
+    stored["worker_env"] = {**stored.get("worker_env", {}), **knobs}
     stored["rehearsal_path"] = path
     config_path.write_text(json.dumps(stored, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     config = load_config(into)

@@ -367,7 +367,7 @@ class ExecutionProfileTest(unittest.TestCase):
 
     def test_it_knows_nothing_about_this_experiment(self):
         """If the profile mentioned the fixture it would not describe any other pipeline."""
-        text = (ROOT / "evals" / "_profile.py").read_text(encoding="utf-8").lower()
+        text = Path(_profile.__file__).read_text(encoding="utf-8").lower()
         for token in ("objectstore", "implementation-source", "contract arm", "full arm",
                       "vendored", "modularity"):
             with self.subTest(token=token):
@@ -402,7 +402,7 @@ class ExecutionProfileTest(unittest.TestCase):
     def test_there_is_no_scalar_efficiency_anywhere(self):
         """Nothing in Proofbound may exchange quality for cost, so nothing here computes a rate."""
         import re
-        text = (ROOT / "evals" / "_profile.py").read_text(encoding="utf-8")
+        text = Path(_profile.__file__).read_text(encoding="utf-8")
         code = "\n".join(line for line in text.splitlines()
                          if not line.lstrip().startswith(("#", "*", '"""')))
         for pattern in (r"\bdef\s+\w*score", r"\b\w*score\w*\s*=", r"\brank\w*\s*=",

@@ -26,6 +26,7 @@ Each row is one dated observation. None is a rate, a reliability estimate or a c
 
 | Document | Observed |
 |---|---|
+| [supervised-workflow-2026-09-21.md](supervised-workflow-2026-09-21.md) | New operator path, offline observations, collection corrections and the unrun paired pilot; no new real-agent qualification. |
 | [evaluation-runs.md](evaluation-runs.md) | What individual evaluation runs established: the V1 outcome, baseline zero, calibration outcomes. Never protocol. |
 | [lifecycle-field-check.md](lifecycle-field-check.md) | `pb-lifecycle-field-check-1`: protocol and outcome of the attempt-deadline field check. Engineering validation, never a treatment sample. |
 | [authority-workflow-demonstration.md](authority-workflow-demonstration.md) | `pb-authority-demo-1`: the first real-agent run of the full authority chain and the manual decisions it needs. Its specification challenge found a real defect and it stopped there under its own no-repair rule. |

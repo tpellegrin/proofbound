@@ -665,9 +665,9 @@ class EnvironmentPolicyTest(unittest.TestCase):
         return parent, context.__enter__()
 
     def test_no_layer_of_the_integration_copies_the_host_environment(self):
-        for module in ("_mlr_boundary.py", "_semantic_view.py"):
+        for module in (Path(_mlr_boundary.__file__), Path(_semantic_view.__file__)):
             with self.subTest(module=module):
-                text = (ROOT / "evals" / module).read_text(encoding="utf-8")
+                text = module.read_text(encoding="utf-8")
                 self.assertNotIn("os.environ.copy()", text)
 
     def test_no_declared_variable_points_at_the_control_plane(self):

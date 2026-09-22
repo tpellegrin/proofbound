@@ -622,7 +622,7 @@ class GenericityTest(unittest.TestCase):
     maxDiff = None
 
     def test_the_substrate_names_no_experiment(self):
-        text = (ROOT / "evals" / "_semantic_view.py").read_text(encoding="utf-8")
+        text = Path(_semantic_view.__file__).read_text(encoding="utf-8")
         for word in ("objectstore", "_store", "third_party", "DeepSeek", "external_test",
                      "MLR", "FULL", "CONTRACT", "opencode"):
             with self.subTest(word=word):

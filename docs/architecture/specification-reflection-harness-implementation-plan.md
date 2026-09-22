@@ -1,3 +1,5 @@
+> Current product milestones and evidence gates: [operator roadmap](../operator-roadmap.md).
+
 # Implementation Plan — Specification & Reflection Harness
 
 - **Authority:** [`docs/architecture/proofbound/README.md`](proofbound/README.md) and the normative

@@ -1,6 +1,8 @@
-# DSD — Codex Parent Adapter
+# Proofbound — Codex coordinator
 
-Cold-load only when the premium parent is Codex. The default worker remains external OpenCode/DeepSeek.
+Start with [the operator guide](docs/operator-guide.md) for a goal-to-change run. Use `pb_workflow.py doctor`, `start`, `status` and `continue`; the external OpenCode worker is separate from the Codex coordinator. Select GPT-6 explicitly when that is the authorized coordinator configuration.
+
+Resume a fresh context with `python3 <skill>/scripts/pb_workflow.py status --run <run>`. This path requires neither hooks nor native delegation. Local Codex CLI 0.155.1 reports hooks and multi_agent as enabled features; that does not prove installed hooks are trusted or have fired, or qualify a native worker backend.
 
 Normal task commands are the shared high-level interface:
 

@@ -138,7 +138,7 @@ def admit(args: argparse.Namespace) -> tuple[int, dict]:
         project_root=args.project_root, consistency_dir=args.consistency,
         run_root=args.run_root)
     if not verdict["authorized"]:
-        # Nothing is bound and nothing is recorded. A refused admission must not leave state that
+        # Nothing is bound and no authority is recorded. A refused admission must not leave state that
         # a later resume could read as permission.
         return 1, {"admitted": False, "contract": str(contract), **verdict}
 
@@ -200,8 +200,13 @@ def main() -> int:
         code, payload = args.handler(args)
     except (ConsistencyError, FreezeError, ChangeGraphError, LedgerError,
             ArtifactIdentityError, ValueError) as exc:
+        from _receipts import refusal
+        refusal(args, {"error": str(exc)}, 2)
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
+    if code and args.command in {"authorize", "admit"}:
+        from _receipts import refusal
+        payload["receipt"] = refusal(args, payload, code)
     print(json.dumps(payload, indent=2, sort_keys=True))
     return code
 

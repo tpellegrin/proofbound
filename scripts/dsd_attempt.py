@@ -142,7 +142,14 @@ def launch(args: argparse.Namespace) -> int:
     ]
     if getattr(args, "supersede_incomplete", False):
         preflight_cmd.append("--supersede-incomplete")
-    run_checked(preflight_cmd)
+    try:
+        run_checked(preflight_cmd)
+    except (ValueError, RuntimeError, SystemExit) as exc:
+        from _receipts import receipt
+        receipt(run_root, "dsd_attempt launch preflight",
+                {"refused": True, "reason": str(exc), "executor_reached": False},
+                phase=args.phase_id, task=args.task_id, role=role, contract=str(contract))
+        raise
 
     attempt = args.attempt or next_attempt_number(task_root, role)
     if attempt < 1:

@@ -22,6 +22,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import shlex
 import sys
 from pathlib import Path
 from typing import Any
@@ -219,6 +220,7 @@ def build(*, mode: str = _live.REHEARSAL, root: "str | Path | None" = None,
         "experiment": experiment,
         "mode": mode,
         "root": str(root),
+        "host_home": str(Path.home()),
         "tools_root": str(tools_root),
         "policy_identity": policy.identity(),
         "profile": str(view.profile_path),
@@ -275,7 +277,8 @@ def probe(runtime: "dict[str, Any] | str | Path") -> "dict[str, Any]":
         "reference_implementation_readable": inside(f"cat {HERE}/_implementations.py 2>&1 | head -1"),
         "checker_corpus_readable": inside(f"cat {HERE}/_checker_corpus.py 2>&1 | head -1"),
         "experiment_plan_readable": inside(f"cat {HERE}/next-live-experiment.md 2>&1 | head -1"),
-        "real_home_readable": inside("ls ~/.local/share/opencode 2>&1 | head -1"),
+        "real_home_readable": inside("ls " + shlex.quote(str(Path(runtime.get("host_home", str(Path.home()))) / ".local/share/opencode")) + " >/dev/null"),
+        "staged_home_readable": inside("ls " + shlex.quote(str(Path(env["HOME"]))) + " >/dev/null"),
         "search_finds_withheld_names": inside(
             "find /Users /private/tmp -maxdepth 6 \\( -name 'case.json' -o "
             "-name '_implementations.py' \\) 2>/dev/null | head -5"),
@@ -291,13 +294,14 @@ def probe(runtime: "dict[str, Any] | str | Path") -> "dict[str, Any]":
                  and "no such file" not in r["stdout"].lower()]
     checks["search_finds_withheld_names"]["found_paths"] = [
         line for line in checks["search_finds_withheld_names"]["stdout"].splitlines() if line]
-    leaked = [n for n in reachable if n not in ("harness_readable",)]
+    leaked = [n for n in reachable if n not in ("harness_readable", "staged_home_readable")]
     scan = _hermetic.scan([Path(runtime["root"])], sensitive(), declared=[])
     return {
         "checks": checks,
         "reachable_from_inside": reachable,
         "withheld_material_reachable": leaked,
-        "boundary_holds": not leaked and not scan.get("findings"),
+        "boundary_holds": not leaked and not scan.get("findings") and not any(r.get("unmeasured") for r in checks.values()),
+        "scope": "wrapped processes only; host coordinator access is unobserved",
         "hermeticity": {"findings": scan.get("findings", []),
                         "claim": scan.get("claim")},
         "note": "measured by running ordinary commands inside the view, not by inspecting the "
