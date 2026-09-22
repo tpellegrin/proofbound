@@ -8,8 +8,9 @@
     "path": "examples/csv-summary/goal.md",
     "sha256": "107204b747b405ce04aeca4d3a0977c12d8e69423bb331cc6186a07e2aadf007"
   },
-  "harness_commit_at_freeze": "a119583869b693151b45df95e74db91948f0b789",
-  "note": "the workspace a run builds under /private/tmp is disposable; these identities are not",
+  "harness_clean_at_freeze": true,
+  "harness_commit_at_freeze": "aff0c75875e855668828faeb81edfce734bb4970",
+  "note": "the workspace a run builds under /private/tmp is disposable; these identities are not. The harness commit named here is the instrument this pilot is frozen against \u2014 a later change to it requires a new identity, not an edit to this one.",
   "outcome_check": {
     "path": "examples/csv-summary/check_outcome.py",
     "sha256": "7ac133330d36416db3aafb1f824db5f24d1f16d88e5369cb892c8c1413a281e2"
