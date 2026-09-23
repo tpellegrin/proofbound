@@ -205,13 +205,14 @@ be a second place for the same facts to live and eventually to disagree.
 
 Configuration is reported before counts, because a reader can only attribute a difference to the model
 if nothing else moved. A comparison is **controlled** only when both runs evaluated the same scenario
-*identities* and exactly one recorded field differs. Everything else is still evidence, and says of
-itself that it is not a single-variable comparison.
+*identities*, exactly one recorded field is known to differ, and **no required control is
+unverified**. Everything else is still evidence, and says it is not a single-variable comparison.
 
 - **Scenario population is matched by identity, not by name.** Two runs over different scenarios are
   two measurements of different things, however similar their names.
-- **A field neither run recorded is unverified, not agreement.** Two summaries that both predate
-  `harness_version` are not thereby known to have used the same harness release.
+- **A field either run did not record is unverified: not agreement, not difference.** Two summaries
+  predating `harness_version` are not known to share a harness release, so they cannot certify a
+  controlled effect; one side's absence is not a mismatch.
 - **Provider is derived from the model identifier, not stored.** When the provider changes along with
   the model, model capability and provider behaviour are no longer separable, and the comparison says
   so.
@@ -380,16 +381,14 @@ it mutated the project.
 
 Found by inspection, and both would silently misreport the experiment:
 
-- **`controlled` hardcodes the model as the only legitimate variable** (`differing == ["model"]`). A
-  `P12` control varies the treatment and holds the model fixed, so it must generalise to *exactly one
-  comparison-relevant field differs*, with the render naming which one.
-- **Absent currently means "unknown", not "no treatment".** `configuration_diff` marks a field
-  recorded by neither run as unverified and excludes it from the difference. If the fresh arm stored
-  a null treatment, `compare` would report that nothing material differs — for the one comparison
-  where the treatment is the whole point. The fresh arm therefore records an explicit "no author
-  report" value rather than an absence.
+- **`controlled` hardcoded the model as the only legitimate variable** (`differing == ["model"]`). A
+  `P12` control varies the treatment instead, so it generalised to *exactly one recorded field
+  differs*, the render naming which.
+- **Absent means "unknown", not "no treatment".** A treatment neither arm recorded is unverified,
+  never a difference, so a null-storing fresh arm could not show the one field the experiment
+  varies. The fresh arm records an explicit "no author report" value instead.
 
-With both, `compare` **proves** the two runs differ only by treatment instead of taking it on trust,
+With both, `compare` **proves** the runs differ only by treatment instead of taking it on trust,
 which is why no `controlled: true` is ever persisted.
 
 ### E21.10 The experiment

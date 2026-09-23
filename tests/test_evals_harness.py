@@ -567,7 +567,10 @@ class ComparisonTest(unittest.TestCase):
             "system": {"proofbound_sha": sha, "harness": "opencode-cli",
                        "harness_version": harness_version, "model": model,
                        "grader_model": "g/x", "role": "spec-reflector", "python": "3.14"},
+            # Recorded as every summary written since the P12 field is: the treatment is a
+            # required control, and a fixture that omits it is no longer a controlled comparison.
             "scenarios": [{"id": scenario_id, "identity": ident, "kind": kind,
+                           "author_report_sha256": "none",
                            "counts": {"attempted": valid, "valid": valid,
                                       "setup_failures": 0, "harness_failures": 0,
                                       "mechanical_ok": valid,
@@ -603,6 +606,27 @@ class ComparisonTest(unittest.TestCase):
         self.assertIn("harness_version", got["unverified_fields"])
         self.assertNotIn("harness_version", got["differing_fields"])
         self.assertIn("unverified", _compare.render(got))
+
+    def test_an_unrecorded_required_control_never_certifies_a_controlled_effect(self):
+        """Reproduced at 4f9ffc8: only `model` differed, neither run recorded `harness_version`,
+        and the comparison returned `controlled: true` while its render admitted equality was
+        assumed. An unknown material control must leave the comparison descriptive."""
+        a, b = self.summary(model="m/a"), self.summary(model="m/b")
+        del a["system"]["harness_version"], b["system"]["harness_version"]
+        got = _compare.compare(a, b)
+        self.assertEqual(got["differing_fields"], ["model"])
+        self.assertFalse(got["controlled"])
+        rendered = _compare.render(got)
+        self.assertNotIn("readable as a controlled", rendered)
+        self.assertNotIn("assumed", rendered)
+        self.assertIn("NOT a controlled comparison", rendered)
+        self.assertIn("harness_version (recorded by neither)", rendered)
+        # One side recording it is still not agreement — and not a difference either.
+        del a["system"]["python"]
+        got = _compare.compare(a, b)
+        self.assertIn("python", got["unverified_fields"])
+        self.assertNotIn("python", got["differing_fields"])
+        self.assertFalse(got["controlled"])
 
     def test_scenarios_are_matched_by_identity_not_by_name(self):
         """Same id, different content, is not the same measurement."""
@@ -1239,13 +1263,21 @@ class TreatmentComparisonTest(unittest.TestCase):
                 self.assertIn(label, got["differing_fields"])
 
     def test_a_historical_record_is_unknown_not_untreated(self):
-        """The machine never recorded it; believing we know is exactly what P6 forbids."""
+        """The machine never recorded it; believing we know is exactly what P6 forbids.
+
+        Corrected 2026-09-23: it used to be counted as a *difference*, which turned an
+        unavailable record into a mismatch. It is unverified — neither the same nor known to
+        differ — and that alone keeps the comparison from being controlled.
+        """
         got = _compare.compare(self.summary(drop_treatment=True),
                                self.summary(treatment=_trial.NO_TREATMENT))
-        self.assertIn("treatment", got["differing_fields"])
+        self.assertIn("treatment", got["unverified_fields"])
+        self.assertNotIn("treatment", got["differing_fields"])
+        self.assertFalse(got["controlled"])
         row = next(r for r in got["configuration"] if r["field"] == "treatment")
         self.assertIsNone(row["a"])
         self.assertEqual(row["b"], _trial.NO_TREATMENT)
+        self.assertEqual(row["recorded_by"], "b")
 
     def test_two_treated_runs_with_different_reports_differ(self):
         got = _compare.compare(self.summary(treatment="a" * 64),

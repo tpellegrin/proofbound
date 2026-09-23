@@ -42,23 +42,56 @@ class ComparisonError(ValueError):
     """Two runs cannot be compared in a way that would mean anything."""
 
 
+def _row(field: str, left: Any, right: Any) -> dict[str, Any]:
+    """One field on both sides. Unknown on either side is `unverified`: neither agreement nor
+    difference. Treating a one-sided absence as a difference turned *unavailable* into *mismatch*;
+    treating a two-sided absence as agreement let an unrecorded control certify a comparison."""
+    known = left is not None and right is not None
+    return {"field": field, "a": left, "b": right, "same": known and left == right,
+            "known": known, "unverified": not known,
+            "recorded_by": ("both" if known else "a" if left is not None else
+                            "b" if right is not None else "neither")}
+
+
 def configuration_diff(a: dict[str, Any], b: dict[str, Any]) -> list[dict[str, Any]]:
-    """Every comparison-relevant field, marked same or different.
+    """Every comparison-relevant field, marked same, different or unverified.
 
     Absent is a value, and it is *unknown* rather than a match: two runs that both omit
     `harness_version` are not thereby known to have used the same harness release.
     """
     sys_a, sys_b = a.get("system") or {}, b.get("system") or {}
-    rows = []
-    for field in COMPARISON_FIELDS:
-        left, right = sys_a.get(field), sys_b.get(field)
-        known = left is not None and right is not None
-        # Recorded by neither run is not a difference — there is nothing to disagree about —
-        # but it is not agreement either, and `unverified` is how a reader is told which.
-        rows.append({"field": field, "a": left, "b": right,
-                     "same": known and left == right, "known": known,
-                     "unverified": left is None and right is None})
-    return rows
+    return [_row(field, sys_a.get(field), sys_b.get(field)) for field in COMPARISON_FIELDS]
+
+
+def eligibility(rows: list[dict[str, Any]], *, populations_match: bool) -> dict[str, Any]:
+    """Whether a comparison may be read as controlled, and every reason it may not.
+
+    **An unknown material control never establishes a controlled effect** (E17.3). Every field in
+    `rows` is a required control; a comparison is controlled only when the populations match,
+    exactly one field is *known* to differ, and no field is unverified. Anything else remains
+    descriptive evidence and says why.
+    """
+    differing = [r["field"] for r in rows if r["known"] and not r["same"]]
+    unverified = [r["field"] for r in rows if r["unverified"]]
+    reasons = []
+    if not populations_match:
+        reasons.append("the runs did not evaluate the same scenario set")
+    if len(differing) > 1:
+        reasons.append("more than one field differs: " + ", ".join(differing))
+    if not differing:
+        reasons.append("no field is known to differ, so this compares a run with itself or "
+                       "with an unknown")
+    if unverified:
+        named = []
+        for r in rows:
+            if r["unverified"]:
+                who = ("recorded by neither" if r["recorded_by"] == "neither"
+                       else f"recorded by {r['recorded_by']} only")
+                named.append(f"{r['field']} ({who})")
+        reasons.append("required control(s) not recorded by both runs, so their equality is "
+                       "unknown: " + ", ".join(named))
+    return {"differing": differing, "unverified": unverified, "reasons": reasons,
+            "controlled": populations_match and len(differing) == 1 and not unverified}
 
 
 def _provider(model: Any) -> str | None:
@@ -99,28 +132,18 @@ def compare(a: dict[str, Any], b: dict[str, Any], *,
                               "to compare")
 
     diff = configuration_diff(a, b)
-    # A field neither run recorded cannot count as a difference; it is reported as unverified.
-    differing = [row["field"] for row in diff if not row["same"] and not row["unverified"]]
-    unverified = [row["field"] for row in diff if row["unverified"]]
     sys_a, sys_b = a.get("system") or {}, b.get("system") or {}
     provider_a, provider_b = _provider(sys_a.get("model")), _provider(sys_b.get("model"))
-    treatment_a, treatment_b = _treatment(a), _treatment(b)
-    if treatment_a is not None or treatment_b is not None:
-        known = treatment_a is not None and treatment_b is not None
-        diff.append({"field": "treatment", "a": treatment_a, "b": treatment_b,
-                     "same": known and treatment_a == treatment_b, "known": known,
-                     # A run that recorded no treatment and one that recorded `"none"` are not
-                     # the same fact, so this is a difference rather than an unverified match.
-                     "unverified": False})
-        if not (known and treatment_a == treatment_b):
-            differing.append("treatment")
+    # The treatment is a required control like any other. A record that predates the P12 field
+    # and one that recorded `"none"` are not the same fact — and not a known difference either.
+    diff.append(_row("treatment", _treatment(a), _treatment(b)))
     populations_match = set(left) == set(right)
-    # "Controlled" is a narrow claim: exactly one field moved and both runs saw the same
-    # scenarios. Anything else is still evidence, but it is not a single-variable comparison.
-    # Controlled means exactly one comparison-relevant field moved — whichever field that is.
-    # Hardcoding the model would have made a treatment-only comparison look uncontrolled, which
-    # is precisely the experiment this substrate now has to support.
-    controlled = populations_match and len(differing) == 1
+    # "Controlled" is a narrow claim: exactly one field is known to have moved, nothing required
+    # is unrecorded, and both runs saw the same scenarios. Whichever field moved — hardcoding the
+    # model would have made a treatment-only comparison look uncontrolled.
+    verdict = eligibility(diff, populations_match=populations_match)
+    differing, unverified, controlled = (verdict["differing"], verdict["unverified"],
+                                         verdict["controlled"])
 
     scenarios = []
     for ident in shared:
@@ -155,6 +178,7 @@ def compare(a: dict[str, Any], b: dict[str, Any], *,
             "provider": {"a": provider_a, "b": provider_b,
                          "same": provider_a is not None and provider_a == provider_b},
             "populations_match": populations_match, "controlled": controlled,
+            "not_controlled_because": verdict["reasons"] if not controlled else [],
             "only_in_a": sorted(left[i]["id"] for i in set(left) - set(right)),
             "only_in_b": sorted(right[i]["id"] for i in set(right) - set(left)),
             "scenarios": scenarios, "strata": strata}
@@ -166,7 +190,9 @@ def render(comparison: dict[str, Any]) -> str:
            "  what changed"]
     for row in comparison["configuration"]:
         if row["unverified"]:
-            out.append(f"    {row['field']:<16} {'unrecorded':<10} neither run recorded it")
+            who = ("neither run recorded it" if row.get("recorded_by", "neither") == "neither"
+                   else f"only {row['recorded_by']} recorded it ({row['a']} -> {row['b']})")
+            out.append(f"    {row['field']:<16} {'unverified':<10} {who}; equality unknown")
         elif row["same"]:
             out.append(f"    {row['field']:<16} {'same':<10} {row['a']}")
         else:
@@ -178,27 +204,20 @@ def render(comparison: dict[str, Any]) -> str:
     out.append("")
     if comparison["controlled"]:
         varied = comparison["differing_fields"][0]
-        out.append(f"  only `{varied}` differs and both runs saw the same scenarios:")
+        out.append(f"  only `{varied}` differs, every required control is recorded by both runs, "
+                   "and both saw the same scenarios:")
         out.append(f"  readable as a controlled {varied} comparison under this configuration.")
         if not comparison["provider"]["same"]:
             out.append("  the provider changed with it, so model capability and provider "
                        "behaviour are not separable here.")
     else:
-        reasons = []
-        if not comparison["populations_match"]:
-            reasons.append("the runs did not evaluate the same scenario set")
-        if len(comparison["differing_fields"]) > 1:
-            reasons.append("more than one field differs: "
-                           + ", ".join(comparison["differing_fields"]))
-        if not comparison["differing_fields"]:
-            reasons.append("nothing material differs, so this compares a run with itself")
-        out.append("  NOT a controlled comparison — " + "; ".join(reasons) + ".")
+        out.append("  NOT a controlled comparison — "
+                   + "; ".join(comparison["not_controlled_because"]) + ".")
+        out.append("  The counts below remain descriptive evidence of what each run observed; "
+                   "no difference in them is attributable to one field.")
         if comparison["only_in_a"] or comparison["only_in_b"]:
             out.append(f"    only in {la}: {', '.join(comparison['only_in_a']) or '-'}")
             out.append(f"    only in {lb}: {', '.join(comparison['only_in_b']) or '-'}")
-    if comparison["unverified_fields"]:
-        out.append("  unverified (recorded by neither run, so equality is assumed and not "
-                   "shown): " + ", ".join(comparison["unverified_fields"]))
     out += ["", f"  complete trials / valid (attempted)   {la:>14}  {lb:>14}"]
     for entry in comparison["scenarios"]:
         a, b = entry["a"], entry["b"]
@@ -252,3 +271,4 @@ def render(comparison: dict[str, Any]) -> str:
             "  under this configuration; whether they establish an ordering is a human "
             "judgement."]
     return "\n".join(out)
+
