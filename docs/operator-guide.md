@@ -19,12 +19,14 @@ Use the commands in the [root README](../README.md#first-use). `start` requires 
 and initial commit so the final patch has an unambiguous baseline. Commit or isolate existing work;
 Proofbound never discards it. Set `--check` to the project's ordinary test command. It is parsed as
 argv, not a shell program; use a project script for multiple commands. Paths with spaces are supported.
+`--worker-profile` (default `deepseek-v4-flash-high`) and `--deadline-seconds` (default 900) are
+fixed for the run; see [worker profiles](architecture/proofbound/worker-profiles.md).
 The same goal/change invocation returns the existing run; a conflicting invocation refuses.
 An interrupted initialization is retained and diagnosed, never silently overwritten.
 
-`doctor` reports Python, installed executor/version, configured DeepSeek credential (presence only),
-platform and boundary availability. It checks executable identity against the historically qualified
-OpenCode build. It does not contact a provider or establish that a credential is valid. It does not
+`doctor` reports Python, installed executor/version, the selected worker profile, its credential
+(presence only) or local endpoint (reachability only), platform and boundary availability. It
+checks executable identity against the historically qualified OpenCode build. It does not contact a provider or establish that a credential is valid. It does not
 qualify the new goal-to-change workflow. GPT-6 is the requested Codex coordinator configuration;
 configure it explicitly in Codex, never substitute a model silently.
 
@@ -54,8 +56,11 @@ before authorizing live spend. Codex subscription consumption is unavailable unl
 measured, never zero. Direct calls to lower-level launchers are outside this budget wrapper.
 
 Configuration constructs the macOS worker boundary, probes host and staged home separately, and
-stages only the DeepSeek credential. A failed boundary probe blocks configuration. The worker sees
-the project, harness and required system/interpreter paths. The coordinator runs on the host and is
+stages only the credential the worker profile names. A failed boundary probe blocks configuration.
+A local profile is authorized with `authorize-resources --launch-ceiling N --owner-authorization …`
+instead: no credential is staged, no money limit applies, and the worker's network is restricted to
+loopback, which the probe must observe. The worker sees the project, harness and required
+system/interpreter paths. The coordinator runs on the host and is
 outside that boundary. This is not protection against malicious code or a compromised operator.
 
 ## Continue and adjudicate

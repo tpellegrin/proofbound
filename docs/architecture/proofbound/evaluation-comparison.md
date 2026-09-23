@@ -212,7 +212,8 @@ unverified**. Everything else is still evidence, and says it is not a single-var
   two measurements of different things, however similar their names.
 - **A field either run did not record is unverified: not agreement, not difference.** Two summaries
   predating `harness_version` are not known to share a harness release, so they cannot certify a
-  controlled effect; one side's absence is not a mismatch.
+  controlled effect; one side's absence is not a mismatch
+  ([E27.2](evaluation-qualification.md#e272-unknown-is-neither-agreement-nor-difference)).
 - **Provider is derived from the model identifier, not stored.** When the provider changes along with
   the model, model capability and provider behaviour are no longer separable, and the comparison says
   so.

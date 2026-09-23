@@ -46,15 +46,16 @@ an agent's token usage, its context pressure, or how well it will do the task.
 
 | Your task | Read | Skip | ≈ bytes |
 |---|---|---|---|
-| **A.** Changing reviewer freshness, attempts, gates, roles, acceptance | README + [execution-and-review](execution-and-review.md) + [core-model](core-model.md) | everything else | 45 KB |
-| **B.** Implementing the artifact graph or ledger | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [plan](../specification-reflection-harness-implementation-plan.md) | freeze, autonomy, research, history | 229 KB + plan |
-| **B2.** Implementing freeze / contract identity (M2C) | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [freeze-and-binding](freeze-and-binding.md) + [plan](../specification-reflection-harness-implementation-plan.md) | autonomy, research, history | 266 KB + plan |
-| **C.** Implementing decision provenance | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [long-running-autonomy](long-running-autonomy.md) | research, history | 88 KB |
-| **D.** Implementing context telemetry | README + [core-model](core-model.md) + [context-economy](context-economy.md) | artifacts, autonomy, history | 44 KB |
-| **D2.** Authoring scenarios or grading a run | README + [evaluation](evaluation.md) | the binding chain, comparison rules, run history | 54 KB |
-| **D3.** Calibrating a suite, comparing runs, or designing a control arm | README + [evaluation-comparison](evaluation-comparison.md) | scenario authoring, the binding chain | 54 KB |
-| **D4.** Measuring what many changes do to a system, or calibrating that | README + [system-craft](system-craft.md) | the contract-binding chain, scenario authoring | 54 KB |
-| **E.** Fixing a bug in inherited DSD mechanics | README + [execution-and-review](execution-and-review.md) | everything else | 29 KB |
+| **A.** Changing reviewer freshness, attempts, gates, roles, acceptance | README + [execution-and-review](execution-and-review.md) + [core-model](core-model.md) | everything else | 46 KB |
+| **B.** Implementing the artifact graph or ledger | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [plan](../specification-reflection-harness-implementation-plan.md) | freeze, autonomy, research, history | 230 KB + plan |
+| **B2.** Implementing freeze / contract identity (M2C) | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [freeze-and-binding](freeze-and-binding.md) + [plan](../specification-reflection-harness-implementation-plan.md) | autonomy, research, history | 267 KB + plan |
+| **C.** Implementing decision provenance | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [long-running-autonomy](long-running-autonomy.md) | research, history | 89 KB |
+| **D.** Implementing context telemetry | README + [core-model](core-model.md) + [context-economy](context-economy.md) | artifacts, autonomy, history | 45 KB |
+| **D2.** Authoring scenarios or grading a run | README + [evaluation](evaluation.md) | the binding chain, comparison rules, run history | 55 KB |
+| **D3.** Calibrating a suite, comparing runs, or designing a control arm | README + [evaluation-comparison](evaluation-comparison.md) | scenario authoring, the binding chain | 55 KB |
+| **D4.** Measuring what many changes do to a system, or calibrating that | README + [system-craft](system-craft.md) | the contract-binding chain, scenario authoring | 55 KB |
+| **D5.** Adding a worker profile, or qualifying and comparing worker configurations | README + [worker-profiles](worker-profiles.md) + [evaluation-qualification](evaluation-qualification.md) | the binding chain, craft, run history | 37 KB |
+| **E.** Fixing a bug in inherited DSD mechanics | README + [execution-and-review](execution-and-review.md) | everything else | 30 KB |
 | **F.** Asking "why is this rule like this?" | [evidence/implementation-findings](evidence/implementation-findings.md) | — | 42 KB |
 | **G.** Archaeology on the original design | [evidence/original-rfc](evidence/original-rfc.md) | — | 84 KB |
 
@@ -74,8 +75,10 @@ split.
 | [artifacts-and-provenance.md](artifacts-and-provenance.md) | **Normative** | Canonical text identity; ledger v1; derived validity and closure; trust boundary; dependency ≠ applicability; the M2B graph |
 | [freeze-and-binding.md](freeze-and-binding.md) | **Normative** | Accepted engineering binding; freeze v1 schema and identity; admission; what a freeze does *not* authorize |
 | [long-running-autonomy.md](long-running-autonomy.md) | **Normative + rationale** | Promotion ladder; escalation; decision provenance; baseline supersession; erosion vs drift; coherence audit; **canonical `T1`–`T10`** |
+| [worker-profiles.md](worker-profiles.md) | **Normative** | What a worker configuration is; profile resolution and immutability; priced and unbilled resources; credential, fallback and network claims; layered readiness |
 | [evaluation.md](evaluation.md) | **Design track** | How one run is measured: scenarios, trials, mechanical vs semantic grading, multi-property completeness. Observes Proofbound; never part of its authority chain. |
 | [evaluation-comparison.md](evaluation-comparison.md) | **Design track** | Whether a suite can tell two systems apart, and what comparing two runs may claim. Never a leaderboard. |
+| [evaluation-qualification.md](evaluation-qualification.md) | **Design track** | `E26` qualifying a configuration through the production path; `E27` which question a comparison can answer. Evidence, never permission. |
 | [system-craft.md](system-craft.md) | **Design track** | Whether a system stays understandable and changeable across many valid changes. Craft findings never gate a change. |
 | [context-economy.md](context-economy.md) | **Research** | External evidence and hypotheses. Not production behavior. Supports `P13`, defined in core-model. |
 | [evidence/](evidence/README.md) | **Historical evidence** | Indexed separately: why a rule is the way it is, what each dated run observed, and corrections by addition. Read on demand, never as a precondition. **Adding a run's evidence needs a row there, not one here.** |
@@ -147,6 +150,8 @@ One line each. **Canonical definitions, with falsifiers, are in
 | Authority slice — four cases, valid and invalid | **Validated credential-free**, 4/4 mechanical; the agent-facing half **not observed** |
 | Fresh-context authority recovery (`pb-handoff-1`) | **Live, once per condition** (2026-09-18): one coordinator carried a bound implementation to acceptance, another refused a mutated state without launching. $0.020516, 2 of 5 slots. Two observations, not a rate. It found authorization advisory; **repaired offline** (A6.10) — `admit` binds and authorizes in one act, and a launch without a matching record is refused |
 | Intent challenge as an ordinary artifact | **Decided**: `proposal-reflection`; no new kind, role or purpose |
+| Worker profiles — DeepSeek default, local OpenAI-compatible | **Implemented**; the local route's mechanics exercised by a scripted endpoint through the real pinned executor and boundary. **No local model qualified** |
+| Configuration qualification and comparison (`E26`/`E27`) | **Implemented**, replay only; no live qualification run. `E17.3` corrected: an unrecorded control no longer certifies a controlled comparison |
 | Decision provenance, coherence audit, context telemetry | Direction only; see the plan's dependency graph |
 
 Canonical test command: `python3 -m unittest discover -s tests -t .` (Python ≥3.10).

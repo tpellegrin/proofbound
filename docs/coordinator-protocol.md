@@ -61,6 +61,13 @@ finish   →  seal the delivery
 code, and it does not read a reviewer's prose. When `status` says `adjudicate`, that is a real
 question for you.
 
+A `decide --reason` should let a later reader check the judgment without your context. It states:
+the decision and the constraints it rests on; the material assumptions; the plausible ways it could
+be wrong; the external evidence consulted — gate, checks, the artifact itself; and which evidence
+supports the decision. For a disputed finding, **reproduce its witness**: a correct finding has
+arrived with an incorrect example before. Self-reported confidence or coverage is a claim, not
+provenance, and a longer reason is not a better one.
+
 ## What a coordinator should read, and when
 
 Consume **mechanical state first**, then the smallest evidence sufficient for the decision in front

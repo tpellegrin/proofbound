@@ -164,6 +164,36 @@ must not silently reinterpret evidence gathered before it moved.
   [audit](../craft/modularity-local-reasoning/MLR-eventbus-b1-timeout-audit.md),
   [record](../results/craft-mlr-deepseek-v4-flash-high-paired-eventbus-b1.json)
 
+Outside the MLR series, the same configuration did the live work of the authority and workflow
+experiments, each indexed by its own question:
+
+- Authority continuation from **seeded** upstream authority — `pb-handoff-1`, then `pb-handoff-2`
+  on the admission-repaired instrument; one observation per condition:
+  [pb-handoff-1](../authority_slice/runs/pb-handoff-1/run-report.md),
+  [pb-handoff-2](../authority_slice/runs/pb-handoff-2/run-report.md)
+- Attempt-deadline field check, an engineering validation and never a treatment sample:
+  [lifecycle field check](../../docs/architecture/proofbound/evidence/lifecycle-field-check.md)
+- The goal-to-change workflow has **not** run against this or any model; the current status is in
+  [the 2026-09-21 observation](../../docs/architecture/proofbound/evidence/supervised-workflow-2026-09-21.md)
+  and [the 2026-09-22 readiness repairs](../../docs/architecture/proofbound/evidence/workflow-readiness-2026-09-22.md)
+
+---
+
+## Local OpenAI-compatible profile kind — no model
+
+| | |
+|---|---|
+| provider | `local`, through the pinned executor's bundled `@ai-sdk/openai-compatible` |
+| requested model | whatever a profile file names; none has run |
+| provider-observed identity | not observable here: the executor records the requested id, and a server's weights, quantization and template are declared, never confirmed |
+| pricing | no external API billing; local compute cost unknown, not zero |
+
+**Evidence** — mechanics only. A scripted endpoint stood in for a model while the real pinned
+executor and boundary ran; that qualifies no model:
+[2026-09-23 record](../../docs/architecture/proofbound/evidence/worker-profiles-qualification-2026-09-23.md).
+A future local configuration gets its own section here, named by model, quantization, server and
+host, once a live qualification exists.
+
 ---
 
 ## Nemotron 3 Ultra Free
@@ -206,6 +236,8 @@ load-bearing.
 | MLR field requalification | not run | 4/4 valid and correct — complete path field-qualified |
 | MLR paired `q1`, on the qualified stack | not run | executed, valid — family E · Heterogeneous, 12/12 |
 | MLR cross-fixture `eventbus-b1` | not run | executed, valid — family R1 · core phenomenon replicates, 12/12 |
+| Authority continuation (`pb-handoff-1`, `pb-handoff-2`) | not run | executed, one observation per condition, seeded upstream authority |
+| Configuration qualification (`E26`) | not run | not run live; replay only, which qualifies no model |
 
 An empty cell means *not run*, never *worse*.
 

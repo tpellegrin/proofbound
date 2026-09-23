@@ -54,7 +54,7 @@ flowchart LR
 |---|---|---|
 | **Owner** | Goal, consequential policy, resource authorization | You |
 | **Coordinator** | Decomposition, contracts, tradeoffs, adjudication, escalation, acceptance | **Your** frontier host. No product default |
-| **Worker** | Repository discovery, proposed requirements, implementation, repair, fresh review | DeepSeek by default, via the supported path |
+| **Worker** | Repository discovery, proposed requirements, implementation, repair, fresh review | DeepSeek by default; a worker profile names another configuration, fixed per run |
 | **Control plane** | Identity, admission, lifecycle, scope, deadlines, accounting, deterministic checks | Shared Python helpers |
 
 **Why the coordinator need not redo the worker's investigation.** The worker explores the repository
@@ -73,7 +73,11 @@ One bounded goal-to-change workflow: **goal → proposed requirements → fresh 
 authority → admitted implementation → independent review → deterministic checks → sealed delivery.**
 
 - Workers run on **macOS arm64** under a `sandbox-exec` boundary, using pinned **OpenCode 1.18.29**
-  with **`deepseek/deepseek-v4-flash`, variant `high`**.
+  with **`deepseek/deepseek-v4-flash`, variant `high`** — the default **worker profile**.
+- A run's worker configuration is fixed at `start` (`--worker-profile`) and recorded with a digest.
+  A **local OpenAI-compatible** profile is optional: loopback-only, no credential, no assumed
+  price. Its mechanics are tested offline; **no local model has been qualified**
+  ([installation](docs/installation.md#optional-a-local-worker-profile)).
 - The delivery is a retained directory: the patch, the authority, the evidence and a handoff record.
 - A fresh coordinator resumes any run with one `status` command.
 
@@ -183,6 +187,7 @@ without cause:
 |---|---|
 | Do the mechanisms hold? | Credential-free regressions in the canonical suite |
 | Can real agents do this at all? | Recorded live runs, one observation per condition |
+| Can this configuration do the job here? | `evals/pb_qualify.py`: a frozen plan through the production path — replayed with stand-ins, or live under explicit authorization |
 | Is it better than the agent alone? | A matched direct-agent comparison, same coordinator both arms |
 | Does it reduce frontier cost? | Frontier tokens, worker tokens and total cost, measured apart |
 | Does architectural quality hold up? | Repeated changes to the same project over time |
@@ -204,10 +209,13 @@ Separating what is implemented from what has been observed:
 | Another host as coordinator | protocol documented | **no** | **no** |
 | Deadline enforcement + teardown | yes | yes, macOS only | **no** |
 | Evidence export / replay | yes | yes | yes, in `pb-handoff-2` |
+| Local OpenAI-compatible worker profile | yes | yes, scripted endpoint through the real pinned executor and boundary | **no** |
+| Configuration qualification and comparison | yes | yes, replay | **no** |
 | Frontier-cost comparison | protocol frozen | — | **no** |
 
 "Offline-tested" means credential-free stand-ins exercised the mechanics. **A stand-in never
-establishes agent quality.**
+establishes agent quality.** Nothing here is yet *comparatively beneficial*: no comparison has
+shown a configuration or the workflow to be better at acceptable effort.
 
 ## Direction
 
@@ -222,7 +230,8 @@ Goals with evidence gates, not a roadmap of features:
 4. **Demonstrated quality/effort improvement** — gate: matched comparisons with predeclared outcome
    checks, reporting the tradeoff rather than a composite score.
 
-[Operator roadmap](docs/operator-roadmap.md) · [architecture](docs/architecture/proofbound/README.md)
+[Operator roadmap](docs/operator-roadmap.md) — staged capabilities, each with its evidence gate ·
+[architecture](docs/architecture/proofbound/README.md)
 
 ## Contributing
 

@@ -17,7 +17,7 @@ evidence authority, and the root [README](../README.md#what-the-name-means).
 | Question | Evidence needed | Where it lives today |
 |---|---|---|
 | **Do the controls enforce their declared rules?** | Deterministic checks of identity, scope, freshness, authorization, lifecycle, attribution, limits | `python3 -m unittest discover -s tests -t .` — the canonical suite, 1,100+ cases, no model, no credentials. This is the only family that is fully answered |
-| **Can the workflow make the right decision and deliver the required result?** | Calibrated valid and invalid cases, real-agent observations, external checks of the artifacts produced | Partly. Invalid cases: [Eval V1](eval-v1.md) (planted contradictions) and two authority demonstrations, both of which correctly **stopped**. Valid case: `pb-handoff-1` (2026-09-18) carried one live continuation from **seeded** upstream authority to a checked, accepted artifact, and a paired control refused without launching — [run report](authority_slice/runs/pb-handoff-1/run-report.md). **One observation per condition, on the pre-admission instrument.** The requirements pair has still not run against a model, the upstream authority was produced by a stand-in, and the admission repair that followed is qualified offline only |
+| **Can the workflow make the right decision and deliver the required result?** | Calibrated valid and invalid cases, real-agent observations, external checks of the artifacts produced | Partly. Invalid cases: [Eval V1](eval-v1.md) (planted contradictions) and two authority demonstrations, both of which correctly **stopped**. Valid case: one live continuation from **seeded** upstream authority, `pb-handoff-1` ([report](authority_slice/runs/pb-handoff-1/run-report.md)) and again on the admission-repaired instrument as `pb-handoff-2` ([report](authority_slice/runs/pb-handoff-2/run-report.md)); one observation per condition. **The goal-to-change workflow has never run against a real agent** — current status in the [2026-09-21 observation](../docs/architecture/proofbound/evidence/supervised-workflow-2026-09-21.md), [2026-09-22 readiness repairs](../docs/architecture/proofbound/evidence/workflow-readiness-2026-09-22.md) and [2026-09-23 profiles record](../docs/architecture/proofbound/evidence/worker-profiles-qualification-2026-09-23.md). Configuration qualification (`pb_qualify.py`) is replay-only so far |
 | **Does a proposed harness change improve outcomes?** | A declared baseline and treatment, variables held fixed, repetitions, uncertainty, cost, guardrails | The most developed machinery here: `_experiment.py` refuses an incomplete pre-registration, `_repeat.py` preallocates slots, `pb_mlr.py` runs paired interleaved arms. Discipline in [evaluation.md §E24](../docs/architecture/proofbound/evaluation.md#e24-what-it-takes-to-call-an-increment-an-improvement) |
 | **Does the software remain understandable and changeable over time?** | Sequences of realistic changes, session handoffs, preserved requirements, architectural consequences, human effort | **Mostly a gap.** System craft ([system-craft.md](../docs/architecture/proofbound/system-craft.md)) attacked it and found its own instrument unreliable; the narrowed successor (MLR) measures one change in one module, not a sequence. Multi-change and handoff-cost measurement is not built |
 
@@ -32,6 +32,7 @@ credentials; `PAID` invokes real models through the worker harness.
 | [`pb_craft.py`](pb_craft.py) | System craft: does architecture stay changeable? Calibration and repeatability | `validate <case-dir>` — *unpaid*. `run`, `reflect`, `regrade`, `repeat-reflect`, `sample` — **PAID** |
 | [`pb_mlr.py`](pb_mlr.py) | Modularity and local reasoning: does reading a module's implementation contribute to a change outside it? | `preflight`, `b1-preflight`, `analyse`, `retrospect` — *unpaid*. `pilot`, `paired`, `b1` — **PAID** |
 | [`pb_lifecycle_field_check.py`](pb_lifecycle_field_check.py) | Whether the attempt deadline actually stops a real worker | **PAID** — two provider-backed trials. An engineering validation, never a treatment sample |
+| [`pb_qualify.py`](pb_qualify.py) | Configuration qualification ([E26](../docs/architecture/proofbound/evaluation-qualification.md#e26-qualifying-a-configuration-before-selecting-it)): what a worker configuration does through the production path — tool loop, requirements challenge, implementation, authority recovery — and which question two results can answer. Not "the evals": one bounded suite for one question | `suite`, `plan`, `replay`, `inspect`, `compare` — *unpaid*. `prepare-live` makes no provider request; the runs it prepares **SPEND** once a coordinator drives them; `grade` — *unpaid* |
 | [`authority_slice/pb_slice.py`](authority_slice/README.md) | The four-case authority slice, and the `pb-handoff-1` continuation experiment | `validate`, `replay`, `build`, `probe-input`, `launch-arithmetic`, `report`, `validate-checker`, `rehearse-live`, `readiness`, `prepare-live`, `build-runtime`, `probe-runtime`, `live-input`, `check-artifact`, `account` — *unpaid*. `launch` — *unpaid* in a rehearsal runtime, **PAID** in a live one |
 
 Supporting modules, none of them an entry point: `_scenario` (cases and their identities), `_trial`
@@ -39,7 +40,9 @@ Supporting modules, none of them an entry point: `_scenario` (cases and their id
 `_profile` (calls, tokens, tool activity, measured time, context by origin), `_pricing` (dated price
 tables; usage and cost kept apart), `_compare` (two runs, derived not stored), `_summary`,
 `_experiment` (pre-registration), `_repeat` (preallocated slots and checkpointing), `_hermetic` and
-`_semantic_view` (isolation), `_mlr*` (the modularity series), `_lineage`, `_provider`.
+`_semantic_view` (isolation), `_mlr*` (the modularity series), `_lineage`, `_provider`, `_qualify`
+(configuration qualification), `_stand_in_executor` and `_stand_in_endpoint` (replay stand-ins —
+never models).
 
 ### What runs with no credentials at all
 
@@ -55,7 +58,16 @@ python3 evals/authority_slice/pb_slice.py launch-arithmetic       # derive a lau
 python3 evals/authority_slice/pb_slice.py validate-checker        # the artifact checker's corpus
 python3 evals/authority_slice/pb_slice.py rehearse-live --into /tmp/pbh --path clean
 python3 evals/authority_slice/pb_slice.py readiness               # all four paths + the runtime
+python3 evals/pb_qualify.py suite                                 # cases, identities, graders
+python3 evals/pb_qualify.py plan --worker-profile deepseek-v4-flash-high --into /tmp/pbq-plan
+python3 evals/pb_qualify.py replay --plan /tmp/pbq-plan --into /tmp/pbq-result
+python3 evals/pb_qualify.py inspect --result /tmp/pbq-result      # re-derive every grade
 ```
+
+A replay qualifies no model. For a local profile it runs the tool loop through the real pinned
+executor against a scripted endpoint, and needs that executor installed. For the DeepSeek profile
+the tool-loop cells are recorded `not-run`, because a hosted provider cannot be replayed without
+its credential.
 
 `pb_craft.py validate` takes a **path**, not a bare case name. Commands are written out in full
 here because a schematic ellipsis is not a command; where one appears in this repository's docs it

@@ -82,6 +82,35 @@ Inherited DSD configuration referred to workers as `opencode-go/...`. That is th
 shape and is not what this path uses. The supervised workflow records the model in each run's
 `run-config.json` and refuses to launch against a different executor than the one recorded.
 
+This is the built-in worker profile `deepseek-v4-flash-high`, the default for `doctor` and
+`start`. A run's profile is resolved once at `start` and fixed with a digest; see
+[worker profiles](architecture/proofbound/worker-profiles.md).
+
+## Optional: a local worker profile
+
+**Unqualified.** No local model has been run through Proofbound. What is tested is the mechanics:
+a scripted endpoint stood in for a model while the real pinned executor ran inside the real
+boundary. Setting one up is optional, and nothing below downloads a model or installs a server.
+
+You need your own OpenAI-compatible server listening on **this machine** — for example llama.cpp's
+`llama-server`, which needs a chat template that supports tool calls. Then:
+
+```bash
+python3 scripts/pb_workflow.py profile --template > ~/local-worker.json   # edit every value
+python3 scripts/pb_workflow.py doctor --worker-profile ~/local-worker.json
+```
+
+The profile states the loopback endpoint with its port, the server's model id, and both token
+limits; nothing is inferred from a model name. `doctor` checks that something listens there and
+lists models. It requests no completion and consults no cloud credential. Tool calling, usage
+reporting and cancellation are **not** established by it; `evals/pb_qualify.py` exists for that.
+
+Start with `--worker-profile /absolute/path/local-worker.json`. Authorize with
+`authorize-resources --launch-ceiling N --owner-authorization '…'` instead of `authorize-spending`:
+there is no API bill for a money limit to bound, and local compute cost is recorded as unknown,
+not zero. The worker's network is restricted to loopback and no credential is staged. The
+coordinator, and anything it runs, is outside that boundary — this is not offline execution.
+
 ## Recovery
 
 | Symptom | What it means | Do this |
@@ -97,6 +126,10 @@ shape and is not what this path uses. The supervised workflow records the model 
 | `a repair was already decided …` | an outstanding repair | `revise --reason …`, or supersede it explicitly |
 | `spend is unknown` / accounting incomplete | a worker's usage could not be settled | no further launch is admitted. Inspect the run's receipts; do not raise the budget to get past it |
 | `this run already has a sealed delivery` | the run is finished | inspect `delivery/`; use `--into` for a separate copy |
+| `local endpoint … is not reachable` | nothing listens where the profile says | start your server there, or edit the profile. Nothing falls back to a hosted model |
+| `no external API billing … use authorize-resources` | a local profile's run | `authorize-resources --launch-ceiling N --owner-authorization …` |
+| `the local worker's executor configuration is missing or no longer matches` | the file written at `start` moved or changed | do not repair it by hand; start a different `--change` |
+| `this run already exists … --worker-profile … (differs in …)` | the profile, or its file, changed since `start` | the recorded settings stay in effect. Start a different `--change` to use new ones |
 
 Recovery never involves editing run JSON by hand. If a state seems to need that, it is a defect —
 report it with the receipt path.
