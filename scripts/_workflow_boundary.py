@@ -16,12 +16,59 @@ def stage_interpreter(tools):
     shim.chmod(0o755)
 
 
-def profile_text(runtime, tools, project, policy):
+def profile_text(runtime, tools, project, policy, *, loopback_only=False, protected=()):
     # The executor is a hard link: a write here would alter the host binary too.
-    return (_profile(runtime, tools, policy)
+    text = (_profile(runtime, tools, policy)
             + f'(allow file-write* (subpath "{project}"))\n'
             + f'(deny file-write* (subpath "{tools}"))\n'
             + f'(deny file-write* (literal "{runtime / "boundary.sb"}"))\n')
+    for path in protected:
+        # Executor configuration the worker must not rewrite for its own next launch.
+        text += f'(deny file-write* (literal "{path}"))\n'
+    if loopback_only:
+        # After the policy's blanket `(deny network*)`: outbound connections to loopback only.
+        # A later rule wins. What this does not stop is recorded with the profile's network claim.
+        text += '(allow network-outbound (remote ip "localhost:*"))\n'
+    return text
+
+
+#: TEST-NET-1 (RFC 5737). Never routed, so probing it sends nothing anywhere real; under a
+#: loopback-only boundary the connect must be refused by the sandbox itself (EPERM).
+UNROUTABLE_PROBE = ("192.0.2.1", 443)
+
+
+def probe_network(profile, *, home, cwd, endpoint):
+    """Whether the boundary allows the loopback endpoint and refuses anything else. Sends no data."""
+    program = '''import errno, json, socket, sys
+out = {}
+for label, host, port in json.loads(sys.argv[1]):
+    family = socket.AF_INET6 if ":" in host else socket.AF_INET
+    s = socket.socket(family, socket.SOCK_STREAM); s.settimeout(2)
+    try:
+        s.connect((host, port)); out[label] = {"connect": "established"}
+    except OSError as exc:
+        out[label] = {"connect": "failed", "errno": exc.errno, "name": errno.errorcode.get(exc.errno)}
+    finally:
+        s.close()
+print(json.dumps(out))
+'''
+    targets = [["endpoint", "127.0.0.1" if endpoint["host"] == "localhost" else endpoint["host"],
+                endpoint["port"]], ["unroutable", *UNROUTABLE_PROBE]]
+    try:
+        cp = subprocess.run(["/usr/bin/sandbox-exec", "-f", str(profile), sys.executable, "-c",
+                             program, json.dumps(targets)], cwd=cwd,
+                            env={"HOME": str(home), "PATH": "/usr/bin:/bin"},
+                            capture_output=True, text=True, timeout=20)
+        checks = json.loads(cp.stdout) if cp.returncode == 0 else {}
+    except (subprocess.TimeoutExpired, ValueError) as exc:
+        return {"checks": {}, "unmeasured": str(exc)}
+    # A probe that produced nothing observed nothing: neither claim is made from an empty result.
+    endpoint_allowed = "endpoint" in checks and checks["endpoint"].get("errno") != 1
+    other_denied = checks.get("unroutable", {}).get("errno") == 1
+    return {"checks": checks, "loopback_endpoint_allowed": endpoint_allowed,
+            "non_loopback_denied": other_denied, "established": endpoint_allowed and other_denied,
+            "scope": "one loopback connect and one unroutable connect from a wrapped child; "
+                     "no data sent. Says nothing about the coordinator, which is outside"}
 
 
 def probe(profile, *, home, cwd, paths):
@@ -53,7 +100,10 @@ print(json.dumps(out))
 
 
 def prepare(config):
+    from _worker_profiles import of
     c = dict(config)
+    settings = of(c)
+    loopback = settings["network"]["mode"] == "loopback-only"
     runtime = Path(c["home"]).parent
     project = Path(c["paths"]["project"])
     harness = Path(__file__).resolve().parent.parent
@@ -67,9 +117,11 @@ def prepare(config):
     # Escape profile paths before constructing a policy (quotes/newlines cannot become rules).
     if any('"' in x or '\n' in x or '\\' in x for x in [str(runtime), str(tools), *reads]):
         raise ValueError("sandbox profile paths cannot contain quotes, backslashes or newlines")
-    policy = Policy(extra_reads=reads, system_execs=(*SYSTEM_EXECS, *reads[2:]), network=True, notifications=True)
+    policy = Policy(extra_reads=reads, system_execs=(*SYSTEM_EXECS, *reads[2:]), network=not loopback, notifications=True)
     profile = runtime / "boundary.sb"
-    profile.write_text(profile_text(runtime, tools, project, policy))
+    protected = [(c.get("opencode_config") or {}).get("path")] if loopback else []
+    profile.write_text(profile_text(runtime, tools, project, policy, loopback_only=loopback,
+                                    protected=[p for p in protected if p]))
     c["boundary_profile"] = str(profile)
     c["executor"] = {**c["executor"], "path": str(staged)}
     observed = probe(profile, home=c["home"], cwd=project,
@@ -79,10 +131,25 @@ def prepare(config):
     checks = observed["checks"]
     if not checks or checks["host_home"].get("readable") or checks["host_home"].get("errno") not in (1, 13) or not checks["project"]["readable"] or not checks["staged_home"]["readable"]:
         raise ValueError("boundary probe did not establish expected deny/allow results; see " + str(runtime / "boundary-probe.json"))
+    if loopback:
+        network = probe_network(profile, home=c["home"], cwd=project,
+                                endpoint=settings["provider"]["endpoint"])
+        atomic_json(runtime / "network-probe.json", network)
+        if not network.get("established"):
+            raise ValueError("boundary probe did not establish loopback-only network access; see "
+                             + str(runtime / "network-probe.json"))
+    entry = settings["credential"]["auth_entry"]
+    if entry is None:
+        # Nothing staged, deliberately: a local worker needs no cloud credential, and an absent
+        # auth file cannot be picked up by a provider the profile did not name.
+        return c
     credential = Path(c["home"]) / ".local/share/opencode/auth.json"
     credential.parent.mkdir(parents=True, exist_ok=True)
     # Minimize staged credentials: retain only this backend's entry.
     auth = json.loads((Path.home() / ".local/share/opencode/auth.json").read_text())
-    with credential.open("w") as stream: json.dump({"deepseek": auth["deepseek"]}, stream)
+    if entry not in auth:
+        raise ValueError(f"the worker profile needs the {entry!r} credential entry, which is not "
+                         "configured; no provider request was made")
+    with credential.open("w") as stream: json.dump({entry: auth[entry]}, stream)
     credential.chmod(0o600)
     return c

@@ -28,15 +28,20 @@ def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
     Admit, reserve the slot durably, run the shipped launcher, then classify from evidence. A
     refusal returns without launching anything and says which rule refused.
     """
+    from _worker_profiles import of
     workdir = Path(workdir).expanduser().resolve()
     config = json.loads((workdir / "run-config.json").read_text())
+    settings = of(config)
+    local = settings["network"]["mode"] == "loopback-only"
     run_root = Path(config["paths"]["run_root"])
     db = Path(config["paths"]["session_db"])
     ledger = LaunchLedger(workdir / "launch-ledger.json",
                           limit=config["policy"]["aggregate_limit"],
                           reserve=config["policy"]["reserve"],
                           ceiling=config["policy"]["launch_ceiling"],
-                          repair_cycles=config["policy"].get("repair_cycles", 1))
+                          repair_cycles=config["policy"].get("repair_cycles", 1),
+                          billing=settings["billing"],
+                          output_token_allowance=settings["resources"]["output_token_allowance"])
 
     verdict = ledger.admit(phase=phase, task=task, role=role, run_root=run_root, db=db)
     if not verdict["admit"]:
@@ -60,9 +65,22 @@ def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
             f"{config['interpreter']['version']} and is being driven by {'.'.join(running)}. "
             f"Use {config['interpreter']['executable']}, or prepare a new run.")
 
+    if local:
+        # The executor must read exactly the configuration recorded at start. A missing or moved
+        # file would let OpenCode fall back to its defaults — a hosted model — without anything
+        # in the record changing.
+        pinned = config.get("opencode_config") or {}
+        path = Path(pinned.get("path") or "/nonexistent")
+        if (not path.is_file() or digest_file(path) != pinned.get("sha256")
+                or (config.get("worker_env") or {}).get("OPENCODE_CONFIG") != str(path)):
+            return refuse("refusing to launch: the local worker's executor configuration is "
+                          "missing or no longer matches the bytes recorded at start")
+
     executor_dir = str(Path(config["executor"]["path"]).parent)
+    # A local worker gets a minimal environment in every mode: an ambient provider key or
+    # `OPENCODE_*` variable must not be able to select a different service.
     env = ({"LANG": "en_US.UTF-8", "TMPDIR": str(Path(config["home"]).parent / "tmp")}
-           if config.get("boundary_profile") else
+           if config.get("boundary_profile") or local else
            {k: v for k, v in os.environ.items() if not k.startswith("OPENCODE")})
     env["PATH"] = os.pathsep.join([executor_dir, "/usr/bin", "/bin", "/usr/sbin", "/sbin"])
     env["HOME"] = config["home"]
@@ -77,9 +95,13 @@ def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
 
     argv = [sys.executable, str(SCRIPTS / "dsd_attempt.py"), "launch",
             "--run-root", str(run_root), "--phase-id", phase, "--task-id", task,
-            "--role", role, "--model", config["model"], "--variant", config["variant"],
+            "--role", role, "--model", config["model"],
             f"--auto-flag={config['auto_flag']}",
             "--timeout", str(config["deadline"]["seconds"])]
+    if settings["variant"]:
+        # Only a provider that defines the variant receives it; `high` means nothing to a local
+        # server and must not be sent as though it did.
+        argv += ["--variant", settings["variant"]]
     for path in inputs or []:
         argv += ["--input", str(path)]
     if config.get("boundary_profile"):
@@ -156,6 +178,15 @@ def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
                      "wall time alone never establishes that the worker was working",
             "note": "the host terminated the attempt; this says nothing about whether the provider "
                     "stopped billing or cancelled work already in flight"}
+    if local and (timed_out or termination is not None):
+        # The inference server is shared and long-lived; this attempt never owned it, so teardown
+        # never signals it (ownership requires the runtime path in a command line). Stopping the
+        # client is not cancellation.
+        result["server"] = {
+            "owned_by_attempt": False, "signalled": False,
+            "cancellation": "unknown: terminating the worker client does not establish that the "
+                            "server stopped generating for it",
+            "endpoint": settings["provider"]["endpoint"]["url"]}
     if termination is not None:
         result["termination"] = termination
         if survivors_remain(termination):

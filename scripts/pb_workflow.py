@@ -22,12 +22,13 @@ from dsd_state import atomic_json, run_path
 from _freeze import current_candidate, freeze_identity
 from _receipts import receipt
 from _contract import declared_candidate
+import _worker_profiles as profiles
 
 SCRIPTS = Path(__file__).resolve().parent
 ROOT = SCRIPTS.parent
 MODEL = "deepseek/deepseek-v4-flash"
 EXECUTOR = Path.home() / ".proofbound/executors/opencode-1.18.29-darwin-arm64/opencode"
-QUALIFIED_DIGEST = "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669"
+QUALIFIED_DIGEST = profiles.OPENCODE_SHA256
 STAGES = (("design", "requirements", "spec-author", "spec-reflector"),
           ("design", "consistency", None, "spec-reflector"),
           ("build", "implementation", "implementer", "reviewer"))
@@ -55,25 +56,47 @@ def command(run, action, *extra):
 
 
 def doctor(args):
-    exe = args.executor.expanduser().resolve()
+    """Readiness for one worker profile. Never generates a completion and never reads a key."""
+    try:
+        settings = profiles.resolve(args.worker_profile)
+    except profiles.ProfileError as exc:
+        return {"ready": False, "problems": [f"worker profile is invalid: {exc}"],
+                "profile": {"valid": False, "selector": str(args.worker_profile)},
+                "provider_requests": 0}
+    return readiness(settings, args.executor)
+
+
+def readiness(settings, executor):
+    """What `doctor` reports for resolved settings, in layers that fail separately.
+
+    Profile validity, the executor build, the boundary, the credential or endpoint the profile
+    names, tool-loop compatibility and task qualification are different facts. Only the first four
+    are checkable without a model, and this checks only those.
+    """
+    exe = Path(executor).expanduser().resolve()
     installed = exe.is_file() and os.access(exe, os.X_OK)
     supported = platform.system() == "Darwin" and platform.machine() == "arm64"
     version = None
     if installed:
-        cp = subprocess.run([str(exe), "--version"], capture_output=True, text=True, timeout=15)
+        cp = subprocess.run([str(exe), "--version"], capture_output=True, text=True, timeout=15,
+                            stdin=subprocess.DEVNULL)
         version = cp.stdout.strip() if cp.returncode == 0 else None
+    entry = settings["credential"]["auth_entry"]
     auth = Path.home() / ".local/share/opencode/auth.json"
     configured = False
-    if auth.is_file():
+    if entry and auth.is_file():
         try:
-            configured = "deepseek" in read(auth)  # never emit credential values
+            configured = entry in read(auth)  # never emit credential values
         except (ValueError, OSError):
             pass
     problems = []
     if not supported: problems.append("supported worker environment is macOS arm64 only")
     if sys.version_info < (3, 10): problems.append("Python >=3.10 required")
     if not installed: problems.append("pinned OpenCode executable is missing")
-    if not configured: problems.append("DeepSeek credential is not configured; no provider request made")
+    if entry and not configured:
+        problems.append("DeepSeek credential is not configured; no provider request made"
+                        if entry == "deepseek" else
+                        f"{entry!r} credential is not configured; no provider request made")
     if not shutil.which("git"): problems.append("git is missing")
     if not Path("/usr/bin/sandbox-exec").exists(): problems.append("macOS sandbox-exec boundary unavailable")
     boundary_available = False
@@ -81,14 +104,37 @@ def doctor(args):
         cp = subprocess.run(["/usr/bin/sandbox-exec", "-p", "(version 1)(allow default)", "/usr/bin/true"], capture_output=True, timeout=10)
         boundary_available = cp.returncode == 0
         if not boundary_available: problems.append("sandbox-exec cannot start in this process environment; run outside the enclosing sandbox")
-    qualified = installed and digest(exe) == QUALIFIED_DIGEST
+    qualified = installed and digest(exe) == settings["executor"]["sha256"]
     if installed and not qualified: problems.append("executor bytes are not the experimentally qualified build")
+    endpoint = profiles.probe_endpoint(settings)
+    if endpoint.get("applicable") and not endpoint.get("reachable"):
+        problems.append(
+            f"local endpoint {endpoint['url']} is not reachable ({endpoint.get('error')}). Start "
+            "your OpenAI-compatible server there, or edit the profile. This profile never falls "
+            "back to a hosted model or a cloud credential")
+    local = settings["network"]["mode"] == "loopback-only"
+    worker = {"backend": "opencode-cli", "path": str(exe), "installed": installed,
+              "configured": configured if entry else "no credential required",
+              "version": version, "model": settings["model"], "variant": settings["variant"],
+              "profile": settings["profile"]["id"], "profile_digest": settings["digest"],
+              "billing": settings["billing"]["basis"], "network": settings["network"]["mode"],
+              "experimentally_qualified_build": qualified,
+              "qualification_scope": (
+                  "none: no live observation of this configuration exists" if local else
+                  "pb-handoff-2: one seeded-authority continuation, not goal-to-change")}
     return {"ready": not problems, "problems": problems,
             "python": {"path": sys.executable, "version": platform.python_version(), "supported": sys.version_info >= (3, 10)},
-            "worker": {"backend": "opencode-cli", "path": str(exe), "installed": installed,
-                       "configured": configured, "version": version, "model": MODEL, "variant": "high",
-                       "experimentally_qualified_build": qualified,
-                       "qualification_scope": "pb-handoff-2: one seeded-authority continuation, not goal-to-change"},
+            "worker": worker,
+            "readiness": {
+                "profile_valid": True,
+                "executor_installed": installed, "executor_is_pinned_build": qualified,
+                "boundary_process_available": boundary_available,
+                "credential_configured": configured if entry else "not required",
+                "endpoint": endpoint if endpoint.get("applicable") else "not applicable",
+                "tool_loop": "not established: doctor requests no completion. "
+                             "`evals/pb_qualify.py` replays the tool loop against a stand-in "
+                             "endpoint; only a live run observes a real model",
+                "task_qualification": "not established by doctor"},
             "environment_supported": supported, "boundary_process_available": boundary_available,
             "boundary": "macOS sandbox-exec for launched processes; host coordinator is outside it",
             "codex": {"installed": shutil.which("codex") is not None,
@@ -103,6 +149,9 @@ def start(args):
         raise ValueError("change must be a short path-safe identifier")
     goal = args.goal_file.read_text() if args.goal_file else args.goal
     if not goal or not goal.strip(): raise ValueError("supply a nonempty goal")
+    if not 30 <= args.deadline_seconds <= 3600:
+        raise ValueError("--deadline-seconds must be between 30 and 3600")
+    settings = profiles.resolve(args.worker_profile)
     run = project / "DeepSeekAndDestroy" / "plans" / args.change / "runs" / "first"
     authority = project / "specs" / args.change
     if run.exists():
@@ -122,6 +171,22 @@ def start(args):
                 if requested_exe != config.get("executor", {}).get("path"):
                     conflicts.append({"field": "--executor", "requested": requested_exe,
                                       "in_effect": config.get("executor", {}).get("path")})
+                in_effect = config.get("deadline", {}).get("seconds")
+                if args.deadline_seconds != in_effect:
+                    conflicts.append({"field": "--deadline-seconds",
+                                      "requested": args.deadline_seconds, "in_effect": in_effect})
+                recorded = profiles.of(config)
+                ignored = ({"legacy", "profile.source", "profile.path", "profile.source_sha256"}
+                           if recorded.get("legacy") else set())
+                fields = [d["field"] for d in profiles.differences(recorded, settings)
+                          if d["field"] not in ignored]
+                if fields:
+                    # The recorded settings stay in effect; a profile file edited since start
+                    # shows up here as its own fields, never as a silently different resume.
+                    conflicts.append({"field": "--worker-profile",
+                                      "requested": f"{settings['profile']['id']} "
+                                                   f"(differs in {', '.join(fields)})",
+                                      "in_effect": recorded["profile"]["id"]})
                 if conflicts:
                     raise ValueError(
                         "this run already exists and its configuration is fixed; the requested "
@@ -156,18 +221,23 @@ def start(args):
               "goal_sha256": digest(goal_path), "requirements": str(req), "baseline": baseline,
               "interpreter": {"executable": sys.executable, "version": platform.python_version()},
               "executor": {"path": str(exe), "sha256": digest(exe) if exe.is_file() else None},
-              "model": MODEL, "variant": "high", "auto_flag": "--auto", "home": str(runtime / "home"),
-              "deadline": {"seconds": 900}, "check_command": args.check,
+              "model": settings["model"], "variant": settings["variant"],
+              "worker_profile": settings,
+              "auto_flag": "--auto", "home": str(runtime / "home"),
+              "deadline": {"seconds": args.deadline_seconds}, "check_command": args.check,
               "policy": {"aggregate_limit": 0, "reserve": 0, "launch_ceiling": 0, "repair_cycles": 1},
               "paths": {"project": str(project), "run_root": str(run), "ledger": str(ledger),
                         "graph": str(graph), "freezes": str(authority / "freezes"),
                         "consistency": str(authority / "consistency"), "session_db": str(runtime / "session/worker.db")}}
+    # A local profile's executor configuration is written now, not at authorization: an offline
+    # launch without it would let the executor fall back to its own default — a hosted model.
+    config.update(profiles.write_opencode_config(settings, runtime))
     rules = helper("prepare_worker_rules.py", "--project-root", project, "--run-root", run,
-                   "--plan", goal_path, "--model", MODEL,
+                   "--plan", goal_path, "--model", settings["model"],
                    "--rule", "Review requirements, code and checks before reading a producer summary; record what you saw.")
     atomic_json(run / "state.json", {"project_worktree": str(project), "run_root": str(run),
         "execution_status": "active", "next_action": "propose requirements; no acceptance has been earned",
-        "worker_rules": rules, "worker_runtime": {"harness": "opencode-cli", "model": MODEL,
+        "worker_rules": rules, "worker_runtime": {"harness": "opencode-cli", "model": settings["model"],
                                                   "opencode": {"run_db": config["paths"]["session_db"]}},
         "phases": {"design": {"status": "in-progress", "tasks": {}}, "build": {"status": "pending", "tasks": {}}}})
     atomic_json(run / "run-config.json", config)
@@ -179,7 +249,20 @@ def config_for(run):
     config = read(run / "run-config.json")
     if Path(config["paths"]["run_root"]).resolve() != run: raise ValueError("run identity mismatch")
     if digest(config["goal"]) != config["goal_sha256"]: raise ValueError("owner goal changed; new goal authority requires a new run")
+    profiles.of(config)  # refuse a run whose recorded worker settings no longer match their digest
     return config
+
+
+def ledger_for(run, c):
+    """The run's launch ledger, always under the run's own billing basis — never a default."""
+    from _launch_budget import LaunchLedger
+    settings = profiles.of(c)
+    policy = c["policy"]
+    return LaunchLedger(run / "launch-ledger.json", limit=policy["aggregate_limit"],
+                        reserve=policy["reserve"], ceiling=policy["launch_ceiling"],
+                        repair_cycles=policy.get("repair_cycles", 1),
+                        billing=settings["billing"],
+                        output_token_allowance=settings["resources"]["output_token_allowance"])
 
 
 def candidate(config):
@@ -225,8 +308,13 @@ def contract(config, task, *, revision=1, instruction=None):
 
 def _status(run):
     c = config_for(run); state = read(run / "state.json")
+    settings = profiles.of(c)
     base = {"run": str(run), "project": c["paths"]["project"], "goal": c["goal"],
             "baseline": c["baseline"],
+            "worker": {"profile": settings["profile"]["id"], "digest": settings["digest"],
+                       "model": settings["model"], "variant": settings["variant"],
+                       "billing": settings["billing"]["basis"],
+                       "legacy_record": settings["legacy"]},
             "delivery_state": ("sealed" if (run / "delivery/manifest.json").exists() else "incomplete" if (run / "delivery").exists() else "absent"),
             "spending_authorized": c["policy"]["launch_ceiling"] > 0}
     admitted = state["phases"]["build"]["tasks"].get("implementation", {}).get("admission")
@@ -363,10 +451,7 @@ def status(run):
     result = _status(run)
     if result["action"] == "launch":
         c = config_for(run)
-        from _launch_budget import LaunchLedger
-        policy = c["policy"]
-        ledger = LaunchLedger(run / "launch-ledger.json", limit=policy["aggregate_limit"],
-                              reserve=policy["reserve"], ceiling=policy["launch_ceiling"])
+        ledger = ledger_for(run, c)
         verdict = ledger.admit(phase=result["phase"], task=result["task"], role=result["role"],
                                run_root=run, db=c["paths"]["session_db"])
         if not verdict["admit"]:
@@ -555,16 +640,22 @@ def finish(args):
     patch_name = "change.patch" if args.outcome == "accepted" else "unaccepted.patch"
     (out / patch_name).write_bytes(patch)
     from _launch_budget import spend
-    account = spend(run, c["paths"]["session_db"], limit=c["policy"]["aggregate_limit"], reserve=c["policy"]["reserve"])
-    from _launch_budget import LaunchLedger
-    ledger = LaunchLedger(run / "launch-ledger.json")
+    settings = profiles.of(c)
+    account = spend(run, c["paths"]["session_db"], model=settings["model"],
+                    limit=c["policy"]["aggregate_limit"], reserve=c["policy"]["reserve"],
+                    billing=settings["billing"],
+                    output_token_allowance=settings["resources"]["output_token_allowance"])
+    ledger = ledger_for(run, c)
     if ledger.unresolved():
         account = {**account, "complete": False, "unknown_charges": True,
                    "unresolved_slots": [slot["slot"] for slot in ledger.unresolved()],
                    "claim": "unclassified launch intents; no inference of zero spend"}
     atomic_json(out / "usage.json", account)
     from _usage_events import events_from_db
-    atomic_json(out / "usage-events.json", events_from_db(Path(c["paths"]["session_db"])))
+    events = events_from_db(Path(c["paths"]["session_db"]))
+    atomic_json(out / "usage-events.json", events)
+    import _worker_profile
+    observed = _worker_profile.observed_identity(events["rows"])
     # Allowlist evidence, never credentials, raw logs, prompts or session databases.
     retained = {"state.json", "run-config.json", "launch-ledger.json", "CONTINUE.md"}
     for source in run.rglob("*"):
@@ -581,6 +672,14 @@ def finish(args):
     atomic_json(out / "handoff.json", {"baseline": c["baseline"], "head": subprocess.check_output(["git", "-C", project, "rev-parse", "HEAD"], text=True).strip(),
                 "outcome": args.outcome, "report_source": args.report_source, "report_is_claim": True, "checks": check,
                 "bindings": bound_candidates(run),
+                "worker_profile": {"id": settings["profile"]["id"], "digest": settings["digest"],
+                                   "kind": settings["profile"]["kind"], "model": settings["model"],
+                                   "variant": settings["variant"], "billing": settings["billing"],
+                                   "network": settings["network"], "legacy_record": settings["legacy"]},
+                "observed_worker_identity": {
+                    **observed,
+                    "note": "as the executor recorded it: the requested model id per message. A "
+                            "local server's weights, quantization and template are not observed"},
                 "run_retained_at": str(run), "runtime_retained_at": str(Path(c["home"]).parent),
                 "limitation": "run-tree binding only; this package does not close L3/L4 durable implementation provenance"})
     atomic_json(out / "manifest.json", {str(p.relative_to(out)): digest(p) for p in out.rglob("*") if p.is_file()})
@@ -591,15 +690,26 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="command", required=True)
     d = sub.add_parser("doctor"); d.add_argument("--executor", type=Path, default=EXECUTOR)
+    d.add_argument("--worker-profile", default=profiles.DEFAULT_PROFILE,
+                   help="built-in profile name or path to a profile file")
+    pr = sub.add_parser("profile", help="resolve and show a worker profile; no provider call")
+    pr_sel = pr.add_mutually_exclusive_group()
+    pr_sel.add_argument("--worker-profile", default=profiles.DEFAULT_PROFILE)
+    pr_sel.add_argument("--template", action="store_true",
+                        help="print a local OpenAI-compatible profile template")
     st = sub.add_parser("start"); st.add_argument("--project", type=Path, required=True); st.add_argument("--change", default="CH-001")
     group = st.add_mutually_exclusive_group(required=True); group.add_argument("--goal"); group.add_argument("--goal-file", type=Path)
     st.add_argument("--check", required=True, help="project check argv, shell-quoted; no shell operators")
     st.add_argument("--executor", type=Path, default=EXECUTOR)
+    st.add_argument("--worker-profile", default=profiles.DEFAULT_PROFILE,
+                    help="built-in profile name or path to a profile file; fixed for the run")
+    st.add_argument("--deadline-seconds", type=int, default=900,
+                    help="per-attempt worker deadline; fixed for the run")
     co = sub.add_parser("coordinator"); co.add_argument("--run", type=Path, required=True)
     co.add_argument("--requested", required=True, help="the coordinator configuration you selected")
     co.add_argument("--self-reported", default=None, help="what the coordinating agent says it is")
     co.add_argument("--observed", default=None, help="runtime metadata the host actually exposes")
-    for name in ("status", "continue", "admit", "decide", "finish", "revise", "resolve-owner", "authorize-spending"):
+    for name in ("status", "continue", "admit", "decide", "finish", "revise", "resolve-owner", "authorize-spending", "authorize-resources"):
         p = sub.add_parser(name); p.add_argument("--run", type=Path, required=True)
         if name == "decide":
             p.add_argument("--decision", choices=["accept", "repair", "owner"], required=True); p.add_argument("--reason", required=True)
@@ -612,9 +722,12 @@ def main():
         if name == "authorize-spending":
             p.add_argument("--aggregate-limit", type=float, required=True); p.add_argument("--reserve", type=float, required=True)
             p.add_argument("--launch-ceiling", type=int, required=True); p.add_argument("--owner-authorization", required=True)
+        if name == "authorize-resources":
+            p.add_argument("--launch-ceiling", type=int, required=True); p.add_argument("--owner-authorization", required=True)
     args = ap.parse_args()
     try:
         if args.command == "doctor": result = doctor(args)
+        elif args.command == "profile": result = show_profile(args)
         elif args.command == "start": result = start(args)
         elif args.command == "coordinator": result = coordinator(args)
         elif args.command == "status": result = status(args.run.resolve())
@@ -643,6 +756,7 @@ def main():
             result = helper("dsd_state.py", "bind-contract", *task_args(run, "design", "requirements"), "--contract", path)
             receipt(run, "requirements revision", {"reason": args.reason, "contract": str(path)})
         elif args.command == "finish": result = finish(args)
+        elif args.command == "authorize-resources": result = authorize_resources(args)
         else:
             result = authorize_spending(args)
         print(json.dumps(result, indent=2, sort_keys=True)); return 0
@@ -653,11 +767,15 @@ def main():
 def authorize_spending(args):
     import math
     run = args.run.resolve(); c = config_for(run)
+    settings = profiles.of(c)
+    if settings["billing"]["basis"] != profiles.PRICED:
+        raise ValueError("this run's worker profile has no external API billing, so a money limit "
+                         "would bound nothing; use authorize-resources")
     if not all(math.isfinite(v) for v in [args.aggregate_limit, args.reserve]) or not 0 < args.reserve < args.aggregate_limit or args.launch_ceiling < 1:
         raise ValueError("require finite 0 < reserve < aggregate limit and positive launch ceiling")
     if (run / "launch-ledger.json").exists(): raise ValueError("resource policy is frozen after first launch intent; no automatic new trajectory")
     if not args.owner_authorization.strip(): raise ValueError("explicit owner authorization required")
-    ready = doctor(argparse.Namespace(executor=Path(c["executor"]["path"])))
+    ready = readiness(settings, Path(c["executor"]["path"]))
     if not ready["ready"]: raise ValueError("readiness problems: " + "; ".join(ready["problems"]))
     from _workflow_boundary import prepare
     c = prepare(c)
@@ -665,6 +783,55 @@ def authorize_spending(args):
     atomic_json(run / "run-config.json", c)
     receipt(run, "owner spending authorization", {"authority": args.owner_authorization, "policy": c["policy"], "billing_cap": False})
     return {"configured": True, "policy": c["policy"], "next": command(run, "continue")}
+
+
+def authorize_resources(args):
+    """Launch authority for a worker with no external API bill: attempts, not money.
+
+    What is bounded is stated as enforced or merely configured, from the recorded settings. A money
+    limit is not accepted here because it would bound nothing; unknown local compute cost is not
+    thereby zero, and an unresolved attempt still blocks every further launch.
+    """
+    run = args.run.resolve(); c = config_for(run)
+    settings = profiles.of(c)
+    if settings["billing"]["basis"] != profiles.NO_EXTERNAL_BILLING:
+        raise ValueError("this run's worker is billed by a provider; use authorize-spending")
+    if args.launch_ceiling < 1: raise ValueError("require a positive launch ceiling")
+    if (run / "launch-ledger.json").exists(): raise ValueError("resource policy is frozen after first launch intent; no automatic new trajectory")
+    if not args.owner_authorization.strip(): raise ValueError("explicit owner authorization required")
+    ready = readiness(settings, Path(c["executor"]["path"]))
+    if not ready["ready"]: raise ValueError("readiness problems: " + "; ".join(ready["problems"]))
+    from _workflow_boundary import prepare
+    c = prepare(c)
+    c["policy"].update(aggregate_limit=0, reserve=0, launch_ceiling=args.launch_ceiling)
+    atomic_json(run / "run-config.json", c)
+    bounded = {"launch_ceiling": args.launch_ceiling,
+               "repair_cycles": c["policy"].get("repair_cycles", 1),
+               "attempt_deadline_seconds": c["deadline"]["seconds"],
+               "output_token_allowance": settings["resources"]["output_token_allowance"],
+               "per_call_output_tokens": settings["limits"]["output"],
+               "context_tokens": settings["limits"]["context"]}
+    receipt(run, "owner resource authorization", {
+        "authority": args.owner_authorization, "bounded": bounded,
+        "enforced": settings["resources"]["enforced"],
+        "configured_not_enforced": settings["resources"]["configured"],
+        "billing": settings["billing"], "network": settings["network"]})
+    return {"configured": True, "policy": c["policy"], "bounded": bounded,
+            "enforced": settings["resources"]["enforced"],
+            "configured_not_enforced": settings["resources"]["configured"],
+            "next": command(run, "continue")}
+
+
+def show_profile(args):
+    """Resolve a profile and print its settings, or print the local template. Touches nothing."""
+    if args.template:
+        # Printed bare so `profile --template > local.json` is the file to edit. It does not
+        # resolve until its placeholder model is replaced: nothing is inferred from a name.
+        return profiles.LOCAL_TEMPLATE
+    settings = profiles.resolve(args.worker_profile)
+    return {"settings": settings, "digest": settings["digest"],
+            "note": "a run keeps these resolved settings; later edits to a profile file do not "
+                    "reach a started run"}
 
 
 if __name__ == "__main__":

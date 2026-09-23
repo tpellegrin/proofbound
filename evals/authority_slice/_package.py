@@ -374,8 +374,15 @@ def export(*, run_root: Path, into: Path, experiment: str, condition: str,
                         "blocks": ["usage.recompute", "price.recompute", "usage.attribution"]})
 
     spend = None
+    billing = None
+    if config and config.get("worker_profile"):
+        # A run recorded under a worker profile is priced on its own basis, never on the
+        # historical DeepSeek default a profile-less caller gets.
+        import _worker_profiles
+        billing = _worker_profiles.of(config)["billing"]
     if session_db is not None and Path(session_db).is_file():
-        spend = _guard.spend(run_root, session_db, event_dirs=event_dirs)
+        spend = (_guard.spend(run_root, session_db, event_dirs=event_dirs, billing=billing)
+                 if billing else _guard.spend(run_root, session_db, event_dirs=event_dirs))
     observed = {}
     if events["available"]:
         import _profile
@@ -423,7 +430,7 @@ def export(*, run_root: Path, into: Path, experiment: str, condition: str,
             "per_attempt_attribution_established": False,
             "why": "no usage events were retained"},
         "spend": spend,
-        "pricing_basis": _pricing_basis(),
+        "pricing_basis": _pricing_basis(billing),
         "files": sorted(files, key=lambda f: f["path"]),
         "omitted": omitted,
         "extra": extra or {},
@@ -458,6 +465,7 @@ def _configured_identity(config: dict[str, Any] | None) -> dict[str, Any]:
         return {"note": "no run configuration was supplied to the exporter"}
     return {
         "model": config.get("model"), "variant": config.get("variant"),
+        "worker_profile": config.get("worker_profile"),
         "mode": config.get("mode"),
         "executor": config.get("executor"),
         "interpreter": config.get("interpreter"),
@@ -469,8 +477,12 @@ def _configured_identity(config: dict[str, Any] | None) -> dict[str, Any]:
     }
 
 
-def _pricing_basis() -> dict[str, Any]:
+def _pricing_basis(billing: "dict[str, Any] | None" = None) -> dict[str, Any]:
     import _pricing
+    if billing and billing.get("basis") != "dated-table":
+        return {"table": None, "billing": billing,
+                "note": "this worker has no external API bill; no price is derived, and local "
+                        "compute cost is unknown rather than zero"}
     table = _pricing.DEEPSEEK_2026_09_09
     return {"table": table.get("id"),
             "note": "derived cost is measured usage priced at this dated table; it is neither the "
@@ -795,6 +807,11 @@ def _recompute_price(manifest: dict[str, Any], usage: dict[str, Any], *,
     import _pricing
 
     spend = manifest.get("spend") or {}
+    basis = manifest.get("pricing_basis") or {}
+    if "table" in basis and basis["table"] is None:
+        return check("price.recompute", UNAVAILABLE, UNAVAILABLE,
+                     "no external API billing is configured for this worker; money is not a "
+                     "derived quantity here, and its absence is not a zero")
     exported = spend.get("derived")
     config = (manifest.get("identity") or {}).get("configured") or {}
     model = str(config.get("model") or "").split("/", 1)[-1]
