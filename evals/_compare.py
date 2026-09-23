@@ -272,3 +272,219 @@ def render(comparison: dict[str, Any]) -> str:
             "judgement."]
     return "\n".join(out)
 
+
+# -- configuration qualification results ---------------------------------------------------------
+#
+# The same rule, applied to what `evals/_qualify.py` records. The difference is what may vary: a
+# qualification comparison answers a *question*, and a declared question may vary a bundle of
+# fields — which is reported as a bundle and never attributed to one of its members.
+
+#: Configuration fields grouped by the question that varies them. Every field is a required
+#: control for every question that does not vary its group.
+QUALIFICATION_GROUPS = {
+    "worker": ("worker.profile_kind", "worker.provider", "worker.endpoint", "worker.model",
+               "worker.variant", "worker.limits", "worker.network"),
+    "executor": ("executor",),
+    "coordinator": ("coordinator",),
+    "harness": ("control_plane", "interpreter"),
+    "tasks": ("suite",),
+    "resources": ("resources",),
+    "measurement": ("mode",),
+}
+
+QUESTIONS = {
+    frozenset({"worker"}): "worker-profile comparison: coordinator, tasks, verifier and every "
+                           "other recorded control held fixed",
+    frozenset({"coordinator"}): "coordinator comparison: worker path and tasks held fixed",
+    frozenset({"harness"}): "harness-treatment comparison: baseline and candidate control planes "
+                            "under one declared configuration",
+    frozenset({"executor"}): "executor comparison: reported as the executor bundle",
+    frozenset({"executor", "worker"}): "agent-system comparison: executor and worker changed "
+                                       "together, reported as one bundle",
+}
+
+
+def _trial_key(trial: dict[str, Any]) -> tuple[Any, ...]:
+    """Tasks are matched by immutable case identity, never by name."""
+    return (trial.get("case_identity"), trial.get("subject"), trial.get("variant"))
+
+
+def _headline(trial: dict[str, Any]) -> str:
+    """The one outcome word a trial's grade carries, without folding dimensions together."""
+    if trial.get("status") != "completed":
+        return str(trial.get("status"))
+    o = trial.get("outcome") or {}
+    for key in ("outcome", "review", "delivered_verdict"):
+        if isinstance(o.get(key), str):
+            return o[key]
+    return "ungraded"
+
+
+def compare_qualification(a: dict[str, Any], b: dict[str, Any], *,
+                          label_a: str = "A", label_b: str = "B") -> dict[str, Any]:
+    """What two qualification results can support, derived and never stored.
+
+    Order of the report is the order of the argument: what question this is, which controls are
+    unverified, which population differs, which trials are missing or duplicated — and only then
+    what each side observed.
+    """
+    conf_a, conf_b = a.get("configuration") or {}, b.get("configuration") or {}
+    rows = [_row(f, conf_a.get(f), conf_b.get(f))
+            for group in QUALIFICATION_GROUPS.values() for f in group]
+    by_field = {r["field"]: r for r in rows}
+    varied = sorted(g for g, fields in QUALIFICATION_GROUPS.items()
+                    if any(by_field[f]["known"] and not by_field[f]["same"] for f in fields))
+    unverified = [r["field"] for r in rows if r["unverified"]]
+    bundle = [r["field"] for r in rows if r["known"] and not r["same"]]
+
+    def index(result: dict[str, Any]) -> tuple[dict[Any, dict[str, Any]], list[str]]:
+        seen: dict[Any, dict[str, Any]] = {}
+        duplicates = []
+        for trial in result.get("trials") or []:
+            key = _trial_key(trial)
+            if key in seen:
+                duplicates.append(trial.get("trial_id"))
+            else:
+                seen[key] = trial
+        return seen, duplicates
+
+    left, dup_a = index(a)
+    right, dup_b = index(b)
+    if not set(left) & set(right):
+        raise ComparisonError("the two results share no trial of the same case identity; "
+                              "there is nothing to compare")
+    same_run = a.get("plan_digest") == b.get("plan_digest") and \
+        a.get("started_at") == b.get("started_at")
+    reasons = []
+    question = QUESTIONS.get(frozenset(set(varied) - {"tasks"}))
+    if "measurement" in varied:
+        question = None
+        reasons.append("the two results were measured differently (replay stand-in and live, "
+                       "or different stand-ins); they are not measurements of one question")
+    elif not set(varied) - {"tasks"}:
+        question = ("the same record twice: nothing is gained by comparing it with itself"
+                    if same_run else "replication: distinct trials of one configuration — "
+                                     "repetitions, not an effect")
+    elif question is None:
+        question = ("configuration-bundle comparison across " + ", ".join(varied)
+                    + "; the difference belongs to the bundle, not to any one field")
+    if "tasks" in varied:
+        reasons.append("the suites differ; only trials of the same case identity are paired")
+    if set(left) != set(right):
+        reasons.append("the trial populations differ; unpaired trials are listed, never scored")
+    if unverified:
+        reasons.append("required control(s) unrecorded on at least one side: "
+                       + ", ".join(unverified))
+    if dup_a or dup_b:
+        reasons.append("duplicate trials were excluded from pairing: "
+                       + ", ".join(dup_a + dup_b))
+    controlled = not reasons and bool(set(varied) - {"tasks"})
+
+    paired, unpairable = [], []
+    for key in sorted(set(left) & set(right), key=lambda k: str(k)):
+        ta, tb = left[key], right[key]
+        if ta.get("transport") != tb.get("transport"):
+            # A stand-in and a real executor, or two different stand-ins, measured different
+            # things for this cell: shown, never set side by side as one question.
+            unpairable.append({"trial_id": ta.get("trial_id"), "a": ta.get("transport"),
+                               "b": tb.get("transport")})
+            continue
+        paired.append({"case": ta.get("case"), "subject": ta.get("subject"),
+                       "variant": ta.get("variant"),
+                       "a": _dimensions(ta), "b": _dimensions(tb)})
+    if unpairable:
+        reasons.append("some cells were measured by different transports and are not paired: "
+                       + ", ".join(str(u["trial_id"]) for u in unpairable))
+        controlled = False
+    return {
+        "labels": {"a": label_a, "b": label_b},
+        "question": question, "controlled": controlled, "not_controlled_because": reasons,
+        "varied_groups": varied, "varied_bundle": bundle,
+        "attributable_to_one_field": controlled and len(bundle) == 1,
+        "configuration": rows, "unverified_fields": unverified,
+        "denominators": {"a": a.get("denominators"), "b": b.get("denominators")},
+        "only_in_a": sorted(str(left[k].get("trial_id")) for k in set(left) - set(right)),
+        "only_in_b": sorted(str(right[k].get("trial_id")) for k in set(right) - set(left)),
+        "duplicates": {"a": dup_a, "b": dup_b},
+        "paired": paired, "unpairable": unpairable,
+        "modes": {"a": conf_a.get("mode"), "b": conf_b.get("mode")},
+        "claims": {"a": a.get("claim"), "b": b.get("claim")},
+        "tokens_comparable": not ({"worker.provider", "worker.model", "executor"} & set(bundle)),
+    }
+
+
+def _dimensions(trial: dict[str, Any]) -> dict[str, Any]:
+    """Each dimension a trial reports, side by side and never combined."""
+    o = trial.get("outcome") or {}
+    usage = o.get("usage") or {}
+    return {
+        "status": trial.get("status"), "headline": _headline(trial),
+        "first_attempt": o.get("first_attempt"), "after_repair": o.get("after_bounded_repair"),
+        "false_acceptance": o.get("false_acceptance",
+                                  o.get("decision_outcome") == "false-acceptance" or None),
+        "false_refusal": (o.get("decision_outcome") == "false-refusal"
+                          or o.get("outcome") == "false-refusal") or None,
+        "findings": {k: (o.get("findings") or o.get("review") or {}).get(k)
+                     for k in ("reported", "correct", "substantiated",
+                               "correct_but_unsubstantiated", "false")}
+        if isinstance(o.get("findings") or o.get("review"), dict) else None,
+        "repairs": o.get("repairs"),
+        "elapsed_seconds": trial.get("elapsed_seconds"),
+        "tokens": (usage.get("tokens") or {}) and {k: usage["tokens"].get(k) for k in
+                                                     ("input", "output", "reasoning",
+                                                      "cache_read")},
+        "usage_complete": usage.get("complete"),
+        "derived_cost": usage.get("derived_cost"), "billing": usage.get("billing"),
+    }
+
+
+def render_qualification(comparison: dict[str, Any]) -> str:
+    la, lb = comparison["labels"]["a"], comparison["labels"]["b"]
+    out = ["Qualification comparison — derived, not a stored record", "",
+           f"  question     {comparison['question'] or 'none this comparison can answer'}",
+           f"  controlled   {'yes' if comparison['controlled'] else 'NO'}"]
+    for reason in comparison["not_controlled_because"]:
+        out.append(f"    - {reason}")
+    if comparison["varied_bundle"]:
+        out.append("  varied       " + ", ".join(comparison["varied_bundle"])
+                   + ("" if comparison["attributable_to_one_field"] else
+                      "   (a bundle: not attributable to any one field)"))
+    out += ["", "  configuration"]
+    for row in comparison["configuration"]:
+        state = ("same" if row["same"] else "unverified" if row["unverified"] else "differs")
+        value = row["a"] if row["same"] else f"{row['a']} -> {row['b']}"
+        out.append(f"    {row['field']:<22} {state:<10} {value}")
+    out += ["", "  denominators (planned / attempted / completed / gradeable)"]
+    for side, label in (("a", la), ("b", lb)):
+        d = comparison["denominators"][side] or {}
+        out.append(f"    {label}: {d.get('planned')} / {d.get('attempted')} / "
+                   f"{d.get('completed')} / {d.get('gradeable')}; excluded "
+                   f"{[e.get('trial_id') for e in d.get('excluded') or []]}")
+    if comparison["only_in_a"] or comparison["only_in_b"]:
+        out.append(f"    unpaired — only in {la}: {comparison['only_in_a'] or '-'}; "
+                   f"only in {lb}: {comparison['only_in_b'] or '-'}")
+    out += ["", "  per trial, each dimension apart (a | b)"]
+    for row in comparison["paired"]:
+        name = "/".join(x for x in (row["case"], row["subject"], row["variant"]) if x)
+        a, b = row["a"], row["b"]
+        out.append(f"    {name}")
+        for key in ("headline", "first_attempt", "after_repair", "false_acceptance",
+                    "false_refusal", "findings", "repairs", "elapsed_seconds", "tokens",
+                    "usage_complete", "derived_cost"):
+            if a.get(key) is None and b.get(key) is None:
+                continue
+            out.append(f"      {key:<17} {a.get(key)} | {b.get(key)}")
+    if comparison["modes"]["a"] == comparison["modes"]["b"] == "replay":
+        out.append("")
+        out.append("  both results are replays: stand-ins did the work, so matching outcomes are "
+                   "expected by construction and say nothing about either model.")
+    if not comparison["tokens_comparable"]:
+        out.append("")
+        out.append("  token counts cross providers, models or executors: tokenizers and cache "
+                   "conventions differ, so the counts are not directly comparable.")
+    out += ["", "  claims recorded with each result:",
+            f"    {la}: {comparison['claims']['a']}", f"    {lb}: {comparison['claims']['b']}",
+            "", "  No ordering is computed, and nothing here selects a configuration. One trial per",
+            "  cell is an observation; a repeated comparison needs a declared margin, pairing and",
+            "  its own uncertainty."]
+    return "\n".join(out)
