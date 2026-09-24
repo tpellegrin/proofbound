@@ -1,0 +1,76 @@
+{
+ "format": "proofbound-first-use-preparation-v1",
+ "frozen_at": "2026-09-24T12:25:24+00:00",
+ "identity_file": {
+  "path": "/Users/thiago/proofbound-evidence/first-use-2026-09-24-csv-claude-code-opus/first-use-identity.json",
+  "sha256": "5904dc6bd2fd60aa521fb4a3d423c5c5b7dab08a19254bdae0895769aa8136f3"
+ },
+ "not_the_pilot": "a diagnostic, single-arm first use of the public CSV task under Claude Code/Opus; not the historical Codex/GPT-6 pilot. protocol-v2.md and preparation-identities.json are unchanged and unrun.",
+ "instrument": {
+  "harness_commit": "ce57f291649fd7bd2c1c9b8daa5eace2813f8b6c",
+  "clean": true,
+  "control_plane": "371d962fd7606a00afcb444480007dafe54d38c59af3b8821f3d1d922a6a88e8",
+  "interpreter": "3.10.14 /opt/homebrew/opt/python@3.10/bin/python3.10",
+  "executor_sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+  "worker_settings_digest": "6af2663d197d93222b193fbb69af24509ebbaaba5834f25852c62ce0b3b6823a",
+  "profile_revision": "2026-09-24",
+  "startup_policy": {
+   "catalogue": "bundled: OPENCODE_DISABLE_MODELS_FETCH, and no cached models.json in the home",
+   "config_dir": "staged with the executor's own defaults and write-denied by the boundary, so the executor skips its npm install of @opencode-ai/plugin",
+   "logs": "OPENCODE_PRINT_LOGS: the executor's log goes to stderr, i.e. the attempt's worker.log",
+   "refuse_before_launch": "a changed configuration directory, a cached catalogue, a lock or breaker left by an earlier executor process, or a .opencode directory"
+  }
+ },
+ "coordinator": {
+  "design_phase": {
+   "requested": "claude-code/opus",
+   "session": "the session that ran the qualification continuation"
+  },
+  "after_handoff": {
+   "requested": "claude-code/opus, a separate headless session (claude -p --model opus) started with only the continuation prompt",
+   "renewal": "impossible: the run's resource policy is frozen after its first launch"
+  }
+ },
+ "task": {
+  "goal": {
+   "sha256": "107204b747b405ce04aeca4d3a0977c12d8e69423bb331cc6186a07e2aadf007",
+   "equals_public": true
+  },
+  "outcome_check": {
+   "sha256": "7ac133330d36416db3aafb1f824db5f24d1f16d88e5369cb892c8c1413a281e2",
+   "equals_public_unchanged": true
+  },
+  "starting_project_baseline": "910da0a34b580b5e663debb03acc4cfa60bb8cfa",
+  "start": "from the ordinary goal; no preaccepted requirements"
+ },
+ "limits": {
+  "aggregate_derived_limit": 0.55,
+  "reserve": 0.05,
+  "launch_ceiling": 11,
+  "attempt_deadline_seconds": 900,
+  "containment": {
+   "max_model_requests": 150,
+   "max_consecutive_incomplete_responses": 5,
+   "derived_spend_during_attempt": true
+  },
+  "repair_cycles": 1
+ },
+ "handoff_point": "after the consistency review is accepted and recorded, when status names implementation binding in the build phase; the fresh session starts there with `pb_workflow.py status` and drives implementation admission, implementation, fresh review, adjudication and finish",
+ "delivery_success": "verify-delivery applies the sealed patch to a fresh checkout of the recorded baseline; both the project checks and the unchanged public outcome check must pass",
+ "gate": {
+  "plan_digest": "8d69e76735bba64943b45757f70764840a77a4bd32fe5d63abbc2d8ce103e16f",
+  "result": "evals/results/qualification-live-2026-09-24-continuation-deepseek-v4-flash-high.json",
+  "result_sha256": "46ef04350aa31f84805b0fba1c26dfc6a9792ebc27fe997581a1d15a019f0fb5",
+  "met": [
+   "tool loop applicable within the bridge's scope, no contradicting observation",
+   "contradictory: detected and substantiated, correct stop; verification of a finding the author stated, not independent discovery",
+   "coherent: clean, correctly accepted",
+   "dispatch: checker pass first attempt, accepted through review, no repair, sealed",
+   "identities, lifecycle and accounting reconcile; no unresolved shared-path defect"
+  ]
+ },
+ "authorization": {
+  "owner": "Conditional first-use authorization: I explicitly carry forward the previously unused first-use allocation to the repaired configuration: $0.55 derived-cost limit. $0.05 reserve within that limit. At most 11 launches. One diagnostic goal-to-delivery run, only after the qualification gate below is met. This is the same first-use allocation, not an additional duplicate.",
+  "status": "bound to this preparation; gate met"
+ }
+}
