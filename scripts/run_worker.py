@@ -144,7 +144,8 @@ def lookup_session_id(env: dict[str, str], title: str,
     # session id silently, and usage cannot be attributed to the launch that incurred it.
     try:
         cp = subprocess.run(
-            ["opencode", "session", "list", "--format", "json", "--max-count", "50"],
+            [shutil.which("opencode", path=env.get("PATH")) or "opencode", "session", "list",
+             "--format", "json", "--max-count", "50"],
             text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env,
             cwd=str(project_root) if project_root else None,
             timeout=30, check=False,
@@ -404,7 +405,11 @@ def child_run(args: argparse.Namespace, paths: dict[str, Path], reserved_at: str
     env["OPENCODE_DB"] = str(db)
     title = args.title or f"dsd:{args.task_id}:{args.role}:{args.attempt}"
     prompt = prompt_file.read_text(encoding="utf-8")
-    cmd = ["opencode", "run", "--model", args.model]
+    # The resolved path, not the bare name: in a supervised run it lies in the run's runtime
+    # directory, so the host can recognise the worker as this attempt's even after this monitor has
+    # exited. A monitor inside the boundary cannot signal it, and the bare name tied it to nothing the
+    # host could corroborate: reproduced, a stalled worker outlived its deadline and the sweep.
+    cmd = [shutil.which("opencode") or "opencode", "run", "--model", args.model]
     # Provider-specific reasoning effort. Passed explicitly rather than inherited: a provider that
     # changes its default effort would otherwise change a frozen experiment without anything in the
     # record moving.
