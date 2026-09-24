@@ -203,6 +203,17 @@ def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
             return refuse("refusing to launch: the executor would not start as this run's "
                           "settings record: " + "; ".join(why))
 
+    # A declared toolchain and the dependencies prepared with it must still be the recorded bytes,
+    # and still correspond to the project's dependency declarations (`_toolchain`).
+    toolchain = None
+    if config.get("toolchain"):
+        import _toolchain
+        toolchain = _toolchain
+        why = _toolchain.problems(config)
+        if why:
+            return refuse("refusing to launch: the run's prepared toolchain or dependencies no "
+                          "longer match their preparation: " + "; ".join(why))
+
     if local:
         # The executor must read exactly the configuration recorded at start. A missing or moved
         # file would let OpenCode fall back to its defaults — a hosted model — without anything
@@ -221,6 +232,10 @@ def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
            if config.get("boundary_profile") or local else
            {k: v for k, v in os.environ.items() if not k.startswith("OPENCODE")})
     env["PATH"] = os.pathsep.join([executor_dir, "/usr/bin", "/bin", "/usr/sbin", "/sbin"])
+    if toolchain is not None:
+        extra = toolchain.worker_env(config)
+        env["PATH"] = extra.pop("PATH_PREFIX") + os.pathsep + env["PATH"]
+        env.update(extra)
     env["HOME"] = config["home"]
     env.update(config.get("worker_env") or {})
     if startup:

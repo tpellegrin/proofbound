@@ -171,6 +171,7 @@ the DeepSeek route. Neither route protects against malicious code or a compromis
 | endpoint | a TCP connection and `GET …/models`; no completion requested |
 | tool-loop compatibility | **not established by `doctor`** |
 | task qualification | **not established by `doctor`** |
+| project tooling | **not checked by `doctor`**; a run that declares a toolchain checks it inside its own boundary ([below](#project-toolchain)) |
 
 With nothing listening, a local profile is **not ready**. The problem names the URL and says to
 start the server or edit the profile. It never suggests using a cloud credential instead. An
@@ -238,6 +239,38 @@ Before a slot is reserved, the launcher refuses to start from anything else, nam
 Each attempt records `executor-state.json` beside its log. Started runs keep their original
 start-up. Evidence:
 [evidence/executor-startup-2026-09-24.md](evidence/executor-startup-2026-09-24.md).
+
+## Project toolchain
+
+A run may declare a Node distribution with `start --toolchain` (`scripts/_toolchain.py`). Without
+one, the boundary cannot run a project check that needs a pinned Node, or a compiler that executes
+native code from `node_modules`. Measured on 2026-09-24 with BorrowDesk: `node` not found, the
+pinned Node refused, TypeScript 7's native compiler refused.
+
+- **Prepared, not referenced.**
+  - `start` copies `node`, `npm` and `npx` into the run's runtime, so later changes to the
+    declared distribution cannot change the executed bytes, and renaming a parent directory cannot
+    substitute others. It records versions and per-entry digests.
+  - It also records the project's already-installed dependencies: the lockfile digest, the
+    `package.json` dependency fields and the `node_modules` tree digest.
+  - A symlink that leaves the copied files is refused.
+- **The boundary** puts the prepared `bin` first on the worker `PATH`. It allows execution inside
+  `node_modules` only, and denies every write to the prepared copy and to `node_modules`: data,
+  mode, times, extended attributes, renames and hard links. Worker `npm` runs offline. Nothing
+  else changes. Network and credentials are the profile's, and the owner's home stays outside.
+- **Readiness.** Authorization runs the project check inside the boundary with the worker's
+  environment, before staging the credential. `status` reports `project_tooling` and says
+  `verified` only when that check passed. Provider readiness is reported separately and implies
+  nothing about project tooling.
+- **Freezing.** Every launch, before its slot is reserved, and every acceptance check refuses if
+  any recorded digest changed, including a worker's edit to the dependency declarations. Nothing
+  installs, refreshes or downloads during execution or resume. A dependency change needs its own
+  adjudication and a newly prepared run.
+
+Project checks already execute project code. A declared toolchain makes prepared tooling
+available; it does not make dependency code trusted or harmless. Runs without the declaration, and
+historical runs, are unchanged. Evidence:
+[evidence/project-toolchain-2026-09-24.md](evidence/project-toolchain-2026-09-24.md).
 
 ## What this does not establish
 

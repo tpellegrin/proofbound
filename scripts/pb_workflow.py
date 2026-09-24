@@ -138,7 +138,10 @@ def readiness(settings, executor):
                 "tool_loop": "not established: doctor requests no completion. "
                              "`evals/pb_qualify.py` replays the tool loop against a stand-in "
                              "endpoint; only a live run observes a real model",
-                "task_qualification": "not established by doctor"},
+                "task_qualification": "not established by doctor",
+                "project_tooling": "not checked by doctor. A run that declares --toolchain runs "
+                                   "its project check inside its own boundary at authorization; "
+                                   "`status` reports the result"},
             "environment_supported": supported, "boundary_process_available": boundary_available,
             "boundary": "macOS sandbox-exec for launched processes; host coordinator is outside it",
             "codex": {"installed": shutil.which("codex") is not None,
@@ -179,6 +182,11 @@ def start(args):
                 if args.deadline_seconds != in_effect:
                     conflicts.append({"field": "--deadline-seconds",
                                       "requested": args.deadline_seconds, "in_effect": in_effect})
+                requested_toolchain = (str(Path(args.toolchain).expanduser().absolute().resolve())
+                                       if getattr(args, "toolchain", None) else None)
+                if requested_toolchain != (config.get("toolchain") or {}).get("resolved"):
+                    conflicts.append({"field": "--toolchain", "requested": requested_toolchain,
+                                      "in_effect": (config.get("toolchain") or {}).get("resolved")})
                 recorded = profiles.of(config)
                 ignored = ({"legacy", "profile.source", "profile.path", "profile.source_sha256"}
                            if recorded.get("legacy") else set())
@@ -209,6 +217,10 @@ def start(args):
     if subprocess.check_output(["git", "-C", str(project), "status", "--porcelain"], text=True).strip():
         raise ValueError("start needs a clean project to retain a usable baseline patch; preserve pending work in a commit or separate worktree")
     if not authority.resolve().is_relative_to(project): raise ValueError("authority path escapes project through a symlink")
+    if getattr(args, "toolchain", None):
+        import _toolchain
+        problems = _toolchain.check(args.toolchain, project)
+        if problems: raise ValueError("--toolchain cannot be prepared: " + "; ".join(problems) + "; nothing was created")
     authority.mkdir(parents=True)
     run.mkdir(parents=True)
     goal_path = authority / "goal.md"
@@ -240,6 +252,10 @@ def start(args):
     # A local profile's executor configuration is written now, not at authorization: an offline
     # launch without it would let the executor fall back to its own default — a hosted model.
     config.update(profiles.write_opencode_config(settings, runtime))
+    if getattr(args, "toolchain", None):
+        # Declared, copied into the runtime and recorded by content now; verified before every launch.
+        import _toolchain
+        config["toolchain"] = _toolchain.prepare(args.toolchain, runtime, project)
     rules = helper("prepare_worker_rules.py", "--project-root", project, "--run-root", run,
                    "--plan", goal_path, "--model", settings["model"],
                    "--rule", "Review requirements, code and checks before reading a producer summary; record what you saw.")
@@ -498,7 +514,27 @@ def status(run):
                              if ledger.unresolved() else
                              "Supply explicit owner spending authority if none exists; otherwise reconcile retained launch/usage evidence. Never automatically buy another trajectory."),
                     "accounting": verdict["spend"]}
+    tooling = project_tooling(run)
+    if tooling is not None:
+        result["project_tooling"] = tooling
     return result
+
+
+def project_tooling(run):
+    """Whether the project's own check has run inside this run's boundary. Only a run that declared
+    a toolchain has one to report; being able to reach the provider says nothing about it."""
+    record = read(run / "run-config.json").get("toolchain")
+    if not record:
+        return None
+    check = record.get("boundary_check")
+    out = {"toolchain": {k: record.get(k) for k in ("declared", "node_version", "npm_version")}}
+    if check is None:
+        return {**out, "verified": False, "why": "not checked yet: authorization runs the project "
+                                                 "check inside the boundary"}
+    return {**out, "verified": bool(check.get("passed")),
+            "check": {k: check.get(k) for k in ("command", "returncode", "seconds", "checked_at")},
+            **({} if check.get("passed") else {"why": "the project check did not pass inside the "
+                                                      "boundary; see project-tooling-check.json"})}
 
 
 def continue_run(run):
@@ -626,6 +662,15 @@ def check_project(run, c):
     """
     timeout = c.get("check_timeout_seconds", CHECK_TIMEOUT_SECONDS)
     env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
+    if c.get("toolchain"):
+        import _toolchain
+        why = _toolchain.problems(c)
+        if why:
+            path = receipt(run, "project checks", {"command": c["check_command"], "returncode": None,
+                           "refused": why})
+            raise ValueError("project checks refused: " + "; ".join(why) + f"; evidence {path}; no acceptance")
+        env["PATH"] = str(Path(c["toolchain"]["prepared"]) / "bin") + os.pathsep + env.get("PATH", "")
+        env.update(_toolchain.WORKER_NPM_ENV)
     try:
         cp = subprocess.run(shlex.split(c["check_command"]), cwd=c["paths"]["project"],
                             capture_output=True, text=True, timeout=timeout, env=env)
@@ -789,17 +834,40 @@ def verify_delivery(args):
     result.update(repository=str(source), checkout=str(checkout), applied=applied,
                   apply_error=None if applied else (steps[-1].stderr or steps[-1].stdout)[-2000:])
     result["project_check"] = {"passed": None, "note": "not run: the patch did not apply"}
+    env = None
+    toolchain = config.get("toolchain")
+    if applied and toolchain:
+        # The run's toolchain was a copy; verification uses its source, and only if the source
+        # still holds the same bytes. The fresh checkout is prepared the way the run was.
+        import _toolchain
+        if not _toolchain.source_matches(toolchain):
+            applied = False
+            result["project_check"] = {"passed": None, "note": f"not run: {toolchain['resolved']} no "
+                                       "longer holds the toolchain bytes the run prepared"}
+        else:
+            env = {"PATH": str(Path(toolchain["resolved"]) / "bin") + os.pathsep + os.environ.get("PATH", "")}
+            prepared = _bounded(toolchain["dependencies"]["prepare_command"], checkout,
+                                CHECK_TIMEOUT_SECONDS, env=env)
+            now = _toolchain.dependencies(checkout)
+            result["dependencies"] = {
+                "command": toolchain["dependencies"]["prepare_command"], "returncode": prepared["returncode"],
+                "lockfile_matches_prepared": now["lockfile"]["sha256"] == toolchain["dependencies"]["lockfile"]["sha256"],
+                "node_modules_digest": now["node_modules"]["digest"],
+                "note": "installed files can embed their install location (native build configuration), so "
+                        "node_modules digests are compared within a run, not across locations; the lockfile is "
+                        "the comparable identity"}
     if applied:
         result["project_check"] = _bounded(shlex.split(config["check_command"]), checkout,
                                            config.get("check_timeout_seconds",
-                                                      CHECK_TIMEOUT_SECONDS))
+                                                      CHECK_TIMEOUT_SECONDS), env=env)
         result["project_check"]["command"] = config["check_command"]
         if args.outcome_check:
             argv = [part.replace("{checkout}", str(checkout))
                     for part in shlex.split(args.outcome_check)]
-            result["outcome_check"] = {**_bounded(argv, into, CHECK_TIMEOUT_SECONDS),
+            result["outcome_check"] = {**_bounded(argv, into, CHECK_TIMEOUT_SECONDS, env=env),
                                        "command": args.outcome_check}
     result["verified"] = bool(applied and result["project_check"]["passed"]
+                              and (result.get("dependencies") or {"returncode": 0})["returncode"] == 0
                               and (result.get("outcome_check") or {"passed": True})["passed"])
     atomic_json(into / "verification.json", result)
     return result
@@ -847,8 +915,8 @@ def _recompute_accounting(delivery):
     return out
 
 
-def _bounded(argv, cwd, timeout):
-    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
+def _bounded(argv, cwd, timeout, env=None):
+    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1", **(env or {})}
     try:
         cp = subprocess.run(argv, cwd=cwd, capture_output=True, text=True, timeout=timeout,
                             env=env)
@@ -878,6 +946,10 @@ def main():
                     help="built-in profile name or path to a profile file; fixed for the run")
     st.add_argument("--deadline-seconds", type=int, default=900,
                     help="per-attempt worker deadline; fixed for the run")
+    st.add_argument("--toolchain", type=Path, default=None,
+                    help="a Node distribution the project's checks need, copied into the run and "
+                         "run inside the worker boundary; install the project's dependencies with "
+                         "its npm first. Optional; fixed for the run")
     vd = sub.add_parser("verify-delivery", help="apply a sealed delivery to a fresh checkout of "
                         "its baseline and rerun the checks; touches neither project nor run")
     vd.add_argument("--delivery", type=Path, required=True)

@@ -30,6 +30,41 @@ checks executable identity against the historically qualified OpenCode build. It
 qualify the new goal-to-change workflow. GPT-6 is the requested Codex coordinator configuration;
 configure it explicitly in Codex, never substitute a model silently.
 
+### A project that needs its own toolchain
+
+The worker boundary executes system binaries, the interpreter and the run's own runtime, so a
+project check that needs, say, a pinned Node under your home cannot run inside it. Declare the
+toolchain at `start`:
+
+```bash
+"$NODE/bin/npm" ci                       # in the project, before start; nothing installs later
+python3 "$PB/scripts/pb_workflow.py" start --project "$PROJECT" --change CH-001 \
+  --goal-file goal.md --check 'npm run check' --toolchain "$NODE"
+```
+
+What each step does:
+- **`start`** copies the distribution's `node`, `npm` and `npx` into the run. It records their
+  versions and digests, the lockfile, the dependency fields of `package.json` and the installed
+  `node_modules`. It refuses the following, before creating anything:
+  - dependencies that are not installed;
+  - a `.node-version` mismatch;
+  - symlinks that leave the copied files.
+- **Authorization** runs `--check` inside the worker boundary, with the worker's environment.
+  `status` then reports `project_tooling`: `verified: true` only if that check passed. Provider
+  readiness says nothing about project tooling.
+- **Inside the boundary** the worker gets the prepared copy first on its `PATH` and offline `npm`.
+  The dependencies in `node_modules` can execute, and nothing else in the project can. The worker
+  cannot write, rename or relink the prepared copy or `node_modules`.
+- **Every launch, and the acceptance check,** is refused if any recorded digest changed, including
+  a worker's edit to the dependency declarations. Nothing reinstalls: a dependency change needs its
+  own adjudication and a newly prepared run.
+- **`verify-delivery`** runs `npm ci` in its fresh checkout with the declared toolchain, but only
+  while that toolchain still holds the prepared bytes.
+
+Project checks already execute project code. A declared toolchain makes prepared tooling available;
+it does not make dependency code trusted. The worker profile's network and credential rules are
+unchanged, and your home stays outside the boundary. A run without `--toolchain` is unchanged.
+
 ## Authority and resources
 
 The owner supplies the goal, compatibility constraints and spending authority. The coordinator may

@@ -17,7 +17,7 @@ def stage_interpreter(tools):
 
 
 def profile_text(runtime, tools, project, policy, *, loopback_only=False, protected=(),
-                 protected_trees=()):
+                 protected_trees=(), exec_trees=()):
     # The executor is a hard link: a write here would alter the host binary too.
     text = (_profile(runtime, tools, policy)
             + f'(allow file-write* (subpath "{project}"))\n'
@@ -28,6 +28,9 @@ def profile_text(runtime, tools, project, policy, *, loopback_only=False, protec
         text += f'(deny file-write* (literal "{path}"))\n'
     for path in protected_trees:
         text += f'(deny file-write* (subpath "{path}"))\n'
+    for path in exec_trees:
+        # A declared toolchain's prepared dependencies only (`_toolchain`); writes there are denied.
+        text += f'(allow process-exec (subpath "{path}"))\n'
     if loopback_only:
         # After the policy's blanket `(deny network*)`: outbound connections to loopback only.
         # A later rule wins. What this does not stop is recorded with the profile's network claim.
@@ -102,6 +105,38 @@ print(json.dumps(out))
         return {"checks": {}, "unmeasured": str(exc)}
 
 
+def worker_env(c, *, tools=None):
+    """The environment a worker's commands run with, as `_supervised_launch` builds it."""
+    from _toolchain import worker_env as toolchain_env
+    runtime = Path(c["home"]).parent
+    extra = toolchain_env(c)
+    path = [str(tools or runtime / "tools"), "/usr/bin", "/bin", "/usr/sbin", "/sbin"]
+    if extra.get("PATH_PREFIX"):
+        path.insert(0, extra.pop("PATH_PREFIX"))
+    return {"LANG": "en_US.UTF-8", "TMPDIR": str(runtime / "tmp"), "HOME": c["home"],
+            "PATH": os.pathsep.join(path), **extra}
+
+
+def tooling_check(c, profile, project, *, timeout=600):
+    """Run the project's check inside the boundary, unpaid, and say what happened."""
+    import time
+    from datetime import datetime, timezone
+    started = time.monotonic()
+    record = {"command": c["check_command"], "inside": str(profile),
+              "checked_at": datetime.now(timezone.utc).isoformat()}
+    try:
+        cp = subprocess.run(["/usr/bin/sandbox-exec", "-f", str(profile),
+                             *shlex.split(c["check_command"])], cwd=project, env=worker_env(c),
+                            capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return {**record, "returncode": None, "passed": None,
+                "seconds": round(time.monotonic() - started, 1),
+                "note": f"did not finish within {timeout}s; unknown, not verified"}
+    return {**record, "returncode": cp.returncode, "passed": cp.returncode == 0,
+            "seconds": round(time.monotonic() - started, 1),
+            "tail": (cp.stdout + cp.stderr).strip().splitlines()[-12:]}
+
+
 def prepare(config):
     from _worker_profiles import of
     c = dict(config)
@@ -131,9 +166,17 @@ def prepare(config):
         from _executor_startup import boundary_rules
         for kind, path in boundary_rules(c["home"]):
             (trees if kind == "subpath" else protected).append(path)
+    exec_trees = []
+    if c.get("toolchain"):
+        from _toolchain import boundary_rules
+        rules = boundary_rules(c)
+        trees += rules["deny_write"]
+        exec_trees = rules["allow_exec"]
+    if any('"' in x or '\n' in x or '\\' in x for x in [*trees, *exec_trees]):
+        raise ValueError("sandbox profile paths cannot contain quotes, backslashes or newlines")
     profile.write_text(profile_text(runtime, tools, project, policy, loopback_only=loopback,
                                     protected=[p for p in protected if p],
-                                    protected_trees=trees))
+                                    protected_trees=trees, exec_trees=exec_trees))
     c["boundary_profile"] = str(profile)
     c["executor"] = {**c["executor"], "path": str(staged)}
     observed = probe(profile, home=c["home"], cwd=project,
@@ -150,6 +193,11 @@ def prepare(config):
         if not network.get("established"):
             raise ValueError("boundary probe did not establish loopback-only network access; see "
                              + str(runtime / "network-probe.json"))
+    if c.get("toolchain"):
+        # Project-tooling readiness is established only here, by running the project's own check
+        # inside this boundary with the worker's environment — before any credential is staged.
+        c["toolchain"] = {**c["toolchain"], "boundary_check": tooling_check(c, profile, project)}
+        atomic_json(runtime / "project-tooling-check.json", c["toolchain"]["boundary_check"])
     entry = settings["credential"]["auth_entry"]
     if entry is None:
         # Nothing staged, deliberately: a local worker needs no cloud credential, and an absent
