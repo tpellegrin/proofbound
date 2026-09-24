@@ -54,7 +54,7 @@ an agent's token usage, its context pressure, or how well it will do the task.
 | **D2.** Authoring scenarios or grading a run | README + [evaluation](evaluation.md) | the binding chain, comparison rules, run history | 55 KB |
 | **D3.** Calibrating a suite, comparing runs, or designing a control arm | README + [evaluation-comparison](evaluation-comparison.md) | scenario authoring, the binding chain | 55 KB |
 | **D4.** Measuring what many changes do to a system, or calibrating that | README + [system-craft](system-craft.md) | the contract-binding chain, scenario authoring | 55 KB |
-| **D5.** Adding a worker profile, or qualifying and comparing worker configurations | README + [worker-profiles](worker-profiles.md) + [evaluation-qualification](evaluation-qualification.md) | the binding chain, craft, run history | 37 KB |
+| **D5.** Adding a worker profile, or qualifying and comparing worker configurations | README + [worker-profiles](worker-profiles.md) + [evaluation-qualification](evaluation-qualification.md) | the binding chain, craft, run history | 43 KB |
 | **E.** Fixing a bug in inherited DSD mechanics | README + [execution-and-review](execution-and-review.md) | everything else | 30 KB |
 | **F.** Asking "why is this rule like this?" | [evidence/implementation-findings](evidence/implementation-findings.md) | — | 42 KB |
 | **G.** Archaeology on the original design | [evidence/original-rfc](evidence/original-rfc.md) | — | 84 KB |
@@ -151,7 +151,8 @@ One line each. **Canonical definitions, with falsifiers, are in
 | Fresh-context authority recovery (`pb-handoff-1`) | **Live, once per condition** (2026-09-18): one coordinator carried a bound implementation to acceptance, another refused a mutated state without launching. $0.020516, 2 of 5 slots. Two observations, not a rate. It found authorization advisory; **repaired offline** (A6.10) — `admit` binds and authorizes in one act, and a launch without a matching record is refused |
 | Intent challenge as an ordinary artifact | **Decided**: `proposal-reflection`; no new kind, role or purpose |
 | Worker profiles — DeepSeek default, local OpenAI-compatible | **Implemented**; the local route's mechanics exercised by a scripted endpoint through the real pinned executor and boundary. **No local model qualified** |
-| Configuration qualification and comparison (`E26`/`E27`) | **Implemented**, replay only; no live qualification run. `E17.3` corrected: an unrecorded control no longer certifies a controlled comparison |
+| Configuration qualification and comparison (`E26`/`E27`) | **Implemented**, replay only; six instrument defects repaired 2026-09-23; a live proposal is prepared and **not authorized** |
+| Attempt containment; DeepSeek revision 2026-09-23 (V4.1 Flash serves the requested name) | **Implemented**; containment observed against a scripted endpoint only |
 | Decision provenance, coherence audit, context telemetry | Direction only; see the plan's dependency graph |
 
 Canonical test command: `python3 -m unittest discover -s tests -t .` (Python ≥3.10).

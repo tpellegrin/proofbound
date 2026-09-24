@@ -43,8 +43,12 @@ Every trial is a supervised run: `pb_workflow.py start --worker-profile …`, la
 production admission, boundary, ledger and teardown, graded from what the run retained. There is
 no evaluation-only model client.
 
-- **Live.** `prepare-live` runs readiness first, and prepares nothing if it fails. It then starts
-  and authorizes one run per planned cell through the ordinary authorization command and launches
+- **Live.** A live plan is either a **proposal** — frozen, retained, and refused by every command
+  that would execute it — or **authorized**. `authorize` turns a proposal into a plan with the
+  owner's own statement and changes nothing else; no command writes an authorization on anyone's
+  behalf. `prepare-live` runs readiness first, and prepares nothing if it fails. It then starts
+  and authorizes one run per planned cell through the ordinary authorization command, checks that
+  each run froze the plan's interpreter, executor bytes and worker settings, and launches
   nothing. A real coordinator drives each run to the case's stopping point; `grade` retains and
   grades. A run nobody drove is `not-run`, never a failure.
 - **Replay.** A scripted coordinator drives the same front door, and a stand-in does the work.
@@ -62,11 +66,23 @@ graders reproduced every declaration is evidence about the **instrument**, never
 ### E26.4 Frozen before it runs
 
 A plan freezes, and its digest covers: the suite digest; the resolved worker settings; the
-executor pin; the control plane's `scripts/` bytes; the interpreter; the requested coordinator;
-the ordered trial list; per-trial resource limits, deadline and repair policy; the owner's
-authorization (required for a live plan); and the evidence each trial must retain. Execution
-refuses a plan whose bytes moved, or whose suite, control plane or profile source changed since it
-was frozen — naming what changed. The repair is a new plan, never an amended one (`E24.1`).
+executor's bytes; the control plane's `scripts/` bytes; the interpreter; the harness commit, as
+provenance; the planned coordinator; the ordered trial list; per-trial allocations; the deadline,
+repair policy and containment; the owner's authorization, or its absence; and the evidence each
+trial must retain. The suite digest covers the graders, the qualification CLI that prepares,
+retains and grades, the replay stand-ins and the replay corpus, because each shapes the evidence.
+
+Each trial's launch ceiling is enumerated from its case's stages, with one pre-executor allowance.
+Its derived-spend limit is that ceiling times a per-launch allowance, and the campaign's totals
+are their sum. Allowances never renew across trials, resumes or coordinator contexts.
+
+**Execution** refuses a moved plan, a changed suite, control plane or profile source, another
+interpreter minor version, or executor bytes other than the plan's, naming what changed.
+**Grading** refuses a changed suite, control plane or interpreter. The checker runs delivered code
+under the interpreter, so it names the harness commit to grade from and touches no run.
+**Inspection** enforces nothing: an old result stays readable, and a grade that no longer
+recomputes under changed graders is reported as `instrument-changed`, not as tampering. The repair
+for a flawed plan is a new plan, never an amended one (`E24.1`).
 
 ### E26.5 Grading is deterministic, separate, and re-derivable
 
@@ -78,6 +94,19 @@ was frozen — naming what changed. The repair is a new plan, never an amended o
   pre-repair bytes, so a live first-attempt verdict after a repair is `unavailable`. Only a replay
   driver can snapshot it.
 - **False acceptance and false refusal are counted.** So are coordinator decisions and repairs.
+- **A continuation is causal, or it is not established.** A tool counts as continued when its
+  model call's step-finish reason is `tool-calls` and a later call in the same session followed.
+  That is the executor's own sequence: one assistant message per call, identifiers ascending
+  within the process. Creation order and tool end times must agree with it. Missing identifiers or
+  reasons, duplicate parts, an unidentified session or contradictory order make the evidence
+  `insufficient-evidence`, never a pass. Counting finished rows passed a trial in which nothing
+  followed the tool.
+- **A review is graded against the bytes it saw.** Each reviewer's scope baseline records the
+  sha256 of what it reviewed. Its findings are graded against retained bytes with that digest, or
+  reported `unavailable`. After a repair, the second review is not the first review's evidence.
+- **Completed means concluded.** A trial is `completed` only when every attempt has a terminal
+  record, every launch slot is classified, and the case's stopping point was reached. Otherwise it
+  is `incomplete`, with the reason. An `attempt.json` proves a launch, not a conclusion.
 - **Infrastructure is not semantics.** A tool loop whose every "finished" call recorded zero
   tokens and no tool completed saw no complete response; it is an infrastructure failure. It still
   counts against operational reliability, and it is excluded from the semantic denominator.
@@ -122,6 +151,11 @@ names the question that supports:
 A declared treatment may change a bundle. That is recorded as a bundle and is not rejected
 because several fields moved. Nor is it ever reported as one member's effect. Cells measured by
 different transports are listed and never set side by side.
+
+A result reports its planned configuration and, separately, the configuration its runs recorded:
+interpreter, executor bytes, worker model and variant, and coordinator receipts. A comparison
+prefers the record. Runs that disagree among themselves leave a field unverified. A record that
+contradicts its plan is named, and the comparison is not controlled.
 
 ### E27.2 Unknown is neither agreement nor difference
 

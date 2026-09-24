@@ -56,14 +56,33 @@ than ignored.
 | Endpoint | provider-managed | a **loopback** URL with an explicit port; no userinfo, query or fragment |
 | Variant | `--variant high` | none is passed: `high` means nothing to a local server |
 | Credential staged | the `deepseek` entry only | **none** |
-| Billing basis | `dated-table` at `deepseek-2026-09-09` | `no-external-api-billing` |
+| Billing basis | `dated-table`, by revision (below) | `no-external-api-billing` |
 | Worker network | unrestricted | **loopback-only** |
 | Authorization command | `authorize-spending` | `authorize-resources` |
-| Live qualification | `pb-handoff-2`, one seeded-authority continuation | **none** |
+| Live qualification | `pb-handoff-2` observed V4 Flash, before its retirement; **none** of V4.1 Flash | **none** |
 
 The DeepSeek route is selected by its built-in name only; it cannot be redefined by a file. A
 profile carrying a secret-looking key (`api_key`, `token`, `authorization`, `headers`, …) is
 refused, so profile identity cannot contain a credential. Refusals name every problem at once.
+
+### What the DeepSeek name means, by date
+
+A provider can change what serves a name without the request changing, so the built-in profile
+carries a dated **revision**: the provider facts it was read against, the price table and the price
+model. A run keeps the revision it started under. A run recorded before profiles keeps the first.
+Neither is reinterpreted later.
+
+| Revision | Provider facts | Priced as |
+|---|---|---|
+| `2026-09-09` | `deepseek-v4-flash` served DeepSeek-V4-Flash-0731 | `deepseek-v4-flash` at `deepseek-2026-09-09` |
+| `2026-09-23` (current) | since 2026-09-10 V4 Flash is retired; the name is "temporarily routed to V4.1 Flash" and "billed at the Flash price" ([updates](https://api-docs.deepseek.com/updates/)) | `deepseek-flash` at `deepseek-2026-09-23` |
+
+The request stays `deepseek/deepseek-v4-flash` with `--variant high`, the shape the pinned executor
+was observed sending. `deepseek-flash` is in the executor's fetched catalogue and has not been
+exercised through it, so it is not adopted. Settings record the requested model, the documented
+serving with its source and date, and the runtime identity actually available. That is the
+requested id only: the executor does not retain the response's `model` field, and no alias or
+model string identifies weights.
 
 ## Credentials and fallback
 
@@ -113,7 +132,7 @@ What bounds a local run, stated so nothing configured is mistaken for enforced:
 
 | Enforced by Proofbound | Configured, not enforced by Proofbound |
 |---|---|
-| launch ceiling, one shared repair allowance, the attempt deadline (host-owned teardown of the worker client), one supervised launch per run at a time, the output-token allowance between attempts when set | per-call output limit (sent as `max_tokens`; the server may or may not honour it), context limit (used by the executor for compaction), server concurrency |
+| launch ceiling, one shared repair allowance, the attempt deadline (host-owned teardown of the worker client), one supervised launch per run at a time, the output-token allowance between attempts when set, and **attempt containment** (below) | per-call output limit (sent as `max_tokens`; the server may or may not honour it), context limit (used by the executor for compaction), server concurrency |
 
 `authorize-resources` records the owner's authorization with that split, and accepts no money
 limit, because a money limit would bound nothing here.
@@ -167,10 +186,28 @@ of these and is never signalled. A timed-out local attempt records
 `server: owned_by_attempt: false, signalled: false`. Stopping the client establishes nothing about
 whether the server stopped generating for it, and that is recorded as unknown.
 
-Observed with the pinned executor against an endpoint that drops every stream mid-response:
-OpenCode 1.18.29 **retried 4,649 times in the 900-second deadline**, recording each retry as a
-finished zero-token call. The deadline ended it; the gate refused the attempt. The deadline is the
-only thing bounding a worker whose server keeps failing mid-stream.
+## Attempt containment
+
+Observed with the pinned executor against an endpoint that drops every stream mid-response.
+OpenCode 1.18.29 treats a response that ended without a finish reason as a finished step and
+requests again at once: **4,649 model requests in the 900-second deadline**, each recorded with
+finish reason `unknown` and zero tokens, from one launch, with no tool call and no repair. Its own
+agent `steps` limit bounds tool-calling iterations — measured at 2 and 3 — and did not count these:
+420 requests in 60 s with `steps: 5`.
+
+So the host bounds them. For a run whose settings declare `attempt_containment` (every profile
+revision from 2026-09-23), the supervised launcher reads the attempt's session read-only every
+0.5 s. It stops the attempt through the host-owned teardown when any of these holds:
+
+- more than **150** model requests have been made;
+- **5** responses in a row have ended without a finish reason;
+- for a priced worker, the finished calls' derived spend exceeds what the trial's limit has left.
+
+The attempt is recorded as contained and unresolved, and the run blocks rather than relaunching.
+What the watch cannot see it does not claim. Requests made within one interval can pass a limit; a
+call in flight has no usage yet; a call recorded with zero tokens has none at all; and whether the
+provider billed or kept generating is unknown. Runs started without containment keep their
+original behaviour.
 
 ## What this does not establish
 

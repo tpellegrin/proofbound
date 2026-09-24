@@ -32,7 +32,7 @@ credentials; `PAID` invokes real models through the worker harness.
 | [`pb_craft.py`](pb_craft.py) | System craft: does architecture stay changeable? Calibration and repeatability | `validate <case-dir>` — *unpaid*. `run`, `reflect`, `regrade`, `repeat-reflect`, `sample` — **PAID** |
 | [`pb_mlr.py`](pb_mlr.py) | Modularity and local reasoning: does reading a module's implementation contribute to a change outside it? | `preflight`, `b1-preflight`, `analyse`, `retrospect` — *unpaid*. `pilot`, `paired`, `b1` — **PAID** |
 | [`pb_lifecycle_field_check.py`](pb_lifecycle_field_check.py) | Whether the attempt deadline actually stops a real worker | **PAID** — two provider-backed trials. An engineering validation, never a treatment sample |
-| [`pb_qualify.py`](pb_qualify.py) | Configuration qualification ([E26](../docs/architecture/proofbound/evaluation-qualification.md#e26-qualifying-a-configuration-before-selecting-it)): what a worker configuration does through the production path — tool loop, requirements challenge, implementation, authority recovery — and which question two results can answer. Not "the evals": one bounded suite for one question | `suite`, `plan`, `replay`, `inspect`, `compare` — *unpaid*. `prepare-live` makes no provider request; the runs it prepares **SPEND** once a coordinator drives them; `grade` — *unpaid* |
+| [`pb_qualify.py`](pb_qualify.py) | Configuration qualification ([E26](../docs/architecture/proofbound/evaluation-qualification.md#e26-qualifying-a-configuration-before-selecting-it)): what a worker configuration does through the production path — tool loop, requirements challenge, implementation, authority recovery — and which question two results can answer. Not "the evals": one bounded suite for one question | `suite`, `plan` (including `--proposal`), `authorize`, `replay`, `inspect`, `compare` — *unpaid*. `prepare-live` makes no provider request; the runs it prepares **SPEND** once a coordinator drives them; `grade` — *unpaid* |
 | [`authority_slice/pb_slice.py`](authority_slice/README.md) | The four-case authority slice, and the `pb-handoff-1` continuation experiment | `validate`, `replay`, `build`, `probe-input`, `launch-arithmetic`, `report`, `validate-checker`, `rehearse-live`, `readiness`, `prepare-live`, `build-runtime`, `probe-runtime`, `live-input`, `check-artifact`, `account` — *unpaid*. `launch` — *unpaid* in a rehearsal runtime, **PAID** in a live one |
 
 Supporting modules, none of them an entry point: `_scenario` (cases and their identities), `_trial`
@@ -64,7 +64,9 @@ python3 evals/pb_qualify.py replay --plan /tmp/pbq-plan --into /tmp/pbq-result
 python3 evals/pb_qualify.py inspect --result /tmp/pbq-result      # re-derive every grade
 ```
 
-A replay qualifies no model. For a local profile it runs the tool loop through the real pinned
+A live plan is either a **proposal** — frozen, retained, refused by every executing command — or
+authorized with the owner's own statement (`pb_qualify.py authorize`). Nothing writes an
+authorization on anyone's behalf. A replay qualifies no model. For a local profile it runs the tool loop through the real pinned
 executor against a scripted endpoint, and needs that executor installed. For the DeepSeek profile
 the tool-loop cells are recorded `not-run`, because a hosted provider cannot be replayed without
 its credential.

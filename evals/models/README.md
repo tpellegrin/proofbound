@@ -164,6 +164,13 @@ must not silently reinterpret evidence gathered before it moved.
   [audit](../craft/modularity-local-reasoning/MLR-eventbus-b1-timeout-audit.md),
   [record](../results/craft-mlr-deepseek-v4-flash-high-paired-eventbus-b1.json)
 
+**Correction by addition, 2026-09-23.** The provider retired V4 Flash on 2026-09-10. The requested
+name `deepseek/deepseek-v4-flash` is now "temporarily routed to V4.1 Flash" and billed at the Flash
+price ([updates](https://api-docs.deepseek.com/updates/)). Everything indexed above was produced by
+V4 Flash and does not transfer to what the same request now reaches. New runs record profile
+revision `2026-09-23`; nothing has observed V4.1 Flash yet
+([record](../../docs/architecture/proofbound/evidence/first-use-readiness-2026-09-23.md)).
+
 Outside the MLR series, the same configuration did the live work of the authority and workflow
 experiments, each indexed by its own question:
 

@@ -16,7 +16,7 @@ graders), **live-observed** (a real model or agent did the work, once per condit
 | Stage | Capability | Evidence gate | Status |
 |---|---|---|---|
 | Now | [`CAP-profiles`](#cap-profiles) — selectable worker profiles and trustworthy configuration qualification and comparison | Production-path offline demonstration, missing-data and adversarial checks, DeepSeek compatibility | **Mechanically qualified** (2026-09-23) |
-| Next | [`CAP-first-use`](#cap-first-use) — first real goal-to-change use and a competent direct-agent comparison | Retained live delivery from unseeded upstream authority; same coordinator in each pair; quality and total effort together | Frozen, unrun |
+| Now | [`CAP-first-use`](#cap-first-use) — minimum live qualification, then one first-use delivery; a paired comparison later | Retained live delivery from unseeded upstream authority, applied to a fresh baseline checkout with checks rerun; for a later pair, the same coordinator in each arm | Prepared; **awaiting owner spending authorization** |
 | Next | [`CAP-progression`](#cap-progression) — mechanical progression to the next judgment, and interruption inspection | Same authority and attempts as single-step driving; fewer coordinator interactions; no automatic adjudication or reroll; read-only diagnostics mutate and signal nothing | Not started |
 | When a local model is installed | [`CAP-local-worker`](#cap-local-worker), then [`CAP-local-coordinator`](#cap-local-coordinator) | Actual hardware, model, server and template identities; tool-loop and role tasks; cold/warm performance, context pressure, cancellation and resources; no borrowed "Opus-level" claim | Ready to configure; unqualified |
 | After an observed context bottleneck | [`CAP-context`](#cap-context) — bounded discovery, compact evidence, retrieval and caching | Original-source fallback, missed cross-file defects, cache invalidation, permissions and total usage measured | Research |
@@ -55,13 +55,23 @@ smallest next experiment · accept/defer condition · status · next action.
 ### CAP-first-use
 
 - **Problem.** The goal-to-change workflow has never run end to end against a real agent.
-- **Behavior.** Unchanged workflow; a real coordinator and worker on the frozen CSV task, with a competent direct-agent arm under the same coordinator.
+- **Behavior.** Unchanged workflow. First, the minimum live qualification: four worker trials
+  proposed with enumerated per-trial limits. Then one first-use delivery of the public CSV task,
+  separately identified under the coordinator that actually drives it. A paired comparison comes
+  later, with the same coordinator in both arms.
 - **Why.** Usability defects surface faster in one real use than in another platform.
 - **Dependencies.** Owner spending authorization; coordinator capacity.
-- **Evidence.** [Paired protocol](../examples/csv-summary/protocol.md) frozen and unrun; readiness repairs ([2026-09-22](architecture/proofbound/evidence/workflow-readiness-2026-09-22.md)).
-- **Next experiment.** The frozen pair as written. Never re-executed under changed harness bytes without a new freeze.
-- **Accept/defer.** Report quality and total effort together; one pair is diagnostic, not superiority.
-- **Status.** Frozen, unrun. **Next action:** owner authorization, or a new freeze if the harness bytes it named have moved.
+- **Evidence.** [Readiness, 2026-09-23](architecture/proofbound/evidence/first-use-readiness-2026-09-23.md):
+  six qualification defects repaired, containment of the executor's response loop, the V4.1 Flash
+  price interpretation, and a stand-in rehearsal of the first-use recipe through fresh-checkout
+  verification. The [protocol-v2 pilot](../examples/csv-summary/protocol-v2.md) stays frozen for
+  aff0c75 and Codex/GPT-6, and unrun.
+- **Next experiment.** The live qualification proposal, then `examples/csv-summary/first_use.py`.
+  Never re-executed under changed instrument bytes without a new freeze.
+- **Accept/defer.** One sealed delivery that applies to a fresh baseline checkout, with checks
+  rerun, is a usability observation. It is not reliability, and not superiority.
+- **Status.** Prepared; not authorized; not run. **Next action:** the owner's spending decision on
+  the stated proposal.
 
 ### CAP-progression
 

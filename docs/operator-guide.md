@@ -51,8 +51,12 @@ within the shared ceiling. Count proposal author/challenge, aggregate challenge,
 and any permitted repair/review pairs before setting the ceiling. The launcher uses a 900-second
 attempt deadline, and never automatically retries. The policy freezes once a slot is reserved.
 Unknown spend or an unreconciled slot stops further launches. Limits are on measured usage priced
-with the retained 2026-09-09 schedule, not provider billing or per-call cost. Verify that price basis
-before authorizing live spend. Codex subscription consumption is unavailable unless separately
+at the dated table the run's profile revision names — `deepseek-2026-09-23` for new runs — not on
+provider billing. Verify that price basis before authorizing live spend. During an attempt, the host
+also stops it when it exceeds 150 model requests, sees 5 responses in a row end without a finish
+reason, or sees finished calls pass the remaining derived limit. The pinned executor bounds none of
+these itself. A call in flight when a limit is crossed is still billed, and is unknown until it
+finishes. Codex subscription consumption is unavailable unless separately
 measured, never zero. Direct calls to lower-level launchers are outside this budget wrapper.
 
 Configuration constructs the macOS worker boundary, probes host and staged home separately, and
@@ -155,6 +159,18 @@ unresolved issues, manual interventions, and actual reviewer visibility. Retain 
 python3 "$PB/scripts/pb_workflow.py" finish --run "$RUN" \
   --report /absolute/path/coordinator-final.md --report-source direct
 ```
+
+Then check the delivery the way a reviewer would receive it: apply it to a fresh checkout of the
+recorded baseline and rerun the checks.
+
+```bash
+python3 "$PB/scripts/pb_workflow.py" verify-delivery --delivery "$RUN/delivery" \
+  --into /absolute/new/directory [--outcome-check 'python3 /path/check.py {checkout}']
+```
+
+It reads only the delivery directory, so it also works on a copy. It refuses to apply a delivery
+whose files no longer match its manifest. It re-derives usage and derived cost from the retained
+per-call rows, and touches neither the project nor the run.
 
 Use `--outcome blocked` to seal an actionable blocker and an explicitly unaccepted patch before all tasks complete. Use `--into /new/external/directory` to preserve a fresh package after interrupted sealing; incomplete prior directories remain untouched.
 

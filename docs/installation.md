@@ -76,7 +76,13 @@ real request establishes that, and `doctor` makes none.
 
 ## 3. The model
 
-`deepseek/deepseek-v4-flash`, variant `high`.
+`deepseek/deepseek-v4-flash`, variant `high`, is what the worker requests. **Since 2026-09-10 the
+provider serves DeepSeek V4.1 Flash for that name**: V4 Flash was retired, and the legacy name is
+"temporarily routed to V4.1 Flash" and "billed at the Flash price"
+([updates](https://api-docs.deepseek.com/updates/)). New runs record that as profile revision
+`2026-09-23` and price derived spend at the dated `deepseek-2026-09-23` table. Earlier evidence,
+including `pb-handoff-2`, was produced by V4 Flash and does not transfer. The run records the
+requested model id only; nothing identifies the weights that answered.
 
 Inherited DSD configuration referred to workers as `opencode-go/...`. That is the *old* identifier
 shape and is not what this path uses. The supervised workflow records the model in each run's

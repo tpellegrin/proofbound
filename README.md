@@ -73,12 +73,14 @@ One bounded goal-to-change workflow: **goal → proposed requirements → fresh 
 authority → admitted implementation → independent review → deterministic checks → sealed delivery.**
 
 - Workers run on **macOS arm64** under a `sandbox-exec` boundary, using pinned **OpenCode 1.18.29**
-  with **`deepseek/deepseek-v4-flash`, variant `high`** — the default **worker profile**.
+  with **`deepseek/deepseek-v4-flash`, variant `high`** — the default **worker profile**. Since
+  2026-09-10 the provider serves **V4.1 Flash** for that name; no live run has observed it yet.
 - A run's worker configuration is fixed at `start` (`--worker-profile`) and recorded with a digest.
   A **local OpenAI-compatible** profile is optional: loopback-only, no credential, no assumed
   price. Its mechanics are tested offline; **no local model has been qualified**
   ([installation](docs/installation.md#optional-a-local-worker-profile)).
 - The delivery is a retained directory: the patch, the authority, the evidence and a handoff record.
+  `verify-delivery` applies it to a fresh checkout of the recorded baseline and reruns the checks.
 - A fresh coordinator resumes any run with one `status` command.
 
 This guided path is deliberately narrower than the underlying machinery. The artifact graph, ledger,
@@ -202,7 +204,7 @@ Separating what is implemented from what has been observed:
 
 | | Implemented | Offline-tested | Live-observed |
 |---|---|---|---|
-| Goal-to-change workflow | yes | yes, credential-free stand-ins | **no** |
+| Goal-to-change workflow | yes | yes, credential-free stand-ins; a first-use recipe rehearsed through fresh-checkout verification | **no** |
 | DeepSeek worker path | yes | yes | yes, in `pb-handoff-2` (seeded authority, not goal-to-change) |
 | Codex as coordinator | yes | yes | **no** |
 | Claude Code/Opus as coordinator | yes | yes | **no** |
@@ -210,7 +212,8 @@ Separating what is implemented from what has been observed:
 | Deadline enforcement + teardown | yes | yes, macOS only | **no** |
 | Evidence export / replay | yes | yes | yes, in `pb-handoff-2` |
 | Local OpenAI-compatible worker profile | yes | yes, scripted endpoint through the real pinned executor and boundary | **no** |
-| Configuration qualification and comparison | yes | yes, replay | **no** |
+| Configuration qualification and comparison | yes | yes, replay | **no** — a four-trial live proposal is prepared, [not authorized](docs/architecture/proofbound/evidence/first-use-readiness-2026-09-23.md) |
+| Attempt containment (request cap, incomplete responses, derived spend during an attempt) | yes | yes, real executor against a scripted endpoint | **no** |
 | Frontier-cost comparison | protocol frozen | — | **no** |
 
 "Offline-tested" means credential-free stand-ins exercised the mechanics. **A stand-in never
