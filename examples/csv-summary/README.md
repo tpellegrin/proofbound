@@ -36,3 +36,20 @@ constraints. Inspect, plan, test and self-review as needed. Retain a plan before
 fresh-context handoff, then return the change, checks and unresolved issues within protocol-v2.md.”
 
 No real-agent first-use or paired result is claimed by this preparation.
+
+## A single first-use run, separate from the pilot
+
+`first_use.py` prepares one run of the same public goal and outcome check under whichever
+coordinator will drive it and whichever instrument is checked out. It never touches the frozen
+pilot files above, and its result is diagnostic — not the pilot, not held out, not a comparison.
+
+```bash
+python3 examples/csv-summary/first_use.py prepare --into /private/tmp/csv-first-use-1 \
+  --coordinator claude-code/opus --executor /path/to/pinned/opencode
+```
+
+It builds a fresh project, records every identity the run depends on in
+`first-use-identity.json`, and prints the commands: start from the goal, record the coordinator,
+authorize (proposed limits: 11 launches, $0.55 derived, $0.05 reserve — not an authorization),
+drive, finish, and then `verify-delivery`, which applies the sealed patch to a fresh baseline
+checkout and runs the project and outcome checks there. It launches and spends nothing.
