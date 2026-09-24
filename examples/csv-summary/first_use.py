@@ -105,6 +105,16 @@ def prepare(into: Path, *, coordinator: str, per_launch: float, executor: str) -
             "containment": settings["resources"]["attempt_containment"],
             "claim": "admission and containment over derived spend — measured usage priced at "
                      f"{settings['billing']['table']}; not a provider billing cap"},
+        # Every participant that can cost money or effort, and who measures it. Proofbound meters
+        # only the worker.
+        "metered_participants": {
+            "worker": "derived cost of measured usage at the dated table; admission- and "
+                      "containment-limited by this run's authorization; not provider billing",
+            "coordinator": "each coordinator session, including any fresh-session handoff, is "
+                           "metered by its own host and valued there (for example a headless "
+                           "session's list-price figure); it needs its own authorization and is "
+                           "never covered by the worker allowance",
+            "human": "owner and operator effort; unmeasured"},
         "stopping": ["a sealed delivery, accepted or blocked", "the launch ceiling or derived "
                      "limit", "unknown spend or an unresolved attempt", "a second failed repair",
                      "an owner decision the goal cannot settle"],

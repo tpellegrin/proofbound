@@ -191,3 +191,26 @@ workaround, not a repair.
 - Held-out capability: the fixtures are development fixtures, and the dispatch corpus was readable.
 - Which model served the requests.
 - That derived limits bound billing.
+
+## Addition: two corrections to the handoff account
+
+The text above is unchanged. The first use succeeded and its delivery was verified independently.
+Its first handoff was **not** an unattended success: it needed manual intervention after an
+unsupervised gap. [launch-supervision-2026-09-24.md](launch-supervision-2026-09-24.md) records
+the investigation.
+
+- **The gap's length.** "Containment was absent for 1 min 51 s" is too precise. The host
+  controller started with the launch at 12:34:17 and died when session 1 exited, no later than
+  12:34:35; its exact death time was not recorded. Containment resumed at 12:36:08. So the gap was
+  between 93 and 111 s.
+- **"The deadline applied throughout" overstates what held.**
+  - **The worker finished before its deadline:** 133 s against 900.
+  - **No surviving process could have enforced that deadline**, at any point after the controller
+    died:
+    - **The monitor could only detect the deadline.** The in-boundary monitor may not send
+      signals, so it would have written a timeout record and exited.
+    - **The restored watch did not enforce it.** It held containment and swept after exit, but had
+      no deadline logic.
+    - **The host could not have found the worker afterwards.** The real executor's command line
+      named nothing the host could corroborate once its monitor had gone. That was reproduced in
+      the investigation, and it is repaired there.

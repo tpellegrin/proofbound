@@ -34,6 +34,12 @@ That is all. In particular a coordinator does **not** need proprietary memory, h
 subagents, background tasks, or a vendor-specific delegation API. Hooks can improve continuity and
 are optional everywhere they appear.
 
+A `continue` that launches can run as long as the attempt's deadline. If your host limits a
+command's duration, or your session may end, that is safe. The launch is supervised by the run, not
+by your shell. Afterwards run `status`: if it says `running`, `continue` waits for that same launch;
+if it names `recover`, follow the [operator guide](operator-guide.md#if-the-session-running-continue-ends).
+Do not run `continue` in the background and assume it finished.
+
 You do **not** need the unused coordinator's CLI, credentials or subscription. Coordinating with
 Claude Code requires no Codex installation, and the reverse.
 

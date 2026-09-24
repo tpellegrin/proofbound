@@ -147,10 +147,38 @@ never part of it, but inspect what you are about to share regardless.
 A fresh coordinator reads the run's `CONTINUE.md` — written by `start` into the run root — then runs `status`. It needs no preceding chat.
 
 `CONTINUE.md` is the supervised workflow's own note and is the one you want. The `HANDOVER.md` described in [WORKSPACE.md](../WORKSPACE.md) belongs to the inherited checkpoint mechanism, is optional continuity only, and never overrides live state.
-A terminal-less attempt or unreconciled launch reservation is a blocker: inspect process liveness,
-terminal evidence and session usage before deciding recovery. Do not delete evidence or buy another
-trajectory to get a clean result. SIGKILL-safe finalization is not demonstrated. See
-[WORKSPACE.md](../WORKSPACE.md) for abnormal lifecycle diagnosis.
+### If the session running `continue` ends
+
+A launch runs under a supervisor that the run owns, not under your shell. If the calling session
+ends, a command times out or a connection drops, the launch stays supervised: containment, the
+deadline, teardown and accounting all carry on without you. Then:
+
+```bash
+python3 "$PB/scripts/pb_workflow.py" status --run "$RUN"
+```
+
+- **`running`.** Run `continue`. It waits for the launch in progress and starts nothing new.
+- **`blocked`, naming `recover`.** The supervisor itself was lost: it was killed, or the host
+  restarted. Run:
+
+  ```bash
+  python3 "$PB/scripts/pb_workflow.py" recover --run "$RUN"            # read-only diagnosis
+  python3 "$PB/scripts/pb_workflow.py" recover --run "$RUN" --apply    # the one change it names
+  ```
+
+  `--apply` does one of two things:
+  - **The worker is still running.** It resumes supervision under the recorded deadline and
+    containment.
+  - **The attempt has ended.** It records the attempt from its reservation and terminal record.
+
+  Run it again and it reports `clear`. It never launches, retries or accepts. An attempt whose
+  outcome is unknown stays unknown, and the run stays blocked.
+- **`recover` reports `contradictory` or `unknown`.** Stop: nothing was changed. Preserve the run
+  and ask the owner.
+
+Never edit run JSON, delete evidence, or restart a worker by hand. After a host restart the worker
+is gone with the host, and `recover` records what it left. See [WORKSPACE.md](../WORKSPACE.md) for
+deeper lifecycle diagnosis.
 
 Once tasks are accepted, write a final report explaining what changed and why, reviewed checks,
 unresolved issues, manual interventions, and actual reviewer visibility. Retain it before sealing:

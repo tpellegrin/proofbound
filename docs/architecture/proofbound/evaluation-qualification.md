@@ -72,6 +72,10 @@ repair policy and containment; the owner's authorization, or its absence; and th
 trial must retain. The suite digest covers the graders, the qualification CLI that prepares,
 retains and grades, the replay stand-ins and the replay corpus, because each shapes the evidence.
 
+A live proposal names every metered participant and its cost basis. That means the worker, whose
+derived cost the plan limits, and each coordinator session, including a fresh-session handoff,
+which is metered by its own host and needs its own authorization. Proofbound meters only the worker.
+
 Each trial's launch ceiling is enumerated from its case's stages, with one pre-executor allowance.
 Its derived-spend limit is that ceiling times a per-launch allowance, and the campaign's totals
 are their sum. Allowances never renew across trials, resumes or coordinator contexts.
