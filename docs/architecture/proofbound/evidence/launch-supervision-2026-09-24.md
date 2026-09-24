@@ -169,6 +169,12 @@ the run path and the operator guide. The raw record is private, in
 
 This is a process-level rehearsal. The caller was scripted, not a fresh agent.
 
+**Canonical suite.** `python3 -m unittest discover -s tests -t .` ran once, serially, on Python
+3.10.14, macOS arm64, at clean commit `843cc1e`: **1,441 tests, OK, none skipped**, in 1,278 s. The
+real-executor and boundary tests ran, because the pinned build and `sandbox-exec` were available.
+On Linux CI they skip, and establish nothing about macOS supervision. The new tests error on
+`ccf53f3`, where `_supervision` does not exist; that code's behaviour is R1–R3 above.
+
 ## Costs of the 2026-09-24 work, kept apart
 
 | Participant | Amount | Basis | Authorization |
