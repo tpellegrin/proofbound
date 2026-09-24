@@ -195,6 +195,56 @@ class Harness:
         return bool(a and (a / "attempt.json").is_file())
 
 
+class AttachmentRace(unittest.TestCase):
+    """`continue` waits on the launch it saw running, even when that launch finishes at once.
+
+    Found in review of `ab99c5e`: `continue` read the supervision record, judged it running, then
+    read it again to wait. A supervisor that finished in between had removed it, and the second
+    read's `None` raised `TypeError`. Portable: the interleaving is injected, no boundary needed.
+    """
+
+    def setUp(self):
+        import pb_workflow
+        from unittest import mock
+        self.pb, self.mock = pb_workflow, mock
+        self.run = Path(tempfile.mkdtemp(prefix="pb-attach-"))
+        self.addCleanup(shutil.rmtree, self.run, True)
+        self.record = {"format": _supervision.RECORD_FORMAT, "token": "a" * 32, "mode": "launch",
+                       "pid": 424242, "process_start": "x", "stage": "running"}
+        # Whatever happens, `continue` must not derive a new action or launch anything.
+        for name in ("_status", "config_for"):
+            patcher = mock.patch.object(pb_workflow, name, side_effect=AssertionError(name))
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def attach(self, *, alive, reads):
+        with self.mock.patch.object(_supervision, "read_active", side_effect=reads), \
+                self.mock.patch.object(_supervision, "alive", side_effect=alive):
+            return self.pb.continue_run(self.run)
+
+    def result(self, payload):
+        _supervision._write(_supervision._result_path(self.run, self.record["token"]), payload)
+
+    def test_a_launch_that_finishes_between_the_reads_is_still_reported(self):
+        self.result({"launched": True, "status": "completed"})
+        got = self.attach(alive=[True], reads=[self.record, None, None])["launch"]
+        self.assertEqual((got["status"], got["supervisor"]["token"], got["supervisor"]["attached"]),
+                         ("completed", self.record["token"], True))
+
+    def test_a_launch_that_vanishes_without_a_result_is_unresolved_not_success(self):
+        got = self.attach(alive=[True] + [False] * 20, reads=[self.record, None, None])["launch"]
+        self.assertTrue(got["unresolved"])
+        self.assertIsNone(got["launched"])
+        self.assertIn("recover", " ".join(got["why"]))
+
+    def test_an_ordinary_attachment_waits_for_the_result(self):
+        timer = threading.Timer(1.0, self.result, args=({"launched": True, "status": "timeout"},))
+        timer.start()
+        self.addCleanup(timer.cancel)
+        got = self.attach(alive=[True] * 50, reads=[self.record])["launch"]
+        self.assertEqual((got["status"], got["supervisor"]["token"]), ("timeout", "a" * 32))
+
+
 @unittest.skipUnless(sys.platform == "darwin", "the worker boundary is macOS sandbox-exec")
 class CallerExit(unittest.TestCase):
     def setUp(self):

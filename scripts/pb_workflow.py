@@ -457,21 +457,27 @@ def pending_owner(run, gate):
 
 def supervision(run):
     """A launch supervisor's state, before anything else: while one runs, nothing else may start."""
+    return _supervision_state(run)[1]
+
+
+def _supervision_state(run):
+    """The record read once, and the state derived from that same read. A caller that waits must
+    wait on this record: read again, the supervisor may have finished and removed it."""
     import _supervision
     record = _supervision.read_active(run)
     if record is None:
-        return None
+        return None, None
     state = _supervision.alive(record) if "unreadable" not in record else False
     if state is True:
-        return {"action": "running", "reason": "a supervised launch is in progress",
+        return record, {"action": "running", "reason": "a supervised launch is in progress",
                 "supervisor": {k: record.get(k) for k in ("mode", "pid", "stage", "slot",
                                                           "created_at", "host_deadline_at")},
                 "next": command(run, "continue") + "  # waits for it; launches nothing new"}
-    return {"action": "blocked",
-            "reason": "the run's launch supervisor is " + ("not running" if state is False else
-                                                           "unverifiable")
-                      + " and its launch was not finalized; inspect with recover",
-            "next": command(run, "recover")}
+    return record, {"action": "blocked",
+                    "reason": "the run's launch supervisor is " + ("not running" if state is False
+                                                                   else "unverifiable")
+                              + " and its launch was not finalized; inspect with recover",
+                    "next": command(run, "recover")}
 
 
 def status(run):
@@ -496,13 +502,13 @@ def status(run):
 
 
 def continue_run(run):
-    supervised = supervision(run)
+    record, supervised = _supervision_state(run)
     if supervised is not None:
         if supervised["action"] != "running":
             return supervised
-        # Wait for the launch already in progress; start nothing.
+        # Wait for the launch already in progress, by the token just seen running; start nothing.
+        # Its result outlives its record, so a supervisor that finishes now is still reported.
         import _supervision
-        record = _supervision.read_active(run)
         result = _supervision.wait(run, record)
         return {"launch": {**result, "supervisor": {"token": record["token"], "pid": record["pid"],
                                                     "mode": record["mode"], "attached": True}},
