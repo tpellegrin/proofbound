@@ -181,6 +181,20 @@ The source entry in `~/.local/share/opencode/auth.json` is shared and untouched.
 `auth.json` under `/private/tmp` created in this milestone held only a dummy key, checked by marker
 without reading values.
 
+## Tests and the next proposal
+
+The canonical suite, `python3 -m unittest discover -s tests -t .`, ran once, serially, on Python
+3.10.14, macOS arm64, at clean commit `91a472e`: **1,425 tests, OK, none skipped**, in 1,112 s.
+The real-executor and boundary tests ran, because the pinned build and `sandbox-exec` were
+available. The new regressions error on `aa15c34`, where the guarantees did not exist. Two
+exceptions: the executor-behaviour test passes there, because it characterises the pinned bytes;
+and the answer-free goal test fails there on content.
+
+The continuation proposal is frozen from `91a472e`, NOT authorized:
+`evals/qualification/proposals/2026-09-24-deepseek-v4-flash-high-continuation/`, digest
+`d591a148…53ee97`. It covers three trials, at most 17 launches and $0.85 derived, with the tool
+loop carried forward through the bridge above.
+
 ## What this does not establish
 
 - That any model can do the work.
