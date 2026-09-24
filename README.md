@@ -208,7 +208,7 @@ Separating what is implemented from what has been observed:
 | Goal-to-change workflow | yes | yes, credential-free stand-ins; a first-use recipe rehearsed through fresh-checkout verification | **once** (2026-09-24): the public CSV task under Claude Code/Opus. An accepted delivery was verified on a fresh checkout, but its first handoff needed manual intervention ([evidence](docs/architecture/proofbound/evidence/qualification-and-first-use-2026-09-24.md)) |
 | DeepSeek worker path | yes | yes | yes: in `pb-handoff-2` (seeded authority), and in the 2026-09-24 qualification and first use |
 | Codex as coordinator | yes | yes | **no** |
-| Claude Code/Opus as coordinator | yes | yes | **once**: the 2026-09-24 qualification and first use, including two fresh headless handoff sessions |
+| Claude Code/Opus as coordinator | yes | yes | **once**: the 2026-09-24 qualification and first use, including two fresh headless handoff sessions ([evidence](docs/architecture/proofbound/evidence/qualification-and-first-use-2026-09-24.md)) |
 | Another host as coordinator | protocol documented | **no** | **no** |
 | Deadline enforcement + teardown | yes | yes, macOS only | **no**: no live attempt reached its deadline |
 | Launch supervision after the caller exits, and `recover` | yes | yes, macOS: the real executor against a scripted endpoint, and a scripted-caller rehearsal ([evidence](docs/architecture/proofbound/evidence/launch-supervision-2026-09-24.md)) | **no**: repaired after the manually recovered first-use handoff |

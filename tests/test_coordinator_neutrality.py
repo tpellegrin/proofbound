@@ -123,14 +123,24 @@ class CoordinatorDocumentation(unittest.TestCase):
         self.assertNotIn("install claude", codex)
 
     def test_the_support_matrix_does_not_claim_untested_live_support(self):
+        """A coordinator is live-observed only with a dated evidence record behind the claim.
+
+        Until 2026-09-24 no coordinator had been, and this required every row to say **no**.
+        Claude Code/Opus then coordinated the live qualification and first use. The rule is now the
+        one the old assertion stood for: no live claim without its record.
+        """
+        import re
         readme = (ROOT / "README.md").read_text()
         self.assertIn("Support matrix", readme)
         row = next(l for l in readme.splitlines() if l.startswith("| Another host"))
         self.assertIn("**no**", row, "generic host support must not be claimed as live-observed")
         for coordinator in ("| Codex as coordinator", "| Claude Code/Opus as coordinator"):
             line = next(l for l in readme.splitlines() if l.startswith(coordinator))
-            self.assertTrue(line.rstrip().endswith("**no** |"),
-                            f"{coordinator} must not claim live observation")
+            if line.rstrip().endswith("**no** |"):
+                continue
+            records = re.findall(r"\]\((docs/architecture/proofbound/evidence/[^)]+\.md)\)", line)
+            self.assertTrue(records and all((ROOT / r).is_file() for r in records),
+                            f"{coordinator} claims live observation without a dated evidence record")
 
     def test_adapter_commands_are_copy_pasteable(self):
         """A fresh reader could not run them: `<skill>` was defined nowhere, and `--change` was
