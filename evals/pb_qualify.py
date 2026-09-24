@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -53,9 +54,9 @@ def do_plan(args) -> int:
 
 def _plan_view(plan, where) -> dict:
     nxt = {_qualify.REPLAY: f"python3 {HERE / 'pb_qualify.py'} replay --plan {where} --into <result>",
-           _qualify.PROPOSED: f"NOT AUTHORIZED. After the owner's decision: python3 "
-                              f"{HERE / 'pb_qualify.py'} authorize --proposal {where} "
-                              "--owner-authorization '<the owner's actual statement>' --into <plan>",
+           _qualify.PROPOSED: "NOT AUTHORIZED. After the owner's decision: " + shlex.join([
+               "python3", str(HERE / "pb_qualify.py"), "authorize", "--proposal", str(where),
+               "--owner-authorization", "<the owner's actual statement>", "--into", "<plan>"]),
            _qualify.AUTHORIZED: f"python3 {HERE / 'pb_qualify.py'} prepare-live --plan {where} "
                                 "--into <runs>"}
     return {"plan": str(where / "plan.json"), "digest": plan["digest"], "mode": plan["mode"],
