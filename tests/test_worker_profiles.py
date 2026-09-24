@@ -65,11 +65,18 @@ class Resolution(unittest.TestCase):
         self.tmp = Path(tempfile.mkdtemp(prefix="pb-profiles-"))
         self.addCleanup(shutil.rmtree, self.tmp, True)
 
-    def test_the_default_is_the_qualified_deepseek_route(self):
+    def test_the_default_requests_the_recorded_route_and_prices_what_now_serves_it(self):
+        """Since 2026-09-10 the provider serves V4.1 Flash for the legacy name, billed at the Flash
+        price. The request is unchanged; the interpretation of new runs is dated and explicit."""
         s = profiles.resolve()
         self.assertEqual((s["model"], s["variant"]), ("deepseek/deepseek-v4-flash", "high"))
-        self.assertEqual(s["billing"], {"basis": "dated-table", "table": "deepseek-2026-09-09",
-                                        "price_model": "deepseek-v4-flash"})
+        self.assertEqual(s["profile"]["revision"], "2026-09-23")
+        self.assertEqual(s["billing"], {"basis": "dated-table", "table": "deepseek-2026-09-23",
+                                        "price_model": "deepseek-flash"})
+        self.assertEqual(s["provider"]["documented_serving"]["model_version"],
+                         "DeepSeek-V4.1-Flash")
+        self.assertIn("does not retain", s["provider"]["runtime_identity"])
+        self.assertIn("weights", s["provider"]["runtime_identity"])
         self.assertEqual(s["credential"], {"auth_entry": "deepseek"})
         self.assertEqual(s["executor"]["sha256"], profiles.OPENCODE_SHA256)
         self.assertEqual(s["digest"], profiles.settings_digest(s))
@@ -130,7 +137,12 @@ class Resolution(unittest.TestCase):
     def test_a_run_recorded_before_profiles_reads_as_it_was_recorded(self):
         legacy = profiles.of({"model": "deepseek/deepseek-v4-flash", "variant": "high"})
         self.assertTrue(legacy["legacy"])
-        self.assertEqual(legacy["billing"]["price_model"], "deepseek-v4-flash")
+        self.assertEqual(legacy["billing"], {"basis": "dated-table", "table": "deepseek-2026-09-09",
+                                             "price_model": "deepseek-v4-flash"},
+                         "a later price must never reinterpret a recorded run")
+        self.assertEqual(legacy["profile"]["revision"], "2026-09-09")
+        self.assertIsNone(legacy["resources"]["attempt_containment"],
+                          "containment is not retrofitted onto runs started without it")
         other = profiles.of({"model": "opencode-go/deepseek-v4-flash", "variant": None})
         self.assertEqual(other["model"], "opencode-go/deepseek-v4-flash")
         self.assertIsNone(other["variant"])
@@ -447,9 +459,87 @@ class FrontDoor(unittest.TestCase):
         status = self.cli("status", "--run", run)
         self.assertTrue(status["worker"]["legacy_record"])
         self.assertEqual(status["worker"]["model"], "deepseek/deepseek-v4-flash")
-        again = self.cli("start", "--project", self.project, "--goal", "Add greeting.",
-                         "--check", f"{sys.executable} -c pass", "--executor", self.fake)
-        self.assertTrue(again["existing"], "the legacy record is not a conflict with the default")
+        # The default's interpretation moved on (revision 2026-09-23); asking for it on a run
+        # recorded under the old one names every field that would differ and applies none.
+        error = self.cli("start", "--project", self.project, "--goal", "Add greeting.",
+                         "--check", f"{sys.executable} -c pass", "--executor", self.fake,
+                         ok=False)["error"]
+        for field in ("profile.revision", "billing.table", "billing.price_model"):
+            self.assertIn(field, error)
+        self.assertEqual(self.cli("status", "--run", run)["worker"]["legacy_record"], True)
+
+
+def parts_db(db: Path, calls, *, start=0, stamp=None):
+    """Append finished calls to an OpenCode-shaped database: (reason, input, output) each."""
+    stamp = stamp or int(time.time() * 1000)
+    with closing(sqlite3.connect(db)) as conn:
+        conn.execute("create table if not exists session (id text, title text)")
+        conn.execute("create table if not exists message "
+                     "(id text, session_id text, time_created integer, data text)")
+        conn.execute("create table if not exists part (id text, message_id text, data text)")
+        for n, (reason, inp, out) in enumerate(calls, start):
+            mid = f"m{n:04d}"
+            conn.execute("insert into message values (?,?,?,?)",
+                         (mid, "s", stamp + n, json.dumps({"role": "assistant"})))
+            conn.execute("insert into part values (?,?,?)",
+                         (mid + "a", mid, json.dumps({"type": "step-start"})))
+            conn.execute("insert into part values (?,?,?)", (mid + "b", mid, json.dumps(
+                {"type": "step-finish", "reason": reason,
+                 "tokens": {"input": inp, "output": out, "cache": {"read": 0, "write": 0}}})))
+        conn.commit()
+
+
+class AttemptContainment(unittest.TestCase):
+    """The host counts what the executor does not bound. Real SQLite, synthetic calls."""
+
+    CONTAINMENT = {"max_model_requests": 6, "max_consecutive_incomplete_responses": 3}
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="pb-watch-"))
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.db = self.tmp / "worker.db"
+        from _supervised_launch import AttemptWatch
+        self.Watch = AttemptWatch
+
+    def test_earlier_attempts_in_the_same_database_are_not_counted(self):
+        parts_db(self.db, [("unknown", 0, 0)] * 10)
+        watch = self.Watch(self.db, containment=self.CONTAINMENT)
+        self.assertIsNone(watch.check(), "the run's previous attempts are not this attempt")
+        parts_db(self.db, [("tool-calls", 10, 5)], start=10)
+        self.assertIsNone(watch.check())
+
+    def test_a_run_of_incomplete_responses_is_stopped_and_a_complete_one_resets_it(self):
+        watch = self.Watch(self.db, containment=self.CONTAINMENT)
+        parts_db(self.db, [("unknown", 0, 0), ("unknown", 0, 0), ("stop", 10, 5),
+                           ("unknown", 0, 0), ("unknown", 0, 0)])
+        self.assertIsNone(watch.check(), "a complete response ends the run of incomplete ones")
+        parts_db(self.db, [("unknown", 0, 0)], start=5)
+        self.assertEqual(watch.check(), {"rule": "max_consecutive_incomplete_responses",
+                                         "observed": 3, "limit": 3})
+
+    def test_the_request_cap_counts_healthy_calls_too(self):
+        watch = self.Watch(self.db, containment=self.CONTAINMENT)
+        parts_db(self.db, [("tool-calls", 10, 5)] * 7)
+        self.assertEqual(watch.check()["rule"], "max_model_requests")
+
+    def test_derived_spend_during_the_attempt_is_bounded_by_the_room_left(self):
+        """Hand-computed: 1,000,000 uncached input tokens off-peak at deepseek-2026-09-23 price to
+        $0.15; with $0.10 of room the attempt is stopped."""
+        import _worker_pricing
+        from datetime import datetime, timezone
+        off_peak = int(datetime(2026, 9, 20, 12, 0, tzinfo=timezone.utc).timestamp() * 1000)
+        watch = self.Watch(self.db, containment={"max_model_requests": 99},
+                           spend_room=0.10, table=_worker_pricing.DEEPSEEK_2026_09_23,
+                           price_model="deepseek-flash")
+        parts_db(self.db, [("tool-calls", 400_000, 0)], stamp=off_peak)
+        self.assertIsNone(watch.check(), "$0.06 is inside the room")
+        parts_db(self.db, [("tool-calls", 600_000, 0)], start=1, stamp=off_peak)
+        self.assertEqual(watch.check(), {"rule": "derived_spend_during_attempt",
+                                         "observed": 0.15, "limit": 0.1})
+
+    def test_no_database_yet_is_nothing_to_stop(self):
+        self.assertIsNone(self.Watch(self.tmp / "absent.db",
+                                     containment=self.CONTAINMENT).check())
 
 
 @unittest.skipUnless(sys.platform == "darwin", "worker teardown is qualified on macOS only")
@@ -606,6 +696,18 @@ class RealExecutorToolLoop(unittest.TestCase):
     def test_a_malformed_tool_call_leaves_the_artifact_untouched(self):
         got = self.loop("malformed-arguments")
         self.assertNotIn(got["marker"], got["artifact"])
+
+    def test_the_host_contains_a_response_loop_the_executor_does_not_bound(self):
+        """Before containment the same endpoint drew 4,649 requests in 900 s; the executor's own
+        `steps` limit was measured not to count them."""
+        got = self.loop("interrupted")
+        containment = got["launch"].get("containment") or {}
+        self.assertEqual(containment.get("rule"), "max_consecutive_incomplete_responses",
+                         got["launch"])
+        self.assertLess(got["endpoint"]["requests"], 40)
+        self.assertTrue(got["launch"]["unresolved"], "a stopped attempt is not a result")
+        self.assertIn("unknown", containment["note"])
+        self.assertEqual(got["launch"]["termination"]["survivors"], [])
 
 
 if __name__ == "__main__":

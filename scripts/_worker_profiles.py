@@ -48,8 +48,38 @@ OPENCODE_SHA256 = "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d
 PRICED = "dated-table"
 NO_EXTERNAL_BILLING = "no-external-api-billing"
 
-#: The dated table the DeepSeek profile prices against (`_worker_pricing.DEEPSEEK_2026_09_09`).
+#: The dated table runs recorded before profiles are priced at (`_worker_pricing.DEEPSEEK_2026_09_09`).
 DEEPSEEK_TABLE = "deepseek-2026-09-09"
+
+#: Host-side containment of one attempt (`_supervised_launch`). The pinned executor's own agent
+#: `steps` limit bounds tool-calling iterations but not a response that ends without a finish
+#: reason, which it re-requests immediately — observed as 4,649 requests in 900 s — so the host
+#: counts requests and trailing incomplete responses, and, for a priced worker, derived spend.
+CONTAINMENT = {"max_model_requests": 150, "max_consecutive_incomplete_responses": 5}
+
+#: What the DeepSeek route means, by the date its provider facts were read. A run keeps the revision
+#: it started under; a run recorded before profiles keeps the first. Never reinterpreted.
+DEEPSEEK_REVISIONS: dict[str, dict[str, Any]] = {
+    "2026-09-09": {
+        "table": "deepseek-2026-09-09", "price_model": "deepseek-v4-flash",
+        "documented_serving": {"model_version": "DeepSeek-V4-Flash-0731", "read": "2026-09-09",
+                               "source": "https://api-docs.deepseek.com/quick_start/pricing"},
+        "containment": None},
+    "2026-09-23": {
+        "table": "deepseek-2026-09-23", "price_model": "deepseek-flash",
+        "documented_serving": {
+            "model_version": "DeepSeek-V4.1-Flash", "since": "2026-09-10", "read": "2026-09-23",
+            "source": "https://api-docs.deepseek.com/updates/",
+            "statement": "V4 Flash retired; the legacy name deepseek-v4-flash is temporarily "
+                         "routed to V4.1 Flash and billed at the Flash price"},
+        "containment": {**CONTAINMENT, "derived_spend_during_attempt": True}},
+}
+CURRENT_DEEPSEEK_REVISION = "2026-09-23"
+
+#: What a run can observe of the model that answered, stated once for every profile.
+RUNTIME_IDENTITY = ("requested id only: the pinned executor records the model id it requested and "
+                    "does not retain the provider's response model field; neither an alias nor "
+                    "that string identifies model weights")
 
 #: Executor switches for a local profile. Each closes a route by which ambient state could select a
 #: different model or service: a project `opencode.json`, a fetched model catalogue, self-update,
@@ -74,7 +104,9 @@ BUILTIN: dict[str, dict[str, Any]] = {
     DEFAULT_PROFILE: {
         "format": PROFILE_FORMAT, "id": DEFAULT_PROFILE, "kind": DEEPSEEK_KIND,
         "model": "deepseek/deepseek-v4-flash", "variant": "high",
-        "description": "The historically qualified DeepSeek worker route (pb-handoff-2).",
+        "revision": CURRENT_DEEPSEEK_REVISION,
+        "description": "The DeepSeek worker route the recorded evidence used. The request is "
+                       "unchanged; since 2026-09-10 the provider serves V4.1 Flash for it.",
     },
 }
 
@@ -187,13 +219,22 @@ def endpoint_identity(url: Any) -> tuple[dict[str, Any] | None, list[str]]:
 # -- resolution ----------------------------------------------------------------------------------
 
 def _deepseek(raw: dict[str, Any], origin: dict[str, Any]) -> dict[str, Any]:
+    revision = raw.get("revision", "2026-09-09")
+    facts = DEEPSEEK_REVISIONS[revision]
+    enforced = ["launch ceiling", "repair allowance", "attempt deadline",
+                "aggregate derived-cost limit (between attempts)"]
+    if facts["containment"]:
+        enforced.append("per-attempt containment: model-request cap, trailing incomplete "
+                        "responses, derived spend observed during the attempt")
     return {
         "format": SETTINGS_FORMAT,
-        "profile": {"id": raw["id"], "kind": DEEPSEEK_KIND, **origin},
+        "profile": {"id": raw["id"], "kind": DEEPSEEK_KIND, "revision": revision, **origin},
         "executor": {"kind": "opencode-cli", "version": OPENCODE_VERSION,
                      "sha256": OPENCODE_SHA256},
         "provider": {"id": "deepseek", "route": "OpenCode native provider integration",
-                     "endpoint": None},
+                     "endpoint": None, "requested_model": raw["model"],
+                     "documented_serving": facts["documented_serving"],
+                     "runtime_identity": RUNTIME_IDENTITY},
         "model": raw["model"], "variant": raw["variant"],
         "parameters": {"variant_flag": f"--variant {raw['variant']}",
                        "sampling": "not controllable; the provider documents that thinking mode "
@@ -204,11 +245,10 @@ def _deepseek(raw: dict[str, Any], origin: dict[str, Any]) -> dict[str, Any]:
                   "tool_surface": "the executor's default tool set; not inferable from a "
                                   "version string"},
         "credential": {"auth_entry": "deepseek"},
-        "billing": {"basis": PRICED, "table": DEEPSEEK_TABLE, "price_model": "deepseek-v4-flash"},
-        "resources": {"output_token_allowance": None,
-                      "enforced": ["launch ceiling", "repair allowance", "attempt deadline",
-                                   "aggregate derived-cost limit (between attempts)"],
-                      "configured": []},
+        "billing": {"basis": PRICED, "table": facts["table"],
+                    "price_model": facts["price_model"]},
+        "resources": {"output_token_allowance": None, "enforced": enforced, "configured": [],
+                      "attempt_containment": facts["containment"]},
         "network": {"mode": "unrestricted",
                     "claim": "a cloud provider reached over the network; the worker boundary "
                              "allows all network access"},
@@ -279,7 +319,8 @@ def _local(raw: dict[str, Any], origin: dict[str, Any]) -> dict[str, Any]:
         "share": "disabled",
     }
     enforced = ["launch ceiling", "repair allowance", "attempt deadline (host-owned teardown of "
-                "the worker client)", "one supervised launch per run at a time"]
+                "the worker client)", "one supervised launch per run at a time",
+                "per-attempt containment: model-request cap, trailing incomplete responses"]
     if allowance is not None:
         enforced.append("aggregate output-token allowance (between attempts, from telemetry)")
     return {
@@ -289,7 +330,8 @@ def _local(raw: dict[str, Any], origin: dict[str, Any]) -> dict[str, Any]:
                      "sha256": OPENCODE_SHA256},
         "provider": {"id": "local",
                      "route": "@ai-sdk/openai-compatible, bundled in the pinned executor",
-                     "endpoint": endpoint},
+                     "endpoint": endpoint, "requested_model": model,
+                     "documented_serving": None, "runtime_identity": RUNTIME_IDENTITY},
         "model": f"local/{provider_model}", "variant": None,
         "parameters": {"variant_flag": "not passed: a local model has no provider variant",
                        "sampling": "server defaults; not set by this profile"},
@@ -305,6 +347,8 @@ def _local(raw: dict[str, Any], origin: dict[str, Any]) -> dict[str, Any]:
                     "claim": "no external API bill is expected; local compute, electricity and "
                              "hardware cost are unknown, not zero"},
         "resources": {"output_token_allowance": allowance, "enforced": enforced,
+                      "attempt_containment": {**CONTAINMENT,
+                                              "derived_spend_during_attempt": False},
                       "configured": ["per-call output limit (max_tokens, honoured by the server "
                                      "or not)", "context limit (executor-side)",
                                      "server concurrency (not controlled by Proofbound)"]},
@@ -358,8 +402,8 @@ def legacy(config: dict[str, Any]) -> dict[str, Any]:
     is interpreted as recorded (`P6`): nothing is backfilled into it, and a legacy run whose model
     is not the DeepSeek one is priced at nothing, which leaves its spend unknown rather than wrong.
     """
-    settings = _deepseek(BUILTIN[DEFAULT_PROFILE], {"source": "legacy-run-config", "path": None,
-                                                    "source_sha256": None})
+    settings = _deepseek({**BUILTIN[DEFAULT_PROFILE], "revision": "2026-09-09"},
+                         {"source": "legacy-run-config", "path": None, "source_sha256": None})
     settings["model"] = config.get("model", settings["model"])
     settings["variant"] = config.get("variant", settings["variant"])
     settings["parameters"]["variant_flag"] = (f"--variant {settings['variant']}"

@@ -478,10 +478,16 @@ def _pricing_basis(billing: "dict[str, Any] | None" = None) -> dict[str, Any]:
         return {"table": None, "billing": billing,
                 "note": "this worker has no external API bill; no price is derived, and local "
                         "compute cost is unknown rather than zero"}
-    table = _pricing.DEEPSEEK_2026_09_09
-    return {"table": table.get("id"),
-            "note": "derived cost is measured usage priced at this dated table; it is neither the "
-                    "executor's own cost field nor provider-confirmed billing"}
+    # A run recorded under a profile names its own table and price model; one recorded before
+    # profiles is priced, as it always was, at the first retained table.
+    table = (_pricing.TABLES.get(billing.get("table")) if billing else None) \
+        or _pricing.DEEPSEEK_2026_09_09
+    basis = {"table": table.get("id"),
+             "note": "derived cost is measured usage priced at this dated table; it is neither the "
+                     "executor's own cost field nor provider-confirmed billing"}
+    if billing and billing.get("price_model"):
+        basis["price_model"] = billing["price_model"]
+    return basis
 
 
 # -- verification: read-only, offline, never launches a model -----------------------------------
@@ -809,7 +815,8 @@ def _recompute_price(manifest: dict[str, Any], usage: dict[str, Any], *,
                      "derived quantity here, and its absence is not a zero")
     exported = spend.get("derived")
     config = (manifest.get("identity") or {}).get("configured") or {}
-    model = str(config.get("model") or "").split("/", 1)[-1]
+    table = _pricing.TABLES.get(basis.get("table")) or _pricing.DEEPSEEK_2026_09_09
+    model = basis.get("price_model") or str(config.get("model") or "").split("/", 1)[-1]
     when = spend.get("priced_at")
     try:
         moment = datetime.fromisoformat(str(when)) if when else None
@@ -819,9 +826,9 @@ def _recompute_price(manifest: dict[str, Any], usage: dict[str, Any], *,
         if rows is None:
             return check("price.recompute", UNAVAILABLE, UNAVAILABLE,
                          "timestamp-window pricing requires retained per-call events")
-        priced = _pricing.cost_rows(rows, model=model)
+        priced = _pricing.cost_rows(rows, model=model, table=table)
     else:
-        priced = _pricing.cost(usage, model=model, when=moment)
+        priced = _pricing.cost(usage, model=model, when=moment, table=table)
     amount = (priced or {}).get("amount")
     if not isinstance(amount, (int, float)):
         return check("price.recompute", UNAVAILABLE, UNAVAILABLE,
@@ -829,7 +836,7 @@ def _recompute_price(manifest: dict[str, Any], usage: dict[str, Any], *,
     derived = round(float(amount), 6)
     if exported is None:
         return check("price.recompute", RECOMPUTE, UNAVAILABLE,
-                     f"recomputes to {derived} at {_pricing.DEEPSEEK_2026_09_09['id']}; the "
+                     f"recomputes to {derived} at {table['id']}; the "
                      f"package records no figure to compare")
     if abs(derived - float(exported)) > 1e-6:
         return check("price.recompute", RECOMPUTE, MISMATCH,
@@ -838,7 +845,7 @@ def _recompute_price(manifest: dict[str, Any], usage: dict[str, Any], *,
               else "retained per-call events")
     return check("price.recompute", RECOMPUTE, OK,
                  f"{derived} re-derived from {source} at "
-                 f"{_pricing.DEEPSEEK_2026_09_09['id']}; not provider-confirmed billing",
+                 f"{table['id']}; not provider-confirmed billing",
                  recomputed_from=source, complete=spend.get("complete"))
 
 

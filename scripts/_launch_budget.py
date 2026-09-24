@@ -150,12 +150,14 @@ def spend(run_root: "str | Path", db: "str | Path", *, model: str = MODEL,
         account["billing"] = billing
         if billing.get("basis") == NO_EXTERNAL_BILLING:
             return _unbilled(run_root, db, facts, account, output_token_allowance)
-        if billing.get("basis") != PRICED or billing.get("table") != _pricing.DEEPSEEK_2026_09_09["id"]:
+        if billing.get("basis") != PRICED or billing.get("table") not in _pricing.TABLES:
             return {**account, "derived": None, "complete": False,
                     "claim": f"the worker profile names billing {billing!r}, which no retained "
                              "price table prices; spend is unknown, not zero"}
     price_model = (str(billing["price_model"]) if billing is not None
                    else model.split("/", 1)[-1])
+    table = (_pricing.TABLES[billing["table"]] if billing is not None
+             else _pricing.DEEPSEEK_2026_09_09)
     if not db.is_file():
         if facts["launched"] == 0:
             return {**account, "derived": 0.0, "complete": True,
@@ -183,7 +185,7 @@ def spend(run_root: "str | Path", db: "str | Path", *, model: str = MODEL,
     lifecycle, telemetry = _settle(facts, db, account)
     unsettled: "list[str]" = lifecycle + telemetry
 
-    priced = _pricing.cost_rows(events["rows"], model=price_model)
+    priced = _pricing.cost_rows(events["rows"], model=price_model, table=table)
     amount = (priced or {}).get("amount")
     account["cost"] = priced
     if not isinstance(amount, (int, float)):

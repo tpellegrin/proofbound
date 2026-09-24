@@ -119,9 +119,13 @@ def readiness(settings, executor):
               "profile": settings["profile"]["id"], "profile_digest": settings["digest"],
               "billing": settings["billing"]["basis"], "network": settings["network"]["mode"],
               "experimentally_qualified_build": qualified,
+              "documented_serving": settings["provider"].get("documented_serving"),
+              "runtime_identity": settings["provider"].get("runtime_identity"),
               "qualification_scope": (
                   "none: no live observation of this configuration exists" if local else
-                  "pb-handoff-2: one seeded-authority continuation, not goal-to-change")}
+                  "pb-handoff-2 observed this request while it served V4 Flash, before "
+                  "2026-09-10; no retained live evidence covers the V4.1 Flash it is served by "
+                  "now, and no goal-to-change run has been observed")}
     return {"ready": not problems, "problems": problems,
             "python": {"path": sys.executable, "version": platform.python_version(), "supported": sys.version_info >= (3, 10)},
             "worker": worker,

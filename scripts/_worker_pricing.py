@@ -42,6 +42,42 @@ DEEPSEEK_2026_09_09 = {
     },
 }
 
+# Read from https://api-docs.deepseek.com/quick_start/pricing and /updates/ on 2026-09-23. The
+# 2026-09-10 update retired V4 Flash: the legacy name `deepseek-v4-flash` is "temporarily routed
+# to V4.1 Flash" and "billed at the Flash price". A run requesting the legacy name is therefore
+# priced as `deepseek-flash` here. The table above is kept unchanged: it is what runs recorded
+# before this date were priced at, and a later price must never reinterpret them.
+DEEPSEEK_2026_09_23 = {
+    "id": "deepseek-2026-09-23",
+    "source": "https://api-docs.deepseek.com/quick_start/pricing",
+    "retrieved": "2026-09-23",
+    "currency": "USD",
+    "per_tokens": 1_000_000,
+    "peak_windows_utc": ((1, 4), (6, 10)),
+    "peak_weekdays_only": True,
+    # The provider also exempts Chinese public holidays from peak. Not modelled: a call on such a
+    # day is priced at peak, which can overstate a derived figure and never understate it.
+    "peak_exclusions_not_modelled": "Chinese public holidays",
+    "models": {
+        "deepseek-flash": {
+            "off_peak": {"cache_hit": 0.003, "cache_miss": 0.15, "output": 0.6},
+            "peak": {"cache_hit": 0.006, "cache_miss": 0.3, "output": 1.2},
+        },
+        "deepseek-v4-pro": {
+            "off_peak": {"cache_hit": 0.022, "cache_miss": 0.66, "output": 1.98},
+            "peak": {"cache_hit": 0.044, "cache_miss": 1.32, "output": 3.96},
+        },
+    },
+    "aliases": {"deepseek-v4-flash": {
+        "served_by": "deepseek-flash", "model_version": "DeepSeek-V4.1-Flash",
+        "documented": "2026-09-10: V4 Flash retired; the legacy name is temporarily routed to "
+                      "V4.1 Flash and billed at the Flash price",
+        "source": "https://api-docs.deepseek.com/updates/"}},
+}
+
+#: Every retained table, by id. A run names the table it is priced at; nothing picks one for it.
+TABLES = {table["id"]: table for table in (DEEPSEEK_2026_09_09, DEEPSEEK_2026_09_23)}
+
 PEAK = "peak"
 OFF_PEAK = "off-peak"
 UNKNOWN = None
@@ -49,7 +85,8 @@ UNKNOWN = None
 CALL_PRICING = "message-timestamp-windows-v1"
 
 
-def cost_rows(rows: list[dict[str, Any]], *, model: str) -> dict[str, Any]:
+def cost_rows(rows: list[dict[str, Any]], *, model: str,
+              table: dict[str, Any] = DEEPSEEK_2026_09_09) -> dict[str, Any]:
     """Price finished calls at their recorded message creation timestamps (Unix ms).
 
     These timestamps are the available call-time proxy, not provider billing timestamps.
@@ -71,7 +108,7 @@ def cost_rows(rows: list[dict[str, Any]], *, model: str) -> dict[str, Any]:
             return {"amount": None, "method": CALL_PRICING,
                     "reason": "finished call has no usable message timestamp",
                     "part_id": row.get("part_id")}
-        window = price_class(moment)
+        window = price_class(moment, table)
         band = bands.setdefault(window, {"input": 0, "output": 0, "cache_read": 0})
         for key in band:
             value = row.get(key)
@@ -85,9 +122,10 @@ def cost_rows(rows: list[dict[str, Any]], *, model: str) -> dict[str, Any]:
     # Still validate the model when no completed calls are present.
     if not bands:
         bands[OFF_PEAK] = {"input": 0, "output": 0, "cache_read": 0}
-    prices = [cost(usage, model=model, window=window) for window, usage in sorted(bands.items())]
+    prices = [cost(usage, model=model, window=window, table=table)
+              for window, usage in sorted(bands.items())]
     amounts = [p.get("amount") for p in prices]
-    return {"method": CALL_PRICING, "price_id": DEEPSEEK_2026_09_09["id"],
+    return {"method": CALL_PRICING, "price_id": table["id"],
             "currency": "USD", "model": model, "calls": calls, "bands": prices,
             "amount": round(sum(amounts), 6) if all(isinstance(a, (int, float)) for a in amounts) else None,
             "time_basis": "message creation timestamps; not provider billing timestamps"}
