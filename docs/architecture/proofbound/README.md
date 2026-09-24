@@ -46,14 +46,14 @@ an agent's token usage, its context pressure, or how well it will do the task.
 
 | Your task | Read | Skip | ≈ bytes |
 |---|---|---|---|
-| **A.** Changing reviewer freshness, attempts, gates, roles, acceptance | README + [execution-and-review](execution-and-review.md) + [core-model](core-model.md) | everything else | 46 KB |
-| **B.** Implementing the artifact graph or ledger | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [plan](../specification-reflection-harness-implementation-plan.md) | freeze, autonomy, research, history | 230 KB + plan |
-| **B2.** Implementing freeze / contract identity (M2C) | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [freeze-and-binding](freeze-and-binding.md) + [plan](../specification-reflection-harness-implementation-plan.md) | autonomy, research, history | 267 KB + plan |
+| **A.** Changing reviewer freshness, attempts, gates, roles, acceptance | README + [execution-and-review](execution-and-review.md) + [core-model](core-model.md) | everything else | 47 KB |
+| **B.** Implementing the artifact graph or ledger | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [plan](../specification-reflection-harness-implementation-plan.md) | freeze, autonomy, research, history | 231 KB + plan |
+| **B2.** Implementing freeze / contract identity (M2C) | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [freeze-and-binding](freeze-and-binding.md) + [plan](../specification-reflection-harness-implementation-plan.md) | autonomy, research, history | 268 KB + plan |
 | **C.** Implementing decision provenance | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [long-running-autonomy](long-running-autonomy.md) | research, history | 89 KB |
 | **D.** Implementing context telemetry | README + [core-model](core-model.md) + [context-economy](context-economy.md) | artifacts, autonomy, history | 45 KB |
-| **D2.** Authoring scenarios or grading a run | README + [evaluation](evaluation.md) | the binding chain, comparison rules, run history | 55 KB |
-| **D3.** Calibrating a suite, comparing runs, or designing a control arm | README + [evaluation-comparison](evaluation-comparison.md) | scenario authoring, the binding chain | 55 KB |
-| **D4.** Measuring what many changes do to a system, or calibrating that | README + [system-craft](system-craft.md) | the contract-binding chain, scenario authoring | 55 KB |
+| **D2.** Authoring scenarios or grading a run | README + [evaluation](evaluation.md) | the binding chain, comparison rules, run history | 56 KB |
+| **D3.** Calibrating a suite, comparing runs, or designing a control arm | README + [evaluation-comparison](evaluation-comparison.md) | scenario authoring, the binding chain | 56 KB |
+| **D4.** Measuring what many changes do to a system, or calibrating that | README + [system-craft](system-craft.md) | the contract-binding chain, scenario authoring | 56 KB |
 | **D5.** Adding a worker profile, or qualifying and comparing worker configurations | README + [worker-profiles](worker-profiles.md) + [evaluation-qualification](evaluation-qualification.md) | the binding chain, craft, run history | 46 KB |
 | **E.** Fixing a bug in inherited DSD mechanics | README + [execution-and-review](execution-and-review.md) | everything else | 30 KB |
 | **F.** Asking "why is this rule like this?" | [evidence/implementation-findings](evidence/implementation-findings.md) | — | 42 KB |
@@ -151,7 +151,8 @@ One line each. **Canonical definitions, with falsifiers, are in
 | Fresh-context authority recovery (`pb-handoff-1`) | **Live, once per condition** (2026-09-18): one coordinator carried a bound implementation to acceptance, another refused a mutated state without launching. $0.020516, 2 of 5 slots. Two observations, not a rate. It found authorization advisory; **repaired offline** (A6.10) — `admit` binds and authorizes in one act, and a launch without a matching record is refused |
 | Intent challenge as an ordinary artifact | **Decided**: `proposal-reflection`; no new kind, role or purpose |
 | Worker profiles — DeepSeek default, local OpenAI-compatible | **Implemented**; the local route's mechanics exercised by a scripted endpoint through the real pinned executor and boundary. **No local model qualified** |
-| Configuration qualification and comparison (`E26`/`E27`) | **Implemented**, replay only; six instrument defects repaired 2026-09-23; a live proposal is prepared and **not authorized** |
+| Configuration qualification and comparison (`E26`/`E27`) | **Implemented**. Replayed, and live for DeepSeek once per cell (2026-09-24; [evidence](evidence/README.md)): the tool loop carried forward; the challenges and dispatch met; the contradiction as verification, not discovery. No comparison run |
+| Goal-to-change first use; launch supervision | **Live once** (2026-09-24, CSV task, Claude Code/Opus), an accepted delivery verified on a fresh checkout. The handoff was manually assisted; supervision was repaired and rehearsed unpaid (see the evidence index) |
 | Attempt containment; DeepSeek revision 2026-09-23 (V4.1 Flash serves the requested name) | **Implemented**; containment observed against a scripted endpoint only |
 | Decision provenance, coherence audit, context telemetry | Direction only; see the plan's dependency graph |
 

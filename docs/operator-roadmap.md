@@ -15,8 +15,8 @@ graders), **live-observed** (a real model or agent did the work, once per condit
 
 | Stage | Capability | Evidence gate | Status |
 |---|---|---|---|
-| Now | [`CAP-profiles`](#cap-profiles) — selectable worker profiles and trustworthy configuration qualification and comparison | Production-path offline demonstration, missing-data and adversarial checks, DeepSeek compatibility | **Mechanically qualified** (2026-09-23) |
-| Now | [`CAP-first-use`](#cap-first-use) — minimum live qualification, then one first-use delivery; a paired comparison later | Retained live delivery from unseeded upstream authority, applied to a fresh baseline checkout with checks rerun; for a later pair, the same coordinator in each arm | Prepared; **awaiting owner spending authorization** |
+| Now | [`CAP-profiles`](#cap-profiles) — selectable worker profiles and trustworthy configuration qualification and comparison | Production-path offline demonstration, missing-data and adversarial checks, DeepSeek compatibility | **Mechanically qualified** (2026-09-23); DeepSeek **live-observed once per cell** (2026-09-24) |
+| Now | [`CAP-first-use`](#cap-first-use) — minimum live qualification, then one first-use delivery; a paired comparison later | Retained live delivery from unseeded upstream authority, applied to a fresh baseline checkout with checks rerun; for a later pair, the same coordinator in each arm | **Live-observed once** (2026-09-24): an accepted CSV delivery, verified on a fresh checkout; its handoff was manually assisted. The next exercise is a supervised-alpha application |
 | Next | [`CAP-progression`](#cap-progression) — mechanical progression to the next judgment, and interruption inspection | Same authority and attempts as single-step driving; fewer coordinator interactions; no automatic adjudication or reroll; read-only diagnostics mutate and signal nothing | Not started |
 | When a local model is installed | [`CAP-local-worker`](#cap-local-worker), then [`CAP-local-coordinator`](#cap-local-coordinator) | Actual hardware, model, server and template identities; tool-loop and role tasks; cold/warm performance, context pressure, cancellation and resources; no borrowed "Opus-level" claim | Ready to configure; unqualified |
 | After an observed context bottleneck | [`CAP-context`](#cap-context) — bounded discovery, compact evidence, retrieval and caching | Original-source fallback, missed cross-file defects, cache invalidation, permissions and total usage measured | Research |
@@ -48,13 +48,13 @@ smallest next experiment · accept/defer condition · status · next action.
 - **Why.** Selection needs evidence gathered on the path that will be used, not a model's reputation.
 - **Dependencies.** None open.
 - **Evidence.** [2026-09-23 record](architecture/proofbound/evidence/worker-profiles-qualification-2026-09-23.md): offline production path, 17/17 replay variants graded as declared, comparison overclaim repaired.
-- **Next experiment.** A live qualification plan for DeepSeek under explicit owner authorization, to observe the three worker cases once.
-- **Accept/defer.** Accepted as offline-tested infrastructure. Nothing about any model follows.
-- **Status.** Mechanically qualified. **Next action:** owner decides whether to authorize the live DeepSeek plan.
+- **Next experiment.** Done for DeepSeek: [2026-09-24](architecture/proofbound/evidence/qualification-and-first-use-2026-09-24.md), one observation per cell.
+- **Accept/defer.** Accepted as offline-tested infrastructure. The live cells describe one configuration once. They are not a rate, a ranking or a comparison.
+- **Status.** Mechanically qualified; DeepSeek live-observed once per cell. The contradiction case was verification with author exposure, not independent discovery. **Next action:** none until a real use needs another configuration.
 
 ### CAP-first-use
 
-- **Problem.** The goal-to-change workflow has never run end to end against a real agent.
+- **Problem.** The goal-to-change workflow had never run end to end against a real agent.
 - **Behavior.** Unchanged workflow. First, the minimum live qualification: four worker trials
   proposed with enumerated per-trial limits. Then one first-use delivery of the public CSV task,
   separately identified under the coordinator that actually drives it. A paired comparison comes
@@ -70,8 +70,15 @@ smallest next experiment · accept/defer condition · status · next action.
   Never re-executed under changed instrument bytes without a new freeze.
 - **Accept/defer.** One sealed delivery that applies to a fresh baseline checkout, with checks
   rerun, is a usability observation. It is not reliability, and not superiority.
-- **Status.** Prepared; not authorized; not run. **Next action:** the owner's spending decision on
-  the stated proposal.
+- **Status.** Live-observed once, on 2026-09-24:
+  - the continuation qualification met all three trials;
+  - the CSV first use under Claude Code/Opus produced an accepted delivery that passed the project
+    checks and the public outcome check on a fresh checkout ([evidence](architecture/proofbound/evidence/qualification-and-first-use-2026-09-24.md));
+  - the first handoff needed manual intervention after a 93–111 s supervision gap;
+  - supervision was then repaired and rehearsed without paid runs ([evidence](architecture/proofbound/evidence/launch-supervision-2026-09-24.md)).
+
+  One usability observation: not reliability, not superiority, and no cost saving.
+  **Next action:** one bounded change in a real application under supervised-alpha conditions.
 
 ### CAP-progression
 
@@ -82,7 +89,7 @@ smallest next experiment · accept/defer condition · status · next action.
 - **Evidence.** None yet beyond the design of `continue`.
 - **Next experiment.** Replay the goal-to-change fixture both ways; compare interactions, attempts and receipts.
 - **Accept/defer.** Accept only if authority, attempts and receipts are identical. It never adjudicates, rerolls or signals.
-- **Status.** Not started. **Next action:** wait for first-use interaction counts.
+- **Status.** Interruption inspection delivered: `recover`, read-only by default (2026-09-24). Mechanical progression not started. **Next action:** use the application exercise's interaction counts.
 
 ### CAP-local-worker
 

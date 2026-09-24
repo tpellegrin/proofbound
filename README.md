@@ -74,7 +74,8 @@ authority → admitted implementation → independent review → deterministic c
 
 - Workers run on **macOS arm64** under a `sandbox-exec` boundary, using pinned **OpenCode 1.18.29**
   with **`deepseek/deepseek-v4-flash`, variant `high`** — the default **worker profile**. Since
-  2026-09-10 the provider serves **V4.1 Flash** for that name; no live run has observed it yet.
+  2026-09-10 the provider documents that it serves **V4.1 Flash** for that name. Live runs on
+  2026-09-24 sent that request; each run records the requested id only, not which model answered.
 - A run's worker configuration is fixed at `start` (`--worker-profile`) and recorded with a digest.
   A **local OpenAI-compatible** profile is optional: loopback-only, no credential, no assumed
   price. Its mechanics are tested offline; **no local model has been qualified**
@@ -204,16 +205,17 @@ Separating what is implemented from what has been observed:
 
 | | Implemented | Offline-tested | Live-observed |
 |---|---|---|---|
-| Goal-to-change workflow | yes | yes, credential-free stand-ins; a first-use recipe rehearsed through fresh-checkout verification | **no** |
-| DeepSeek worker path | yes | yes | yes, in `pb-handoff-2` (seeded authority, not goal-to-change) |
+| Goal-to-change workflow | yes | yes, credential-free stand-ins; a first-use recipe rehearsed through fresh-checkout verification | **once** (2026-09-24): the public CSV task under Claude Code/Opus. An accepted delivery was verified on a fresh checkout, but its first handoff needed manual intervention ([evidence](docs/architecture/proofbound/evidence/qualification-and-first-use-2026-09-24.md)) |
+| DeepSeek worker path | yes | yes | yes: in `pb-handoff-2` (seeded authority), and in the 2026-09-24 qualification and first use |
 | Codex as coordinator | yes | yes | **no** |
-| Claude Code/Opus as coordinator | yes | yes | **no** |
+| Claude Code/Opus as coordinator | yes | yes | **once**: the 2026-09-24 qualification and first use, including two fresh headless handoff sessions |
 | Another host as coordinator | protocol documented | **no** | **no** |
-| Deadline enforcement + teardown | yes | yes, macOS only | **no** |
+| Deadline enforcement + teardown | yes | yes, macOS only | **no**: no live attempt reached its deadline |
+| Launch supervision after the caller exits, and `recover` | yes | yes, macOS: the real executor against a scripted endpoint, and a scripted-caller rehearsal ([evidence](docs/architecture/proofbound/evidence/launch-supervision-2026-09-24.md)) | **no**: repaired after the manually recovered first-use handoff |
 | Evidence export / replay | yes | yes | yes, in `pb-handoff-2` |
 | Local OpenAI-compatible worker profile | yes | yes, scripted endpoint through the real pinned executor and boundary | **no** |
-| Configuration qualification and comparison | yes | yes, replay | **no** — a four-trial live proposal is prepared, [not authorized](docs/architecture/proofbound/evidence/first-use-readiness-2026-09-23.md) |
-| Attempt containment (request cap, incomplete responses, derived spend during an attempt) | yes | yes, real executor against a scripted endpoint | **no** |
+| Configuration qualification and comparison | yes | yes, replay | **once per cell, DeepSeek only**: the tool loop (revision `2026-09-23`, carried forward by a request-equivalence bridge); both requirements challenges and the dispatch implementation (revision `2026-09-24`). The contradiction was **verification** of a finding the author stated, not independent discovery ([evidence](docs/architecture/proofbound/evidence/qualification-and-first-use-2026-09-24.md)). No comparison has been run |
+| Attempt containment (request cap, incomplete responses, derived spend during an attempt) | yes | yes, real executor against a scripted endpoint | active in the 2026-09-24 live runs; **never triggered** |
 | Frontier-cost comparison | protocol frozen | — | **no** |
 
 "Offline-tested" means credential-free stand-ins exercised the mechanics. **A stand-in never
