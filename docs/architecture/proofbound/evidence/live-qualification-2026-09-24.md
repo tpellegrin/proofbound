@@ -141,3 +141,17 @@ The raw run trees stay local and uncommitted, under
 `evals/results/qualification-live-2026-09-24-deepseek-v4-flash-high.json`. Each run's staged
 credential copy (mode `0600`) remains under `/private/tmp/pb-workflow-*`, alongside the staged home
 this record cites.
+
+## Addition, later on 2026-09-24: two corrections
+
+The text above is unchanged. [executor-startup-2026-09-24.md](executor-startup-2026-09-24.md)
+records both corrections, with their evidence.
+
+- **The cause.** The reviewer's failure is reproduced from this run's own retained state. The
+  author's attempt cached the live model catalogue in the shared home. That catalogue lists
+  `deepseek-v4-flash` as `deprecated`, and the pinned executor refuses such a model before any
+  request. The npm install and lock activity above were correlated with the failure, not its cause.
+- **The limitation of the contradictory case.** The suite's findings-format example was this
+  case's defect and witness, and it was shown to the author and would have been shown to the
+  reviewer. The author's proposal repeated it. So this trial could not have shown unassisted
+  discovery, and a review would have measured at most verification of a finding it had been shown.
