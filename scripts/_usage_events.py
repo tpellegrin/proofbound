@@ -11,6 +11,10 @@ EVENT_ALLOWLIST = (
     "model", "provider", "variant",
     "input", "output", "reasoning", "cache_read", "cache_write", "executor_cost",
     "tool", "tool_status", "tool_started", "tool_ended",
+    # Why a model call ended (`tool-calls`, `stop`, `unknown`, …), as the executor recorded it on
+    # the step-finish part. It is what shows a call ended *in order to* run tools and continue —
+    # the executor's own causal link — and it carries no prompt or tool content.
+    "finish_reason",
 )
 
 def events_from_db(db: Path) -> dict[str, Any]:
@@ -93,6 +97,8 @@ def events_from_db(db: Path) -> dict[str, Any]:
                     row[key] = int(value)
             if isinstance(part.get("cost"), (int, float)):
                 row["executor_cost"] = float(part["cost"])
+            if isinstance(part.get("reason"), str):
+                row["finish_reason"] = part["reason"]
         elif part.get("type") == "tool":
             state = part.get("state") or {}
             time_block = state.get("time") or {}

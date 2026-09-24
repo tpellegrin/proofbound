@@ -89,13 +89,8 @@ NOT_OBSERVED = "not-observed"
 #: session — prompt text, tool arguments, tool output, file contents the agent read — stays out of
 #: a package by construction rather than by redaction, because a redactor that must be remembered
 #: is one that will eventually be forgotten. Retaining usage must not require publishing the
-#: transcript that produced it.
-EVENT_ALLOWLIST = (
-    "session_id", "message_id", "part_id", "time_created", "role", "type",
-    "model", "provider", "variant",
-    "input", "output", "reasoning", "cache_read", "cache_write", "executor_cost",
-    "tool", "tool_status", "tool_started", "tool_ended",
-)
+#: transcript that produced it. The list is production's (`scripts/_usage_events.py`): a package
+#: declares exactly the fields the reader it uses retains, never a second copy that can drift.
 
 
 def _now() -> str:
@@ -130,7 +125,7 @@ def check(cid: str, kind: str, status: str, detail: str, **extra: Any) -> dict[s
 
 # Shared with the supported operator path; historical reader predicates are unchanged.
 sys.path.insert(0, str(ROOT / "scripts"))
-from _usage_events import events_from_db, usage_from_rows
+from _usage_events import EVENT_ALLOWLIST, events_from_db, usage_from_rows
 
 
 def attribution(rows: list[dict[str, Any]], attempts: list[dict[str, Any]]) -> dict[str, Any]:
