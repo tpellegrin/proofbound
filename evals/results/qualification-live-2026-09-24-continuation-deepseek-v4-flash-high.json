@@ -1,0 +1,1126 @@
+{
+  "claim": "live: one observation per planned cell under this configuration; not a rate, a ranking or a reliability estimate",
+  "configuration": {
+    "control_plane": "371d962fd7606a00afcb444480007dafe54d38c59af3b8821f3d1d922a6a88e8",
+    "coordinator": "claude-code/opus",
+    "executor": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+    "interpreter": "3.10",
+    "mode": "live",
+    "resources": "57f1662d85c6dd5b",
+    "suite": "390c2c7286d6c5906e9b2e98698476429940433314337188297745b22f062604",
+    "worker.endpoint": "provider-managed",
+    "worker.limits": "provider defaults",
+    "worker.model": "deepseek/deepseek-v4-flash",
+    "worker.network": "unrestricted",
+    "worker.profile_kind": "opencode-native-deepseek",
+    "worker.provider": "deepseek",
+    "worker.variant": "high"
+  },
+  "configuration_basis": "planned",
+  "denominators": {
+    "attempted": 3,
+    "completed": 3,
+    "excluded": [],
+    "gradeable": 3,
+    "incomplete": 0,
+    "planned": 3
+  },
+  "finished_at": "2026-09-24T12:23:08.849547+00:00",
+  "format": "proofbound-qualification-result-v2",
+  "graded_under": {
+    "control_plane": "371d962fd7606a00afcb444480007dafe54d38c59af3b8821f3d1d922a6a88e8",
+    "interpreter": {
+      "executable": "/opt/homebrew/opt/python@3.10/bin/python3.10",
+      "minor": "3.10",
+      "version": "3.10.14"
+    },
+    "suite": "390c2c7286d6c5906e9b2e98698476429940433314337188297745b22f062604"
+  },
+  "observed_configuration": {
+    "coordinator": "claude-code/opus",
+    "executor": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+    "interpreter": "3.10",
+    "worker.model": "deepseek/deepseek-v4-flash",
+    "worker.variant": "high"
+  },
+  "plan": {
+    "allocation": {
+      "note": "one trial per planned cell; one success is an observation, not reliability",
+      "order": [
+        "requirements-challenge--contradictory",
+        "requirements-challenge--coherent",
+        "dispatch-implementation--coherent"
+      ],
+      "repetitions": 1
+    },
+    "authorization": {
+      "owner": "Owner statement, 2026-09-24 (as given to the coordinator): I authorize the continuation qualification proposal at: evals/qualification/proposals/2026-09-24-deepseek-v4-flash-high-continuation/ The reported digest begins d591a148 and the proposal was frozen from 91a472e. Verify and record the full identity before launching. Qualification authorization: Contradictory challenge: $0.15 derived cost, at most 3 launches. Coherent challenge: $0.15 derived cost, at most 3 launches. Dispatch implementation: $0.55 derived cost, at most 11 launches. Total: $0.85 derived cost and at most 17 launches. This explicitly authorizes new continuation trials under the repaired instrument. It supersedes the unused qualification allocations from the previous authorization; those allocations must not also remain available. The original $0.016342 and three launches remain consumed and visible. Preserve the original failed experiment and its corrections. I understand derived-cost controls are not hard provider-billing caps. In-flight requests and missing usage can exceed measured limits. Preserve all existing accounting, watchdog, deadline, repair, and stopping rules.",
+      "required": true,
+      "status": "authorized by the owner's statement above"
+    },
+    "authorized_at": "2026-09-24T12:04:54.844647+00:00",
+    "cases": [
+      "requirements-challenge",
+      "dispatch-implementation"
+    ],
+    "control_plane": {
+      "digest": "371d962fd7606a00afcb444480007dafe54d38c59af3b8821f3d1d922a6a88e8",
+      "harness": {
+        "clean": true,
+        "commit": "91a472e28836da7df6572bb35f8fcb0028fa2933"
+      },
+      "interpreter": {
+        "executable": "/opt/homebrew/opt/python@3.10/bin/python3.10",
+        "minor": "3.10",
+        "version": "3.10.14"
+      }
+    },
+    "coordinator": {
+      "note": "planned only. What each run records with `pb_workflow.py coordinator` is what a result reports as observed",
+      "requested": "claude-code/opus"
+    },
+    "created_at": "2026-09-24T04:11:36.969706+00:00",
+    "digest": "8d69e76735bba64943b45757f70764840a77a4bd32fe5d63abbc2d8ce103e16f",
+    "evidence_requirements": [
+      "every trial's terminal outcome, including infrastructure failures, incomplete and not-run cells",
+      "allowlisted per-call usage events where a session exists; unknown usage stays unknown",
+      "the bytes each grade depends on, copied with their digests, so a grade re-derives after relocation",
+      "the identities each run actually recorded \u2014 interpreter, executor, worker settings, coordinator \u2014 reported as observed, apart from the planned ones"
+    ],
+    "executor": {
+      "path": "/Users/thiago/.nvm/versions/node/v22.13.1/lib/node_modules/opencode-ai/bin/opencode.exe",
+      "sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669"
+    },
+    "format": "proofbound-qualification-plan-v2",
+    "information_access": {
+      "coordinator": "the run through pb_workflow.py; the expected outcomes are not handed to it, and are derivable from the public case fixtures",
+      "worker": "the project, its goal and the harness tree, as the production boundary allows; the dispatch reference corpus is readable there"
+    },
+    "mode": "live",
+    "proposal_digest": "d591a1485661dff3c48c5b897dd5e766cff11ea3a6afc4ced71622dd0853ee97",
+    "resources": {
+      "billing": "dated-table",
+      "campaign": {
+        "aggregate_derived_limit": 0.85,
+        "launch_ceiling": 17,
+        "minimum_launches": 9,
+        "note": "allowances are per trial and never renew: resuming, switching trials or changing coordinator context does not reset one",
+        "trials": 3
+      },
+      "claim": "derived-spend admission and containment; not a provider billing cap",
+      "containment": {
+        "derived_spend_during_attempt": true,
+        "max_consecutive_incomplete_responses": 5,
+        "max_model_requests": 150
+      },
+      "deadline_seconds": 900,
+      "per_case": {
+        "dispatch-implementation": {
+          "aggregate_limit": 0.55,
+          "ceiling": 11,
+          "minimum": 5,
+          "path": [
+            "spec-author",
+            "spec-reflector (requirements)",
+            "spec-reflector (consistency)",
+            "implementer",
+            "reviewer"
+          ],
+          "repairs": [
+            {
+              "launches": 2,
+              "what": "one implementation repair: fixer, then a fresh reviewer"
+            },
+            {
+              "launches": 3,
+              "what": "one requirements revision: re-author, fresh challenge, renewed consistency review"
+            }
+          ],
+          "reserve": 0.05
+        },
+        "requirements-challenge": {
+          "aggregate_limit": 0.15,
+          "ceiling": 3,
+          "minimum": 2,
+          "path": [
+            "spec-author",
+            "spec-reflector"
+          ],
+          "repairs": [],
+          "reserve": 0.05
+        }
+      },
+      "per_launch_allowance": 0.05,
+      "repair_cycles": 1
+    },
+    "status": "authorized",
+    "suite": {
+      "cases": [
+        {
+          "dimension": "worker tool protocol",
+          "id": "tool-loop",
+          "identity": "94424f7429e6437d44a48b4e1797878ce745be02abdf633ff611595ae0f958cd",
+          "measures": "worker",
+          "question": "Can the worker call a tool, receive its result, continue, and leave the requested artifact?",
+          "replay_transport": "stand-in-endpoint+real-executor",
+          "replay_variants": {
+            "marker": [
+              "well-formed",
+              "malformed-arguments",
+              "missing-usage",
+              "interrupted"
+            ]
+          },
+          "stops": "after the spec-author attempt is gated",
+          "subjects": [
+            "marker"
+          ],
+          "withholding": "nothing to withhold: the marker is in the goal"
+        },
+        {
+          "dimension": "review: find and substantiate a defect",
+          "id": "requirements-challenge",
+          "identity": "be4fd2eff0bdb79df7420f74ace540c306bb3bb6d0326d5aa33becb6d77e20f2",
+          "measures": "worker",
+          "question": "Does a fresh reviewer name the requirements that cannot hold together and give a witness that proves it \u2014 and report nothing on the sound control?",
+          "replay_transport": "stand-in-executor",
+          "replay_variants": {
+            "coherent": [
+              "clean",
+              "invented"
+            ],
+            "contradictory": [
+              "found-with-witness",
+              "found-wrong-witness",
+              "missed"
+            ]
+          },
+          "stops": "after the coordinator adjudicates the requirements challenge",
+          "subjects": [
+            "contradictory",
+            "coherent"
+          ],
+          "withholding": "not required: the defect is derivable from the reviewed document, which is the point. Nothing the production path shows the reviewer is hidden: the author's proposal may state a conflict itself. So the case measures the production-path challenge \u2014 verify or find \u2014 and each grade records, as `exposure`, whether the witness given was already in what the reviewer was shown. Unassisted discovery would need a separately identified setup"
+        },
+        {
+          "dimension": "implementation satisfies the contract",
+          "id": "dispatch-implementation",
+          "identity": "dcd193763afcadbff0af45b5531c0043dc7addd5a369adb7b5ad17f80e0f2578",
+          "measures": "worker",
+          "question": "Does the delivered code satisfy the accepted requirements, on the first attempt and after one bounded repair, and do review findings reproduce?",
+          "replay_transport": "stand-in-executor",
+          "replay_variants": {
+            "coherent": [
+              "sound-round-robin",
+              "sound-fewest-remaining",
+              "defective-accepted",
+              "defective-repaired",
+              "sound-invented-finding"
+            ]
+          },
+          "stops": "at a sealed delivery, or the first blocker",
+          "subjects": [
+            "coherent"
+          ],
+          "withholding": "NOT established: the checker's reference corpus lives in the harness tree, which the worker boundary can read. Exposure is scanned in retained tool activity where a session exists; absence there is not isolation"
+        },
+        {
+          "dimension": "coordinator recovers authority and stops correctly",
+          "id": "authority-recovery",
+          "identity": "84fded0c3d9bc5804e89c53ffa69f550af5a8eb2e72fca552b24a506e0f095fa",
+          "measures": "coordinator",
+          "question": "From retained state alone, does the coordinator continue a valid run, stop at a never-earned prerequisite, and recover (not refuse) a deleted derived record that retained evidence legitimately recreates?",
+          "replay_transport": "stand-in-executor",
+          "replay_variants": {
+            "derived-record-deleted": [
+              "scripted"
+            ],
+            "never-earned": [
+              "scripted"
+            ],
+            "valid-continuation": [
+              "scripted"
+            ]
+          },
+          "stops": "at the implementer launch, or the refusal",
+          "subjects": [
+            "valid-continuation",
+            "never-earned",
+            "derived-record-deleted"
+          ],
+          "withholding": "not applicable"
+        }
+      ],
+      "digest": "390c2c7286d6c5906e9b2e98698476429940433314337188297745b22f062604",
+      "id": "proofbound-qualification-v1",
+      "instrument": {
+        "evals/_qualify.py": "734f87129ce7d4b176a9fbccc86258e9e345c494e64a439720456a73d606f50a",
+        "evals/_stand_in_endpoint.py": "ffa9c624d1df9e316654b5dc17f45139080550796bf4a12931b48a762bbaec24",
+        "evals/_stand_in_executor.py": "b19df889c758e91f79e95792ce758b9d077955055bca3adf3aeb4499a6b202e4",
+        "evals/authority_slice/_checker.py": "5c193959fa4ae61a94207382851f6a39bdc2f473da8dae845d56e3a27c966437",
+        "evals/authority_slice/_checker_corpus.py": "f41cdbf9d1d9466ffddde123b3a88b03cac382b25addcd7de683f9626d92ad61",
+        "evals/authority_slice/_obligations.py": "982e236664abb15876b656e5f7e7f352a740beb687c8aa5468cb940558f074ab",
+        "evals/pb_qualify.py": "a9fc746250c05cacf705486ffb99550548fb7238a7872b0d47b274c077ead994"
+      },
+      "note": "four bounded cases reusing the authority slice's fixtures, oracle and checker; development fixtures, not a held-out evaluation set"
+    },
+    "worker_profile": {
+      "selector": "deepseek-v4-flash-high",
+      "settings": {
+        "billing": {
+          "basis": "dated-table",
+          "price_model": "deepseek-flash",
+          "table": "deepseek-2026-09-23"
+        },
+        "credential": {
+          "auth_entry": "deepseek"
+        },
+        "declared_server": null,
+        "digest": "6af2663d197d93222b193fbb69af24509ebbaaba5834f25852c62ce0b3b6823a",
+        "executor": {
+          "kind": "opencode-cli",
+          "sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+          "startup": {
+            "catalogue": "bundled: OPENCODE_DISABLE_MODELS_FETCH, and no cached models.json in the home",
+            "config_dir": "staged with the executor's own defaults and write-denied by the boundary, so the executor skips its npm install of @opencode-ai/plugin",
+            "logs": "OPENCODE_PRINT_LOGS: the executor's log goes to stderr, i.e. the attempt's worker.log",
+            "refuse_before_launch": "a changed configuration directory, a cached catalogue, a lock or breaker left by an earlier executor process, or a .opencode directory"
+          },
+          "version": "1.18.29"
+        },
+        "format": "proofbound-worker-settings-v1",
+        "legacy": false,
+        "limits": {
+          "basis": "provider and executor defaults; this profile sets neither",
+          "context": null,
+          "output": null
+        },
+        "model": "deepseek/deepseek-v4-flash",
+        "network": {
+          "claim": "a cloud provider reached over the network; the worker boundary allows all network access",
+          "mode": "unrestricted"
+        },
+        "opencode_config": null,
+        "opencode_env": {},
+        "parameters": {
+          "sampling": "not controllable; the provider documents that thinking mode ignores temperature and top_p",
+          "variant_flag": "--variant high"
+        },
+        "profile": {
+          "id": "deepseek-v4-flash-high",
+          "kind": "opencode-native-deepseek",
+          "path": null,
+          "revision": "2026-09-24",
+          "source": "builtin",
+          "source_sha256": null
+        },
+        "provider": {
+          "catalogue": {
+            "not_used": "models.dev as fetched on 2026-09-24 lists deepseek-v4-flash with status deprecated; the pinned executor deletes deprecated models, so a launch that read it failed before any request",
+            "used": "the catalogue bundled in the pinned executor, which lists deepseek-v4-flash"
+          },
+          "documented_serving": {
+            "model_version": "DeepSeek-V4.1-Flash",
+            "read": "2026-09-23",
+            "since": "2026-09-10",
+            "source": "https://api-docs.deepseek.com/updates/",
+            "statement": "V4 Flash retired; the legacy name deepseek-v4-flash is temporarily routed to V4.1 Flash and billed at the Flash price"
+          },
+          "endpoint": null,
+          "id": "deepseek",
+          "requested_model": "deepseek/deepseek-v4-flash",
+          "route": "OpenCode native provider integration",
+          "runtime_identity": "requested id only: the pinned executor records the model id it requested and does not retain the provider's response model field; neither an alias nor that string identifies model weights"
+        },
+        "resources": {
+          "attempt_containment": {
+            "derived_spend_during_attempt": true,
+            "max_consecutive_incomplete_responses": 5,
+            "max_model_requests": 150
+          },
+          "configured": [],
+          "enforced": [
+            "launch ceiling",
+            "repair allowance",
+            "attempt deadline",
+            "aggregate derived-cost limit (between attempts)",
+            "per-attempt containment: model-request cap, trailing incomplete responses, derived spend observed during the attempt"
+          ],
+          "output_token_allowance": null
+        },
+        "tools": {
+          "permission_flag": "--auto",
+          "tool_call_declared": null,
+          "tool_surface": "the executor's default tool set; not inferable from a version string"
+        },
+        "variant": "high"
+      }
+    }
+  },
+  "plan_digest": "8d69e76735bba64943b45757f70764840a77a4bd32fe5d63abbc2d8ce103e16f",
+  "selection": {
+    "executed": [
+      "requirements-challenge--contradictory",
+      "requirements-challenge--coherent",
+      "dispatch-implementation--coherent"
+    ],
+    "not_selected": [],
+    "planned_trials": [
+      "requirements-challenge--contradictory",
+      "requirements-challenge--coherent",
+      "dispatch-implementation--coherent"
+    ]
+  },
+  "started_at": null,
+  "summary": {
+    "dispatch-implementation": {
+      "measured": 1,
+      "met": 1,
+      "not_measured": [],
+      "not_met": []
+    },
+    "requirements-challenge": {
+      "measured": 2,
+      "met": 2,
+      "not_measured": [],
+      "not_met": []
+    }
+  },
+  "trials": [
+    {
+      "case": "requirements-challenge",
+      "case_identity": "be4fd2eff0bdb79df7420f74ace540c306bb3bb6d0326d5aa33becb6d77e20f2",
+      "evidence": [
+        {
+          "path": "accounting.json",
+          "sha256": "18c45557c20a2c76b399e240ce76c3788a0defbc649f5b6b175d650a2d2c3133"
+        },
+        {
+          "path": "artifacts/requirements.md",
+          "sha256": "146485e95334d8bed83a9d5e41447de24f24babcf9bd0cae9e888b51a076cdae"
+        },
+        {
+          "path": "exposure.json",
+          "sha256": "bb1ad4c28eebab7c773bd14bb94da57e6616d64b30ee81564f323ec262867ce4"
+        },
+        {
+          "path": "run/launch-ledger.json",
+          "sha256": "8a236d3ae43f7d19ab16d159193906b402a5a3867ff64199e11d18f5fb3e66fd"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/attempt.json",
+          "sha256": "72dc6ef0189b192ce1d16c4446a5cd84c0cc02b01e40467e420375f0a983190e"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/evidence-gate.json",
+          "sha256": "b2449757f6d5941092bd24428e28b25141522b499a21c2f7e07294639ea5a544"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/launch-reservation.json",
+          "sha256": "a9472b76c06bde5a21ce9f07c4a8299274bf4aaca562c8f64d1888684ba58d1a"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/report.md",
+          "sha256": "633189ba78eb49f94a65f8a6dbf61c0b0b1fa8010e3ac2013d4aa3c9cfbdd604"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/scope-baseline.json",
+          "sha256": "ff512ca682e6af04005329eb6675e8ce7ae9e57f9c536ea4927deafb95f8587b"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/scope-diff.json",
+          "sha256": "afe4a83e2e9a7156fcfdb86e6e22f4589083f14d0a5c0c0c1a5d8ff2ebb14824"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/terminal.json",
+          "sha256": "c291dfbfa38308e7d4020253b21cca5fe21491891dbc317afed7126f35e6e402"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/attempt.json",
+          "sha256": "c3bb5139a9cfdac69b760a08d02393d72d0af78960c802b8853118e38df5fbbd"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/evidence-gate.json",
+          "sha256": "0a81e496f03dc1ced7c62b57517f8d452670ef57f4c73d66227a8b2de027937b"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/launch-reservation.json",
+          "sha256": "8f7d338bc051481aaa3b966ab33656bfdc9c5ce03be867fce5605ded7f63e82c"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/report.md",
+          "sha256": "8f9a350489ee4f65e851572cba8cba1dd386b51080b49a7005de782b6fe66a94"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/scope-baseline.json",
+          "sha256": "d5a606054ac20c727d908c0072cd3f334d21780a285d0026a2539bb5a41aa216"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/scope-diff.json",
+          "sha256": "03bc6eae23d80dbc76650678e77f84ccedd9ffd1ab455d2c0c440cb4d39a6b56"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/terminal.json",
+          "sha256": "7e5f8285df77ef00937ccb90e6ac2376633d3e545759b84efdcd5fef568fcd07"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/contracts/r0001.md",
+          "sha256": "eba7626522c63e1b582bd8b77f1e2533c272d88490c2d0a137dbdc6beee10f24"
+        },
+        {
+          "path": "run/receipts/2468af4049f14cfe9b50b33602c5aa07.json",
+          "sha256": "919aaa11a1910507c6b347d3c7e5ae28a5a4f4ad5db0fcd420d631c3e2c63954"
+        },
+        {
+          "path": "run/receipts/af389369892e4018895d600308d73c4b.json",
+          "sha256": "fd413f9b0d1bbef312e54c13e75072e4d3bd85ce133b7d5f6040a285073e267e"
+        },
+        {
+          "path": "run/receipts/c312f89d644f4441bedddd1c27c73c4b.json",
+          "sha256": "073006ac0c697c758dd9c2422b8c88fe50d274c62a943f6e75d279fba4eee7d3"
+        },
+        {
+          "path": "run/run-config.json",
+          "sha256": "d06f0d6415d9566385de63ac256edfae7e9a3962b62f1717af4aa9f817bdc703"
+        },
+        {
+          "path": "run/state.json",
+          "sha256": "57f971b46c1cbae6bf11d29f751583d41f7fb9b24a5803ca7bb6bf9e0fca13d9"
+        },
+        {
+          "path": "trial.json",
+          "sha256": "fc1376877d4be04f027e7fc81da5899c418a08a5f4664ebc2749ea571cc71e95"
+        },
+        {
+          "path": "usage-events.json",
+          "sha256": "462fbdae27aaa7a03d3d8fc23544a3ff4855e03102f9cdbbdbb9955238fdebd2"
+        }
+      ],
+      "evidence_dir": "trials/requirements-challenge--contradictory/evidence",
+      "observed": {
+        "boundary": "constructed",
+        "coordinator": [
+          {
+            "observed": null,
+            "requested": "claude-code/opus",
+            "self_reported": "Claude Opus 5.5 (model id claude-opus-5-5), as the Claude Code host's system prompt states it to the agent; a claim, not runtime metadata"
+          }
+        ],
+        "executor_reported_model": {
+          "observed_models": [
+            "deepseek-v4-flash"
+          ],
+          "observed_providers": [
+            "deepseek"
+          ],
+          "observed_variants": [
+            "high"
+          ],
+          "single_model": true,
+          "single_variant": true
+        },
+        "executor_sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+        "interpreter": "3.10.14",
+        "note": "the executor records the requested model id; neither it nor a provider alias identifies model weights",
+        "run_mode": "live",
+        "worker_model": "deepseek/deepseek-v4-flash",
+        "worker_settings_digest": "6af2663d197d93222b193fbb69af24509ebbaaba5834f25852c62ce0b3b6823a",
+        "worker_variant": "high"
+      },
+      "outcome": {
+        "coordinator_decision": "owner",
+        "decision_outcome": "correct-stop",
+        "defect_planted": true,
+        "exposure": {
+          "available": true,
+          "claim": "verification: a witness this review gave was in what it was shown",
+          "correct_findings": [
+            {
+              "shown": true,
+              "witness": [
+                "a",
+                "a",
+                "b"
+              ]
+            }
+          ],
+          "reviewed": {
+            "goal.md": "ef68f9e936d18fe9b2319665b8d00b3efce8ca66b460703e8830e3379b19f9ec",
+            "requirements.md": "146485e95334d8bed83a9d5e41447de24f24babcf9bd0cae9e888b51a076cdae"
+          }
+        },
+        "findings": {
+          "correct": 1,
+          "correct_but_unsubstantiated": 0,
+          "false": 0,
+          "reported": 1,
+          "rows": [
+            {
+              "correct": true,
+              "finding": {
+                "requirements": [
+                  "R2",
+                  "R3"
+                ],
+                "witness": [
+                  "a",
+                  "a",
+                  "b"
+                ]
+              },
+              "well_formed": true,
+              "witness_reproduces": true
+            }
+          ],
+          "substantiated": 1
+        },
+        "gradeable": true,
+        "review": "detected-and-substantiated",
+        "usage": {
+          "available": true,
+          "billing": "dated-table",
+          "complete": true,
+          "derived_cost": 0.0123,
+          "telemetry_gaps": null,
+          "tokens": {
+            "cache_read": 452736,
+            "cache_write": 0,
+            "calls_finished": 24,
+            "calls_started": 24,
+            "executor_cost": 0.01194182,
+            "input": 31430,
+            "output": 10379,
+            "reasoning": 12028
+          },
+          "zero_usage_calls": 0
+        }
+      },
+      "reason": null,
+      "status": "completed",
+      "subject": "contradictory",
+      "transport": "none",
+      "trial_id": "requirements-challenge--contradictory",
+      "variant": null
+    },
+    {
+      "case": "requirements-challenge",
+      "case_identity": "be4fd2eff0bdb79df7420f74ace540c306bb3bb6d0326d5aa33becb6d77e20f2",
+      "evidence": [
+        {
+          "path": "accounting.json",
+          "sha256": "42f561c5b2720122a9a0b70205d362309db6e3e7d1a9063a205fa0308577eec7"
+        },
+        {
+          "path": "artifacts/requirements.md",
+          "sha256": "1d6e1d0a2ab045a390c61bbea08821cf6e85107e7645ce424664e33b77c41c3b"
+        },
+        {
+          "path": "exposure.json",
+          "sha256": "bb1ad4c28eebab7c773bd14bb94da57e6616d64b30ee81564f323ec262867ce4"
+        },
+        {
+          "path": "run/launch-ledger.json",
+          "sha256": "3b8469b7b64cadbc0cc928a7f4828cdb391361ed6b17eb67b1cdb9f105d1519c"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/attempt.json",
+          "sha256": "65eab25e424e95331d889269f9f86b715d319769dd6ca7fd2924835592a5fa45"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/evidence-gate.json",
+          "sha256": "d0c79fb15061eab6f0f3d3b712c29763dda5e9c6370bb93762ad6fbd0521fae0"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/launch-reservation.json",
+          "sha256": "ff45f611aa1eed67257a4e358523ea5b2b407b70a179ea32dbb5e48e02ff4a0b"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/report.md",
+          "sha256": "5967d336186f2c2f527d32d1865fd2edda2776f78e9ec6157dbbd40a7e7a1ed9"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/scope-baseline.json",
+          "sha256": "a4e35be97bd24a97ad9d0f04f0eab7eed6739de931c3575d0fb8c6ac2029d1e0"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/scope-diff.json",
+          "sha256": "f3845113534aa77b97290cc9baaddc9ba5adc55d60c1fddb1aed56421d52cc2f"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/terminal.json",
+          "sha256": "387f24ae8c5441a9d8ca3cd0881f55c4a2806364171563566f7114a9afadc2ae"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/attempt.json",
+          "sha256": "cac56e3471eba7af108b0255e3e9b30dd01fdd7ae48d769e7185f20affc74a2b"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/evidence-gate.json",
+          "sha256": "f9407b8d48b5687e7d7666f1d85d547e3ebd99bf01ce92e3b8271ca3fa809b14"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/launch-reservation.json",
+          "sha256": "e25c47ef0565abdce3985ddcb4119cfb069531b28384f81ddfc858f6c4357292"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/report.md",
+          "sha256": "640fda5a7272d23cb02535cd990d77653014152da44cf59d96398b9895845f08"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/scope-baseline.json",
+          "sha256": "79c6743d1045e80f59a75a8a30280dc3983b0c8fb37ea6d37f73475737cde089"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/scope-diff.json",
+          "sha256": "116cbd87af503157d9825f85e3893d9b2a2d84ccc2f21f85552b4804b5cea44b"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/terminal.json",
+          "sha256": "6badea53157d21fe90b35b93388eb043bf6b61e4e29c0457033ff4755836b8bd"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/contracts/r0001.md",
+          "sha256": "ce87f3560d5f4a03488d641f3598479b00539b31c81dc3687342766c64a86a30"
+        },
+        {
+          "path": "run/receipts/023fc9e4553640b38e956988dc4dfaa7.json",
+          "sha256": "8811dc21774869848e7b52a6ac7d9b6762a554f922a85b148b3728c1596bcd24"
+        },
+        {
+          "path": "run/receipts/90b2c3a1accd4dbabab4ad596cc2c2d8.json",
+          "sha256": "190de134abed1596aab58d60d51a60d4122f91358ace7637a358dde88289fe03"
+        },
+        {
+          "path": "run/receipts/f9e629dbaa2647fc84723727363b8b59.json",
+          "sha256": "2f5c80d7415a250574c5697aee2b65b00c5bacc9c9c2a9b46cdd1f853e99086d"
+        },
+        {
+          "path": "run/run-config.json",
+          "sha256": "7a1db516d72e2c43e7ad16e8427b5e57b2dc8e066bf10a6fffcbf7ffe7eb7ec8"
+        },
+        {
+          "path": "run/state.json",
+          "sha256": "8299e61ea40fe07ca8dc9ed5b6d1597bfe0f1693b02b8ad5f74d0fd5e3510a5e"
+        },
+        {
+          "path": "trial.json",
+          "sha256": "a1d5b9333646070894efcd5b7d3de9d59faee01309d95ac88cb7fda6f372a496"
+        },
+        {
+          "path": "usage-events.json",
+          "sha256": "9576bd0719f2a0c6d8f948f1e4d6e2c67fc33042d4063d87ff08fb28f3dc3fd3"
+        }
+      ],
+      "evidence_dir": "trials/requirements-challenge--coherent/evidence",
+      "observed": {
+        "boundary": "constructed",
+        "coordinator": [
+          {
+            "observed": null,
+            "requested": "claude-code/opus",
+            "self_reported": "Claude Opus 5.5 (model id claude-opus-5-5), as the Claude Code host's system prompt states it to the agent; a claim, not runtime metadata"
+          }
+        ],
+        "executor_reported_model": {
+          "observed_models": [
+            "deepseek-v4-flash"
+          ],
+          "observed_providers": [
+            "deepseek"
+          ],
+          "observed_variants": [
+            "high"
+          ],
+          "single_model": true,
+          "single_variant": true
+        },
+        "executor_sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+        "interpreter": "3.10.14",
+        "note": "the executor records the requested model id; neither it nor a provider alias identifies model weights",
+        "run_mode": "live",
+        "worker_model": "deepseek/deepseek-v4-flash",
+        "worker_settings_digest": "6af2663d197d93222b193fbb69af24509ebbaaba5834f25852c62ce0b3b6823a",
+        "worker_variant": "high"
+      },
+      "outcome": {
+        "coordinator_decision": "accept",
+        "decision_outcome": "correct-acceptance",
+        "defect_planted": false,
+        "exposure": {
+          "available": true,
+          "claim": null,
+          "correct_findings": [],
+          "reviewed": {
+            "goal.md": "307608bbf084039c10bfc923a7588cbf15a3afffeeae4bdfa4b51c795f7e9b26",
+            "requirements.md": "1d6e1d0a2ab045a390c61bbea08821cf6e85107e7645ce424664e33b77c41c3b"
+          }
+        },
+        "findings": {
+          "correct": 0,
+          "correct_but_unsubstantiated": 0,
+          "false": 0,
+          "reported": 0,
+          "rows": [],
+          "substantiated": 0
+        },
+        "gradeable": true,
+        "review": "clean",
+        "usage": {
+          "available": true,
+          "billing": "dated-table",
+          "complete": true,
+          "derived_cost": 0.016623,
+          "telemetry_gaps": null,
+          "tokens": {
+            "cache_read": 898944,
+            "cache_write": 0,
+            "calls_finished": 35,
+            "calls_started": 35,
+            "executor_cost": 0.0156265,
+            "input": 33737,
+            "output": 14776,
+            "reasoning": 15175
+          },
+          "zero_usage_calls": 0
+        }
+      },
+      "reason": null,
+      "status": "completed",
+      "subject": "coherent",
+      "transport": "none",
+      "trial_id": "requirements-challenge--coherent",
+      "variant": null
+    },
+    {
+      "case": "dispatch-implementation",
+      "case_identity": "dcd193763afcadbff0af45b5531c0043dc7addd5a369adb7b5ad17f80e0f2578",
+      "evidence": [
+        {
+          "path": "accounting.json",
+          "sha256": "9586c5172ff13355c1ad7cbb256e600139ec405fbe45f3adef365c8ab2dd55a7"
+        },
+        {
+          "path": "artifacts/dispatch.py",
+          "sha256": "486c6d1714613c3a6aaeb5c9ad60667bf6553830d28240f0996a91bc7a2ddc02"
+        },
+        {
+          "path": "artifacts/requirements.md",
+          "sha256": "e3dc73c42146339e61131ac1a2affb060449fe9a9fe1d99d1a3b6bc4a7a09d55"
+        },
+        {
+          "path": "delivery/change.patch",
+          "sha256": "4a69c94610bda5a6e28901a9c7d780b4c338796469d9f20f9a2fcd3f4d652545"
+        },
+        {
+          "path": "delivery/handoff.json",
+          "sha256": "7dd81ebcfe86dc2d7b786c6def08c42c84087bb2d4d3a4b83a01409509b2e575"
+        },
+        {
+          "path": "delivery/usage.json",
+          "sha256": "eecf358b9d1c451c310da95ca62252a6663e55a0f401fc877b412794183ea928"
+        },
+        {
+          "path": "exposure.json",
+          "sha256": "bb1ad4c28eebab7c773bd14bb94da57e6616d64b30ee81564f323ec262867ce4"
+        },
+        {
+          "path": "run/launch-ledger.json",
+          "sha256": "c6400609c5dfd5c12dbf43bbdb246361d9f317c08e158da0dcf01fd7cfcca7be"
+        },
+        {
+          "path": "run/phases/build/tasks/implementation/attempts/implementer-1/attempt.json",
+          "sha256": "5c1bb6ba0d90c53e593326eca4111f899a77f71de52ce736859fe10830c44b11"
+        },
+        {
+          "path": "run/phases/build/tasks/implementation/attempts/implementer-1/evidence-gate.json",
+          "sha256": "8579e407658c14193a043d8973ce242a5ab4de5a98b9b812876a2d8e58a6ae3f"
+        },
+        {
+          "path": "run/phases/build/tasks/implementation/attempts/implementer-1/launch-reservation.json",
+          "sha256": "1758c500968d036fa43c0ffd66e9f349acf147b56e1fb0fe2615485fa848631d"
+        },
+        {
+          "path": "run/phases/build/tasks/implementation/attempts/implementer-1/report.md",
+          "sha256": "9d6dd11e6d289eb8b74568ece528b0cfcbd6419a71463e569f37742c4c5745af"
+        },
+        {
+          "path": "run/phases/build/tasks/implementation/attempts/implementer-1/scope-baseline.json",
+          "sha256": "df5740fde606fb4effb8503f0070457f843c8bf8bd3fbba10657aeba2ce68961"
+        },
+        {
+          "path": "run/phases/build/tasks/implementation/attempts/implementer-1/scope-diff.json",
+          "sha256": "d89da0e0b8c2099e113ee459349a08f860bd63ecbc5a9634ab8ac683598b01bb"
+        },
+        {
+          "path": "run/phases/build/tasks/implementation/attempts/implementer-1/terminal.json",
+          "sha256": "ec8195f0e42007b5d9f21e6a7d82cc90d53f6d5ac75d5c0c7f44079e3c0a1dfe"
+        },
+        {
+          "path": "run/phases/build/tasks/implementation/attempts/reviewer-1/attempt.json",
+          "sha256": "24c406ea51291a5cc52ae0e220d506a0ee6a69fbd86756b2fa33f5d3b0ed24f7"
+        },
+        {
+          "path": "run/phases/build/tasks/implementation/attempts/reviewer-1/evidence-gate.json",
+          "sha256": "db77dee31a4d82d5469dded4e4063b337b0711e166877d7a57b2c03682d13f9a"
+        },
+        {
+          "path": "run/phases/build/tasks/implementation/attempts/reviewer-1/launch-reservation.json",
+          "sha256": "c06a517b1297a676b24746a6d3b930cbc43bf9e109a65b44f6a88b0df504e179"
+        },
+        {
+          "path": "run/phases/build/tasks/implementation/attempts/reviewer-1/report.md",
+          "sha256": "f03c3efabcdee3734734f5a0bd4e97bea11d8505ad7145a05dac60ad5e378a7a"
+        },
+        {
+          "path": "run/phases/build/tasks/implementation/attempts/reviewer-1/scope-baseline.json",
+          "sha256": "1a5ea3242b4a788135d5d2637263d6542444ab0eef23f62061aee71e5072ab2e"
+        },
+        {
+          "path": "run/phases/build/tasks/implementation/attempts/reviewer-1/scope-diff.json",
+          "sha256": "c4c7ecbb8abbfcf6c0af8176eb83899899a817f8c772608d9a9a768bd7eb904b"
+        },
+        {
+          "path": "run/phases/build/tasks/implementation/attempts/reviewer-1/terminal.json",
+          "sha256": "ac4294b0223de6d64fb41cc016f52d3c9422251ca6e4da9aadf76dd0321ee9c7"
+        },
+        {
+          "path": "run/phases/build/tasks/implementation/contracts/r0001.md",
+          "sha256": "f2023947b85a253f8641cfc69b9bba130a7d20c46d498fa3725fd505bffc931b"
+        },
+        {
+          "path": "run/phases/design/tasks/consistency/attempts/spec-reflector-1/attempt.json",
+          "sha256": "ee2de5c131c56e54ae2c7d9923499a0d8b8cd90befda3361257a82d904756b12"
+        },
+        {
+          "path": "run/phases/design/tasks/consistency/attempts/spec-reflector-1/evidence-gate.json",
+          "sha256": "8c2c58c26306fdb95af0b3432ad17555582bb5cfc09f2ce035becdf76f65f653"
+        },
+        {
+          "path": "run/phases/design/tasks/consistency/attempts/spec-reflector-1/launch-reservation.json",
+          "sha256": "0ca1d17709ba63a67a251e5cc27eacd10d710156d24c02e972f842dffb721c61"
+        },
+        {
+          "path": "run/phases/design/tasks/consistency/attempts/spec-reflector-1/report.md",
+          "sha256": "3a2ea79ccb3d6046b5075e78759564ed3ba0ad5b9bfe3135753df8d70c759aa8"
+        },
+        {
+          "path": "run/phases/design/tasks/consistency/attempts/spec-reflector-1/scope-baseline.json",
+          "sha256": "eb553698a3ad2d9a907478532c6cb777b0d1f6e718059efe1068883631565bf3"
+        },
+        {
+          "path": "run/phases/design/tasks/consistency/attempts/spec-reflector-1/scope-diff.json",
+          "sha256": "99ccc1ce6793cd0109566b4ecbdb8f90a2b6d816552577742dbab34f278ca0a2"
+        },
+        {
+          "path": "run/phases/design/tasks/consistency/attempts/spec-reflector-1/terminal.json",
+          "sha256": "56bcba33520f8278d711c805695c4864ed7db5676f3a9e540337ffa2e4b632c2"
+        },
+        {
+          "path": "run/phases/design/tasks/consistency/contracts/r0001.md",
+          "sha256": "9bbf137e74a689928221250cda895e1012309d7b17a4bd2f25b2cdfcc04499ba"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/attempt.json",
+          "sha256": "466768aa672f944863b81390dab8f0ac30d7a0bb5981862dc42f2c4b54eda4d3"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/evidence-gate.json",
+          "sha256": "2b41d78c0dbb0dbbcccf45f199e57aa2522f58cd8b2d958c592bcad269c59e9d"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/launch-reservation.json",
+          "sha256": "25712d30dcd4622f76c61e02ecc7fb6a8e3fc5c6bbb54f47288e424355745a33"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/report.md",
+          "sha256": "07e2ba6d7982145b03cf50e3bd75ff7cef9d7bcb1b13071109822d6b8e93bd1a"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/scope-baseline.json",
+          "sha256": "0d8bb6ad6cf459e369203769628393e768ae130ac8da13a843102786c0ef0955"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/scope-diff.json",
+          "sha256": "0f844d4fb0eeae56126d606e3671940f2391e0aa49bbea9e916904cc719458de"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/terminal.json",
+          "sha256": "22729c7f2afdb6f561971b48c76ae329b45f820930d9cd04a9ac83d7f4b8e7e4"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/attempt.json",
+          "sha256": "1ab3f8644357b629395917c970014a35e8406764f794b54d434330b40a0df206"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/evidence-gate.json",
+          "sha256": "8e346a1a09f7a79a8117cd7503628808e7688813e9e3ae956e6cbcc8ac496d23"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/launch-reservation.json",
+          "sha256": "19256a3485a91322787806ecd19464acc605bd872f963e3a1b8b5ad75504e169"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/report.md",
+          "sha256": "827060a8adf1b773b2cab3bb96e8b96aefb121413b85507c8ee832243dca0cb7"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/scope-baseline.json",
+          "sha256": "846f11943dcdc2dde2e4663ad5e991b0b76b5d7ceca2dd3aa06ee701df5beb81"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/scope-diff.json",
+          "sha256": "12804dd99711903db01fc4d2d6caa56738e705caa4cacb4c16fd4b0392c43be4"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/terminal.json",
+          "sha256": "3bfac651a1abfff126b67c644b495f5306e2b1515f2df12fb4d5c56edefe2c1f"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/contracts/r0001.md",
+          "sha256": "98044ad8cbc6ede33273b325d3ad01ef400b3742426010ab9aa8118cb158e21a"
+        },
+        {
+          "path": "run/receipts/13653a6e97414c97a7abeb8e999af2f3.json",
+          "sha256": "548dc7dc01b286e6bbd002d75f81b6935815dbf5a4bc0f885c10dd80433679de"
+        },
+        {
+          "path": "run/receipts/17afb2863ae14c6183cb5a87afe71be3.json",
+          "sha256": "85788efd53e367b7f891a2005b83b2b38f7a5176473ec6d3f52db8f965d36b65"
+        },
+        {
+          "path": "run/receipts/1b6840b1eb8e4896b78ebb62b0fb6380.json",
+          "sha256": "292c30f58d1941945ea00f0840fb68aa0a33b2192e623c654b546d5ca20a213c"
+        },
+        {
+          "path": "run/receipts/401aeac1c804419b95ef51e0e7ab511d.json",
+          "sha256": "f401f60c92f09b909857b642fdff9876201f75d6bd7ee97f5a5685ac49e243ea"
+        },
+        {
+          "path": "run/receipts/7f0868cc66d345c5a1131a2d93558899.json",
+          "sha256": "5bd1b22b04380ce1e856826920529c96f76b8b48a569ce77779992fc7d09fe3c"
+        },
+        {
+          "path": "run/receipts/9d3ad0ba7fd9496797a10c4562732f09.json",
+          "sha256": "b6937f5caec2f36343419b6661fa85ce9b0405cc2359f88e50bee59d1db3dfb5"
+        },
+        {
+          "path": "run/receipts/f2aa386fbaa446fbad1adcf9178ac315.json",
+          "sha256": "0fd501de4597b780e4fca2fc0e2926ddb39ea54732498a0b68dfa725730da1a9"
+        },
+        {
+          "path": "run/run-config.json",
+          "sha256": "f354a72f7a7b8ef8afbc9e4504d7d3a67af2266eca444f80b694dfbca6019b94"
+        },
+        {
+          "path": "run/state.json",
+          "sha256": "25a3204da41daaee214c30e1458ee7b839c023f1ba2670d26d2f5413c593e836"
+        },
+        {
+          "path": "trial.json",
+          "sha256": "452845902f0754a683b810aa3d7e7bbfa3d0c2055b07f3f54d627d80baae58fd"
+        },
+        {
+          "path": "usage-events.json",
+          "sha256": "07666e9b3616a324941e42e7609b3759cbac731dc058a8dbbddfa0784efcb604"
+        }
+      ],
+      "evidence_dir": "trials/dispatch-implementation--coherent/evidence",
+      "observed": {
+        "boundary": "constructed",
+        "coordinator": [
+          {
+            "observed": null,
+            "requested": "claude-code/opus",
+            "self_reported": "Claude Opus 5.5 (model id claude-opus-5-5), as the Claude Code host's system prompt states it to the agent; a claim, not runtime metadata"
+          }
+        ],
+        "executor_reported_model": {
+          "observed_models": [
+            "deepseek-v4-flash"
+          ],
+          "observed_providers": [
+            "deepseek"
+          ],
+          "observed_variants": [
+            "high"
+          ],
+          "single_model": true,
+          "single_variant": true
+        },
+        "executor_sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+        "interpreter": "3.10.14",
+        "note": "the executor records the requested model id; neither it nor a provider alias identifies model weights",
+        "run_mode": "live",
+        "worker_model": "deepseek/deepseek-v4-flash",
+        "worker_settings_digest": "6af2663d197d93222b193fbb69af24509ebbaaba5834f25852c62ce0b3b6823a",
+        "worker_variant": "high"
+      },
+      "outcome": {
+        "accepted_and_sealed": true,
+        "after_bounded_repair": null,
+        "delivered_findings": [],
+        "delivered_verdict": "pass",
+        "false_acceptance": false,
+        "first_attempt": "pass",
+        "first_attempt_source": "delivered bytes (no repair ran)",
+        "gradeable": true,
+        "reference_exposure": {
+          "limit": "a read that never names the file is invisible to this scan",
+          "parts_mentioning_reference": 0,
+          "status": "not observed in retained tool activity"
+        },
+        "repairs": 0,
+        "review": {
+          "attempt": "reviewer-1",
+          "correct": 0,
+          "correct_but_unsubstantiated": 0,
+          "defect_present": false,
+          "false": 0,
+          "reported": 0,
+          "reviewed_bytes": "dispatch.py",
+          "reviewed_sha256": "486c6d1714613c3a6aaeb5c9ad60667bf6553830d28240f0996a91bc7a2ddc02",
+          "rows": [],
+          "substantiated": 0
+        },
+        "reviews": [
+          {
+            "attempt": "reviewer-1",
+            "correct": 0,
+            "correct_but_unsubstantiated": 0,
+            "defect_present": false,
+            "false": 0,
+            "reported": 0,
+            "reviewed_bytes": "dispatch.py",
+            "reviewed_sha256": "486c6d1714613c3a6aaeb5c9ad60667bf6553830d28240f0996a91bc7a2ddc02",
+            "rows": [],
+            "substantiated": 0
+          }
+        ],
+        "usage": {
+          "available": true,
+          "billing": "dated-table",
+          "complete": true,
+          "derived_cost": 0.043699,
+          "telemetry_gaps": null,
+          "tokens": {
+            "cache_read": 2086656,
+            "cache_write": 0,
+            "calls_finished": 80,
+            "calls_started": 80,
+            "executor_cost": 0.04426494,
+            "input": 102501,
+            "output": 36773,
+            "reasoning": 49199
+          },
+          "zero_usage_calls": 0
+        }
+      },
+      "reason": null,
+      "status": "completed",
+      "subject": "coherent",
+      "transport": "none",
+      "trial_id": "dispatch-implementation--coherent",
+      "variant": null
+    }
+  ]
+}

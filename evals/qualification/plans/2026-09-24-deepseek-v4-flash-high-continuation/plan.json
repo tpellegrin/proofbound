@@ -1,0 +1,314 @@
+{
+  "allocation": {
+    "note": "one trial per planned cell; one success is an observation, not reliability",
+    "order": [
+      "requirements-challenge--contradictory",
+      "requirements-challenge--coherent",
+      "dispatch-implementation--coherent"
+    ],
+    "repetitions": 1
+  },
+  "authorization": {
+    "owner": "Owner statement, 2026-09-24 (as given to the coordinator): I authorize the continuation qualification proposal at: evals/qualification/proposals/2026-09-24-deepseek-v4-flash-high-continuation/ The reported digest begins d591a148 and the proposal was frozen from 91a472e. Verify and record the full identity before launching. Qualification authorization: Contradictory challenge: $0.15 derived cost, at most 3 launches. Coherent challenge: $0.15 derived cost, at most 3 launches. Dispatch implementation: $0.55 derived cost, at most 11 launches. Total: $0.85 derived cost and at most 17 launches. This explicitly authorizes new continuation trials under the repaired instrument. It supersedes the unused qualification allocations from the previous authorization; those allocations must not also remain available. The original $0.016342 and three launches remain consumed and visible. Preserve the original failed experiment and its corrections. I understand derived-cost controls are not hard provider-billing caps. In-flight requests and missing usage can exceed measured limits. Preserve all existing accounting, watchdog, deadline, repair, and stopping rules.",
+    "required": true,
+    "status": "authorized by the owner's statement above"
+  },
+  "authorized_at": "2026-09-24T12:04:54.844647+00:00",
+  "cases": [
+    "requirements-challenge",
+    "dispatch-implementation"
+  ],
+  "control_plane": {
+    "digest": "371d962fd7606a00afcb444480007dafe54d38c59af3b8821f3d1d922a6a88e8",
+    "harness": {
+      "clean": true,
+      "commit": "91a472e28836da7df6572bb35f8fcb0028fa2933"
+    },
+    "interpreter": {
+      "executable": "/opt/homebrew/opt/python@3.10/bin/python3.10",
+      "minor": "3.10",
+      "version": "3.10.14"
+    }
+  },
+  "coordinator": {
+    "note": "planned only. What each run records with `pb_workflow.py coordinator` is what a result reports as observed",
+    "requested": "claude-code/opus"
+  },
+  "created_at": "2026-09-24T04:11:36.969706+00:00",
+  "digest": "8d69e76735bba64943b45757f70764840a77a4bd32fe5d63abbc2d8ce103e16f",
+  "evidence_requirements": [
+    "every trial's terminal outcome, including infrastructure failures, incomplete and not-run cells",
+    "allowlisted per-call usage events where a session exists; unknown usage stays unknown",
+    "the bytes each grade depends on, copied with their digests, so a grade re-derives after relocation",
+    "the identities each run actually recorded \u2014 interpreter, executor, worker settings, coordinator \u2014 reported as observed, apart from the planned ones"
+  ],
+  "executor": {
+    "path": "/Users/thiago/.nvm/versions/node/v22.13.1/lib/node_modules/opencode-ai/bin/opencode.exe",
+    "sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669"
+  },
+  "format": "proofbound-qualification-plan-v2",
+  "information_access": {
+    "coordinator": "the run through pb_workflow.py; the expected outcomes are not handed to it, and are derivable from the public case fixtures",
+    "worker": "the project, its goal and the harness tree, as the production boundary allows; the dispatch reference corpus is readable there"
+  },
+  "mode": "live",
+  "proposal_digest": "d591a1485661dff3c48c5b897dd5e766cff11ea3a6afc4ced71622dd0853ee97",
+  "resources": {
+    "billing": "dated-table",
+    "campaign": {
+      "aggregate_derived_limit": 0.85,
+      "launch_ceiling": 17,
+      "minimum_launches": 9,
+      "note": "allowances are per trial and never renew: resuming, switching trials or changing coordinator context does not reset one",
+      "trials": 3
+    },
+    "claim": "derived-spend admission and containment; not a provider billing cap",
+    "containment": {
+      "derived_spend_during_attempt": true,
+      "max_consecutive_incomplete_responses": 5,
+      "max_model_requests": 150
+    },
+    "deadline_seconds": 900,
+    "per_case": {
+      "dispatch-implementation": {
+        "aggregate_limit": 0.55,
+        "ceiling": 11,
+        "minimum": 5,
+        "path": [
+          "spec-author",
+          "spec-reflector (requirements)",
+          "spec-reflector (consistency)",
+          "implementer",
+          "reviewer"
+        ],
+        "repairs": [
+          {
+            "launches": 2,
+            "what": "one implementation repair: fixer, then a fresh reviewer"
+          },
+          {
+            "launches": 3,
+            "what": "one requirements revision: re-author, fresh challenge, renewed consistency review"
+          }
+        ],
+        "reserve": 0.05
+      },
+      "requirements-challenge": {
+        "aggregate_limit": 0.15,
+        "ceiling": 3,
+        "minimum": 2,
+        "path": [
+          "spec-author",
+          "spec-reflector"
+        ],
+        "repairs": [],
+        "reserve": 0.05
+      }
+    },
+    "per_launch_allowance": 0.05,
+    "repair_cycles": 1
+  },
+  "status": "authorized",
+  "suite": {
+    "cases": [
+      {
+        "dimension": "worker tool protocol",
+        "id": "tool-loop",
+        "identity": "94424f7429e6437d44a48b4e1797878ce745be02abdf633ff611595ae0f958cd",
+        "measures": "worker",
+        "question": "Can the worker call a tool, receive its result, continue, and leave the requested artifact?",
+        "replay_transport": "stand-in-endpoint+real-executor",
+        "replay_variants": {
+          "marker": [
+            "well-formed",
+            "malformed-arguments",
+            "missing-usage",
+            "interrupted"
+          ]
+        },
+        "stops": "after the spec-author attempt is gated",
+        "subjects": [
+          "marker"
+        ],
+        "withholding": "nothing to withhold: the marker is in the goal"
+      },
+      {
+        "dimension": "review: find and substantiate a defect",
+        "id": "requirements-challenge",
+        "identity": "be4fd2eff0bdb79df7420f74ace540c306bb3bb6d0326d5aa33becb6d77e20f2",
+        "measures": "worker",
+        "question": "Does a fresh reviewer name the requirements that cannot hold together and give a witness that proves it \u2014 and report nothing on the sound control?",
+        "replay_transport": "stand-in-executor",
+        "replay_variants": {
+          "coherent": [
+            "clean",
+            "invented"
+          ],
+          "contradictory": [
+            "found-with-witness",
+            "found-wrong-witness",
+            "missed"
+          ]
+        },
+        "stops": "after the coordinator adjudicates the requirements challenge",
+        "subjects": [
+          "contradictory",
+          "coherent"
+        ],
+        "withholding": "not required: the defect is derivable from the reviewed document, which is the point. Nothing the production path shows the reviewer is hidden: the author's proposal may state a conflict itself. So the case measures the production-path challenge \u2014 verify or find \u2014 and each grade records, as `exposure`, whether the witness given was already in what the reviewer was shown. Unassisted discovery would need a separately identified setup"
+      },
+      {
+        "dimension": "implementation satisfies the contract",
+        "id": "dispatch-implementation",
+        "identity": "dcd193763afcadbff0af45b5531c0043dc7addd5a369adb7b5ad17f80e0f2578",
+        "measures": "worker",
+        "question": "Does the delivered code satisfy the accepted requirements, on the first attempt and after one bounded repair, and do review findings reproduce?",
+        "replay_transport": "stand-in-executor",
+        "replay_variants": {
+          "coherent": [
+            "sound-round-robin",
+            "sound-fewest-remaining",
+            "defective-accepted",
+            "defective-repaired",
+            "sound-invented-finding"
+          ]
+        },
+        "stops": "at a sealed delivery, or the first blocker",
+        "subjects": [
+          "coherent"
+        ],
+        "withholding": "NOT established: the checker's reference corpus lives in the harness tree, which the worker boundary can read. Exposure is scanned in retained tool activity where a session exists; absence there is not isolation"
+      },
+      {
+        "dimension": "coordinator recovers authority and stops correctly",
+        "id": "authority-recovery",
+        "identity": "84fded0c3d9bc5804e89c53ffa69f550af5a8eb2e72fca552b24a506e0f095fa",
+        "measures": "coordinator",
+        "question": "From retained state alone, does the coordinator continue a valid run, stop at a never-earned prerequisite, and recover (not refuse) a deleted derived record that retained evidence legitimately recreates?",
+        "replay_transport": "stand-in-executor",
+        "replay_variants": {
+          "derived-record-deleted": [
+            "scripted"
+          ],
+          "never-earned": [
+            "scripted"
+          ],
+          "valid-continuation": [
+            "scripted"
+          ]
+        },
+        "stops": "at the implementer launch, or the refusal",
+        "subjects": [
+          "valid-continuation",
+          "never-earned",
+          "derived-record-deleted"
+        ],
+        "withholding": "not applicable"
+      }
+    ],
+    "digest": "390c2c7286d6c5906e9b2e98698476429940433314337188297745b22f062604",
+    "id": "proofbound-qualification-v1",
+    "instrument": {
+      "evals/_qualify.py": "734f87129ce7d4b176a9fbccc86258e9e345c494e64a439720456a73d606f50a",
+      "evals/_stand_in_endpoint.py": "ffa9c624d1df9e316654b5dc17f45139080550796bf4a12931b48a762bbaec24",
+      "evals/_stand_in_executor.py": "b19df889c758e91f79e95792ce758b9d077955055bca3adf3aeb4499a6b202e4",
+      "evals/authority_slice/_checker.py": "5c193959fa4ae61a94207382851f6a39bdc2f473da8dae845d56e3a27c966437",
+      "evals/authority_slice/_checker_corpus.py": "f41cdbf9d1d9466ffddde123b3a88b03cac382b25addcd7de683f9626d92ad61",
+      "evals/authority_slice/_obligations.py": "982e236664abb15876b656e5f7e7f352a740beb687c8aa5468cb940558f074ab",
+      "evals/pb_qualify.py": "a9fc746250c05cacf705486ffb99550548fb7238a7872b0d47b274c077ead994"
+    },
+    "note": "four bounded cases reusing the authority slice's fixtures, oracle and checker; development fixtures, not a held-out evaluation set"
+  },
+  "worker_profile": {
+    "selector": "deepseek-v4-flash-high",
+    "settings": {
+      "billing": {
+        "basis": "dated-table",
+        "price_model": "deepseek-flash",
+        "table": "deepseek-2026-09-23"
+      },
+      "credential": {
+        "auth_entry": "deepseek"
+      },
+      "declared_server": null,
+      "digest": "6af2663d197d93222b193fbb69af24509ebbaaba5834f25852c62ce0b3b6823a",
+      "executor": {
+        "kind": "opencode-cli",
+        "sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+        "startup": {
+          "catalogue": "bundled: OPENCODE_DISABLE_MODELS_FETCH, and no cached models.json in the home",
+          "config_dir": "staged with the executor's own defaults and write-denied by the boundary, so the executor skips its npm install of @opencode-ai/plugin",
+          "logs": "OPENCODE_PRINT_LOGS: the executor's log goes to stderr, i.e. the attempt's worker.log",
+          "refuse_before_launch": "a changed configuration directory, a cached catalogue, a lock or breaker left by an earlier executor process, or a .opencode directory"
+        },
+        "version": "1.18.29"
+      },
+      "format": "proofbound-worker-settings-v1",
+      "legacy": false,
+      "limits": {
+        "basis": "provider and executor defaults; this profile sets neither",
+        "context": null,
+        "output": null
+      },
+      "model": "deepseek/deepseek-v4-flash",
+      "network": {
+        "claim": "a cloud provider reached over the network; the worker boundary allows all network access",
+        "mode": "unrestricted"
+      },
+      "opencode_config": null,
+      "opencode_env": {},
+      "parameters": {
+        "sampling": "not controllable; the provider documents that thinking mode ignores temperature and top_p",
+        "variant_flag": "--variant high"
+      },
+      "profile": {
+        "id": "deepseek-v4-flash-high",
+        "kind": "opencode-native-deepseek",
+        "path": null,
+        "revision": "2026-09-24",
+        "source": "builtin",
+        "source_sha256": null
+      },
+      "provider": {
+        "catalogue": {
+          "not_used": "models.dev as fetched on 2026-09-24 lists deepseek-v4-flash with status deprecated; the pinned executor deletes deprecated models, so a launch that read it failed before any request",
+          "used": "the catalogue bundled in the pinned executor, which lists deepseek-v4-flash"
+        },
+        "documented_serving": {
+          "model_version": "DeepSeek-V4.1-Flash",
+          "read": "2026-09-23",
+          "since": "2026-09-10",
+          "source": "https://api-docs.deepseek.com/updates/",
+          "statement": "V4 Flash retired; the legacy name deepseek-v4-flash is temporarily routed to V4.1 Flash and billed at the Flash price"
+        },
+        "endpoint": null,
+        "id": "deepseek",
+        "requested_model": "deepseek/deepseek-v4-flash",
+        "route": "OpenCode native provider integration",
+        "runtime_identity": "requested id only: the pinned executor records the model id it requested and does not retain the provider's response model field; neither an alias nor that string identifies model weights"
+      },
+      "resources": {
+        "attempt_containment": {
+          "derived_spend_during_attempt": true,
+          "max_consecutive_incomplete_responses": 5,
+          "max_model_requests": 150
+        },
+        "configured": [],
+        "enforced": [
+          "launch ceiling",
+          "repair allowance",
+          "attempt deadline",
+          "aggregate derived-cost limit (between attempts)",
+          "per-attempt containment: model-request cap, trailing incomplete responses, derived spend observed during the attempt"
+        ],
+        "output_token_allowance": null
+      },
+      "tools": {
+        "permission_flag": "--auto",
+        "tool_call_declared": null,
+        "tool_surface": "the executor's default tool set; not inferable from a version string"
+      },
+      "variant": "high"
+    }
+  }
+}
