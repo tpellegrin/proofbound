@@ -59,7 +59,7 @@ than ignored.
 | Billing basis | `dated-table`, by revision (below) | `no-external-api-billing` |
 | Worker network | unrestricted | **loopback-only** |
 | Authorization command | `authorize-spending` | `authorize-resources` |
-| Live qualification | `pb-handoff-2` observed V4 Flash, before its retirement; **none** of V4.1 Flash | **none** |
+| Live qualification | `pb-handoff-2` observed V4 Flash, before its retirement. Under the name now routed to V4.1 Flash, one tool-loop trial passed, and the rest stopped on an executor start-up failure ([evidence](evidence/live-qualification-2026-09-24.md)) | **none** |
 
 The DeepSeek route is selected by its built-in name only; it cannot be redefined by a file. A
 profile carrying a secret-looking key (`api_key`, `token`, `authorization`, `headers`, …) is

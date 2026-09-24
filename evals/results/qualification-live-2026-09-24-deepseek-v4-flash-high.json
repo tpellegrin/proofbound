@@ -1,0 +1,865 @@
+{
+  "claim": "live: one observation per planned cell under this configuration; not a rate, a ranking or a reliability estimate",
+  "configuration": {
+    "control_plane": "e68a5ba21912b1bfa87ada894802c22b14033ae02c9318fb85ac09ca09def1b1",
+    "coordinator": "claude-code/opus",
+    "executor": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+    "interpreter": "3.10",
+    "mode": "live",
+    "resources": "a05d1d8cd4e46c1e",
+    "suite": "0dfed3636d0a0180e6892c960816a4a2059fed486c595917600b8cfd19c1ab0c",
+    "worker.endpoint": "provider-managed",
+    "worker.limits": "provider defaults",
+    "worker.model": "deepseek/deepseek-v4-flash",
+    "worker.network": "unrestricted",
+    "worker.profile_kind": "opencode-native-deepseek",
+    "worker.provider": "deepseek",
+    "worker.variant": "high"
+  },
+  "configuration_basis": "planned",
+  "denominators": {
+    "attempted": 2,
+    "completed": 1,
+    "excluded": [
+      {
+        "reason": "the coordinator never adjudicated the challenge",
+        "status": "incomplete",
+        "trial_id": "requirements-challenge--contradictory"
+      },
+      {
+        "reason": "no attempt was launched in this run",
+        "status": "not-run",
+        "trial_id": "requirements-challenge--coherent"
+      },
+      {
+        "reason": "no attempt was launched in this run",
+        "status": "not-run",
+        "trial_id": "dispatch-implementation--coherent"
+      }
+    ],
+    "gradeable": 1,
+    "incomplete": 1,
+    "planned": 4
+  },
+  "finished_at": "2026-09-24T00:44:39.204041+00:00",
+  "format": "proofbound-qualification-result-v2",
+  "graded_under": {
+    "control_plane": "e68a5ba21912b1bfa87ada894802c22b14033ae02c9318fb85ac09ca09def1b1",
+    "interpreter": {
+      "executable": "/opt/homebrew/opt/python@3.10/bin/python3.10",
+      "minor": "3.10",
+      "version": "3.10.14"
+    },
+    "suite": "0dfed3636d0a0180e6892c960816a4a2059fed486c595917600b8cfd19c1ab0c"
+  },
+  "observed_configuration": {
+    "coordinator": "claude-code/opus",
+    "executor": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+    "interpreter": "3.10",
+    "worker.model": "deepseek/deepseek-v4-flash",
+    "worker.variant": "high"
+  },
+  "plan": {
+    "allocation": {
+      "note": "one trial per planned cell; one success is an observation, not reliability",
+      "order": [
+        "tool-loop--marker",
+        "requirements-challenge--contradictory",
+        "requirements-challenge--coherent",
+        "dispatch-implementation--coherent"
+      ],
+      "repetitions": 1
+    },
+    "authorization": {
+      "owner": "Owner statement, 2026-09-24 (as given to the coordinator): I authorize the following paid DeepSeek worker requests for this milestone: 1. The four qualification trials in proposal 5c3b2c55\u2026 at evals/qualification/proposals/2026-09-23-deepseek-v4-flash-high/. Limits: Tool loop: $0.10, at most 2 launches. Contradictory requirements challenge: $0.15, at most 3 launches. Coherent requirements challenge: $0.15, at most 3 launches. Dispatch implementation: $0.55, at most 11 launches. Qualification total: $0.95 and at most 19 launches. Keep the proposal's per-trial allocations, repair allowances, 900-second attempt deadlines, and request/spend watchdogs. Do not transfer unused allowances between trials or renew them through resumes, restarts, or new run directories. I understand these controls use measured usage and a dated price table, not provider-confirmed billing; in-flight calls and missing usage can make actual charges exceed those limits. This authorization does not authorize bypassing the controls or continuing after accounting becomes unresolved.",
+      "required": true,
+      "status": "authorized by the owner's statement above"
+    },
+    "authorized_at": "2026-09-24T00:32:59.403020+00:00",
+    "cases": [
+      "tool-loop",
+      "requirements-challenge",
+      "dispatch-implementation"
+    ],
+    "control_plane": {
+      "digest": "e68a5ba21912b1bfa87ada894802c22b14033ae02c9318fb85ac09ca09def1b1",
+      "harness": {
+        "clean": true,
+        "commit": "89c4c16e1c41ee0f44a560a4eb88d5c7fea9fa83"
+      },
+      "interpreter": {
+        "executable": "/opt/homebrew/opt/python@3.10/bin/python3.10",
+        "minor": "3.10",
+        "version": "3.10.14"
+      }
+    },
+    "coordinator": {
+      "note": "planned only. What each run records with `pb_workflow.py coordinator` is what a result reports as observed",
+      "requested": "claude-code/opus"
+    },
+    "created_at": "2026-09-24T00:02:45.386261+00:00",
+    "digest": "8370c2d43d35eb8cc1a2a664bb1dbeadbf86ff8aba0ab40965ddc20623d1e15a",
+    "evidence_requirements": [
+      "every trial's terminal outcome, including infrastructure failures, incomplete and not-run cells",
+      "allowlisted per-call usage events where a session exists; unknown usage stays unknown",
+      "the bytes each grade depends on, copied with their digests, so a grade re-derives after relocation",
+      "the identities each run actually recorded \u2014 interpreter, executor, worker settings, coordinator \u2014 reported as observed, apart from the planned ones"
+    ],
+    "executor": {
+      "path": "/Users/thiago/.nvm/versions/node/v22.13.1/lib/node_modules/opencode-ai/bin/opencode.exe",
+      "sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669"
+    },
+    "format": "proofbound-qualification-plan-v2",
+    "information_access": {
+      "coordinator": "the run through pb_workflow.py; the expected outcomes are not handed to it, and are derivable from the public case fixtures",
+      "worker": "the project, its goal and the harness tree, as the production boundary allows; the dispatch reference corpus is readable there"
+    },
+    "mode": "live",
+    "proposal_digest": "5c3b2c553fb43099ffbee87eb45bd21b0464939f00cb9360845c2d528cba93ca",
+    "resources": {
+      "billing": "dated-table",
+      "campaign": {
+        "aggregate_derived_limit": 0.95,
+        "launch_ceiling": 19,
+        "minimum_launches": 10,
+        "note": "allowances are per trial and never renew: resuming, switching trials or changing coordinator context does not reset one",
+        "trials": 4
+      },
+      "claim": "derived-spend admission and containment; not a provider billing cap",
+      "containment": {
+        "derived_spend_during_attempt": true,
+        "max_consecutive_incomplete_responses": 5,
+        "max_model_requests": 150
+      },
+      "deadline_seconds": 900,
+      "per_case": {
+        "dispatch-implementation": {
+          "aggregate_limit": 0.55,
+          "ceiling": 11,
+          "minimum": 5,
+          "path": [
+            "spec-author",
+            "spec-reflector (requirements)",
+            "spec-reflector (consistency)",
+            "implementer",
+            "reviewer"
+          ],
+          "repairs": [
+            {
+              "launches": 2,
+              "what": "one implementation repair: fixer, then a fresh reviewer"
+            },
+            {
+              "launches": 3,
+              "what": "one requirements revision: re-author, fresh challenge, renewed consistency review"
+            }
+          ],
+          "reserve": 0.05
+        },
+        "requirements-challenge": {
+          "aggregate_limit": 0.15,
+          "ceiling": 3,
+          "minimum": 2,
+          "path": [
+            "spec-author",
+            "spec-reflector"
+          ],
+          "repairs": [],
+          "reserve": 0.05
+        },
+        "tool-loop": {
+          "aggregate_limit": 0.1,
+          "ceiling": 2,
+          "minimum": 1,
+          "path": [
+            "spec-author"
+          ],
+          "repairs": [],
+          "reserve": 0.05
+        }
+      },
+      "per_launch_allowance": 0.05,
+      "repair_cycles": 1
+    },
+    "status": "authorized",
+    "suite": {
+      "cases": [
+        {
+          "dimension": "worker tool protocol",
+          "id": "tool-loop",
+          "identity": "94424f7429e6437d44a48b4e1797878ce745be02abdf633ff611595ae0f958cd",
+          "measures": "worker",
+          "question": "Can the worker call a tool, receive its result, continue, and leave the requested artifact?",
+          "replay_transport": "stand-in-endpoint+real-executor",
+          "replay_variants": {
+            "marker": [
+              "well-formed",
+              "malformed-arguments",
+              "missing-usage",
+              "interrupted"
+            ]
+          },
+          "stops": "after the spec-author attempt is gated",
+          "subjects": [
+            "marker"
+          ],
+          "withholding": "nothing to withhold: the marker is in the goal"
+        },
+        {
+          "dimension": "review: find and substantiate a defect",
+          "id": "requirements-challenge",
+          "identity": "70bd42179a6729b7ed3eddb6701efa7eb21ed17dcb8183831c97d5d3642ebdd1",
+          "measures": "worker",
+          "question": "Does a fresh reviewer name the requirements that cannot hold together and give a witness that proves it \u2014 and report nothing on the sound control?",
+          "replay_transport": "stand-in-executor",
+          "replay_variants": {
+            "coherent": [
+              "clean",
+              "invented"
+            ],
+            "contradictory": [
+              "found-with-witness",
+              "found-wrong-witness",
+              "missed"
+            ]
+          },
+          "stops": "after the coordinator adjudicates the requirements challenge",
+          "subjects": [
+            "contradictory",
+            "coherent"
+          ],
+          "withholding": "not required: the defect is derivable from the reviewed document, which is the point"
+        },
+        {
+          "dimension": "implementation satisfies the contract",
+          "id": "dispatch-implementation",
+          "identity": "77851e430c3fb56fd33da44b871855aef81571f0272c6788afbea13b0542bb7f",
+          "measures": "worker",
+          "question": "Does the delivered code satisfy the accepted requirements, on the first attempt and after one bounded repair, and do review findings reproduce?",
+          "replay_transport": "stand-in-executor",
+          "replay_variants": {
+            "coherent": [
+              "sound-round-robin",
+              "sound-fewest-remaining",
+              "defective-accepted",
+              "defective-repaired",
+              "sound-invented-finding"
+            ]
+          },
+          "stops": "at a sealed delivery, or the first blocker",
+          "subjects": [
+            "coherent"
+          ],
+          "withholding": "NOT established: the checker's reference corpus lives in the harness tree, which the worker boundary can read. Exposure is scanned in retained tool activity where a session exists; absence there is not isolation"
+        },
+        {
+          "dimension": "coordinator recovers authority and stops correctly",
+          "id": "authority-recovery",
+          "identity": "9b92f2bf49fa2dee3952e528ff3cf3ef8d126637d272ffc6a438ef3b627bf86e",
+          "measures": "coordinator",
+          "question": "From retained state alone, does the coordinator continue a valid run, stop at a never-earned prerequisite, and recover (not refuse) a deleted derived record that retained evidence legitimately recreates?",
+          "replay_transport": "stand-in-executor",
+          "replay_variants": {
+            "derived-record-deleted": [
+              "scripted"
+            ],
+            "never-earned": [
+              "scripted"
+            ],
+            "valid-continuation": [
+              "scripted"
+            ]
+          },
+          "stops": "at the implementer launch, or the refusal",
+          "subjects": [
+            "valid-continuation",
+            "never-earned",
+            "derived-record-deleted"
+          ],
+          "withholding": "not applicable"
+        }
+      ],
+      "digest": "0dfed3636d0a0180e6892c960816a4a2059fed486c595917600b8cfd19c1ab0c",
+      "id": "proofbound-qualification-v1",
+      "instrument": {
+        "evals/_qualify.py": "84db8418023675b909d7c8595adf23792ce939beba3f118b383bf3fa2db36177",
+        "evals/_stand_in_endpoint.py": "ffa9c624d1df9e316654b5dc17f45139080550796bf4a12931b48a762bbaec24",
+        "evals/_stand_in_executor.py": "b19df889c758e91f79e95792ce758b9d077955055bca3adf3aeb4499a6b202e4",
+        "evals/authority_slice/_checker.py": "5c193959fa4ae61a94207382851f6a39bdc2f473da8dae845d56e3a27c966437",
+        "evals/authority_slice/_checker_corpus.py": "f41cdbf9d1d9466ffddde123b3a88b03cac382b25addcd7de683f9626d92ad61",
+        "evals/authority_slice/_obligations.py": "982e236664abb15876b656e5f7e7f352a740beb687c8aa5468cb940558f074ab",
+        "evals/pb_qualify.py": "a9fc746250c05cacf705486ffb99550548fb7238a7872b0d47b274c077ead994"
+      },
+      "note": "four bounded cases reusing the authority slice's fixtures, oracle and checker; development fixtures, not a held-out evaluation set"
+    },
+    "worker_profile": {
+      "selector": "deepseek-v4-flash-high",
+      "settings": {
+        "billing": {
+          "basis": "dated-table",
+          "price_model": "deepseek-flash",
+          "table": "deepseek-2026-09-23"
+        },
+        "credential": {
+          "auth_entry": "deepseek"
+        },
+        "declared_server": null,
+        "digest": "7aa8ef0d05e9ea23bb46bc4314cf5f559574eecdb37e6430dd6c4ae7abbbe7b4",
+        "executor": {
+          "kind": "opencode-cli",
+          "sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+          "version": "1.18.29"
+        },
+        "format": "proofbound-worker-settings-v1",
+        "legacy": false,
+        "limits": {
+          "basis": "provider and executor defaults; this profile sets neither",
+          "context": null,
+          "output": null
+        },
+        "model": "deepseek/deepseek-v4-flash",
+        "network": {
+          "claim": "a cloud provider reached over the network; the worker boundary allows all network access",
+          "mode": "unrestricted"
+        },
+        "opencode_config": null,
+        "opencode_env": {},
+        "parameters": {
+          "sampling": "not controllable; the provider documents that thinking mode ignores temperature and top_p",
+          "variant_flag": "--variant high"
+        },
+        "profile": {
+          "id": "deepseek-v4-flash-high",
+          "kind": "opencode-native-deepseek",
+          "path": null,
+          "revision": "2026-09-23",
+          "source": "builtin",
+          "source_sha256": null
+        },
+        "provider": {
+          "documented_serving": {
+            "model_version": "DeepSeek-V4.1-Flash",
+            "read": "2026-09-23",
+            "since": "2026-09-10",
+            "source": "https://api-docs.deepseek.com/updates/",
+            "statement": "V4 Flash retired; the legacy name deepseek-v4-flash is temporarily routed to V4.1 Flash and billed at the Flash price"
+          },
+          "endpoint": null,
+          "id": "deepseek",
+          "requested_model": "deepseek/deepseek-v4-flash",
+          "route": "OpenCode native provider integration",
+          "runtime_identity": "requested id only: the pinned executor records the model id it requested and does not retain the provider's response model field; neither an alias nor that string identifies model weights"
+        },
+        "resources": {
+          "attempt_containment": {
+            "derived_spend_during_attempt": true,
+            "max_consecutive_incomplete_responses": 5,
+            "max_model_requests": 150
+          },
+          "configured": [],
+          "enforced": [
+            "launch ceiling",
+            "repair allowance",
+            "attempt deadline",
+            "aggregate derived-cost limit (between attempts)",
+            "per-attempt containment: model-request cap, trailing incomplete responses, derived spend observed during the attempt"
+          ],
+          "output_token_allowance": null
+        },
+        "tools": {
+          "permission_flag": "--auto",
+          "tool_call_declared": null,
+          "tool_surface": "the executor's default tool set; not inferable from a version string"
+        },
+        "variant": "high"
+      }
+    }
+  },
+  "plan_digest": "8370c2d43d35eb8cc1a2a664bb1dbeadbf86ff8aba0ab40965ddc20623d1e15a",
+  "selection": {
+    "executed": [
+      "tool-loop--marker",
+      "requirements-challenge--contradictory",
+      "requirements-challenge--coherent",
+      "dispatch-implementation--coherent"
+    ],
+    "not_selected": [],
+    "planned_trials": [
+      "tool-loop--marker",
+      "requirements-challenge--contradictory",
+      "requirements-challenge--coherent",
+      "dispatch-implementation--coherent"
+    ]
+  },
+  "started_at": null,
+  "summary": {
+    "dispatch-implementation": {
+      "measured": 0,
+      "met": 0,
+      "not_measured": [
+        "dispatch-implementation--coherent"
+      ],
+      "not_met": []
+    },
+    "requirements-challenge": {
+      "measured": 0,
+      "met": 0,
+      "not_measured": [
+        "requirements-challenge--contradictory",
+        "requirements-challenge--coherent"
+      ],
+      "not_met": []
+    },
+    "tool-loop": {
+      "measured": 1,
+      "met": 1,
+      "not_measured": [],
+      "not_met": []
+    }
+  },
+  "trials": [
+    {
+      "case": "tool-loop",
+      "case_identity": "94424f7429e6437d44a48b4e1797878ce745be02abdf633ff611595ae0f958cd",
+      "evidence": [
+        {
+          "path": "accounting.json",
+          "sha256": "57c34cb2f678b38f17c17fa3c90e420dbb97b8ebe64e7932b35e8a9315f3db04"
+        },
+        {
+          "path": "artifacts/requirements.md",
+          "sha256": "a28565adc940943c53e2fbc0d978f5f7390310178268264887cba7490c98dc04"
+        },
+        {
+          "path": "exposure.json",
+          "sha256": "bb1ad4c28eebab7c773bd14bb94da57e6616d64b30ee81564f323ec262867ce4"
+        },
+        {
+          "path": "run/launch-ledger.json",
+          "sha256": "ce961fa6d6181790b5cf707a7500f6886c4d8f2df9bc38a8c3682abf18bf4231"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/attempt.json",
+          "sha256": "f9f86eee0ec31ed5be24ab760eaeb1769648c9923300499eff497f1cc13e996d"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/evidence-gate.json",
+          "sha256": "4c694f4d0dc314fd9bcc3d136477b9ce6bcaa73a89b406bf7475102605e72c24"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/launch-reservation.json",
+          "sha256": "331f4eaeef8799ae4826cb4b7c80890b7ba573affc14a41c2cb596134c3f29e7"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/report.md",
+          "sha256": "95e590cfe8fdb938141d70ccde0ed59e7ad14a508157da03632ce96280a5527c"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/scope-baseline.json",
+          "sha256": "70482c8c0e36734af88b3b70cdd459a9875b58d907ac219d55d74fbb3c5b0dbf"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/scope-diff.json",
+          "sha256": "dd56d03fcd4c692b77dce7ef1599e15029849c536f9814f42460c505c2cea231"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/terminal.json",
+          "sha256": "fcc275a7f197f46d95dd9b4c96a4f2a24d75a0286ec1ec299ef2eafe4691ac42"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/contracts/r0001.md",
+          "sha256": "1fe27c2879f7347bb34601e2b858bea3782b9d4103edf10a3c95b49c733421b2"
+        },
+        {
+          "path": "run/receipts/314e524389384bf89c6971142f722b3e.json",
+          "sha256": "9021e4662950b6a9519f6dd16fe3ee024decf85032644c773675d413abd5c86e"
+        },
+        {
+          "path": "run/receipts/3dc1f0eff1a04c049ab4dbe7c5b672a5.json",
+          "sha256": "6b82f883ad9b41aab198bf96bce281ee55d7e5cffcd747d8a2c17ecabcc3e950"
+        },
+        {
+          "path": "run/run-config.json",
+          "sha256": "2052e98dc23d634b34b4a599ce238c589ca2f5c2db3fafea981354ff1a1fda0d"
+        },
+        {
+          "path": "run/state.json",
+          "sha256": "202ee1f62bb03188a7b8d0739cc0e1b4122f39fc6a536b3a599c06189d2b3bdd"
+        },
+        {
+          "path": "trial.json",
+          "sha256": "1b315f9deb390991311cdade6c384837305766ff1eb61e53bdcf44f954359502"
+        },
+        {
+          "path": "usage-events.json",
+          "sha256": "60aa2729fdefd0b63d919f4b6c1538e05b1efecef8b6fb971e853fecc229a955"
+        }
+      ],
+      "evidence_dir": "trials/tool-loop--marker/evidence",
+      "observed": {
+        "boundary": "constructed",
+        "coordinator": [
+          {
+            "observed": null,
+            "requested": "claude-code/opus",
+            "self_reported": "Claude Opus 5.5 (model id claude-opus-5-5), as the Claude Code host's system prompt states it to the agent; a claim, not runtime metadata"
+          }
+        ],
+        "executor_reported_model": {
+          "observed_models": [
+            "deepseek-v4-flash"
+          ],
+          "observed_providers": [
+            "deepseek"
+          ],
+          "observed_variants": [
+            "high"
+          ],
+          "single_model": true,
+          "single_variant": true
+        },
+        "executor_sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+        "interpreter": "3.10.14",
+        "note": "the executor records the requested model id; neither it nor a provider alias identifies model weights",
+        "run_mode": "live",
+        "worker_model": "deepseek/deepseek-v4-flash",
+        "worker_settings_digest": "7aa8ef0d05e9ea23bb46bc4314cf5f559574eecdb37e6430dd6c4ae7abbbe7b4",
+        "worker_variant": "high"
+      },
+      "outcome": {
+        "artifact_marker_present": true,
+        "continuation": {
+          "continued": [
+            {
+              "next_call": "msg_0d0d53fd0001nFw6lQ4nipCwvX",
+              "tool_call": "msg_0d0d51ab5001GhPfp8C4yjVYsn",
+              "tools": [
+                "read",
+                "read",
+                "read",
+                "read"
+              ]
+            },
+            {
+              "next_call": "msg_0d0d54761001yALunl0MrcBMXR",
+              "tool_call": "msg_0d0d53fd0001nFw6lQ4nipCwvX",
+              "tools": [
+                "bash",
+                "read"
+              ]
+            },
+            {
+              "next_call": "msg_0d0d54ff30012kpzHXBKyCpuxn",
+              "tool_call": "msg_0d0d54761001yALunl0MrcBMXR",
+              "tools": [
+                "bash",
+                "read",
+                "read",
+                "read",
+                "read"
+              ]
+            },
+            {
+              "next_call": "msg_0d0d55b14001ai74wtrdv6S44s",
+              "tool_call": "msg_0d0d54ff30012kpzHXBKyCpuxn",
+              "tools": [
+                "bash",
+                "bash"
+              ]
+            },
+            {
+              "next_call": "msg_0d0d56524001Hp9TFeBbbHAJnw",
+              "tool_call": "msg_0d0d55b14001ai74wtrdv6S44s",
+              "tools": [
+                "read",
+                "read",
+                "read",
+                "read"
+              ]
+            },
+            {
+              "next_call": "msg_0d0d57591001WEfAt4DWFMWwwc",
+              "tool_call": "msg_0d0d56524001Hp9TFeBbbHAJnw",
+              "tools": [
+                "bash",
+                "bash",
+                "todowrite"
+              ]
+            },
+            {
+              "next_call": "msg_0d0d5a1ee001v3pJxorzd2ELng",
+              "tool_call": "msg_0d0d57591001WEfAt4DWFMWwwc",
+              "tools": [
+                "write"
+              ]
+            },
+            {
+              "next_call": "msg_0d0d5b543001og2DhWup6AXXNG",
+              "tool_call": "msg_0d0d5a1ee001v3pJxorzd2ELng",
+              "tools": [
+                "write"
+              ]
+            },
+            {
+              "next_call": "msg_0d0d5c056001tW60ISAq2ocWwe",
+              "tool_call": "msg_0d0d5b543001og2DhWup6AXXNG",
+              "tools": [
+                "bash",
+                "bash"
+              ]
+            },
+            {
+              "next_call": "msg_0d0d5ca63001PQknrKLvOhp0iU",
+              "tool_call": "msg_0d0d5c056001tW60ISAq2ocWwe",
+              "tools": [
+                "bash",
+                "bash"
+              ]
+            },
+            {
+              "next_call": "msg_0d0d5da82001z6EklnkhnG62UM",
+              "tool_call": "msg_0d0d5ca63001PQknrKLvOhp0iU",
+              "tools": [
+                "edit",
+                "edit",
+                "edit"
+              ]
+            },
+            {
+              "next_call": "msg_0d0d5e07a001JyPXqhQYf4snIF",
+              "tool_call": "msg_0d0d5da82001z6EklnkhnG62UM",
+              "tools": [
+                "todowrite"
+              ]
+            }
+          ],
+          "established": true,
+          "model_calls": 13,
+          "session_id": "ses_f2f2ae664ffeO2T2yl4fBER8VD",
+          "why": "a completed tool's call ended with `tool-calls` and a later call in the same session followed it"
+        },
+        "continuation_observed": true,
+        "gate_integrity_ok": true,
+        "gradeable": true,
+        "model_calls_finished": 13,
+        "outcome": "pass",
+        "tools_completed": 30,
+        "tools_failed": 0,
+        "usage": {
+          "available": true,
+          "billing": "dated-table",
+          "complete": true,
+          "derived_cost": 0.006127,
+          "telemetry_gaps": null,
+          "tokens": {
+            "cache_read": 194304,
+            "cache_write": 0,
+            "calls_finished": 13,
+            "calls_started": 13,
+            "executor_cost": 0.00472907,
+            "input": 13373,
+            "output": 5897,
+            "reasoning": 2363
+          },
+          "zero_usage_calls": 0
+        },
+        "usage_reported": "reported",
+        "zero_token_calls": 0
+      },
+      "reason": null,
+      "status": "completed",
+      "subject": "marker",
+      "transport": "none",
+      "trial_id": "tool-loop--marker",
+      "variant": null
+    },
+    {
+      "case": "requirements-challenge",
+      "case_identity": "70bd42179a6729b7ed3eddb6701efa7eb21ed17dcb8183831c97d5d3642ebdd1",
+      "evidence": [
+        {
+          "path": "accounting.json",
+          "sha256": "602b958d22272a491880377261abed4fe845df462a10a43a8238e15f2f9331db"
+        },
+        {
+          "path": "artifacts/requirements.md",
+          "sha256": "92a7e707f15db6af6e2c0d2b51af11d8282fed1ee71addc85a96233cbb618d81"
+        },
+        {
+          "path": "exposure.json",
+          "sha256": "bb1ad4c28eebab7c773bd14bb94da57e6616d64b30ee81564f323ec262867ce4"
+        },
+        {
+          "path": "run/launch-ledger.json",
+          "sha256": "a620ecad1bc1bec18e915018f36ae98ac405dbd2820853738c06944683e9c431"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/attempt.json",
+          "sha256": "53ad63979be140ff79bdb5ad051e2e0f766c1dd8a5688b55c97414bb70a0403d"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/evidence-gate.json",
+          "sha256": "703adbb8909bdc16718742f9f63eabfeef6f78d68e29cba38608b1a29418f767"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/launch-reservation.json",
+          "sha256": "1f7ee1c5f9c9492b9b5ded3a112dd5543002039807a045c6a091aac6903d83dc"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/report.md",
+          "sha256": "71efd5cd7c7cdcb5aed7d74b047607a17c73b441bfe309784d5507666af38cb3"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/scope-baseline.json",
+          "sha256": "166117c888fbca68af3213edea2f5c6bd12d34f02f89aebe3c7121173de1dbb4"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/scope-diff.json",
+          "sha256": "ffd1a55bda24a06fec47c0ad01ea4c4d02bdd80a1a1535fb1b3d7e013fe4c1fe"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-author-1/terminal.json",
+          "sha256": "f39f6779d6702d2f9ed255c55fa06b01a1f26e4b40b79550fac48b532d2f85ab"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/attempt.json",
+          "sha256": "3c479069af3ddd17b4d7f0cb42aecd785604df2c0d0bb41a9c8acc2264f65139"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/evidence-gate.json",
+          "sha256": "446a3f651eb4cf4d4479b99d20973fd5b4bca0847b2ed0d3fb8b900ad3be97cb"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/launch-reservation.json",
+          "sha256": "67465c9c9a27339f6b5f7ef4a770bcef8602f7d71fd4eeef17677d629f61dcf9"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/report.md",
+          "sha256": "91c6b2866352de7dfb02136d88dadb80fdd1cfda2ba590d6d4447c4eeaf029d9"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/scope-baseline.json",
+          "sha256": "6a8871ac97022ff99032e1fff1a4885a5876bed6bfa046351d8655702caf15a0"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/scope-diff.json",
+          "sha256": "d1cb6898d06b443d0bbb0d280a4f9eeab3c4154dc74bf19c807fc5c5650122c4"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/attempts/spec-reflector-1/terminal.json",
+          "sha256": "f9fe77afe6d59b11cecbb028d80421f65264ca8d3a6557b771dd9c8f758fdb84"
+        },
+        {
+          "path": "run/phases/design/tasks/requirements/contracts/r0001.md",
+          "sha256": "5a32bc6324033678b918fa524583b046b3fa5ab6286f899a31df0f852e4b92f6"
+        },
+        {
+          "path": "run/receipts/68386a68611a467c96db10f028e0406f.json",
+          "sha256": "29158b19607e0d967e60d84eedbca1036a36f89f7c23a89a5b185795a88763b6"
+        },
+        {
+          "path": "run/receipts/bc592c3a233248f6991f96ab6be52a79.json",
+          "sha256": "2c681f51dd634fea285e1d0bd8c6e981ca3725143a97ddf0ea42fe8618cee684"
+        },
+        {
+          "path": "run/run-config.json",
+          "sha256": "982b5cd2812ac361785a1dab8d6b26d5cebccd3ab04df77ded32818f2c483081"
+        },
+        {
+          "path": "run/state.json",
+          "sha256": "82e6b71750b87fce54c914be3e51f8e89df2aaad0114b87332348f871f132969"
+        },
+        {
+          "path": "trial.json",
+          "sha256": "d3832b91c43783be935f015314eaca18736e0e8a60a77ebcc912c27221c049f5"
+        },
+        {
+          "path": "usage-events.json",
+          "sha256": "033324087f6214f97f96c312c5392b98bf611b8ad1bd4956418028700ca3d01e"
+        }
+      ],
+      "evidence_dir": "trials/requirements-challenge--contradictory/evidence",
+      "observed": {
+        "boundary": "constructed",
+        "coordinator": [
+          {
+            "observed": null,
+            "requested": "claude-code/opus",
+            "self_reported": "Claude Opus 5.5 (model id claude-opus-5-5), as the Claude Code host's system prompt states it to the agent; a claim, not runtime metadata"
+          }
+        ],
+        "executor_reported_model": {
+          "observed_models": [
+            "deepseek-v4-flash"
+          ],
+          "observed_providers": [
+            "deepseek"
+          ],
+          "observed_variants": [
+            "high"
+          ],
+          "single_model": true,
+          "single_variant": true
+        },
+        "executor_sha256": "2f24593f1b8e578d0b7ed7ca399440d4b6c125330eece20a69ad8d380190d669",
+        "interpreter": "3.10.14",
+        "note": "the executor records the requested model id; neither it nor a provider alias identifies model weights",
+        "run_mode": "live",
+        "worker_model": "deepseek/deepseek-v4-flash",
+        "worker_settings_digest": "7aa8ef0d05e9ea23bb46bc4314cf5f559574eecdb37e6430dd6c4ae7abbbe7b4",
+        "worker_variant": "high"
+      },
+      "outcome": {
+        "coordinator_decision": null,
+        "defect_planted": true,
+        "gradeable": false,
+        "review": "ungradeable",
+        "usage": {
+          "available": true,
+          "billing": "dated-table",
+          "complete": true,
+          "derived_cost": 0.010215,
+          "telemetry_gaps": null,
+          "tokens": {
+            "cache_read": 425728,
+            "cache_write": 0,
+            "calls_finished": 16,
+            "calls_started": 16,
+            "executor_cost": 0.0085335,
+            "input": 29767,
+            "output": 7455,
+            "reasoning": 3881
+          },
+          "zero_usage_calls": 0
+        },
+        "why": "the report carries no fenced json block with a `findings` list"
+      },
+      "reason": "the coordinator never adjudicated the challenge",
+      "status": "incomplete",
+      "subject": "contradictory",
+      "transport": "none",
+      "trial_id": "requirements-challenge--contradictory",
+      "variant": null
+    },
+    {
+      "case": "requirements-challenge",
+      "case_identity": "70bd42179a6729b7ed3eddb6701efa7eb21ed17dcb8183831c97d5d3642ebdd1",
+      "reason": "no attempt was launched in this run",
+      "status": "not-run",
+      "subject": "coherent",
+      "transport": "none",
+      "trial_id": "requirements-challenge--coherent",
+      "variant": null
+    },
+    {
+      "case": "dispatch-implementation",
+      "case_identity": "77851e430c3fb56fd33da44b871855aef81571f0272c6788afbea13b0542bb7f",
+      "reason": "no attempt was launched in this run",
+      "status": "not-run",
+      "subject": "coherent",
+      "transport": "none",
+      "trial_id": "dispatch-implementation--coherent",
+      "variant": null
+    }
+  ]
+}

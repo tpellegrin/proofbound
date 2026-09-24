@@ -138,6 +138,9 @@ from clean commit `89c4c16`: suite `0dfed3636d0a0180…`, control plane `e68a5ba
 3.10.14, executor `2f24593f…d669`, readiness `ready` with no provider request. Its status is
 `proposed-not-authorized`, and `prepare-live` refuses it.
 
+**Addition, 2026-09-24.** The owner authorized the proposal. It ran and was blocked after two
+trials, and first use was not started: [live-qualification-2026-09-24.md](live-qualification-2026-09-24.md).
+
 ## What this does not establish
 
 That any model can do the work, that the workflow delivers on a real goal, that containment bounds
