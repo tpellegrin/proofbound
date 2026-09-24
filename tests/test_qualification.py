@@ -80,41 +80,133 @@ class FindingGraders(unittest.TestCase):
         self.assertEqual(_qualify.parse_findings('x\n```json\n{"findings": []}\n```\n')[0], [])
 
 
+def call(session, message, created, *, reason, tools=(), tokens=(1000, 50)):
+    """One model call as the pinned executor records it: one assistant message holding a
+    `step-start`, its tool parts, and a `step-finish` carrying why the call ended. Shape observed
+    in a real OpenCode 1.18.29 session; see `continuation()`."""
+    rows = [{"session_id": session, "message_id": message, "part_id": f"{message}-start",
+             "time_created": created, "type": "step-start"}]
+    for n, (name, status, started, ended) in enumerate(tools):
+        rows.append({"session_id": session, "message_id": message,
+                     "part_id": f"{message}-tool{n}", "time_created": created, "type": "tool",
+                     "tool": name, "tool_status": status, "tool_started": started,
+                     "tool_ended": ended})
+    rows.append({"session_id": session, "message_id": message, "part_id": f"{message}-finish",
+                 "time_created": created, "type": "step-finish", "finish_reason": reason,
+                 "input": tokens[0], "output": tokens[1]})
+    return rows
+
+
 class ToolLoopGrader(unittest.TestCase):
+    """Continuation is decided by the executor's own sequence, and never by counting rows."""
+
     MARK = "abc123"
+    ARTIFACT = f"# R\n\nQUALIFICATION-TOOL-LOOP {MARK}\n"
 
-    def rows(self, *, finishes, tools, tokens=(10, 5)):
-        out = [{"type": "tool", "tool_status": status, "part_id": f"t{i}"}
-               for i, status in enumerate(tools)]
-        out += [{"type": "step-finish", "time_created": i, "input": tokens[0],
-                 "output": tokens[1], "part_id": f"f{i}"} for i in range(finishes)]
-        return out
+    def grade(self, rows, artifact=ARTIFACT, gate=True, **kw):
+        return _qualify.grade_tool_loop(rows, artifact, self.MARK, {"integrity_ok": gate}, **kw)
 
-    def grade(self, rows, artifact=f"# R\n\nQUALIFICATION-TOOL-LOOP {MARK}\n", gate=True):
-        return _qualify.grade_tool_loop(rows, artifact, self.MARK, {"integrity_ok": gate})
+    def loop(self, session="ses_a"):
+        return (call(session, "msg_01", 100, reason="tool-calls",
+                     tools=[("read", "completed", 110, 115)])
+                + call(session, "msg_02", 120, reason="tool-calls",
+                       tools=[("write", "completed", 125, 130)])
+                + call(session, "msg_03", 140, reason="stop"))
 
-    def test_pass_needs_a_completed_tool_a_continuation_the_bytes_and_a_gate(self):
-        self.assertEqual(self.grade(self.rows(finishes=2, tools=["completed"]))["outcome"], "pass")
-        for why, got in (
-                ("no continuation", self.grade(self.rows(finishes=1, tools=["completed"]))),
-                ("tool failed", self.grade(self.rows(finishes=2, tools=["error"]))),
-                ("marker absent", self.grade(self.rows(finishes=2, tools=["completed"]),
-                                             artifact="# R\n")),
-                ("marker not on its own line",
-                 self.grade(self.rows(finishes=2, tools=["completed"]),
-                            artifact=f"QUALIFICATION-TOOL-LOOP {self.MARK}x\n")),
-                ("gate not interpretable", self.grade(self.rows(finishes=2, tools=["completed"]),
-                                                      gate=False))):
+    def test_an_actual_continuation_passes(self):
+        got = self.grade(self.loop(), session_id="ses_a")
+        self.assertEqual(got["outcome"], "pass")
+        self.assertTrue(got["continuation_observed"])
+        self.assertEqual([c["next_call"] for c in got["continuation"]["continued"]],
+                         ["msg_02", "msg_03"])
+
+    def test_the_external_reproduction_no_longer_passes(self):
+        """Finished calls at 1 and 2, the only completed tool at 3: nothing followed the tool."""
+        rows = [{"type": "step-finish", "time_created": 1, "input": 10, "output": 5,
+                 "part_id": "f1"},
+                {"type": "step-finish", "time_created": 2, "input": 10, "output": 5,
+                 "part_id": "f2"},
+                {"type": "tool", "tool_status": "completed", "time_created": 3, "part_id": "t1"}]
+        got = self.grade(rows)
+        self.assertNotEqual(got["outcome"], "pass")
+        self.assertIsNone(got["continuation_observed"])
+
+    def test_calls_that_precede_the_tool_are_not_its_continuation(self):
+        rows = (call("s", "msg_01", 1, reason="stop") + call("s", "msg_02", 2, reason="stop")
+                + call("s", "msg_03", 3, reason="tool-calls",
+                       tools=[("write", "completed", 4, 5)]))
+        got = self.grade(rows, session_id="s")
+        self.assertEqual(got["outcome"], "protocol-failure")
+        self.assertIs(got["continuation_observed"], False)
+
+    def test_a_call_in_another_session_does_not_continue_this_one(self):
+        rows = (call("ses_a", "msg_01", 1, reason="tool-calls",
+                     tools=[("write", "completed", 2, 3)])
+                + call("ses_b", "msg_02", 5, reason="stop"))
+        self.assertIs(self.grade(rows, session_id="ses_a")["continuation_observed"], False)
+        self.assertIsNone(self.grade(rows)["continuation_observed"],
+                          "two sessions and no identified one decide nothing")
+
+    def test_duplicate_events_and_recorded_anomalies_decide_nothing(self):
+        rows = self.loop()
+        self.assertEqual(self.grade(rows + [dict(rows[1])], session_id="ses_a")["outcome"],
+                         "insufficient-evidence")
+        self.assertEqual(self.grade(rows, session_id="ses_a",
+                                    anomalies=[{"kind": "duplicate-part-id"}])["outcome"],
+                         "insufficient-evidence")
+
+    def test_a_failed_tool_is_not_continued(self):
+        rows = (call("s", "msg_01", 1, reason="tool-calls", tools=[("write", "error", 2, 3)])
+                + call("s", "msg_02", 5, reason="stop"))
+        got = self.grade(rows, session_id="s")
+        self.assertIs(got["continuation_observed"], False)
+        self.assertEqual(got["tools_failed"], 1)
+
+    def test_a_call_that_did_not_end_for_its_tools_is_not_continued(self):
+        rows = (call("s", "msg_01", 1, reason="stop", tools=[("write", "completed", 2, 3)])
+                + call("s", "msg_02", 5, reason="stop"))
+        self.assertIs(self.grade(rows, session_id="s")["continuation_observed"], False)
+
+    def test_insufficient_or_contradictory_evidence_never_establishes_continuation(self):
+        cases = {
+            "finish reason not retained": [
+                {**r, "finish_reason": None} if r["type"] == "step-finish" else r
+                for r in self.loop()],
+            "no message identifiers": [{k: v for k, v in r.items() if k != "message_id"}
+                                       for r in self.loop()],
+            "identifier order contradicts creation order": (
+                call("ses_a", "msg_02", 100, reason="tool-calls",
+                     tools=[("write", "completed", 110, 115)])
+                + call("ses_a", "msg_01", 140, reason="stop")),
+            "tool ended after the next call began": (
+                call("ses_a", "msg_01", 100, reason="tool-calls",
+                     tools=[("write", "completed", 110, 190)])
+                + call("ses_a", "msg_02", 140, reason="stop")),
+        }
+        for why, rows in cases.items():
             with self.subTest(why):
-                self.assertEqual(got["outcome"], "protocol-failure")
+                got = self.grade(rows, session_id="ses_a")
+                self.assertEqual(got["outcome"], "insufficient-evidence", got["continuation"])
+                self.assertFalse(got["gradeable"])
+
+    def test_the_marker_and_the_gate_are_still_required(self):
+        self.assertEqual(self.grade(self.loop(), artifact="# R\n", session_id="ses_a")["outcome"],
+                         "protocol-failure")
+        self.assertEqual(self.grade(self.loop(), gate=False, session_id="ses_a")["outcome"],
+                         "protocol-failure")
 
     def test_zero_token_retries_are_infrastructure_and_zero_usage_is_unknown(self):
-        storm = self.grade(self.rows(finishes=40, tools=[], tokens=(0, 0)), artifact="# R\n")
-        self.assertEqual(storm["outcome"], _qualify.INFRASTRUCTURE)
-        self.assertFalse(storm["gradeable"])
-        unreported = self.grade(self.rows(finishes=2, tools=["completed"], tokens=(0, 0)))
-        self.assertEqual(unreported["outcome"], "pass")
-        self.assertTrue(unreported["usage_reported"].startswith("unknown"))
+        storm = []
+        for n in range(40):
+            storm += call("s", f"msg_{n:03d}", n, reason="unknown", tokens=(0, 0))
+        got = self.grade(storm, artifact="# R\n", session_id="s")
+        self.assertEqual(got["outcome"], _qualify.INFRASTRUCTURE)
+        self.assertFalse(got["gradeable"])
+        unreported = [{**r, "input": 0, "output": 0} if r["type"] == "step-finish" else r
+                      for r in self.loop()]
+        got = self.grade(unreported, session_id="ses_a")
+        self.assertEqual(got["outcome"], "pass")
+        self.assertTrue(got["usage_reported"].startswith("unknown"))
 
 
 class Plans(unittest.TestCase):
@@ -122,23 +214,67 @@ class Plans(unittest.TestCase):
         self.tmp = Path(tempfile.mkdtemp(prefix="pb-plans-"))
         self.addCleanup(shutil.rmtree, self.tmp, True)
 
-    def test_a_live_plan_needs_authorization_and_limits(self):
+    def pinned(self):
+        executor = _qualify.pinned_executor()
+        if executor is None:
+            self.skipTest("the pinned OpenCode 1.18.29 build is not installed on this host")
+        return executor
+
+    def test_a_live_plan_is_a_proposal_or_authorized_and_never_forges_either(self):
+        kw = dict(profile="deepseek-v4-flash-high", mode="live", cases=["tool-loop"],
+                  executor=str(self.pinned()), per_launch_allowance=.05)
+        for bad in ({}, {"owner_authorization": "yes", "proposal": True}):
+            with self.subTest(bad=bad), self.assertRaises(_qualify.QualificationError):
+                _qualify.build_plan(**kw, **bad)
         with self.assertRaises(_qualify.QualificationError):
-            _qualify.build_plan(profile="deepseek-v4-flash-high", mode="live",
-                                cases=["tool-loop"])
+            _qualify.build_plan(**{**kw, "per_launch_allowance": None}, proposal=True)
         with self.assertRaises(_qualify.QualificationError):
-            _qualify.build_plan(profile="deepseek-v4-flash-high", mode="live",
-                                cases=["tool-loop"], owner_authorization="yes")
+            _qualify.build_plan(**{**kw, "cases": ["authority-recovery"]}, proposal=True)
+        proposal = _qualify.build_plan(**kw, proposal=True)
+        self.assertEqual(proposal["status"], _qualify.PROPOSED)
+        self.assertIsNone(proposal["authorization"]["owner"])
+        self.assertEqual(proposal["authorization"]["status"], "NOT AUTHORIZED")
         with self.assertRaises(_qualify.QualificationError):
+            _qualify.assert_executable(proposal)
+        with self.assertRaises(_qualify.QualificationError):
+            _qualify.authorize(proposal, self.tmp, "tool-loop")
+        with self.assertRaises(_qualify.QualificationError):
+            _qualify.authorize_proposal(proposal, "   ")
+        plan = _qualify.authorize_proposal(proposal, "TEST ONLY: an owner statement")
+        self.assertEqual(plan["status"], _qualify.AUTHORIZED)
+        self.assertEqual(plan["proposal_digest"], proposal["digest"])
+        self.assertNotEqual(plan["digest"], proposal["digest"])
+        for frozen in ("suite", "worker_profile", "resources", "executor", "control_plane",
+                       "allocation", "cases"):
+            self.assertEqual(plan[frozen], proposal[frozen], frozen)
+        with self.assertRaises(_qualify.QualificationError):
+            _qualify.authorize_proposal(plan, "again")
+
+    def test_a_live_plan_names_the_pinned_executor(self):
+        fake = self.tmp / "opencode"
+        fake.write_text("#!/bin/sh\necho 1.18.29\n")
+        with self.assertRaises(_qualify.QualificationError) as caught:
             _qualify.build_plan(profile="deepseek-v4-flash-high", mode="live",
-                                cases=["authority-recovery"], owner_authorization="yes",
-                                aggregate_limit=1, reserve=.1)
-        plan = _qualify.build_plan(profile="deepseek-v4-flash-high", mode="live",
-                                   cases=["tool-loop"], owner_authorization="TEST",
-                                   aggregate_limit=.5, reserve=.1)
-        self.assertEqual(plan["allocation"]["order"], ["tool-loop--marker"])
+                                cases=["tool-loop"], executor=str(fake), proposal=True,
+                                per_launch_allowance=.05)
+        self.assertIn("pinned build", str(caught.exception))
+
+    def test_each_trial_gets_its_enumerated_launches_and_the_campaign_is_their_sum(self):
+        got = _qualify.allocation(["tool-loop", "requirements-challenge",
+                                   "dispatch-implementation"], per_launch=.05)
+        per = got["per_case"]
+        self.assertEqual([per[c]["ceiling"] for c in ("tool-loop", "requirements-challenge",
+                                                      "dispatch-implementation")], [2, 3, 11])
+        self.assertEqual([per[c]["aggregate_limit"] for c in per], [.1, .15, .55])
+        self.assertEqual(per["dispatch-implementation"]["minimum"], 5)
+        # requirements-challenge runs twice: once per subject.
+        self.assertEqual(got["campaign"], {**got["campaign"], "trials": 4, "launch_ceiling": 19,
+                                           "minimum_launches": 10,
+                                           "aggregate_derived_limit": .95})
+        self.assertIn("never renew", got["campaign"]["note"])
 
     def test_an_unreachable_local_endpoint_prepares_nothing(self):
+        executor = self.pinned()
         profile = self.tmp / "down.json"
         import socket
         with socket.socket() as probe:
@@ -148,9 +284,6 @@ class Plans(unittest.TestCase):
             "format": "proofbound-worker-profile-v1", "id": "local-down",
             "kind": "local-openai-compatible", "endpoint": f"http://127.0.0.1:{port}/v1",
             "model": "m", "limits": {"context": 8192, "output": 1024}, "tool_call": True}))
-        executor = self.tmp / "opencode"
-        executor.write_text("#!/bin/sh\necho 1.18.29\n")
-        executor.chmod(0o755)
         plan_dir = self.tmp / "live-plan"
         subprocess.run([sys.executable, str(CLI), "plan", "--worker-profile", str(profile),
                         "--mode", "live", "--case", "tool-loop", "--owner-authorization",
@@ -169,8 +302,9 @@ class Plans(unittest.TestCase):
     def test_prepare_live_launches_nothing_and_grade_records_undriven_runs_as_not_run(self):
         """Readiness passes against a stand-in endpoint, so this exercises preparation and grading
         only: nothing is launched, no model is involved, and nothing live is claimed."""
-        if _qualify.pinned_executor() is None or not _qualify.sandbox_available():
-            self.skipTest("needs the pinned executor and sandbox-exec on this host")
+        executor = self.pinned()
+        if not _qualify.sandbox_available():
+            self.skipTest("needs sandbox-exec in this process")
         from _stand_in_endpoint import StandInEndpoint
         with StandInEndpoint(model="m") as endpoint:
             profile = self.tmp / "local.json"
@@ -181,9 +315,8 @@ class Plans(unittest.TestCase):
             plan_dir, runs = self.tmp / "live-plan", self.tmp / "runs"
             subprocess.run([sys.executable, str(CLI), "plan", "--worker-profile", str(profile),
                             "--mode", "live", "--case", "tool-loop", "--owner-authorization",
-                            "TEST ONLY: prepared, never driven", "--executor",
-                            str(_qualify.pinned_executor()), "--into", str(plan_dir)],
-                           check=True, capture_output=True)
+                            "TEST ONLY: prepared, never driven", "--executor", str(executor),
+                            "--into", str(plan_dir)], check=True, capture_output=True)
             prepared = subprocess.run([sys.executable, str(CLI), "prepare-live", "--plan",
                                        str(plan_dir), "--into", str(runs)], capture_output=True,
                                       text=True, stdin=subprocess.DEVNULL)
@@ -193,6 +326,8 @@ class Plans(unittest.TestCase):
         for trial in json.loads((runs / "live.json").read_text())["trials"]:
             config = json.loads((Path(trial["run"]) / "run-config.json").read_text())
             self.addCleanup(shutil.rmtree, Path(config["home"]).parent, True)
+            self.assertEqual(config["policy"]["launch_ceiling"], 2,
+                             "the trial's own enumerated ceiling, not a campaign figure")
         graded = subprocess.run([sys.executable, str(CLI), "grade", "--plan", str(plan_dir),
                                  "--live", str(runs)], capture_output=True, text=True,
                                 stdin=subprocess.DEVNULL)
@@ -200,6 +335,7 @@ class Plans(unittest.TestCase):
         record = json.loads((runs / "result.json").read_text())
         self.assertEqual([t["status"] for t in record["trials"]], [_qualify.NOT_RUN])
         self.assertEqual(record["denominators"]["attempted"], 0)
+        self.assertEqual(record["configuration_basis"], "planned")
         self.assertIn("not a rate", record["claim"])
 
     def test_a_frozen_plan_refuses_edits_and_a_changed_profile(self):
@@ -238,6 +374,200 @@ class Plans(unittest.TestCase):
         self.assertIn("{nonce}", goal, "the identity covers the template, never a trial's nonce")
         self.assertNotEqual(_qualify.trial_goal({"trial_id": "x", "case": "tool-loop",
                                                  "subject": "marker"}), goal)
+
+def redigest(plan):
+    plan["digest"] = _qualify._sha(_qualify._canonical({k: v for k, v in plan.items()
+                                                         if k != "digest"}))
+    return plan
+
+
+class IdentityEnforcement(unittest.TestCase):
+    """What a plan froze is what executes and what grades; inspection enforces nothing."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="pb-identity-"))
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.plan = _qualify.build_plan(profile="deepseek-v4-flash-high", mode="replay",
+                                        cases=["requirements-challenge"])
+
+    def test_a_plan_frozen_on_another_interpreter_neither_executes_nor_grades(self):
+        """Reproduced on 0d2f9ee: a validly digested plan recording `0.0` executed on 3.12."""
+        plan = redigest({**self.plan, "control_plane": {**self.plan["control_plane"],
+                                                         "interpreter": {"minor": "0.0"}}})
+        for check in (_qualify.assert_executable, _qualify.assert_gradeable):
+            with self.subTest(check=check.__name__), \
+                    self.assertRaises(_qualify.QualificationError) as caught:
+                check(plan)
+            self.assertIn("Python 0.0", str(caught.exception))
+
+    def test_executor_bytes_that_moved_refuse_execution(self):
+        executor = self.tmp / "opencode"
+        executor.write_bytes(b"one build")
+        plan = _qualify.build_plan(profile="deepseek-v4-flash-high", mode="replay",
+                                   cases=["requirements-challenge"], executor=str(executor))
+        _qualify.assert_executable(plan)
+        executor.write_bytes(b"another build")
+        with self.assertRaises(_qualify.QualificationError) as caught:
+            _qualify.assert_executable(plan)
+        self.assertIn("not the bytes the plan recorded", str(caught.exception))
+
+    def test_grading_under_changed_instrument_bytes_refuses_and_names_the_commit(self):
+        """Reproduced on 0d2f9ee: `grade` ran after the grader's bytes changed."""
+        plan = redigest({**self.plan, "suite": {**self.plan["suite"], "digest": "0" * 64}})
+        with self.assertRaises(_qualify.QualificationError) as caught:
+            _qualify.assert_gradeable(plan)
+        message = str(caught.exception)
+        self.assertIn("qualification CLI", message)
+        self.assertIn("Nothing was graded", message)
+        self.assertIn(str(plan["control_plane"]["harness"]["commit"]), message)
+
+    def test_the_instrument_covers_the_cli_and_the_stand_ins(self):
+        covered = set(self.plan["suite"]["instrument"])
+        for path in ("evals/pb_qualify.py", "evals/_stand_in_executor.py",
+                     "evals/_stand_in_endpoint.py", "evals/authority_slice/_checker_corpus.py",
+                     "evals/_qualify.py", "evals/authority_slice/_checker.py"):
+            self.assertIn(path, covered)
+
+    def test_a_run_that_froze_another_identity_does_not_join_the_plan(self):
+        run = self.tmp / "run"
+        run.mkdir()
+        (run / "run-config.json").write_text(json.dumps({
+            "interpreter": {"version": "3.0.1"}, "executor": {"sha256": "a" * 64},
+            "worker_profile": {"digest": "b" * 64}}))
+        with self.assertRaises(_qualify.QualificationError) as caught:
+            _qualify.assert_run_matches(self.plan, run, executor_sha="c" * 64)
+        message = str(caught.exception)
+        self.assertIn("Python 3.0.1", message)
+        self.assertIn("executor bytes", message)
+        self.assertIn("retained", message)
+
+
+class TrialStatus(unittest.TestCase):
+    """An `attempt.json` proves a launch, not a conclusion."""
+
+    def setUp(self):
+        self.ev = Path(tempfile.mkdtemp(prefix="pb-status-"))
+        self.addCleanup(shutil.rmtree, self.ev, True)
+
+    def attempt(self, task, role, *, terminal=True, gate=True):
+        event = self.ev / "run" / "phases" / "design" / "tasks" / task / "attempts" / f"{role}-1"
+        event.mkdir(parents=True)
+        (event / "attempt.json").write_text("{}")
+        if terminal:
+            (event / "terminal.json").write_text('{"status": "completed"}')
+        if gate:
+            (event / "evidence-gate.json").write_text('{"integrity_ok": true}')
+
+    def test_nothing_launched_is_not_run(self):
+        self.assertEqual(_qualify.trial_status(self.ev, "tool-loop")[0], _qualify.NOT_RUN)
+
+    def test_an_attempt_without_a_terminal_record_is_incomplete(self):
+        """Reproduced on 0d2f9ee: `grade` labelled exactly this `completed`."""
+        self.attempt("requirements", "spec-author", terminal=False, gate=False)
+        status, why = _qualify.trial_status(self.ev, "tool-loop")
+        self.assertEqual(status, _qualify.INCOMPLETE)
+        self.assertIn("spec-author-1", why)
+
+    def test_an_unclassified_launch_slot_is_incomplete(self):
+        self.attempt("requirements", "spec-author")
+        (self.ev / "run" / "launch-ledger.json").write_text(json.dumps(
+            {"slots": [{"slot": 1, "classification": "unresolved"}]}))
+        self.assertEqual(_qualify.trial_status(self.ev, "tool-loop")[0], _qualify.INCOMPLETE)
+
+    def test_completion_needs_the_cases_own_stopping_point(self):
+        self.attempt("requirements", "spec-author")
+        self.assertEqual(_qualify.trial_status(self.ev, "tool-loop"), ("completed", None))
+        self.attempt("requirements", "spec-reflector")
+        status, why = _qualify.trial_status(self.ev, "requirements-challenge")
+        self.assertEqual(status, _qualify.INCOMPLETE)
+        self.assertIn("never adjudicated", why)
+        status, why = _qualify.trial_status(self.ev, "dispatch-implementation")
+        self.assertIn("no delivery was sealed", why)
+
+
+class ReviewedBytes(unittest.TestCase):
+    """A review is graded against the bytes its own scope baseline says it saw."""
+
+    def setUp(self):
+        self.ev = Path(tempfile.mkdtemp(prefix="pb-reviewed-"))
+        self.addCleanup(shutil.rmtree, self.ev, True)
+        artifacts = self.ev / "artifacts"
+        artifacts.mkdir()
+        self.first = artifacts / "dispatch.first-attempt.py"
+        self.first.write_text(_qualify._dispatch_source("global-fifo"))
+        self.delivered = artifacts / "dispatch.py"
+        self.delivered.write_text(_qualify._dispatch_source("round-robin"))
+        (self.ev / "exposure.json").write_text('{"status": "unavailable"}')
+        self.base = self.ev / "run" / "phases" / "build" / "tasks" / "implementation" / "attempts"
+
+    def reviewer(self, n, seen, findings):
+        event = self.base / f"reviewer-{n}"
+        event.mkdir(parents=True)
+        (event / "scope-baseline.json").write_text(json.dumps(
+            {"entries": {"dispatch.py": {"sha256": seen}}}))
+        (event / "report.md").write_text("```json\n" + json.dumps({"findings": findings})
+                                         + "\n```\n")
+
+    def test_each_review_meets_its_own_bytes(self):
+        """Reproduced on 0d2f9ee: reviewer-2's clean report about the repaired code was graded
+        as the review of the defective first attempt."""
+        self.reviewer(1, _qualify._file_sha(self.first),
+                      [{"requirements": ["R3"], "witness": ["a", "a", "b"]}])
+        self.reviewer(2, _qualify._file_sha(self.delivered), [])
+        self.reviewer(3, "f" * 64, [])
+        (self.base / "fixer-1").mkdir()
+        (self.base / "fixer-1" / "attempt.json").write_text("{}")
+        got = _qualify.grade(self.ev, {"trial_id": "t", "case": "dispatch-implementation",
+                                       "subject": "coherent", "variant": None})
+        first, second, third = got["reviews"]
+        self.assertEqual((first["reviewed_bytes"], first["substantiated"]),
+                         ("dispatch.first-attempt.py", 1))
+        self.assertEqual((second["reviewed_bytes"], second["reported"],
+                          second["defect_present"]), ("dispatch.py", 0, False))
+        self.assertIn("not retained", third["unavailable"])
+        self.assertEqual(got["review"], first)
+        self.assertEqual((got["first_attempt"], got["after_bounded_repair"]), ("fail", "pass"))
+
+    def test_a_snapshot_that_is_not_what_the_first_reviewer_saw_stays_unavailable(self):
+        self.reviewer(1, "e" * 64, [])
+        (self.base / "fixer-1").mkdir()
+        (self.base / "fixer-1" / "attempt.json").write_text("{}")
+        got = _qualify.grade(self.ev, {"trial_id": "t", "case": "dispatch-implementation",
+                                       "subject": "coherent", "variant": None})
+        self.assertEqual(got["first_attempt"], "unavailable")
+        self.assertIn("unavailable", got["first_attempt_source"])
+
+
+class ObservedIdentity(unittest.TestCase):
+    """A planned identity is never reported as an observed one."""
+
+    def trial(self, *, interpreter="3.10.14", coordinator="claude-code/opus", transport="none"):
+        return {"transport": transport, "observed": {
+            "interpreter": interpreter, "executor_sha256": "e" * 64,
+            "worker_model": "deepseek/deepseek-v4-flash", "worker_variant": "high",
+            "coordinator": ([{"requested": coordinator, "self_reported": None,
+                              "observed": None}] if coordinator else None)}}
+
+    def test_runs_that_agree_report_the_value_and_runs_that_differ_do_not(self):
+        same = _qualify.observed_configuration([self.trial(), self.trial()])
+        self.assertEqual((same["interpreter"], same["coordinator"]), ("3.10", "claude-code/opus"))
+        mixed = _qualify.observed_configuration([self.trial(), self.trial(interpreter="3.14.5")])
+        self.assertIn("mixed", mixed["interpreter"])
+        unrecorded = _qualify.observed_configuration([self.trial(), self.trial(coordinator=None)])
+        self.assertIsNone(unrecorded["coordinator"])
+        stand_in = _qualify.observed_configuration([self.trial(transport="stand-in-executor")])
+        self.assertEqual(stand_in["executor"], "stand-in-executor")
+
+    def test_a_comparison_prefers_the_record_and_names_a_plan_it_contradicts(self):
+        planned = result(coordinator="codex/gpt-6", executor="e" * 64, interpreter="3.10")
+        planned["observed_configuration"] = _qualify.observed_configuration([self.trial()])
+        other = result(coordinator="claude-code/opus", executor="e" * 64, interpreter="3.10",
+                       **{"worker.model": "p1/m2"})
+        got = _compare.compare_qualification(planned, other)
+        self.assertFalse(got["controlled"])
+        self.assertTrue(any("planned as 'codex/gpt-6' and recorded as 'claude-code/opus'" in r
+                            for r in got["not_controlled_because"]))
+
 
 def result(*, trials=None, **configuration):
     base = {"suite": "s1", "mode": "live", "control_plane": "cp", "interpreter": "3.10",
@@ -307,6 +637,39 @@ class QualificationComparison(unittest.TestCase):
         for word in ("winner", "better", "best", "recommend", "rank", "score:"):
             self.assertNotIn(word, blob)
         self.assertIn("no ordering is computed", blob)
+
+
+class RealExecutorToolLoopReplay(unittest.TestCase):
+    """The continuation rule on evidence the pinned executor actually wrote, via replay."""
+
+    def test_well_formed_passes_on_its_causal_chain_and_malformed_does_not(self):
+        executor = _qualify.pinned_executor()
+        if executor is None or not _qualify.sandbox_available():
+            self.skipTest("needs the pinned executor and sandbox-exec on this host")
+        tmp = Path(tempfile.mkdtemp(prefix="pb-toolloop-replay-"))
+        self.addCleanup(shutil.rmtree, tmp, True)
+        profile = tmp / "local.json"
+        profile.write_text(json.dumps({
+            "format": "proofbound-worker-profile-v1", "id": "local-replay",
+            "kind": "local-openai-compatible", "endpoint": "http://127.0.0.1:18080/v1",
+            "model": "m", "limits": {"context": 8192, "output": 1024}, "tool_call": True}))
+        for args in (["plan", "--worker-profile", profile, "--into", tmp / "plan",
+                      "--case", "tool-loop", "--deadline-seconds", 60],
+                     ["replay", "--plan", tmp / "plan", "--into", tmp / "result",
+                      "--only", "tool-loop--marker--well-formed",
+                      "--only", "tool-loop--marker--malformed-arguments"]):
+            done = subprocess.run([sys.executable, str(CLI), *map(str, args)],
+                                  capture_output=True, text=True, stdin=subprocess.DEVNULL)
+            self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        record = json.loads((tmp / "result" / "result.json").read_text())
+        trials = {t["trial_id"]: t for t in record["trials"]}
+        good = trials["tool-loop--marker--well-formed"]["outcome"]
+        self.assertEqual(good["outcome"], "pass")
+        chain = good["continuation"]["continued"]
+        self.assertTrue(chain and all(c["next_call"] > c["tool_call"] for c in chain))
+        self.assertEqual(trials["tool-loop--marker--well-formed"]["status"], "completed")
+        bad = trials["tool-loop--marker--malformed-arguments"]["outcome"]
+        self.assertEqual(bad["outcome"], "protocol-failure")
 
 
 class CompleteOfflinePath(unittest.TestCase):

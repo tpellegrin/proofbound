@@ -328,7 +328,8 @@ def compare_qualification(a: dict[str, Any], b: dict[str, Any], *,
     unverified, which population differs, which trials are missing or duplicated — and only then
     what each side observed.
     """
-    conf_a, conf_b = a.get("configuration") or {}, b.get("configuration") or {}
+    conf_a, notes_a = _effective(a)
+    conf_b, notes_b = _effective(b)
     rows = [_row(f, conf_a.get(f), conf_b.get(f))
             for group in QUALIFICATION_GROUPS.values() for f in group]
     by_field = {r["field"]: r for r in rows}
@@ -378,6 +379,8 @@ def compare_qualification(a: dict[str, Any], b: dict[str, Any], *,
     if dup_a or dup_b:
         reasons.append("duplicate trials were excluded from pairing: "
                        + ", ".join(dup_a + dup_b))
+    for label, notes in (("a", notes_a), ("b", notes_b)):
+        reasons += [f"{label}: {note}" for note in notes]
     controlled = not reasons and bool(set(varied) - {"tasks"})
 
     paired, unpairable = [], []
@@ -411,6 +414,37 @@ def compare_qualification(a: dict[str, Any], b: dict[str, Any], *,
         "claims": {"a": a.get("claim"), "b": b.get("claim")},
         "tokens_comparable": not ({"worker.provider", "worker.model", "executor"} & set(bundle)),
     }
+
+
+#: Fields a run records about itself. Where a result carries them, they replace the planned ones.
+OBSERVABLE = ("interpreter", "executor", "worker.model", "worker.variant", "coordinator")
+
+
+def _effective(result: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+    """A result's configuration with observed values in place of planned ones, and any conflict.
+
+    A planned identity is not an observed one. Where the runs recorded a field, the record wins;
+    where they disagree with one another the field is unverified; where they disagree with the plan
+    the comparison says so and is not controlled.
+    """
+    conf = dict(result.get("configuration") or {})
+    observed = result.get("observed_configuration")
+    notes: list[str] = []
+    if observed is None:
+        return conf, notes
+    for field in OBSERVABLE:
+        if field not in observed:
+            continue
+        value, planned = observed[field], conf.get(field)
+        if isinstance(value, dict) and "mixed" in value:
+            conf[field] = None
+            notes.append(f"runs recorded different values for {field}")
+            continue
+        if (value is not None and planned is not None and value != planned
+                and not (field == "executor" and value == "stand-in-executor")):
+            notes.append(f"{field} was planned as {planned!r} and recorded as {value!r}")
+        conf[field] = value
+    return conf, notes
 
 
 def _dimensions(trial: dict[str, Any]) -> dict[str, Any]:

@@ -2,7 +2,9 @@
 """Qualify a worker configuration through Proofbound's own path, and compare what was retained.
 
     suite                          describe the cases, their identities and what each establishes
-    plan    --worker-profile P ... freeze a bounded plan (replay or live) before anything runs
+    plan    --worker-profile P ... freeze a bounded plan (replay, live proposal, or live)
+    authorize --proposal D --owner-authorization '…' --into D2
+                                   the owner's own statement turns a proposal into a live plan
     replay  --plan D --into R      run a replay plan with stand-ins, through the production path
     prepare-live --plan D --into R start and authorize a live plan's runs; launches nothing
     grade   --live R               grade a live plan's runs after its coordinator has driven them
@@ -41,18 +43,38 @@ def do_plan(args) -> int:
     plan = _qualify.build_plan(
         profile=args.worker_profile, mode=args.mode, cases=args.case or None,
         coordinator=args.coordinator, owner_authorization=args.owner_authorization,
-        launch_ceiling=args.launch_ceiling, deadline_seconds=args.deadline_seconds,
-        aggregate_limit=args.aggregate_limit, reserve=args.reserve,
+        proposal=args.proposal, per_launch_allowance=args.per_launch_allowance,
+        deadline_seconds=args.deadline_seconds,
         executor=str(args.executor) if args.executor else None)
     into.mkdir(parents=True)
     _qualify._write_json(into / "plan.json", plan)
-    return emit({"plan": str(into / "plan.json"), "digest": plan["digest"], "mode": plan["mode"],
-                 "trials": plan["allocation"]["order"],
-                 "worker_profile": plan["worker_profile"]["settings"]["profile"]["id"],
-                 "next": (f"python3 {HERE / 'pb_qualify.py'} replay --plan {into} --into <result>"
-                          if plan["mode"] == _qualify.REPLAY else
-                          f"python3 {HERE / 'pb_qualify.py'} prepare-live --plan {into} "
-                          "--into <runs>")})
+    return emit(_plan_view(plan, into))
+
+
+def _plan_view(plan, where) -> dict:
+    nxt = {_qualify.REPLAY: f"python3 {HERE / 'pb_qualify.py'} replay --plan {where} --into <result>",
+           _qualify.PROPOSED: f"NOT AUTHORIZED. After the owner's decision: python3 "
+                              f"{HERE / 'pb_qualify.py'} authorize --proposal {where} "
+                              "--owner-authorization '<the owner's actual statement>' --into <plan>",
+           _qualify.AUTHORIZED: f"python3 {HERE / 'pb_qualify.py'} prepare-live --plan {where} "
+                                "--into <runs>"}
+    return {"plan": str(where / "plan.json"), "digest": plan["digest"], "mode": plan["mode"],
+            "status": plan["status"], "trials": plan["allocation"]["order"],
+            "worker_profile": plan["worker_profile"]["settings"]["profile"]["id"],
+            "allocation": {c: {k: v for k, v in a.items() if k in ("ceiling", "minimum",
+                                                                     "aggregate_limit", "reserve")}
+                           for c, a in plan["resources"]["per_case"].items()},
+            "campaign": plan["resources"]["campaign"], "next": nxt[plan["status"]]}
+
+
+def do_authorize(args) -> int:
+    proposal = _qualify.load_plan(args.proposal)
+    if args.into.exists():
+        raise _qualify.QualificationError(f"{args.into} exists; a plan is never overwritten")
+    plan = _qualify.authorize_proposal(proposal, args.owner_authorization)
+    args.into.mkdir(parents=True)
+    _qualify._write_json(args.into / "plan.json", plan)
+    return emit(_plan_view(plan, args.into))
 
 
 def do_prepare_live(args) -> int:
@@ -80,7 +102,9 @@ def do_prepare_live(args) -> int:
         started = _qualify.start_trial(plan, trial, work,
                                        profile_selector=plan["worker_profile"]["selector"],
                                        executor=executor)
-        _qualify.authorize(plan, started["run"])
+        # What `start` froze must be what the plan froze, before anything is authorized.
+        _qualify.assert_run_matches(plan, started["run"], executor_sha=plan["executor"]["sha256"])
+        _qualify.authorize(plan, started["run"], trial["case"])
         prepared.append({**trial, "run": str(started["run"]), "project": str(started["project"]),
                          "stops": _qualify.CASES[trial["case"]]["stops"]})
     _qualify._write_json(args.into / "live.json", {"plan_digest": plan["digest"],
@@ -97,6 +121,7 @@ def do_grade(args) -> int:
     live = json.loads((args.live / "live.json").read_text(encoding="utf-8"))
     if live["plan_digest"] != plan["digest"]:
         raise _qualify.QualificationError("these runs were prepared under a different plan")
+    _qualify.assert_gradeable(plan)
     results = []
     for trial in live["trials"]:
         evidence = args.live / "trials" / trial["trial_id"] / "evidence"
@@ -112,12 +137,18 @@ def do_grade(args) -> int:
             continue
         retained = _qualify.retain(Path(trial["run"]), Path(trial["project"]), evidence, plan,
                                    spec)
-        results.append({**common, "status": "completed",
+        status, why = _qualify.trial_status(evidence, trial["case"])
+        results.append({**common, "status": status, "reason": why,
                         "evidence_dir": f"trials/{trial['trial_id']}/evidence",
-                        "evidence": retained, "outcome": _qualify.grade(evidence, spec)})
+                        "evidence": retained, "outcome": _qualify.grade(evidence, spec),
+                        "observed": _qualify.observed(evidence)})
     record = {"format": _qualify.RESULT_FORMAT, "plan": plan, "plan_digest": plan["digest"],
               "started_at": None, "finished_at": _qualify._now(),
-              "configuration": _qualify.configuration(plan),
+              "configuration": _qualify.configuration(plan), "configuration_basis": "planned",
+              "observed_configuration": _qualify.observed_configuration(results),
+              "graded_under": {"suite": _qualify.suite()["digest"],
+                               "control_plane": _qualify.control_plane_digest(),
+                               "interpreter": _qualify.interpreter()},
               "selection": {"planned_trials": [t["trial_id"] for t in live["trials"]],
                             "executed": [t["trial_id"] for t in live["trials"]],
                             "not_selected": []},
@@ -140,12 +171,20 @@ def main() -> int:
     p.add_argument("--into", type=Path, required=True)
     p.add_argument("--case", action="append", choices=sorted(_qualify.CASES))
     p.add_argument("--coordinator", help="the coordinator configuration that will drive a live plan")
-    p.add_argument("--owner-authorization", help="required for a live plan")
-    p.add_argument("--launch-ceiling", type=int, default=12, help="per trial run")
-    p.add_argument("--deadline-seconds", type=int, default=300, help="per attempt")
-    p.add_argument("--aggregate-limit", type=float, help="billed workers, per trial run")
-    p.add_argument("--reserve", type=float, help="billed workers, per trial run")
+    p.add_argument("--owner-authorization", help="the owner's own statement; makes a live plan "
+                                                 "executable")
+    p.add_argument("--proposal", action="store_true",
+                   help="freeze a live plan without authorization; it cannot be executed")
+    p.add_argument("--per-launch-allowance", type=float,
+                   help="billed workers: derived-spend allowance per launch; each trial's limit is "
+                        "its enumerated launch ceiling times this")
+    p.add_argument("--deadline-seconds", type=int, help="per attempt (default: 900 live, 300 "
+                                                        "replay)")
     p.add_argument("--executor", type=Path, help="the pinned executor a live plan will use")
+    au = sub.add_parser("authorize", help="authorize a retained proposal with the owner's statement")
+    au.add_argument("--proposal", type=Path, required=True)
+    au.add_argument("--owner-authorization", required=True)
+    au.add_argument("--into", type=Path, required=True)
     r = sub.add_parser("replay", help="execute a replay plan with stand-ins")
     r.add_argument("--plan", type=Path, required=True)
     r.add_argument("--into", type=Path, required=True)
@@ -168,6 +207,8 @@ def main() -> int:
             return emit(_qualify.suite())
         if args.command == "plan":
             return do_plan(args)
+        if args.command == "authorize":
+            return do_authorize(args)
         if args.command == "replay":
             record = _qualify.replay(args.plan, args.into, only=args.only)
             return emit({"result": str(args.into), "denominators": record["denominators"],
