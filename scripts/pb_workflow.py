@@ -690,6 +690,128 @@ def finish(args):
     return {"delivery": str(out), "outcome": args.outcome, "patch": str(out / patch_name), "retained_run": str(run), "cleanup": "explicit only; contains private project data"}
 
 
+def verify_delivery(args):
+    """Apply a sealed delivery to a fresh checkout of its recorded baseline and rerun its checks.
+
+    Reads only the delivery directory — it works after the delivery is copied elsewhere — plus a
+    repository holding the baseline commit, which defaults to the project the run recorded. It
+    never touches that project or the run: everything happens in a new directory, and the
+    result is written there. A file that no longer matches the manifest is reported, and the patch
+    is not applied from a delivery that changed.
+    """
+    delivery = args.delivery.resolve()
+    into = args.into.resolve()
+    if into.exists(): raise ValueError(f"{into} exists; verification never overwrites")
+    manifest = read(delivery / "manifest.json")
+    altered = sorted(rel for rel, sha in manifest.items()
+                     if not (delivery / rel).is_file() or digest(delivery / rel) != sha)
+    unlisted = sorted(str(p.relative_to(delivery)) for p in delivery.rglob("*")
+                      if p.is_file() and p.name != "manifest.json"
+                      and str(p.relative_to(delivery)) not in manifest)
+    handoff = read(delivery / "handoff.json")
+    config = read(delivery / "evidence" / "run-config.json")
+    patch = next((delivery / name for name in ("change.patch", "unaccepted.patch")
+                  if (delivery / name).is_file()), None)
+    result = {"delivery": str(delivery), "outcome_recorded": handoff.get("outcome"),
+              "baseline": handoff.get("baseline"), "manifest_altered": altered,
+              "manifest_unlisted": unlisted,
+              "patch": {"path": str(patch) if patch else None,
+                        "sha256": digest(patch) if patch else None}}
+    result["accounting"] = _recompute_accounting(delivery)
+    into.mkdir(parents=True)
+    if altered or patch is None:
+        result["applied"] = False
+        result["verified"] = False
+        result["why"] = ("the delivery no longer matches its manifest" if altered else
+                         "the delivery holds no patch")
+        atomic_json(into / "verification.json", result)
+        return result
+    source = Path(args.repo).resolve() if args.repo else Path(config["paths"]["project"])
+    checkout = into / "checkout"
+    clone = subprocess.run(["git", "clone", "--quiet", "--no-hardlinks", "--no-checkout",
+                            str(source), str(checkout)], capture_output=True, text=True)
+    steps = [clone]
+    if clone.returncode == 0:
+        steps.append(subprocess.run(["git", "-C", str(checkout), "checkout", "--quiet",
+                                     "--detach", handoff["baseline"]],
+                                    capture_output=True, text=True))
+    if all(step.returncode == 0 for step in steps):
+        steps.append(subprocess.run(["git", "-C", str(checkout), "apply", "--binary",
+                                     str(patch)], capture_output=True, text=True))
+    applied = all(step.returncode == 0 for step in steps)
+    result.update(repository=str(source), checkout=str(checkout), applied=applied,
+                  apply_error=None if applied else (steps[-1].stderr or steps[-1].stdout)[-2000:])
+    result["project_check"] = {"passed": None, "note": "not run: the patch did not apply"}
+    if applied:
+        result["project_check"] = _bounded(shlex.split(config["check_command"]), checkout,
+                                           config.get("check_timeout_seconds",
+                                                      CHECK_TIMEOUT_SECONDS))
+        result["project_check"]["command"] = config["check_command"]
+        if args.outcome_check:
+            argv = [part.replace("{checkout}", str(checkout))
+                    for part in shlex.split(args.outcome_check)]
+            result["outcome_check"] = {**_bounded(argv, into, CHECK_TIMEOUT_SECONDS),
+                                       "command": args.outcome_check}
+    result["verified"] = bool(applied and result["project_check"]["passed"]
+                              and (result.get("outcome_check") or {"passed": True})["passed"])
+    atomic_json(into / "verification.json", result)
+    return result
+
+
+def _recompute_accounting(delivery):
+    """Usage totals and derived cost re-derived from the delivery's retained per-call rows.
+
+    Compared with the figures `finish` recorded. A disagreement is reported, never repaired; a
+    delivery that predates a recorded billing basis says so rather than being priced by guess.
+    """
+    from _usage_events import usage_from_rows
+    import _worker_pricing
+    try:
+        usage = read(delivery / "usage.json")
+        events = read(delivery / "usage-events.json")
+    except (OSError, ValueError) as exc:
+        return {"available": False, "why": f"retained accounting unreadable: {exc}"}
+    rows = events.get("rows") or []
+    recorded = usage.get("usage") or {}
+    recomputed = usage_from_rows(rows)
+    keys = ("calls_started", "calls_finished", "input", "output", "reasoning", "cache_read",
+            "cache_write")
+    out = {"available": True, "rows": len(rows), "anomalies": len(events.get("anomalies") or []),
+           "usage_recomputes": (all(recomputed.get(k) == recorded.get(k) for k in keys)
+                                if recorded else None),
+           "complete_as_recorded": usage.get("complete"), "derived_recorded": usage.get("derived")}
+    billing = usage.get("billing") or {}
+    table = _worker_pricing.TABLES.get(billing.get("table"))
+    if billing.get("basis") != profiles.PRICED or table is None:
+        out["derived_recomputes"] = None
+        out["why"] = ("no external API billing: no price to recompute"
+                      if billing.get("basis") == profiles.NO_EXTERNAL_BILLING else
+                      "the delivery records no billing basis to recompute against")
+        return out
+    priced = _worker_pricing.cost_rows(rows, model=billing["price_model"], table=table)
+    amount = priced.get("amount")
+    out["derived_recomputed"] = round(amount, 6) if isinstance(amount, (int, float)) else None
+    out["derived_recomputes"] = (None if out["derived_recorded"] is None
+                                 or out["derived_recomputed"] is None
+                                 else abs(out["derived_recomputed"] - out["derived_recorded"])
+                                 < 1e-6)
+    out["table"] = table["id"]
+    out["claim"] = "derived from retained usage at a dated table; not provider-confirmed billing"
+    return out
+
+
+def _bounded(argv, cwd, timeout):
+    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
+    try:
+        cp = subprocess.run(argv, cwd=cwd, capture_output=True, text=True, timeout=timeout,
+                            env=env)
+    except subprocess.TimeoutExpired:
+        return {"returncode": None, "passed": None,
+                "note": f"did not finish within {timeout}s; unknown, not failed"}
+    return {"returncode": cp.returncode, "passed": cp.returncode == 0,
+            "stdout": cp.stdout[-4000:], "stderr": cp.stderr[-4000:]}
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="command", required=True)
@@ -709,6 +831,13 @@ def main():
                     help="built-in profile name or path to a profile file; fixed for the run")
     st.add_argument("--deadline-seconds", type=int, default=900,
                     help="per-attempt worker deadline; fixed for the run")
+    vd = sub.add_parser("verify-delivery", help="apply a sealed delivery to a fresh checkout of "
+                        "its baseline and rerun the checks; touches neither project nor run")
+    vd.add_argument("--delivery", type=Path, required=True)
+    vd.add_argument("--into", type=Path, required=True, help="a new directory for the checkout")
+    vd.add_argument("--repo", type=Path, help="a repository holding the baseline commit "
+                    "(default: the project the run recorded)")
+    vd.add_argument("--outcome-check", help="an extra check argv; {checkout} is replaced")
     co = sub.add_parser("coordinator"); co.add_argument("--run", type=Path, required=True)
     co.add_argument("--requested", required=True, help="the coordinator configuration you selected")
     co.add_argument("--self-reported", default=None, help="what the coordinating agent says it is")
@@ -732,6 +861,7 @@ def main():
     try:
         if args.command == "doctor": result = doctor(args)
         elif args.command == "profile": result = show_profile(args)
+        elif args.command == "verify-delivery": result = verify_delivery(args)
         elif args.command == "start": result = start(args)
         elif args.command == "coordinator": result = coordinator(args)
         elif args.command == "status": result = status(args.run.resolve())

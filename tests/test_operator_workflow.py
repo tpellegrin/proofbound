@@ -282,6 +282,46 @@ class OperatorWorkflow(unittest.TestCase):
         again=self.action('finish','--report',report,'--report-source','relayed',ok=False)
         self.assertIn('already has a sealed delivery',again['error'])
 
+    def test_a_sealed_delivery_applies_to_a_fresh_baseline_checkout_after_relocation(self):
+        """The delivery alone, copied elsewhere, is enough to rebuild and recheck the change."""
+        self.reach('implementation')
+        self.action('decide','--decision','accept','--reason','TEST ONLY scripted acceptance')
+        report=self.tmp/'final.md'; report.write_text('Stand-in mechanics; not real-agent evidence.')
+        delivery=Path(self.action('finish','--report',report)['delivery'])
+        moved=self.tmp/'moved delivery'; shutil.copytree(delivery,moved)
+        before=subprocess.check_output(['git','-C',str(self.project),'status','--porcelain','--untracked-files=all'],text=True)
+        got=self.cli('verify-delivery','--delivery',moved,'--into',self.tmp/'fresh',
+                     '--outcome-check',f'{sys.executable} -c "import sys, pathlib; '
+                     'sys.exit(not pathlib.Path(sys.argv[1], \'greeting.py\').is_file())" {checkout}')
+        self.assertTrue(got['applied'],got); self.assertTrue(got['verified'],got)
+        self.assertEqual(got['manifest_altered'],[])
+        # Re-derived from retained rows, checked against a hand computation rather than the
+        # module that produced it: every stand-in call records 10 input and 5 output tokens.
+        acct=got['accounting']; events=json.loads((moved/'usage-events.json').read_text())['rows']
+        finished=[r for r in events if r['type']=='step-finish']
+        def rate(stamp):
+            from datetime import datetime, timezone
+            t=datetime.fromtimestamp(stamp/1000,timezone.utc); h=t.hour+t.minute/60
+            peak=t.weekday()<5 and (1<=h<4 or 6<=h<10)
+            return (0.30,1.2) if peak else (0.15,0.6)
+        by_band={}
+        for r in finished:
+            band=rate(r['time_created']); by_band[band]=by_band.get(band,0)+1
+        expected=round(sum(n*(10*i+5*o)/1e6 for (i,o),n in by_band.items()),6)
+        self.assertTrue(acct['usage_recomputes']); self.assertTrue(acct['derived_recomputes'])
+        self.assertEqual(acct['derived_recorded'],expected)
+        self.assertEqual(acct['table'],'deepseek-2026-09-23')
+        self.assertTrue(got['project_check']['passed']); self.assertTrue(got['outcome_check']['passed'])
+        self.assertEqual(subprocess.check_output(['git','-C',got['checkout'],'rev-parse','HEAD'],text=True).strip(),
+                         self.config['baseline'],'the patch is applied to the recorded baseline')
+        self.assertEqual(subprocess.check_output(['git','-C',str(self.project),'status','--porcelain','--untracked-files=all'],text=True),
+                         before,'verification touches neither the project nor its run')
+        (moved/'change.patch').write_bytes((moved/'change.patch').read_bytes()+b'\n')
+        tampered=self.cli('verify-delivery','--delivery',moved,'--into',self.tmp/'fresh2')
+        self.assertEqual(tampered['manifest_altered'],['change.patch'])
+        self.assertFalse(tampered['applied']); self.assertFalse(tampered['verified'])
+        self.assertFalse((self.tmp/'fresh2'/'checkout').exists())
+
     def test_acceptance_check_does_not_invalidate_the_review_it_checks(self):
         """An ordinary Python project that does not gitignore bytecode could not be accepted.
 
