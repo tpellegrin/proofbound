@@ -135,3 +135,9 @@ answers, and any with material user-visible consequences goes back to the owner.
   - **No headless or additional coordinator sessions.**
 - **Unavailable:** provider billing, the served model's identity, this session's usage, and owner
   effort.
+
+**Proofbound tests.** The canonical suite ran once, serially, on Python 3.10.14, macOS arm64, at
+clean commit `275a963`: **1,444 tests, OK, none skipped**, in 1,286 s. That code includes the
+attachment-race fix and the status corrections. An earlier run at `3c462ae` failed one test: a
+support-matrix guard still required every coordinator row to say **no**. The guard now requires a
+dated evidence record behind any live claim.
