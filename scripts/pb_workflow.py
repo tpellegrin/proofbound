@@ -455,8 +455,32 @@ def pending_owner(run, gate):
     return latest
 
 
+def supervision(run):
+    """A launch supervisor's state, before anything else: while one runs, nothing else may start."""
+    import _supervision
+    record = _supervision.read_active(run)
+    if record is None:
+        return None
+    state = _supervision.alive(record) if "unreadable" not in record else False
+    if state is True:
+        return {"action": "running", "reason": "a supervised launch is in progress",
+                "supervisor": {k: record.get(k) for k in ("mode", "pid", "stage", "slot",
+                                                          "created_at", "host_deadline_at")},
+                "next": command(run, "continue") + "  # waits for it; launches nothing new"}
+    return {"action": "blocked",
+            "reason": "the run's launch supervisor is " + ("not running" if state is False else
+                                                           "unverifiable")
+                      + " and its launch was not finalized; inspect with recover",
+            "next": command(run, "recover")}
+
+
 def status(run):
+    supervised = supervision(run)
+    if supervised is not None:
+        return supervised
     result = _status(run)
+    if result.get("action") == "blocked" and "no terminal record" in str(result.get("reason")):
+        result["next"] = command(run, "recover") + "  # read-only: what the attempt left"
     if result["action"] == "launch":
         c = config_for(run)
         ledger = ledger_for(run, c)
@@ -464,12 +488,25 @@ def status(run):
                                run_root=run, db=c["paths"]["session_db"])
         if not verdict["admit"]:
             return {**result, "action": "blocked", "blocked_action": "launch", "reason": verdict["why"],
-                    "next": "Supply explicit owner spending authority if none exists; otherwise reconcile retained launch/usage evidence. Never automatically buy another trajectory.",
+                    "next": ("Run " + command(run, "recover") + " to reconcile an interrupted launch from retained evidence"
+                             if ledger.unresolved() else
+                             "Supply explicit owner spending authority if none exists; otherwise reconcile retained launch/usage evidence. Never automatically buy another trajectory."),
                     "accounting": verdict["spend"]}
     return result
 
 
 def continue_run(run):
+    supervised = supervision(run)
+    if supervised is not None:
+        if supervised["action"] != "running":
+            return supervised
+        # Wait for the launch already in progress; start nothing.
+        import _supervision
+        record = _supervision.read_active(run)
+        result = _supervision.wait(run, record)
+        return {"launch": {**result, "supervisor": {"token": record["token"], "pid": record["pid"],
+                                                    "mode": record["mode"], "attached": True}},
+                "next": command(run, "status")}
     c = config_for(run); s = _status(run); p = c["paths"]
     action = s["action"]
     if action in {"blocked", "adjudicate", "finish"}: return s
@@ -846,6 +883,10 @@ def main():
     co.add_argument("--requested", required=True, help="the coordinator configuration you selected")
     co.add_argument("--self-reported", default=None, help="what the coordinating agent says it is")
     co.add_argument("--observed", default=None, help="runtime metadata the host actually exposes")
+    rc = sub.add_parser("recover", help="diagnose an interrupted launch from retained evidence; with "
+                        "--apply, resume its supervision or classify it. Never launches or accepts")
+    rc.add_argument("--run", type=Path, required=True)
+    rc.add_argument("--apply", action="store_true", help="make the one change the diagnosis names")
     for name in ("status", "continue", "admit", "decide", "finish", "revise", "resolve-owner", "authorize-spending", "authorize-resources"):
         p = sub.add_parser(name); p.add_argument("--run", type=Path, required=True)
         if name == "decide":
@@ -870,6 +911,10 @@ def main():
         elif args.command == "coordinator": result = coordinator(args)
         elif args.command == "status": result = status(args.run.resolve())
         elif args.command == "continue": result = continue_run(args.run.resolve())
+        elif args.command == "recover":
+            import _supervision
+            run = args.run.resolve(); config_for(run)
+            result = _supervision.recover(run, apply=args.apply)
         elif args.command == "admit":
             run = args.run.resolve(); c = config_for(run)
             path = contract(c, "implementation")

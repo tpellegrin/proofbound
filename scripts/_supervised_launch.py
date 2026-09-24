@@ -132,27 +132,38 @@ class AttemptWatch:
                         "limit": round(self.spend_room, 6)}
         return None
 
+def _ledger(workdir: Path, config: "dict[str, Any]", settings: "dict[str, Any]") -> LaunchLedger:
+    return LaunchLedger(workdir / "launch-ledger.json",
+                        limit=config["policy"]["aggregate_limit"],
+                        reserve=config["policy"]["reserve"],
+                        ceiling=config["policy"]["launch_ceiling"],
+                        repair_cycles=config["policy"].get("repair_cycles", 1),
+                        billing=settings["billing"],
+                        output_token_allowance=settings["resources"]["output_token_allowance"])
+
+
 def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
-           inputs: "list[str] | None" = None) -> "dict[str, Any]":
+           inputs: "list[str] | None" = None, progress=None) -> "dict[str, Any]":
     """The supervised path to the configured worker executor.
 
     Admit, reserve the slot durably, run the shipped launcher, then classify from evidence. A
-    refusal returns without launching anything and says which rule refused.
+    refusal returns without launching anything and says which rule refused. `progress` receives
+    the stage reached and what a recovery would need to resume supervision (`_supervision`).
     """
     from _worker_profiles import of
+    import time
+    from datetime import datetime, timedelta, timezone
     workdir = Path(workdir).expanduser().resolve()
     config = json.loads((workdir / "run-config.json").read_text())
     settings = of(config)
     local = settings["network"]["mode"] == "loopback-only"
     run_root = Path(config["paths"]["run_root"])
     db = Path(config["paths"]["session_db"])
-    ledger = LaunchLedger(workdir / "launch-ledger.json",
-                          limit=config["policy"]["aggregate_limit"],
-                          reserve=config["policy"]["reserve"],
-                          ceiling=config["policy"]["launch_ceiling"],
-                          repair_cycles=config["policy"].get("repair_cycles", 1),
-                          billing=settings["billing"],
-                          output_token_allowance=settings["resources"]["output_token_allowance"])
+    ledger = _ledger(workdir, config, settings)
+
+    def note(**fields):
+        if progress is not None:
+            progress(fields)
 
     verdict = ledger.admit(phase=phase, task=task, role=role, run_root=run_root, db=db)
     if not verdict["admit"]:
@@ -236,8 +247,10 @@ def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
     if config.get("boundary_profile"):
         argv = ["/usr/bin/sandbox-exec", "-f", config["boundary_profile"], *argv]
     before = {str(p.parent) for p in run_root.rglob("launch-reservation.json")}
+    note(stage="admitted")
     slot = ledger.reserve(phase=phase, task=task, role=role,
                           note=f"{config['mode']} launch of {role} on {phase}/{task}")
+    note(stage="reserved", slot=slot["slot"], reserved_at=slot["reserved_at"])
 
     # The worker's deadline is enforced *inside* the boundary, where the profile denies `signal`,
     # so the in-boundary monitor cannot stop what it is monitoring. The host controller therefore
@@ -254,18 +267,24 @@ def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
     timed_out = False
     contained = None
     containment = settings["resources"].get("attempt_containment")
+    watch = AttemptWatch(
+        db, containment=containment,
+        spend_room=(config["policy"]["aggregate_limit"] - verdict["derived"]
+                    if containment.get("derived_spend_during_attempt")
+                    and isinstance(verdict.get("derived"), (int, float)) else None),
+        table=_table(settings), price_model=settings["billing"].get("price_model")) \
+        if containment else None
+    # Wall clock, recorded so a recovery can hold the same bound if this supervisor is lost.
+    note(stage="running", host_deadline_at=(datetime.now(timezone.utc)
+                                             + timedelta(seconds=outer)).isoformat(),
+         watch=({"baseline": watch.baseline, "spend_room": watch.spend_room} if watch else None))
     try:
         if not containment:
             # Runs recorded without containment keep exactly the behaviour they were started with.
             done = subprocess.run(argv, env=env, capture_output=True, text=True, check=False,
                                   timeout=outer)
         else:
-            done, timed_out, contained = _watched(argv, env, outer, AttemptWatch(
-                db, containment=containment,
-                spend_room=(config["policy"]["aggregate_limit"] - verdict["derived"]
-                            if containment.get("derived_spend_during_attempt")
-                            and isinstance(verdict.get("derived"), (int, float)) else None),
-                table=_table(settings), price_model=settings["billing"].get("price_model")))
+            done, timed_out, contained = _watched(argv, env, outer, watch)
             if timed_out or contained:
                 termination = stop_attempt(runtime_root, run_root, grace=grace)
     except subprocess.TimeoutExpired as expired:
@@ -305,25 +324,27 @@ def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
         elif new:
             return {"launched": True, "admitted": True, "unresolved": True,
                     "reason": "multiple new reservations; preserve and reconcile before resuming"}
+    note(stage="finalizing", event_dir=event_dir)
     classified = ledger.classify(slot["slot"], run_root=run_root, event_dir=event_dir,
                                  launcher_returncode=done.returncode,
                                  launcher_output=(done.stdout + done.stderr).strip())
     if startup and event_dir and Path(event_dir).is_dir():
-        # Private, beside worker.log: what the executor started from and left behind, and what the
-        # host found running afterwards. Names, modes, times and digests; no contents.
-        from dsd_state import atomic_json
-        atomic_json(Path(event_dir) / "executor-state.json", {
-            "format": "proofbound-executor-state-v1", "policy": startup,
-            "before": started_from,
-            "after": _executor_startup.observe(config["home"], config["paths"]["project"]),
-            "launcher_returncode": done.returncode,
-            "host_sweep": termination if termination is not None else swept,
-            "executor_log": "worker.log, through OPENCODE_PRINT_LOGS"})
+        _record_state(Path(event_dir), settings, config, before=started_from,
+                      launcher_returncode=done.returncode,
+                      sweep=termination if termination is not None else swept)
     result = {"launched": True, "admitted": True, "slot": classified,
               "returncode": done.returncode, "event_dir": event_dir,
               "status": (payload or {}).get("status"),
               "stderr": done.stderr.strip()[-800:] if done.returncode else "",
               "ledger": ledger.describe()}
+    return _conclude(result, run_root=run_root, phase=phase, task=task, role=role, local=local,
+                     settings=settings, deadline=deadline, outer=outer, grace=grace,
+                     timed_out=timed_out, contained=contained, termination=termination)
+
+
+def _conclude(result, *, run_root, phase, task, role, local, settings, deadline, outer, grace,
+              timed_out, contained, termination):
+    """What every finalized attempt reports about its deadline, containment and teardown."""
     if timed_out:
         result["deadline"] = {
             "worker_seconds": deadline, "host_bound_seconds": outer, "expired": True,
@@ -363,6 +384,21 @@ def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
     return result
 
 
+def _record_state(event_dir: Path, settings, config, *, before, launcher_returncode, sweep):
+    """Private, beside worker.log: what the executor started from and left behind, and what the
+    host found running afterwards. Names, modes, times and digests; no contents."""
+    import _executor_startup
+    from dsd_state import atomic_json
+    atomic_json(Path(event_dir) / "executor-state.json", {
+        "format": "proofbound-executor-state-v1", "policy": settings["executor"].get("startup"),
+        "before": (before if before is not None
+                   else "not observed: the launching supervisor was lost"),
+        "after": _executor_startup.observe(config["home"], config["paths"]["project"]),
+        "launcher_returncode": launcher_returncode,
+        "host_sweep": sweep,
+        "executor_log": "worker.log, through OPENCODE_PRINT_LOGS"})
+
+
 
 def _table(settings):
     import _worker_pricing
@@ -400,11 +436,150 @@ def _watched(argv, env, outer, watch):
 
 
 def launch(workdir, *, phase, task, role, inputs=None):
-    import fcntl
-    path = Path(workdir) / ".launch.lock"
-    with path.open("a") as lock:
+    """Run one supervised launch in a run-owned supervisor and wait for it (`_supervision`).
+
+    The caller only waits. If it exits, the supervisor finishes the launch; a later `continue` waits
+    for that same supervisor rather than launching again.
+    """
+    import _supervision
+    return _supervision.launch(Path(workdir), {"phase": phase, "task": task, "role": role,
+                                               "inputs": [str(p) for p in inputs or []]})
+
+
+def _baseline_before(db: Path, iso: str) -> int:
+    """The last session part written before `iso`: where an adopted attempt's own parts begin."""
+    import sqlite3
+    from datetime import datetime
+    try:
+        ms = int(datetime.fromisoformat(iso).timestamp() * 1000)
+        conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=1)
         try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            raise ValueError("another supervised launch owns this run; inspect status")
-        return _launch(workdir, phase=phase, task=task, role=role, inputs=inputs)
+            row = conn.execute("select coalesce(max(p.rowid), 0) from part p join message m "
+                               "on m.id = p.message_id where m.time_created < ?", (ms,)).fetchone()
+        finally:
+            conn.close()
+        return int(row[0])
+    except (ValueError, TypeError, sqlite3.Error):
+        return 0
+
+
+def _adopt(workdir: "str | Path", adopt: "dict[str, Any]", *, progress=None) -> "dict[str, Any]":
+    """Resume host supervision of an attempt whose supervisor was lost, then finalize it.
+
+    The same controls as a launch: containment from the lost supervisor's recorded baseline and
+    spend room, or re-derived from the attempt's start; the host deadline it recorded, or else the
+    attempt's start plus the run's deadline and margin, else the reservation's; teardown; the
+    post-exit sweep; classification from evidence. It never launches and never retries.
+
+    The deadline here is wall clock, since the lost supervisor's monotonic clock is gone. A host
+    suspend therefore counts against it.
+    """
+    from _worker_profiles import of
+    from _attempt_teardown import _owned_processes
+    from _launch_budget import spend
+    import time
+    from datetime import datetime, timedelta, timezone
+    workdir = Path(workdir).expanduser().resolve()
+    config = json.loads((workdir / "run-config.json").read_text())
+    settings = of(config)
+    local = settings["network"]["mode"] == "loopback-only"
+    run_root = Path(config["paths"]["run_root"])
+    db = Path(config["paths"]["session_db"])
+    runtime_root = Path(config["home"]).parent
+    ledger = _ledger(workdir, config, settings)
+    deadline = config["deadline"]["seconds"]
+    margin = config["deadline"].get("host_margin_seconds", TEARDOWN_MARGIN_SECONDS)
+    grace = config["deadline"].get("teardown_grace_seconds", TEARDOWN_GRACE_SECONDS)
+    outer = deadline + margin
+    since = adopt.get("started_at") or adopt["reserved_at"]
+    deadline_at = adopt.get("host_deadline_at") or (
+        datetime.fromisoformat(since) + timedelta(seconds=outer)).isoformat()
+    slot = next(s for s in ledger.slots if s["slot"] == adopt["slot"])
+    containment = settings["resources"].get("attempt_containment")
+    watch = None
+    if containment:
+        recorded = adopt.get("watch") or {}
+        room = recorded.get("spend_room")
+        if not recorded and containment.get("derived_spend_during_attempt"):
+            before = spend(run_root, db, event_dirs=ledger.own_event_dirs(),
+                           limit=config["policy"]["aggregate_limit"],
+                           reserve=config["policy"]["reserve"], billing=settings["billing"])
+            if isinstance(before.get("derived"), (int, float)) and before.get("complete"):
+                room = config["policy"]["aggregate_limit"] - before["derived"]
+        watch = AttemptWatch(db, containment=containment, spend_room=room, table=_table(settings),
+                             price_model=settings["billing"].get("price_model"))
+        watch.baseline = (recorded["baseline"] if recorded.get("baseline") is not None
+                          else _baseline_before(db, since))
+    event_dir = adopt.get("event_dir")
+    if progress is not None:
+        progress({"stage": "running", "slot": slot["slot"], "event_dir": event_dir,
+                  "host_deadline_at": deadline_at,
+                  "watch": ({"baseline": watch.baseline, "spend_room": watch.spend_room}
+                            if watch else None)})
+    claimed = {str(Path(s["event_dir"]).resolve()) for s in ledger.slots if s.get("event_dir")}
+    termination, timed_out, contained = None, False, None
+    ends = datetime.fromisoformat(deadline_at)
+    while True:
+        if event_dir is None:
+            # The launcher can still create the reservation after its supervisor was lost.
+            new = [p.parent for p in run_root.rglob("launch-reservation.json")
+                   if str(p.parent.resolve()) not in claimed]
+            event_dir = str(new[0]) if len(new) == 1 else None
+        recorded_pids = []
+        if event_dir and (Path(event_dir) / "attempt.json").is_file():
+            try:
+                data = json.loads((Path(event_dir) / "attempt.json").read_text())
+                recorded_pids = [data[k] for k in ("worker_pid", "launcher_pid")
+                                 if isinstance(data.get(k), int)]
+            except ValueError:
+                pass
+        owned = _owned_processes(runtime_root, recorded_pids)
+        if not owned["table_unavailable"] and not owned["owned"]:
+            break
+        if datetime.now(timezone.utc) >= ends:
+            timed_out = True
+            termination = stop_attempt(runtime_root, run_root, grace=grace)
+            break
+        if watch is not None:
+            contained = watch.check()
+            if contained:
+                termination = stop_attempt(runtime_root, run_root, grace=grace)
+                break
+        time.sleep(WATCH_POLL_SECONDS)
+    swept = None
+    if termination is None:
+        swept = stop_attempt(runtime_root, run_root, grace=grace)
+        if not swept.get("nothing_was_running"):
+            termination = swept
+    if progress is not None:
+        progress({"stage": "finalizing", "event_dir": event_dir})
+    classified = ledger.classify(
+        slot["slot"], run_root=run_root, event_dir=event_dir, launcher_returncode=-1,
+        launcher_output=("not observed: the launching supervisor was lost; a recovery supervisor "
+                         "adopted this attempt, held its controls and finalized it"))
+    if settings["executor"].get("startup") and event_dir and Path(event_dir).is_dir():
+        _record_state(Path(event_dir), settings, config, before=None, launcher_returncode=None,
+                      sweep=termination if termination is not None else swept)
+    terminal = {}
+    if event_dir and (Path(event_dir) / "terminal.json").is_file():
+        try:
+            terminal = json.loads((Path(event_dir) / "terminal.json").read_text())
+        except ValueError:
+            terminal = {}
+    result = {"launched": True, "admitted": True, "adopted": True, "slot": classified,
+              "returncode": None, "event_dir": event_dir, "status": terminal.get("status"),
+              "lost_supervisor": adopt.get("lost_supervisor"), "host_deadline_at": deadline_at,
+              "ledger": ledger.describe()}
+    if not terminal:
+        result["unresolved"] = True
+        result.setdefault("why", []).append("the adopted attempt left no readable terminal record; "
+                                            "its outcome is unknown")
+    receipt(run_root, "supervision adopted", {
+        "slot": slot["slot"], "event_dir": event_dir, "host_deadline_at": deadline_at,
+        "lost_supervisor": adopt.get("lost_supervisor"), "timed_out": timed_out,
+        "contained": contained, "classification": classified["classification"]},
+        phase=slot.get("phase"), task=slot.get("task"), role=slot.get("role"))
+    return _conclude(result, run_root=run_root, phase=slot.get("phase"), task=slot.get("task"),
+                     role=slot.get("role"), local=local, settings=settings, deadline=deadline,
+                     outer=outer, grace=grace, timed_out=timed_out, contained=contained,
+                     termination=termination)
