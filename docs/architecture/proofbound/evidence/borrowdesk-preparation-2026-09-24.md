@@ -1,5 +1,11 @@
 # BorrowDesk maintenance holds: preparation — 2026-09-24
 
+> **Later the same day, by addition.** The owner authorized the unpaid toolchain change. The blocker below
+> is closed by [project-toolchain-2026-09-24.md](project-toolchain-2026-09-24.md), and the draft proposal
+> at the end is superseded by [borrowdesk-proposal-2026-09-24.md](borrowdesk-proposal-2026-09-24.md). Its
+> check command, which installed dependencies when they were missing, is not used. This record is
+> otherwise unchanged.
+
 **Blocked on an owner decision.** The supported worker boundary cannot run BorrowDesk's toolchain.
 A throwaway boundary with two added permissions runs the project's full check, so the smallest
 sufficient change is demonstrated. It is a Proofbound change, and it has not been made. No run was

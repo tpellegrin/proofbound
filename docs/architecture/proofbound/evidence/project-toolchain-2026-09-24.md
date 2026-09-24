@@ -133,6 +133,9 @@ The focused modules that share the changed code ran on the final code, and all p
 - Git policy;
 - toolchain.
 
+**Canonical suite.** `python3 -m unittest discover -s tests -t .` ran once, serially, on Python
+3.10.14, macOS arm64, at clean commit `8e71ff4`: **1,456 tests, OK, none skipped**, in 1,293 s.
+
 ## Limits
 
 - **Node on macOS only**, like the boundary itself. A second toolchain kind would be a separate,
