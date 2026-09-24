@@ -538,6 +538,61 @@ class ReviewedBytes(unittest.TestCase):
         self.assertIn("unavailable", got["first_attempt_source"])
 
 
+class ChallengeExposure(unittest.TestCase):
+    """A review that returns the witness it was shown verifies; it does not discover.
+
+    Reproduced on the suite frozen at `89c4c16`: its findings-format example was the contradictory
+    case's defect and witness, so every goal showed the answer, and the failed trial's author
+    proposal repeated it.
+    """
+
+    def evidence(self, proposal: str, *, goal=None, seen=None):
+        root = Path(tempfile.mkdtemp(prefix="pb-exposure-"))
+        self.addCleanup(shutil.rmtree, root, True)
+        (root / "artifacts").mkdir()
+        (root / "artifacts" / "requirements.md").write_text(proposal)
+        goal = goal if goal is not None else _qualify._goal("requirements-challenge",
+                                                            "contradictory")
+        attempt = root / "run/phases/design/tasks/requirements/attempts/spec-reflector-1"
+        attempt.mkdir(parents=True)
+        sha = lambda text: _qualify._sha(text.encode("utf-8"))
+        (attempt / "scope-baseline.json").write_text(json.dumps({"entries": {
+            "specs/QUAL/requirements.md": {"sha256": seen or sha(proposal)},
+            "specs/QUAL/goal.md": {"sha256": sha(goal)}}}))
+        return root
+
+    def exposure(self, evidence, witness=("a", "a", "b")):
+        graded = _qualify.grade_requirement_findings(
+            [{"requirements": ["R2", "R3"], "witness": list(witness)}],
+            _qualify._model("contradictory"))
+        return _qualify.challenge_exposure(evidence, "requirements-challenge", "contradictory",
+                                           graded)
+
+    def test_no_goal_shows_any_case_answer(self):
+        for case, subject in (("requirements-challenge", "contradictory"),
+                              ("requirements-challenge", "coherent"),
+                              ("dispatch-implementation", "coherent")):
+            goal = _qualify._goal(case, subject)
+            self.assertNotIn('"a", "a", "b"', goal)
+            self.assertNotIn('["R2", "R3"]', goal)
+
+    def test_a_witness_the_proposal_stated_is_verification(self):
+        got = self.exposure(self.evidence('R2 and R3 conflict, witness ["a","a","b"].\n'))
+        self.assertTrue(got["available"])
+        self.assertTrue(got["correct_findings"][0]["shown"])
+        self.assertTrue(got["claim"].startswith("verification"))
+
+    def test_a_witness_nobody_showed_is_found_but_prose_is_not_excluded(self):
+        got = self.exposure(self.evidence("The owner's four requirements, verbatim.\n"))
+        self.assertFalse(got["correct_findings"][0]["shown"])
+        self.assertTrue(got["claim"].startswith("found on the production path"))
+        self.assertIn("described in words", got["claim"])
+
+    def test_unretained_bytes_or_another_goal_are_unavailable(self):
+        self.assertFalse(self.exposure(self.evidence("x\n", seen="0" * 64))["available"])
+        self.assertFalse(self.exposure(self.evidence("x\n", goal="another goal"))["available"])
+
+
 class ObservedIdentity(unittest.TestCase):
     """A planned identity is never reported as an observed one."""
 

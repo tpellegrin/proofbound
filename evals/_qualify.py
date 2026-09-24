@@ -85,10 +85,15 @@ INCOMPLETE = "incomplete"
 
 _FENCED = re.compile(r"```json\s*\n(.*?)\n```", re.S)
 
-FINDINGS_FORMAT = ('a fenced ```json block of the form {"findings": [{"requirements": ["R2", '
-                   '"R3"], "witness": ["a", "a", "b"]}]} — `requirements` names what is broken '
-                   'or cannot hold together, `witness` is an arrival sequence inside the declared '
-                   'domain that demonstrates it. Report {"findings": []} when you find none')
+#: The shape of a finding, and nothing of any case's answer. Until 2026-09-24 its example was
+#: `{"requirements": ["R2", "R3"], "witness": ["a", "a", "b"]}` — the contradictory case's defect
+#: and a valid witness, shown to every author and reviewer of every case. Results recorded under
+#: that suite keep it; they cannot show a reviewer finding what it was not shown.
+FINDINGS_FORMAT = ('a fenced ```json block of the form {"findings": [{"requirements": ["<id>", '
+                   '...], "witness": ["<tenant key>", ...]}]} — `requirements` names, by id (R1, '
+                   'R2, …), what is broken or cannot hold together, `witness` is an arrival '
+                   'sequence inside the declared domain that demonstrates it. Report '
+                   '{"findings": []} when you find none')
 
 
 class QualificationError(ValueError):
@@ -162,7 +167,11 @@ CASES: dict[str, dict[str, Any]] = {
         "stops": "after the coordinator adjudicates the requirements challenge",
         "measures": "worker",
         "withholding": "not required: the defect is derivable from the reviewed document, which is "
-                       "the point",
+                       "the point. Nothing the production path shows the reviewer is hidden: the "
+                       "author's proposal may state a conflict itself. So the case measures the "
+                       "production-path challenge — verify or find — and each grade records, as "
+                       "`exposure`, whether the witness given was already in what the reviewer "
+                       "was shown. Unassisted discovery would need a separately identified setup",
         "replay_variants": {"contradictory": ["found-with-witness", "found-wrong-witness",
                                               "missed"],
                             "coherent": ["clean", "invented"]},
@@ -1307,6 +1316,50 @@ def _attempt_session(evidence: Path, task: str, role: str) -> "str | None":
     return json.loads(terminals[-1].read_text(encoding="utf-8")).get("session_id")
 
 
+def challenge_exposure(evidence: Path, case: str, subject: str,
+                       graded: dict[str, Any]) -> dict[str, Any]:
+    """Whether the challenge had already been shown the witness it gave.
+
+    The reviewer reads the goal and the author's proposal. The proposal is a production input, and
+    an author may itself flag a conflict: a review that returns a witness it was shown verifies a
+    stated finding and does not show unassisted discovery. Checked on the bytes the reviewer's
+    scope baseline records — the retained proposal and the case's regenerated goal — or reported
+    unavailable. A conflict described only in words is not detected here, so "not shown" never
+    means the reviewer was told nothing.
+    """
+    attempts = sorted((evidence / "run" / "phases").glob(
+        "*/tasks/requirements/attempts/spec-reflector-*/scope-baseline.json"))
+    if not attempts:
+        return {"available": False, "why": "no challenge scope baseline was retained"}
+    entries = json.loads(attempts[-1].read_text(encoding="utf-8")).get("entries") or {}
+    seen = {name: (entries.get(f"specs/{CHANGE}/{name}") or {}).get("sha256")
+            for name in ("requirements.md", "goal.md")}
+    proposal = evidence / "artifacts" / "requirements.md"
+    goal = _goal(case, subject).encode("utf-8")
+    if not proposal.is_file() or _file_sha(proposal) != seen["requirements.md"]:
+        return {"available": False, "reviewed": seen,
+                "why": "the proposal this reviewer saw was not retained"}
+    if _sha(goal) != seen["goal.md"]:
+        return {"available": False, "reviewed": seen,
+                "why": "the reviewer's goal is not this suite's goal for the case"}
+    shown = proposal.read_text(encoding="utf-8", errors="replace") + "\n" + goal.decode("utf-8")
+    rows = []
+    for row in graded.get("rows", []):
+        witness = (row.get("finding") or {}).get("witness") if isinstance(
+            row.get("finding"), dict) else None
+        if not row.get("correct") or not isinstance(witness, list) or not witness:
+            continue
+        literal = r"\[\s*" + r"\s*,\s*".join(
+            "[\"']" + re.escape(str(k)) + "[\"']" for k in witness) + r"\s*\]"
+        rows.append({"witness": witness, "shown": re.search(literal, shown) is not None})
+    return {"available": True, "reviewed": seen, "correct_findings": rows,
+            "claim": (None if not rows else
+                      "verification: a witness this review gave was in what it was shown"
+                      if any(r["shown"] for r in rows) else
+                      "found on the production path: no witness it gave was in what it was "
+                      "shown, which does not exclude a conflict described in words")}
+
+
 def _report_text(evidence: Path, task: str, role: str) -> "str | None":
     reports = sorted((evidence / "run" / "phases").glob(f"*/tasks/{task}/attempts/{role}-*/"
                                                         "report.md"))
@@ -1351,6 +1404,7 @@ def grade(evidence: Path, trial: dict[str, Any]) -> dict[str, Any]:
         if findings is None:
             return {**out, "review": "ungradeable", "why": why}
         graded = grade_requirement_findings(findings, _model(subject))
+        out["exposure"] = challenge_exposure(evidence, case, subject, graded)
         if defective:
             review = ("detected-and-substantiated" if graded["substantiated"] else
                       "detected-unsubstantiated" if graded["correct"] else "missed")

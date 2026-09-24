@@ -101,6 +101,13 @@ for a flawed plan is a new plan, never an amended one (`E24.1`).
   reasons, duplicate parts, an unidentified session or contradictory order make the evidence
   `insufficient-evidence`, never a pass. Counting finished rows passed a trial in which nothing
   followed the tool.
+- **A finding the reviewer was shown is verification, not discovery.** The production path shows
+  the reviewer the author's proposal, which may itself state a conflict, and nothing hides it.
+  Each challenge grade records `exposure`: whether a witness the review gave was already in the
+  proposal or goal it saw, checked on the bytes its scope baseline records. A conflict described
+  only in words is not detected, so a witness that was not shown does not mean nothing was shown.
+  No goal carries an answer. The findings-format example used to be the contradictory case's
+  defect and witness; results under that suite cannot show a reviewer finding it.
 - **A review is graded against the bytes it saw.** Each reviewer's scope baseline records the
   sha256 of what it reviewed. Its findings are graded against retained bytes with that digest, or
   reported `unavailable`. After a repair, the second review is not the first review's evidence.
