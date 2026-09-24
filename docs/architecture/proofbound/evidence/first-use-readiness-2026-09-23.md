@@ -126,6 +126,18 @@ copies as attempts.
 - **Canonical suite.** Recorded below by addition, from the clean commit that also freezes the
   live proposal.
 
+**Addition, same day.** The canonical suite, `python3 -m unittest discover -s tests -t .`, ran once,
+serially, on Python 3.10.14, macOS arm64, at clean commit `89c4c16`: **1,409 tests, OK, none
+skipped**, in 18 min 14 s. The real-executor and boundary tests ran, because the pinned build and
+`sandbox-exec` were available. On Linux CI the macOS boundary, teardown and real-executor tests
+skip, and establish nothing about macOS isolation.
+
+The live proposal is retained at `evals/qualification/proposals/2026-09-23-deepseek-v4-flash-high/`.
+Its digest is `5c3b2c553fb43099ffbee87eb45bd21b0464939f00cb9360845c2d528cba93ca`, and it was frozen
+from clean commit `89c4c16`: suite `0dfed3636d0a0180…`, control plane `e68a5ba21912b1bf…`, Python
+3.10.14, executor `2f24593f…d669`, readiness `ready` with no provider request. Its status is
+`proposed-not-authorized`, and `prepare-live` refuses it.
+
 ## What this does not establish
 
 That any model can do the work, that the workflow delivers on a real goal, that containment bounds
