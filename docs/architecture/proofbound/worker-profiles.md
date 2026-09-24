@@ -75,7 +75,8 @@ Neither is reinterpreted later.
 | Revision | Provider facts | Priced as |
 |---|---|---|
 | `2026-09-09` | `deepseek-v4-flash` served DeepSeek-V4-Flash-0731 | `deepseek-v4-flash` at `deepseek-2026-09-09` |
-| `2026-09-23` (current) | since 2026-09-10 V4 Flash is retired; the name is "temporarily routed to V4.1 Flash" and "billed at the Flash price" ([updates](https://api-docs.deepseek.com/updates/)) | `deepseek-flash` at `deepseek-2026-09-23` |
+| `2026-09-23` | since 2026-09-10 V4 Flash is retired; the name is "temporarily routed to V4.1 Flash" and "billed at the Flash price" ([updates](https://api-docs.deepseek.com/updates/)) | `deepseek-flash` at `deepseek-2026-09-23` |
+| `2026-09-24` (current) | the same, and models.dev now lists `deepseek-v4-flash` as `deprecated`, which the pinned executor refuses; runs start it on its bundled catalogue ([start-up](#executor-start-up)) | `deepseek-flash` at `deepseek-2026-09-23` |
 
 The request stays `deepseek/deepseek-v4-flash` with `--variant high`, the shape the pinned executor
 was observed sending. `deepseek-flash` is in the executor's fetched catalogue and has not been
@@ -208,6 +209,35 @@ What the watch cannot see it does not claim. Requests made within one interval c
 call in flight has no usage yet; a call recorded with zero tokens has none at all; and whether the
 provider billed or kept generating is unknown. Runs started without containment keep their
 original behaviour.
+
+## Executor start-up
+
+Runs whose settings carry `executor.startup` start the pinned executor from a fixed state
+(`scripts/_executor_startup.py`). Those are DeepSeek revision `2026-09-24` and every newly resolved
+local profile. They:
+
+- **Use the catalogue bundled in the pinned bytes.** Without this, the executor refreshes
+  models.dev at start, caches it in the run's home and prefers the cache. As fetched on 2026-09-24,
+  that catalogue marks the requested model `deprecated`, and the executor refuses it before any
+  request. That was the qualification failure.
+- **Download no npm dependency.** The executor installs `@opencode-ai/plugin`, resolving 32
+  packages at install time, into any configuration directory it can write. `start` stages that
+  directory with the two files the executor writes itself, and the boundary denies writes to it,
+  so the executor's own check skips the install.
+- **Keep the executor's log.** `OPENCODE_PRINT_LOGS` sends it to the attempt's private
+  `worker.log`. Without it, a failure within a second leaves only an error reference.
+
+Before a slot is reserved, the launcher refuses to start from anything else, naming each of:
+
+- a changed configuration directory;
+- a cached catalogue;
+- a lock or breaker left by an earlier executor process;
+- a `.opencode` directory;
+- a boundary without the rules.
+
+Each attempt records `executor-state.json` beside its log. Started runs keep their original
+start-up. Evidence:
+[evidence/executor-startup-2026-09-24.md](evidence/executor-startup-2026-09-24.md).
 
 ## What this does not establish
 

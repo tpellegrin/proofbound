@@ -70,7 +70,7 @@ class Resolution(unittest.TestCase):
         price. The request is unchanged; the interpretation of new runs is dated and explicit."""
         s = profiles.resolve()
         self.assertEqual((s["model"], s["variant"]), ("deepseek/deepseek-v4-flash", "high"))
-        self.assertEqual(s["profile"]["revision"], "2026-09-23")
+        self.assertEqual(s["profile"]["revision"], "2026-09-24")
         self.assertEqual(s["billing"], {"basis": "dated-table", "table": "deepseek-2026-09-23",
                                         "price_model": "deepseek-flash"})
         self.assertEqual(s["provider"]["documented_serving"]["model_version"],

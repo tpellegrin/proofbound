@@ -176,6 +176,22 @@ def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
             f"{config['interpreter']['version']} and is being driven by {'.'.join(running)}. "
             f"Use {config['interpreter']['executable']}, or prepare a new run.")
 
+    # How the executor will start. A run whose settings record a start-up policy is refused, before
+    # a slot is reserved, from any state in which the executor would start differently: a cached
+    # catalogue that deprecates the requested model, an install or lock left by an earlier executor
+    # process, configuration it would load and install into. Earlier runs record no policy.
+    startup = settings["executor"].get("startup")
+    if startup:
+        import _executor_startup
+        boundary = Path(config.get("boundary_profile") or "/nonexistent")
+        started_from = _executor_startup.observe(config["home"], config["paths"]["project"])
+        why = _executor_startup.problems(
+            started_from, home=config["home"], bounded=bool(config.get("boundary_profile")),
+            boundary_text=boundary.read_text() if boundary.is_file() else None)
+        if why:
+            return refuse("refusing to launch: the executor would not start as this run's "
+                          "settings record: " + "; ".join(why))
+
     if local:
         # The executor must read exactly the configuration recorded at start. A missing or moved
         # file would let OpenCode fall back to its defaults — a hosted model — without anything
@@ -196,6 +212,8 @@ def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
     env["PATH"] = os.pathsep.join([executor_dir, "/usr/bin", "/bin", "/usr/sbin", "/sbin"])
     env["HOME"] = config["home"]
     env.update(config.get("worker_env") or {})
+    if startup:
+        env.update(_executor_startup.ENV)
     resolved = shutil.which("opencode", path=env["PATH"])
     if resolved != config["executor"]["path"]:
         return refuse(f"refusing to launch: `opencode` resolves to {resolved}, not the frozen "
@@ -268,6 +286,7 @@ def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
     # Even when the launcher exits on its own, it may have left the worker behind: it exits on its
     # deadline whether or not the signal it sent could be delivered. A sweep that finds nothing is
     # cheap; assuming there is nothing to find is how the orphans happened.
+    swept = None
     if termination is None:
         swept = stop_attempt(runtime_root, run_root, grace=grace)
         if not swept.get("nothing_was_running"):
@@ -289,6 +308,17 @@ def _launch(workdir: "str | Path", *, phase: str, task: str, role: str,
     classified = ledger.classify(slot["slot"], run_root=run_root, event_dir=event_dir,
                                  launcher_returncode=done.returncode,
                                  launcher_output=(done.stdout + done.stderr).strip())
+    if startup and event_dir and Path(event_dir).is_dir():
+        # Private, beside worker.log: what the executor started from and left behind, and what the
+        # host found running afterwards. Names, modes, times and digests; no contents.
+        from dsd_state import atomic_json
+        atomic_json(Path(event_dir) / "executor-state.json", {
+            "format": "proofbound-executor-state-v1", "policy": startup,
+            "before": started_from,
+            "after": _executor_startup.observe(config["home"], config["paths"]["project"]),
+            "launcher_returncode": done.returncode,
+            "host_sweep": termination if termination is not None else swept,
+            "executor_log": "worker.log, through OPENCODE_PRINT_LOGS"})
     result = {"launched": True, "admitted": True, "slot": classified,
               "returncode": done.returncode, "event_dir": event_dir,
               "status": (payload or {}).get("status"),

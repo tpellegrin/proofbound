@@ -16,7 +16,8 @@ def stage_interpreter(tools):
     shim.chmod(0o755)
 
 
-def profile_text(runtime, tools, project, policy, *, loopback_only=False, protected=()):
+def profile_text(runtime, tools, project, policy, *, loopback_only=False, protected=(),
+                 protected_trees=()):
     # The executor is a hard link: a write here would alter the host binary too.
     text = (_profile(runtime, tools, policy)
             + f'(allow file-write* (subpath "{project}"))\n'
@@ -25,6 +26,8 @@ def profile_text(runtime, tools, project, policy, *, loopback_only=False, protec
     for path in protected:
         # Executor configuration the worker must not rewrite for its own next launch.
         text += f'(deny file-write* (literal "{path}"))\n'
+    for path in protected_trees:
+        text += f'(deny file-write* (subpath "{path}"))\n'
     if loopback_only:
         # After the policy's blanket `(deny network*)`: outbound connections to loopback only.
         # A later rule wins. What this does not stop is recorded with the profile's network claim.
@@ -120,8 +123,17 @@ def prepare(config):
     policy = Policy(extra_reads=reads, system_execs=(*SYSTEM_EXECS, *reads[2:]), network=not loopback, notifications=True)
     profile = runtime / "boundary.sb"
     protected = [(c.get("opencode_config") or {}).get("path")] if loopback else []
+    trees = []
+    if settings["executor"].get("startup"):
+        # The staged executor configuration and the catalogue cache: a write to either would change
+        # how the next executor starts. Denied writes also make the executor's own writability
+        # check fail, which is what stops its npm install (`_executor_startup`).
+        from _executor_startup import boundary_rules
+        for kind, path in boundary_rules(c["home"]):
+            (trees if kind == "subpath" else protected).append(path)
     profile.write_text(profile_text(runtime, tools, project, policy, loopback_only=loopback,
-                                    protected=[p for p in protected if p]))
+                                    protected=[p for p in protected if p],
+                                    protected_trees=trees))
     c["boundary_profile"] = str(profile)
     c["executor"] = {**c["executor"], "path": str(staged)}
     observed = probe(profile, home=c["home"], cwd=project,

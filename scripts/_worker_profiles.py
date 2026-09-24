@@ -73,8 +73,29 @@ DEEPSEEK_REVISIONS: dict[str, dict[str, Any]] = {
             "statement": "V4 Flash retired; the legacy name deepseek-v4-flash is temporarily "
                          "routed to V4.1 Flash and billed at the Flash price"},
         "containment": {**CONTAINMENT, "derived_spend_during_attempt": True}},
+    # Same provider facts and prices. What moved is the executor's fetched catalogue, which lists
+    # the requested name as deprecated; the pinned executor then refuses it. From this revision the
+    # run starts the executor on the catalogue bundled in its pinned bytes (`_executor_startup`).
+    "2026-09-24": {
+        "table": "deepseek-2026-09-23", "price_model": "deepseek-flash",
+        "documented_serving": {
+            "model_version": "DeepSeek-V4.1-Flash", "since": "2026-09-10", "read": "2026-09-23",
+            "source": "https://api-docs.deepseek.com/updates/",
+            "statement": "V4 Flash retired; the legacy name deepseek-v4-flash is temporarily "
+                         "routed to V4.1 Flash and billed at the Flash price"},
+        "containment": {**CONTAINMENT, "derived_spend_during_attempt": True},
+        "catalogue": {
+            "used": "the catalogue bundled in the pinned executor, which lists deepseek-v4-flash",
+            "not_used": "models.dev as fetched on 2026-09-24 lists deepseek-v4-flash with status "
+                        "deprecated; the pinned executor deletes deprecated models, so a launch "
+                        "that read it failed before any request"},
+        "startup": True},
 }
-CURRENT_DEEPSEEK_REVISION = "2026-09-23"
+CURRENT_DEEPSEEK_REVISION = "2026-09-24"
+
+#: How a new run starts the pinned executor (`_executor_startup.POLICY`). A run started before it
+#: has no `executor.startup` and launches exactly as it did.
+from _executor_startup import POLICY as STARTUP_POLICY  # noqa: E402
 
 #: What a run can observe of the model that answered, stated once for every profile.
 RUNTIME_IDENTITY = ("requested id only: the pinned executor records the model id it requested and "
@@ -226,15 +247,20 @@ def _deepseek(raw: dict[str, Any], origin: dict[str, Any]) -> dict[str, Any]:
     if facts["containment"]:
         enforced.append("per-attempt containment: model-request cap, trailing incomplete "
                         "responses, derived spend observed during the attempt")
+    executor = {"kind": "opencode-cli", "version": OPENCODE_VERSION, "sha256": OPENCODE_SHA256}
+    provider = {"id": "deepseek", "route": "OpenCode native provider integration",
+                "endpoint": None, "requested_model": raw["model"],
+                "documented_serving": facts["documented_serving"],
+                "runtime_identity": RUNTIME_IDENTITY}
+    # Absent, not null, for earlier revisions: their settings bytes and digests stay as recorded.
+    if facts.get("startup"):
+        executor["startup"] = dict(STARTUP_POLICY)
+        provider["catalogue"] = facts["catalogue"]
     return {
         "format": SETTINGS_FORMAT,
         "profile": {"id": raw["id"], "kind": DEEPSEEK_KIND, "revision": revision, **origin},
-        "executor": {"kind": "opencode-cli", "version": OPENCODE_VERSION,
-                     "sha256": OPENCODE_SHA256},
-        "provider": {"id": "deepseek", "route": "OpenCode native provider integration",
-                     "endpoint": None, "requested_model": raw["model"],
-                     "documented_serving": facts["documented_serving"],
-                     "runtime_identity": RUNTIME_IDENTITY},
+        "executor": executor,
+        "provider": provider,
         "model": raw["model"], "variant": raw["variant"],
         "parameters": {"variant_flag": f"--variant {raw['variant']}",
                        "sampling": "not controllable; the provider documents that thinking mode "
@@ -327,7 +353,7 @@ def _local(raw: dict[str, Any], origin: dict[str, Any]) -> dict[str, Any]:
         "format": SETTINGS_FORMAT,
         "profile": {"id": raw.get("id"), "kind": LOCAL_KIND, **origin},
         "executor": {"kind": "opencode-cli", "version": OPENCODE_VERSION,
-                     "sha256": OPENCODE_SHA256},
+                     "sha256": OPENCODE_SHA256, "startup": dict(STARTUP_POLICY)},
         "provider": {"id": "local",
                      "route": "@ai-sdk/openai-compatible, bundled in the pinned executor",
                      "endpoint": endpoint, "requested_model": model,

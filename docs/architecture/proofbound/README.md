@@ -54,7 +54,7 @@ an agent's token usage, its context pressure, or how well it will do the task.
 | **D2.** Authoring scenarios or grading a run | README + [evaluation](evaluation.md) | the binding chain, comparison rules, run history | 55 KB |
 | **D3.** Calibrating a suite, comparing runs, or designing a control arm | README + [evaluation-comparison](evaluation-comparison.md) | scenario authoring, the binding chain | 55 KB |
 | **D4.** Measuring what many changes do to a system, or calibrating that | README + [system-craft](system-craft.md) | the contract-binding chain, scenario authoring | 55 KB |
-| **D5.** Adding a worker profile, or qualifying and comparing worker configurations | README + [worker-profiles](worker-profiles.md) + [evaluation-qualification](evaluation-qualification.md) | the binding chain, craft, run history | 43 KB |
+| **D5.** Adding a worker profile, or qualifying and comparing worker configurations | README + [worker-profiles](worker-profiles.md) + [evaluation-qualification](evaluation-qualification.md) | the binding chain, craft, run history | 45 KB |
 | **E.** Fixing a bug in inherited DSD mechanics | README + [execution-and-review](execution-and-review.md) | everything else | 30 KB |
 | **F.** Asking "why is this rule like this?" | [evidence/implementation-findings](evidence/implementation-findings.md) | — | 42 KB |
 | **G.** Archaeology on the original design | [evidence/original-rfc](evidence/original-rfc.md) | — | 84 KB |

@@ -220,6 +220,10 @@ def start(args):
     atomic_json(ledger, {"format": "proofbound-change-ledger-v1", "artifact_identity": "proofbound-artifact-text-v1", "artifacts": {}})
     runtime = Path(tempfile.mkdtemp(prefix="pb-workflow-", dir="/private/tmp" if platform.system() == "Darwin" else None))
     (runtime / "home").mkdir(); (runtime / "session").mkdir(); (runtime / "tmp").mkdir()
+    if settings["executor"].get("startup"):
+        # The executor's configuration directory, written now so no executor process ever has to.
+        import _executor_startup
+        _executor_startup.stage(runtime / "home")
     exe = args.executor.expanduser().resolve()
     config = {"format": "proofbound-supervised-workflow-v1", "mode": "live", "goal": str(goal_path),
               "goal_sha256": digest(goal_path), "requirements": str(req), "baseline": baseline,

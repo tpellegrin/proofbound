@@ -123,7 +123,13 @@ class HostControllerTerminationTest(unittest.TestCase):
         policy = Policy(extra_reads=reads, system_execs=(*SYSTEM_EXECS, *reads[3:]),
                         network=False, notifications=True)
         profile = runtime / "boundary.sb"
-        profile.write_text(boundary.profile_text(runtime, tools, resolved, policy))
+        # As authorization builds it, including the start-up rules a new run's settings require.
+        from _executor_startup import boundary_rules
+        rules = boundary_rules(config["home"])
+        profile.write_text(boundary.profile_text(
+            runtime, tools, resolved, policy,
+            protected=[path for kind, path in rules if kind == "literal"],
+            protected_trees=[path for kind, path in rules if kind == "subpath"]))
 
         pidfile = resolved / "child.pid"
         config.update(mode="offline-test", auto_flag="", boundary_profile=str(profile),
