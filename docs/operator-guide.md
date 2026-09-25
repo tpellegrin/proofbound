@@ -238,6 +238,98 @@ It reads only the delivery directory, so it also works on a copy. It refuses to 
 whose files no longer match its manifest. It re-derives usage and derived cost from the retained
 per-call rows, and touches neither the project nor the run.
 
+## From a verified delivery to a draft pull request
+
+For GitHub, the owner can review the exact verified change as a **draft pull request**:
+
+finish → verify-delivery → `prepare-pr` → read the preview → authorize → `publish-pr` → `pr-status`
+
+A draft PR is a review surface. Its checks and reviews are evidence, not approval or merge
+readiness, and whether it merges stays the owner's decision. Everything runs on the coordinator host
+with your existing `gh` and Git login. Nothing reaches the worker boundary.
+
+```bash
+# 1. Write your judgments: copy templates/review-summary.example.json and fill in every field.
+#    Defects, waivers, unverified claims and goal satisfaction are stated explicitly (empty lists
+#    mean "none"; "unknown" is allowed). Architecture claims need repository references.
+# 2. Prepare. Local, plus read-only inspection of the repository; pushes nothing, creates nothing.
+python3 "$PB/scripts/pb_workflow.py" prepare-pr --delivery "$RUN/delivery" \
+  --verification /absolute/verify-dir/verification.json \
+  --repo OWNER/NAME --base main --review-summary /absolute/review-summary.json \
+  --into /absolute/new/handoff-dir [--account YOUR_LOGIN] [--head BRANCH]
+# 3. Read <handoff-dir>/preview.md: repository and visibility, account, branch, commit, files, the
+#    exact PR text, and the plan sha256.
+# 4. Publish, with your authorization naming that digest (not needed again for the same plan).
+python3 "$PB/scripts/pb_workflow.py" publish-pr --handoff /absolute/new/handoff-dir \
+  --owner-authorization 'I authorize publishing plan <plan sha256> as a draft PR.'
+# 5. Afterwards, read-only:
+python3 "$PB/scripts/pb_workflow.py" pr-status --handoff /absolute/new/handoff-dir
+```
+
+**What `prepare-pr` guarantees.**
+- **The candidate is the verified delivery.**
+  - The commit is the sealed patch applied to the recorded baseline, in a fresh isolated clone.
+    Nothing is copied from any working tree.
+  - Its Git tree must equal the tree `verify-delivery` recorded, which covers modes, deletions,
+    binaries and symlinks.
+  - A verification of another delivery, one from before this version, or one whose checks wrote
+    tracked content is refused. Re-run `verify-delivery`.
+- **The commit is yours.** It uses the repository's own human Git identity, set through environment
+  variables and never by changing configuration, and is dated at verification. Preparing the same
+  inputs again gives the same commit.
+- **The PR text is split in two.** Recorded facts cover identities, check exits and their last
+  output lines verbatim, changed files and worker usage. Your review summary supplies the
+  judgments, with defects, waivers and unverified claims first. Python infers none of them.
+- **It refuses** when:
+  - the base branch is not at the verified baseline. It does not rebase; build and verify a new
+    candidate;
+  - the head branch or a PR for it already exists with other content;
+  - `gh` is authenticated as another account;
+  - the text would publish a local path.
+- **Private evidence stays private.** The sealed delivery, run records, usage rows and
+  verification output are not uploaded; the PR says they exist.
+
+**What `publish-pr` does.**
+- **It checks everything again first:** the plan, the body, the candidate commit, the account, the
+  repository's identity and visibility, and the base.
+- **It writes twice, at most:** it pushes one new branch without force, and creates one draft PR
+  with explicit repository, base, head, title and body file.
+- **Publishing has consequences.** A push and a PR can start the repository's CI and other
+  workflows. A draft does not prevent them.
+- **It never** merges, approves, marks ready for review, requests reviewers, forks, deletes
+  branches, reruns CI, or switches accounts.
+
+**Retries are safe.** `publish-pr` reads GitHub before it writes, and keeps a small record,
+`publication.json`, beside the plan:
+- An existing matching PR is returned, not duplicated. That covers a lost response, a failed
+  create after a successful push, and a repeated call.
+- An existing branch or PR with other content, a closed or merged PR, or more than one PR for the
+  branch stops the run with an explanation. Nothing is overwritten.
+- A changed plan, candidate, destination or text needs a new `prepare-pr` and a new authorization.
+
+**What `pr-status` shows.** It reports:
+- the PR's state and draft flag;
+- whether its head is still the verified commit;
+- whether the base moved;
+- the checks GitHub reports for that exact head, with the time observed.
+
+Check states stay distinct: passed, failed, pending, cancelled, skipped, neutral, "no checks
+observed" and "status unavailable". A check on another commit is not evidence for this head. A CI
+failure is shown prominently, and the local verification result keeps its own standing.
+
+**What to review in the PR.** This pipeline establishes that the PR holds the verified bytes; it
+does not establish that they are good. Review:
+- **behavior**, following the PR's review recipe;
+- **architecture and maintainability**, against the referenced repository rules;
+- **tests and CI**, both the recorded verification and GitHub's own checks;
+- **every stated defect, waiver and unverified claim**;
+- **whether the change is worth merging at all.**
+
+**An unpaid rehearsal.** `tests/test_pr_handoff.py` runs the whole flow against a local bare
+repository and a recording stand-in `gh`: no credentials, no GitHub. The same stand-in can drive a
+rehearsal on a real delivery, as recorded in
+[the handoff evidence](architecture/proofbound/evidence/pr-handoff-2026-09-25.md).
+
 Use `--outcome blocked` to seal an actionable blocker and an explicitly unaccepted patch before all tasks complete. Use `--into /new/external/directory` to preserve a fresh package after interrupted sealing; incomplete prior directories remain untouched.
 
 Use `--report-source relayed` when someone copied a report from a final message. Either remains a

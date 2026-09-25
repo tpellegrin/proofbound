@@ -1,0 +1,24 @@
+{
+  "format": "proofbound-review-summary-v1",
+  "title": "Add CSV export to the report command",
+  "problem": "Operators need the report in a spreadsheet; today it is HTML only.",
+  "behavior": "`report --format csv --out <file>` writes one row per item. `report` without the option is unchanged.",
+  "implementation_choices": [
+    "The CSV writer reuses the report's existing snapshot, so both formats read one consistent transaction."
+  ],
+  "architecture": [
+    {"claim": "Business rules stay in the domain module; the CLI only selects the format.", "references": ["AGENTS.md", "src/report.ts"]}
+  ],
+  "defects": [],
+  "waived_requirements": [],
+  "unverified_claims": ["Very large reports were not measured."],
+  "goal_satisfaction": {"status": "original", "explanation": "Every goal clause is met, per the accepted requirements and the coordinator's review."},
+  "review_recipe": [
+    "Run the project check.",
+    "Export a report from a copy of a sample database and open it in a spreadsheet."
+  ],
+  "post_delivery_edits": [],
+  "coordinator_usage": "unavailable",
+  "private_evidence": ["the sealed delivery and run records"],
+  "commit_message": "Add CSV export to the report command"
+}
