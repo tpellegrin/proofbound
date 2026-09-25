@@ -55,6 +55,7 @@ earlier one got wrong, and the earlier one keeps its bytes (`P9`).
 | [authority-workflow-successor.md](authority-workflow-successor.md) | `pb-authority-demo-1`'s preparation, and the questions its plan left open. |
 | [authority-workflow-demo-2-audit.md](authority-workflow-demo-2-audit.md) | `pb-authority-demo-2`: the interrupted call was never bounded, search exhaustion is not nonexistence, `D1`/`D4` were departures. |
 | [admission-bypass-reproduction.md](admission-bypass-reproduction.md) | The claim that the guarded launch path enforced authorization. The credential-free reproduction, the repair, and what it does and does not establish. |
+| [borrowdesk-bd-holds-1-review-2026-09-24.md](borrowdesk-bd-holds-1-review-2026-09-24.md) | BD-HOLDS-1's `verified`: it did not depend on the dependency identity it recorded, and a mismatch now fails verification. Also the independent review of the change, which PR #1 had already squash-merged: no correctness defect was demonstrated; the hold-versus-checkout race test and owner documentation were added as review work. The retained delivery was not on the host, so it was not verified again. Nothing spent. |
 
 ## Run evidence outside this corpus
 

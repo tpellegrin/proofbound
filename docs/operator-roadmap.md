@@ -90,6 +90,7 @@ smallest next experiment · accept/defer condition · status · next action.
 - **Next experiment.** Replay the goal-to-change fixture both ways; compare interactions, attempts and receipts.
 - **Accept/defer.** Accept only if authority, attempts and receipts are identical. It never adjudicates, rerolls or signals.
 - **Status.** Interruption inspection delivered: `recover`, read-only by default (2026-09-24). Mechanical progression not started. **Next action:** use the application exercise's interaction counts.
+- **Recorded need.** A supported, read-only display of derived spend while launches proceed. BD-HOLDS-1 read it through the internal `_launch_budget.spend` ([review](architecture/proofbound/evidence/borrowdesk-bd-holds-1-review-2026-09-24.md)). Not implemented.
 
 ### CAP-local-worker
 
