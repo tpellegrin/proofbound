@@ -92,6 +92,14 @@ At `a5d0ac2`, both mismatch cases verify. A failed `npm ci` already failed verif
 its output was not kept. A command that cannot start produced an error instead of a verification
 result. The delivery without a toolchain passes before and after.
 
+**CI had been red since `8e71ff4`.** GitHub CI failed on `6ffe10c` and `a5d0ac2`, on 3.10 and
+3.14, with 10 errors of 1,456 tests. The toolchain test harness created its directory under
+`/private/tmp`, which exists only on macOS, and CI runs on Ubuntu. So the frozen execution code of
+BD-HOLDS-1 was green on macOS only. It is repaired in `0981e2d`: macOS keeps `/private/tmp`, and
+other platforms use the default. That branch was exercised on macOS with a non-darwin platform, and
+it has not run on Linux. The synthetic native dependency is a copy of the test interpreter, which
+may not start from a copied location on Linux. That is unverified.
+
 **Historical verification is not re-derived.** The BD-HOLDS-1 `verification.json` keeps its bytes,
 and it is not on this host. Verifying that delivery again under the corrected code would be a new
 observation, with its own verifier identity. It was not possible here.
