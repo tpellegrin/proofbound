@@ -804,7 +804,12 @@ def verify_delivery(args):
     config = read(delivery / "evidence" / "run-config.json")
     patch = next((delivery / name for name in ("change.patch", "unaccepted.patch")
                   if (delivery / name).is_file()), None)
+    import _pr_candidate
+    from datetime import datetime, timezone
     result = {"delivery": str(delivery), "outcome_recorded": handoff.get("outcome"),
+              "verified_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+              "verifier": _pr_candidate.verifier_identity(ROOT),
+              "manifest_sha256": digest(delivery / "manifest.json"),
               "baseline": handoff.get("baseline"), "manifest_altered": altered,
               "manifest_unlisted": unlisted,
               "patch": {"path": str(patch) if patch else None,
@@ -828,9 +833,14 @@ def verify_delivery(args):
                                      "--detach", handoff["baseline"]],
                                     capture_output=True, text=True))
     if all(step.returncode == 0 for step in steps):
-        steps.append(subprocess.run(["git", "-C", str(checkout), "apply", "--binary",
+        # --index, so the index holds exactly the patched content: modes, deletions, binaries and
+        # symlinks included, whatever the project's ignore rules say.
+        steps.append(subprocess.run(["git", "-C", str(checkout), "apply", "--binary", "--index",
                                      str(patch)], capture_output=True, text=True))
     applied = all(step.returncode == 0 for step in steps)
+    if applied:
+        # The candidate's identity, taken before anything runs in the checkout.
+        result["candidate_tree"] = _pr_candidate.index_tree(checkout)
     result.update(repository=str(source), checkout=str(checkout), applied=applied,
                   apply_error=None if applied else (steps[-1].stderr or steps[-1].stdout)[-2000:])
     result["project_check"] = {"passed": None, "note": "not run: the patch did not apply"}
@@ -860,6 +870,11 @@ def verify_delivery(args):
                     for part in shlex.split(args.outcome_check)]
             result["outcome_check"] = {**_bounded(argv, into, CHECK_TIMEOUT_SECONDS, env=env),
                                        "command": args.outcome_check}
+    if result.get("candidate_tree"):
+        # Checks may generate files. Ignored ones are not content; anything else changes what was
+        # verified, and is reported rather than silently published later.
+        result["tracked_content_after_checks"] = _pr_candidate.content_after_checks(
+            checkout, result["candidate_tree"])
     result["verified"] = bool(applied and result["project_check"]["passed"]
                               and (result.get("dependencies") or {"matches_prepared": True})["matches_prepared"]
                               and (result.get("outcome_check") or {"passed": True})["passed"])
@@ -1010,6 +1025,31 @@ def main():
     vd.add_argument("--repo", type=Path, help="a repository holding the baseline commit "
                     "(default: the project the run recorded)")
     vd.add_argument("--outcome-check", help="an extra check argv; {checkout} is replaced")
+    # Draft-PR handoff (_pr_handoff): prepare is local plus read-only inspection; publish needs the
+    # owner's authorization naming the plan digest; status is read-only.
+    pp = sub.add_parser("prepare-pr", help="build the verified candidate commit and a publication "
+                        "plan and preview; pushes nothing, creates nothing")
+    pp.add_argument("--delivery", type=Path, required=True)
+    pp.add_argument("--verification", type=Path, required=True, help="the verify-delivery verification.json")
+    pp.add_argument("--repo", required=True, help="OWNER/NAME of the target GitHub repository")
+    pp.add_argument("--base", required=True, help="the base branch; must still be at the verified baseline")
+    pp.add_argument("--review-summary", type=Path, required=True,
+                    help=f"the coordinator's judgments ({'proofbound-review-summary-v1'} JSON)")
+    pp.add_argument("--into", type=Path, required=True, help="a new directory for this plan")
+    pp.add_argument("--head", help="the new branch name (default proofbound/<change>-<commit>)")
+    pp.add_argument("--account", help="the GitHub login you intend to publish as; refused if gh differs")
+    pp.add_argument("--host", default="github.com")
+    pp.add_argument("--source", type=Path, help="a repository holding the baseline (default: the run's project)")
+    pp.add_argument("--gh", default="gh", help=argparse.SUPPRESS)
+    pb = sub.add_parser("publish-pr", help="push the prepared candidate and open a draft PR, once "
+                        "authorized; a retry reconciles with GitHub first")
+    pb.add_argument("--handoff", type=Path, required=True, help="the prepare-pr --into directory")
+    pb.add_argument("--owner-authorization", help="the owner's words, naming the plan sha256; "
+                    "not needed again for the same plan")
+    pb.add_argument("--gh", default="gh", help=argparse.SUPPRESS)
+    ps = sub.add_parser("pr-status", help="read-only: the draft PR, its head, its base and its checks")
+    ps.add_argument("--handoff", type=Path, required=True)
+    ps.add_argument("--gh", default="gh", help=argparse.SUPPRESS)
     co = sub.add_parser("coordinator"); co.add_argument("--run", type=Path, required=True)
     co.add_argument("--requested", required=True, help="the coordinator configuration you selected")
     co.add_argument("--self-reported", default=None, help="what the coordinating agent says it is")
@@ -1038,6 +1078,18 @@ def main():
         if args.command == "doctor": result = doctor(args)
         elif args.command == "profile": result = show_profile(args)
         elif args.command == "verify-delivery": result = verify_delivery(args)
+        elif args.command == "prepare-pr":
+            import _pr_handoff
+            result = _pr_handoff.prepare(delivery=args.delivery, verification=args.verification,
+                                         repo=args.repo, base=args.base, summary_path=args.review_summary,
+                                         into=args.into, gh=args.gh, host=args.host, head=args.head,
+                                         account=args.account, source=args.source)
+        elif args.command == "publish-pr":
+            import _pr_handoff
+            result = _pr_handoff.publish(args.handoff, gh=args.gh, authorization=args.owner_authorization)
+        elif args.command == "pr-status":
+            import _pr_handoff
+            result = _pr_handoff.status(args.handoff, gh=args.gh)
         elif args.command == "start": result = start(args)
         elif args.command == "coordinator": result = coordinator(args)
         elif args.command == "status": result = status(args.run.resolve())
@@ -1073,7 +1125,8 @@ def main():
         elif args.command == "authorize-resources": result = authorize_resources(args)
         else:
             result = authorize_spending(args)
-        print(json.dumps(result, indent=2, sort_keys=True)); return 0
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return 2 if isinstance(result, dict) and result.get("state") == "blocked" else 0
     except (ValueError, OSError, KeyError, subprocess.TimeoutExpired) as exc:
         print(json.dumps({"error": str(exc), "action": "blocked", "evidence_retained": True}, indent=2)); return 2
 
