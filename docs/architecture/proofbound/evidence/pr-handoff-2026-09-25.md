@@ -73,7 +73,9 @@ records every Git call. The temporary root's own name contains spaces and `$(…
 Every mutation was caught. The head-filter mutation survived at first, because the stand-in serves
 runs per commit. A run reported for another commit was added to the fixture.
 
-The canonical suite result at the final code is below.
+**The canonical suite** at `d654700`: 1,479 tests, OK, 1 skipped, on macOS 27.0 arm64 with Python
+3.14.7. The skip is the retained-session round trip, whose session is not on this host. The
+suite has not run on Linux at this revision.
 
 ## Local rehearsal on the real delivery
 
