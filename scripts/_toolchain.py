@@ -348,6 +348,8 @@ def problems(config: dict[str, Any]) -> list[str]:
     if now["node_modules"]["digest"] != was["node_modules"]["digest"]:
         out.append("the project's installed node_modules no longer match the dependencies prepared "
                    "at start; nothing was reinstalled")
+    if manager == pm.PNPM:
+        out += pm.cache_problems(Path(config["paths"]["project"]))
     return out
 
 

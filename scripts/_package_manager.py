@@ -206,11 +206,36 @@ def layout_problems(project: Path, record: dict[str, Any]) -> list[str]:
                     links.setdefault((st.st_dev, st.st_ino), [0, st.st_nlink])[0] += 1
     if leaving:
         out.append(f"{len(leaving)} symlinks in node_modules leave the project, e.g. {leaving[:3]}")
+    out += cache_problems(project)
     shared = sum(1 for seen, nlink in links.values() if seen < nlink)
     if shared:
         out.append(f"{shared} installed files are hard-linked to files outside node_modules (a package "
                    "store), so a later change there would change them; install with "
                    "--package-import-method copy")
+    return out
+
+
+def cache_problems(project: Path) -> list[str]:
+    """Why the writable tool caches are not ordinary directories inside the project.
+
+    They are writable inside the boundary and left out of the dependency digest, so each must be
+    absent or a real directory, and no symlink inside it may leave the project. Otherwise a check
+    would read cache state from outside the recorded preparation. Writes through such a link are
+    refused by the boundary; this closes the read side."""
+    project = Path(project).resolve()
+    out = []
+    for name in TOOL_CACHES:
+        cache = project / "node_modules" / name
+        if cache.is_symlink():
+            out.append(f"node_modules/{name} is a symlink (to {os.readlink(cache)}), not a cache directory")
+            continue
+        if not cache.is_dir():
+            continue
+        for base, dirs, names in os.walk(cache, followlinks=False):
+            for entry in dirs + names:
+                path = Path(base) / entry
+                if path.is_symlink() and project not in Path(os.path.realpath(path)).parents:
+                    out.append(f"{path.relative_to(project)} links outside the project")
     return out
 
 

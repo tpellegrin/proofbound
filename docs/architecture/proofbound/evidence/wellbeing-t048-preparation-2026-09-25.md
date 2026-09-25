@@ -38,6 +38,16 @@ No provider request was made and no remote was written. The private evidence is 
     tsconfigs put it.
   - The dependency digest leaves them out.
   - The rehearsal found each one: every check that needed them failed when they were denied.
+- **The exact guarantee for the caches.** Measured against the real rehearsal's boundary:
+  - the only write allowances beside the project are the three cache subpaths;
+  - hard-linking an installed file into a cache is refused, as are writing into `.pnpm` through a
+    cache symlink, moving `.pnpm` into a cache, and creating a new top-level entry;
+  - an installed file was unchanged afterwards.
+
+  One gap was found and closed: a cache could be replaced by a symlink, even one leaving the
+  project, without the digest noticing, so a check could have read cache state from outside the
+  preparation. A cache that is a symlink, or that holds a symlink leaving the project, is now
+  reported before the next launch and refuses acceptance. A regression covers it.
 - **Signals.** Inside the boundary, a process may signal processes in the same sandbox, but not
   outside it. Vitest must stop its own workers. This was measured with a child and an outside
   process before it was adopted.

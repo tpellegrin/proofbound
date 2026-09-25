@@ -312,6 +312,13 @@ class Boundary(unittest.TestCase):
         self.assertNotEqual(rc, 0)
         rc, out = h.inside("/bin/sh", "-c", "ln -s .pnpm node_modules/.vite/escape 2>/dev/null; mkdir -p node_modules/.vite && ln -s ../.pnpm/tool@1.0.0 node_modules/.vite/link && echo x > node_modules/.vite/link/node_modules/tool/cli.sh")
         self.assertNotEqual(rc, 0, "a cache symlink does not open the installed packages to writes")
+        # Hard-linking an installed file into a cache is refused, so its bytes cannot be reached.
+        rc, out = h.inside("/bin/sh", "-c", "ln node_modules/.pnpm/tool@1.0.0/node_modules/tool/cli.sh node_modules/.vite/h")
+        self.assertNotEqual(rc, 0, out)
+        # A cache replaced by a symlink that leaves the project is found before the next launch.
+        rc, out = h.inside("/bin/sh", "-c", "rm -rf node_modules/.tmp && ln -s /usr/bin node_modules/.tmp")
+        self.assertEqual(rc, 0, out)
+        self.assertIn("node_modules/.tmp is a symlink", " ".join(_toolchain.problems(h.config())))
 
 
 if __name__ == "__main__":

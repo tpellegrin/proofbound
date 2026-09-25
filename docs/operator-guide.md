@@ -91,10 +91,18 @@ python3 "$PB/scripts/pb_workflow.py" start --project "$PROJECT" --change CH-001 
   installation fields, and `.npmrc`, `pnpm-workspace.yaml` and `.pnpmfile.cjs` (present or
   absent).
 - **Inside the boundary**, worker pnpm is offline, and its version management is off.
-  - Checks may write three tool caches in `node_modules`, `.vite`, `.vite-temp` and `.tmp`,
-    which the dependency digest leaves out.
-  - Checks may signal processes in the same sandbox, for example to stop test workers.
-  - Everything else in `node_modules`, and the prepared tooling, stays write-protected.
+  - **`node_modules` is not entirely immutable.** Exactly three tool-cache paths are writable:
+    `node_modules/.vite`, `node_modules/.vite-temp` and `node_modules/.tmp`. They are not part of
+    the dependency digest.
+  - **Everything else** in `node_modules` (the installed packages, `.pnpm`, `.bin`,
+    `.modules.yaml`) and the prepared tooling is write-protected, and digest-checked before every
+    launch and at acceptance.
+  - **The sandbox refuses** hard-linking an installed file into a cache, writing into `.pnpm`
+    through a cache symlink, moving installed trees into a cache, and creating any other entry.
+  - **A cache that is a symlink, or that holds a symlink leaving the project,** is reported before
+    the next launch and refuses acceptance.
+  - **Checks may signal processes in the same sandbox**, for example to stop test workers.
+  - **Fresh-checkout verification** starts without any cache.
 - **`verify-delivery`** installs with the declared pnpm and `--frozen-lockfile`, into a store
   inside the verification directory. That is a registry fetch pinned by the lockfile, recorded
   as such, not an offline install.
