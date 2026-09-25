@@ -62,6 +62,9 @@ if args[:1] == ["api"]:
         repo = "/".join(parts[1:3])
         if repo not in state["repos"]: fail("HTTP 404: Not Found (https://api.github.com/" + path + ")")
         if len(parts) == 3: out(state["repos"][repo])
+        if len(parts) == 5 and parts[3] == "actions" and parts[4] == "runs":
+            sha = path.split("head_sha=")[1].split("&")[0]
+            out({"workflow_runs": state.get("workflow_runs", {}).get(sha, [])})
         if len(parts) == 6 and parts[3] == "commits":
             if state.get("fail", {}).get("checks"): fail("HTTP 403: rate limited")
             sha = parts[4]
@@ -526,6 +529,9 @@ class Status(unittest.TestCase):
         h.state = h.load(); h.state["check_runs"] = {sha: runs, "0" * 40: [
             {"name": "old", "status": "completed", "conclusion": "success", "head_sha": "0" * 40}]}
         h.state["statuses"] = {sha: [{"context": "ci/legacy", "state": "pending"}]}
+        h.state["workflow_runs"] = {sha: [
+            {"name": "Validation", "event": "push", "status": "completed", "conclusion": "success", "head_sha": sha, "run_attempt": 1},
+            {"name": "Validation", "event": "pull_request", "status": "completed", "conclusion": "failure", "head_sha": sha, "run_attempt": 1}]}
         h.save()
         s = self.status(h, handoff)
         checks = s["remote"]["checks"]
@@ -537,6 +543,9 @@ class Status(unittest.TestCase):
         self.assertTrue(s["local"]["verification"]["project_check"]["passed"] is not None)
         self.assertFalse(s["remote"]["base_advanced"])
         self.assertIn("observed_at", checks)
+        # Branch-head and merge-ref runs stay distinguishable although both report on the head.
+        runs = {(r["tested"], r["conclusion"]) for r in checks["workflow_runs"]}
+        self.assertEqual(runs, {("branch head", "success"), ("pull-request merge ref", "failure")})
 
     def test_unavailable_checks_and_an_advanced_base_are_reported(self):
         h, handoff, sha = self.published()

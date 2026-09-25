@@ -130,7 +130,23 @@ class GitHub:
             counts[item["group"]] = counts.get(item["group"], 0) + 1
         return {"sha": sha, "observed_at": observed,
                 "state": "no checks observed" if not items else "observed",
-                "counts": counts, "items": items}
+                "counts": counts, "items": items, "workflow_runs": self.workflow_runs(repo, sha)}
+
+    def workflow_runs(self, repo: str, sha: str) -> Any:
+        """Actions runs for this head commit, by triggering event. A `push` run checked the branch
+        head; a `pull_request` run checked GitHub's synthetic merge of the head into the base
+        (`refs/pull/N/merge`). Both report against the head commit, so the event is what keeps
+        them apart."""
+        try:
+            data = self.api(f"repos/{repo}/actions/runs?head_sha={sha}&per_page=50")
+        except RemoteError as exc:
+            return f"unavailable: {exc}"
+        tested = {"push": "branch head", "pull_request": "pull-request merge ref"}
+        return [{"name": r.get("name"), "event": r.get("event"),
+                 "tested": tested.get(r.get("event"), r.get("event")),
+                 "status": r.get("status"), "conclusion": r.get("conclusion"),
+                 "attempt": r.get("run_attempt"), "url": r.get("html_url")}
+                for r in (data or {}).get("workflow_runs", []) if r.get("head_sha") in (None, sha)]
 
 
 def ls_remote(url: str, *branches: str) -> dict[str, str]:
