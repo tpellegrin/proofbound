@@ -187,6 +187,11 @@ def start(args):
                 if requested_toolchain != (config.get("toolchain") or {}).get("resolved"):
                     conflicts.append({"field": "--toolchain", "requested": requested_toolchain,
                                       "in_effect": (config.get("toolchain") or {}).get("resolved")})
+                requested_pnpm = (str(Path(args.pnpm).expanduser().absolute().resolve())
+                                  if getattr(args, "pnpm", None) else None)
+                in_effect_pnpm = ((config.get("toolchain") or {}).get("package_manager") or {}).get("resolved")
+                if requested_pnpm != in_effect_pnpm:
+                    conflicts.append({"field": "--pnpm", "requested": requested_pnpm, "in_effect": in_effect_pnpm})
                 recorded = profiles.of(config)
                 ignored = ({"legacy", "profile.source", "profile.path", "profile.source_sha256"}
                            if recorded.get("legacy") else set())
@@ -219,7 +224,7 @@ def start(args):
     if not authority.resolve().is_relative_to(project): raise ValueError("authority path escapes project through a symlink")
     if getattr(args, "toolchain", None):
         import _toolchain
-        problems = _toolchain.check(args.toolchain, project)
+        problems = _toolchain.check(args.toolchain, project, pnpm=getattr(args, "pnpm", None))
         if problems: raise ValueError("--toolchain cannot be prepared: " + "; ".join(problems) + "; nothing was created")
     authority.mkdir(parents=True)
     run.mkdir(parents=True)
@@ -255,7 +260,8 @@ def start(args):
     if getattr(args, "toolchain", None):
         # Declared, copied into the runtime and recorded by content now; verified before every launch.
         import _toolchain
-        config["toolchain"] = _toolchain.prepare(args.toolchain, runtime, project)
+        config["toolchain"] = _toolchain.prepare(args.toolchain, runtime, project,
+                                                 pnpm=getattr(args, "pnpm", None))
     rules = helper("prepare_worker_rules.py", "--project-root", project, "--run-root", run,
                    "--plan", goal_path, "--model", settings["model"],
                    "--rule", "Review requirements, code and checks before reading a producer summary; record what you saw.")
@@ -670,7 +676,7 @@ def check_project(run, c):
                            "refused": why})
             raise ValueError("project checks refused: " + "; ".join(why) + f"; evidence {path}; no acceptance")
         env["PATH"] = str(Path(c["toolchain"]["prepared"]) / "bin") + os.pathsep + env.get("PATH", "")
-        env.update(_toolchain.WORKER_NPM_ENV)
+        env.update(_toolchain.env_vars(c))
     try:
         cp = subprocess.run(shlex.split(c["check_command"]), cwd=c["paths"]["project"],
                             capture_output=True, text=True, timeout=timeout, env=env)
@@ -855,8 +861,19 @@ def verify_delivery(args):
             result["project_check"] = {"passed": None, "note": f"not run: {toolchain['resolved']} no "
                                        "longer holds the toolchain bytes the run prepared"}
         else:
-            env = {"PATH": str(Path(toolchain["resolved"]) / "bin") + os.pathsep + os.environ.get("PATH", "")}
-            result["dependencies"] = _prepare_dependencies(toolchain, checkout, env)
+            if toolchain.get("package_manager"):
+                # pnpm is run from a fresh prepared copy that reproduces the recorded identities.
+                import _package_manager
+                bin_dir = _toolchain.materialize(toolchain, into / "toolchain") / "bin"
+                env = {"PATH": str(bin_dir) + os.pathsep + os.environ.get("PATH", ""),
+                       **_package_manager.WORKER_ENV[_package_manager.PNPM]}
+                install_env = {**env, "npm_config_offline": "false",
+                               **_package_manager.PREPARE_ENV[_package_manager.PNPM]}
+                command = _package_manager.install_argv(toolchain, bin_dir, into)
+            else:
+                env = {"PATH": str(Path(toolchain["resolved"]) / "bin") + os.pathsep + os.environ.get("PATH", "")}
+                install_env, command = env, None
+            result["dependencies"] = _prepare_dependencies(toolchain, checkout, install_env, command)
             if not result["dependencies"]["matches_prepared"]:
                 applied = False
                 result["project_check"] = {"passed": None, "note": "not run: " + result["dependencies"]["why"]}
@@ -889,19 +906,23 @@ def _declared_dependencies(checkout, recorded):
     installed `node_modules` digest is not, so only its presence is compared.
     """
     import _toolchain
+    manager = "pnpm" if "config_files" in recorded else "npm"
     try:
-        now = _toolchain.dependencies(checkout)
+        now = _toolchain.dependencies(checkout, manager)
     except (OSError, ValueError) as exc:
         return {"readable": False, "error": f"{type(exc).__name__}: {exc}"[:500],
                 "lockfile_matches_prepared": None, "manifest_matches_prepared": None}
-    return {"readable": True,
-            "lockfile_matches_prepared": now["lockfile"]["sha256"] == recorded["lockfile"]["sha256"],
-            "manifest_matches_prepared": now["manifest"]["sha256"] == recorded["manifest"]["sha256"],
-            "node_modules_present": now["node_modules"]["digest"] is not None,
-            "node_modules_digest": now["node_modules"]["digest"]}
+    out = {"readable": True,
+           "lockfile_matches_prepared": now["lockfile"]["sha256"] == recorded["lockfile"]["sha256"],
+           "manifest_matches_prepared": now["manifest"]["sha256"] == recorded["manifest"]["sha256"],
+           "node_modules_present": now["node_modules"]["digest"] is not None,
+           "node_modules_digest": now["node_modules"]["digest"]}
+    if manager == "pnpm":
+        out["config_matches_prepared"] = now.get("config_files") == recorded.get("config_files")
+    return out
 
 
-def _prepare_dependencies(toolchain, checkout, env):
+def _prepare_dependencies(toolchain, checkout, env, command=None):
     """Prepare a fresh checkout's dependencies the way the run did, refusing a candidate whose
     declared dependencies differ from the ones the run prepared.
 
@@ -910,12 +931,14 @@ def _prepare_dependencies(toolchain, checkout, env):
     ones. `matches_prepared` is false, with `why`, whenever either does not hold.
     """
     recorded = toolchain["dependencies"]
-    command = recorded["prepare_command"]
+    command = command or recorded["prepare_command"]
     out = {"command": command, "before": _declared_dependencies(checkout, recorded)}
-    if not (out["before"]["lockfile_matches_prepared"] and out["before"]["manifest_matches_prepared"]):
+    if not (out["before"]["lockfile_matches_prepared"] and out["before"]["manifest_matches_prepared"]
+            and out["before"].get("config_matches_prepared", True)):
         out.update(returncode=None, matches_prepared=False,
                    why=f"{shlex.join(command)} not run: the candidate does not declare the dependencies "
-                       "the run prepared (package-lock.json or package.json dependency fields)")
+                       "the run prepared (lockfile, package.json installation fields or package-manager "
+                       "configuration files)")
         return out
     prepared = _bounded(command, checkout, CHECK_TIMEOUT_SECONDS, env=env)
     out.update({k: v for k, v in prepared.items() if k not in ("passed", "note")})
@@ -924,12 +947,20 @@ def _prepare_dependencies(toolchain, checkout, env):
     if not prepared["passed"]:
         why = f"{shlex.join(command)} did not succeed" + (f": {prepared['note']}" if prepared.get("note") else "")
     elif not after["readable"] or not (after["lockfile_matches_prepared"]
-                                       and after["manifest_matches_prepared"]):
+                                       and after["manifest_matches_prepared"]
+                                       and after.get("config_matches_prepared", True)):
         why = f"after {shlex.join(command)}, the checkout no longer declares the prepared dependencies"
     elif not after["node_modules_present"]:
         why = f"{shlex.join(command)} left no installed node_modules"
     else:
         why = None
+    if why is None and toolchain.get("package_manager"):
+        import _package_manager
+        layout = _package_manager.layout_problems(checkout, toolchain["package_manager"])
+        if layout:
+            why = "the installed layout is not the prepared kind: " + "; ".join(layout)
+        out["network"] = ("installed with --frozen-lockfile from the registry into a store inside this "
+                          "verification directory: a lockfile-pinned fetch, not an offline install")
     out["matches_prepared"] = why is None
     if why: out["why"] = why
     out["note"] = ("stdout and stderr are the command's bounded output; they do not establish whether it "
@@ -1018,6 +1049,10 @@ def main():
                     help="a Node distribution the project's checks need, copied into the run and "
                          "run inside the worker boundary; install the project's dependencies with "
                          "its npm first. Optional; fixed for the run")
+    st.add_argument("--pnpm", type=Path, default=None,
+                    help="with --toolchain: an unpacked pnpm package (bin/pnpm.cjs) matching the "
+                         "project's packageManager pin; install the dependencies with it first, "
+                         "copying packages (--package-import-method copy). Fixed for the run")
     vd = sub.add_parser("verify-delivery", help="apply a sealed delivery to a fresh checkout of "
                         "its baseline and rerun the checks; touches neither project nor run")
     vd.add_argument("--delivery", type=Path, required=True)

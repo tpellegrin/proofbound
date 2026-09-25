@@ -17,7 +17,7 @@ def stage_interpreter(tools):
 
 
 def profile_text(runtime, tools, project, policy, *, loopback_only=False, protected=(),
-                 protected_trees=(), exec_trees=()):
+                 protected_trees=(), exec_trees=(), writable_trees=(), signal_same_sandbox=False):
     # The executor is a hard link: a write here would alter the host binary too.
     text = (_profile(runtime, tools, policy)
             + f'(allow file-write* (subpath "{project}"))\n'
@@ -31,6 +31,13 @@ def profile_text(runtime, tools, project, policy, *, loopback_only=False, protec
     for path in exec_trees:
         # A declared toolchain's prepared dependencies only (`_toolchain`); writes there are denied.
         text += f'(allow process-exec (subpath "{path}"))\n'
+    if signal_same_sandbox:
+        # A process may signal only processes inside this same sandbox, such as its own workers.
+        text += '(allow signal (target same-sandbox))\n'
+    for path in writable_trees:
+        # Tool caches inside a protected tree that a pnpm run's record names (`_package_manager`).
+        # After the denies, because a later rule wins.
+        text += f'(allow file-write* (subpath "{path}"))\n'
     if loopback_only:
         # After the policy's blanket `(deny network*)`: outbound connections to loopback only.
         # A later rule wins. What this does not stop is recorded with the profile's network claim.
@@ -166,17 +173,20 @@ def prepare(config):
         from _executor_startup import boundary_rules
         for kind, path in boundary_rules(c["home"]):
             (trees if kind == "subpath" else protected).append(path)
-    exec_trees = []
+    exec_trees, writable, signals = [], [], False
     if c.get("toolchain"):
         from _toolchain import boundary_rules
         rules = boundary_rules(c)
         trees += rules["deny_write"]
         exec_trees = rules["allow_exec"]
-    if any('"' in x or '\n' in x or '\\' in x for x in [*trees, *exec_trees]):
+        writable = rules.get("allow_write", [])
+        signals = rules.get("signal_same_sandbox", False)
+    if any('"' in x or '\n' in x or '\\' in x for x in [*trees, *exec_trees, *writable]):
         raise ValueError("sandbox profile paths cannot contain quotes, backslashes or newlines")
     profile.write_text(profile_text(runtime, tools, project, policy, loopback_only=loopback,
                                     protected=[p for p in protected if p],
-                                    protected_trees=trees, exec_trees=exec_trees))
+                                    protected_trees=trees, exec_trees=exec_trees,
+                                    writable_trees=writable, signal_same_sandbox=signals))
     c["boundary_profile"] = str(profile)
     c["executor"] = {**c["executor"], "path": str(staged)}
     observed = probe(profile, home=c["home"], cwd=project,

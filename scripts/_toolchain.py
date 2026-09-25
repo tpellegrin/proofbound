@@ -49,6 +49,9 @@ WORKER_NPM_ENV = {"npm_config_offline": "true", "npm_config_update_notifier": "f
                   "npm_config_fund": "false", "npm_config_audit": "false"}
 
 
+import _package_manager as pm
+
+
 class ToolchainError(ValueError):
     """A declaration or preparation that cannot be used as given; nothing was prepared."""
 
@@ -61,7 +64,7 @@ def _sha(path: Path) -> str:
     return h.hexdigest()
 
 
-def tree(root: Path) -> dict[str, Any]:
+def tree(root: Path, exclude: "tuple[str, ...]" = ()) -> dict[str, Any]:
     """A content digest of a directory tree, without following symlinks.
 
     Files contribute their bytes and executable bit, and symlinks their target text. Directories
@@ -87,6 +90,9 @@ def tree(root: Path) -> dict[str, Any]:
         add(".", root)
     else:
         for base, dirs, names in os.walk(root, followlinks=False):
+            if exclude and Path(base) == root:
+                dirs[:] = [d for d in dirs if d not in exclude]
+                names = [n for n in names if n not in exclude]
             dirs.sort()
             relative = Path(base).relative_to(root)
             for name in sorted(names + dirs):
@@ -102,15 +108,31 @@ def _manifest_dependencies(project: Path) -> dict[str, Any]:
     return {"path": str(path), "fields": sorted(fields), "sha256": hashlib.sha256(blob).hexdigest()}
 
 
-def dependencies(project: Path) -> dict[str, Any]:
-    """What the project's prepared dependencies are, from the bytes on disk now."""
+def dependencies(project: Path, manager: str = pm.NPM) -> dict[str, Any]:
+    """What the project's prepared dependencies are, from the bytes on disk now.
+
+    An npm record keeps its original shape. A pnpm record adds the configuration files that change
+    what `pnpm install` does."""
     project = Path(project)
-    lock = project / "package-lock.json"
-    return {"node_modules": {"path": str(project / "node_modules"),
-                             **tree(project / "node_modules")},
-            "lockfile": {"path": str(lock), "sha256": _sha(lock) if lock.is_file() else None},
-            "manifest": _manifest_dependencies(project),
-            "prepare_command": ["npm", "ci"]}
+    lock = project / pm.LOCKFILES[manager]
+    caches = pm.TOOL_CACHES if manager == pm.PNPM else ()
+    out = {"node_modules": {"path": str(project / "node_modules"),
+                            **tree(project / "node_modules", exclude=caches)},
+           "lockfile": {"path": str(lock), "sha256": _sha(lock) if lock.is_file() else None},
+           "manifest": _manifest_dependencies(project) if manager == pm.NPM else pm.manifest(project, manager),
+           "prepare_command": ["npm", "ci"] if manager == pm.NPM else
+                              ["pnpm", "install", "--frozen-lockfile", "--package-import-method", "copy"]}
+    if manager != pm.NPM:
+        out["config_files"] = pm.config_files(project, manager)
+    return out
+
+
+def declarations_match(now: dict[str, Any], was: dict[str, Any]) -> bool:
+    """Whether the lockfile, the manifest's installation fields and any bound configuration files
+    are the ones recorded at preparation."""
+    return (now["manifest"]["sha256"] == was["manifest"]["sha256"]
+            and now["lockfile"]["sha256"] == was["lockfile"]["sha256"]
+            and now.get("config_files") == was.get("config_files"))
 
 
 def _copy(source: Path, target: Path) -> None:
@@ -162,7 +184,7 @@ def _leaving_links(root: Path) -> list[str]:
     return out
 
 
-def check(declared: "str | Path", project: Path) -> list[str]:
+def check(declared: "str | Path", project: Path, pnpm: "str | Path | None" = None) -> list[str]:
     """Why a declaration cannot be prepared, before anything is created. Copies nothing."""
     resolved = Path(declared).expanduser().absolute().resolve()
     missing = [e for e in ENTRIES if not (resolved / e).exists()]
@@ -174,13 +196,24 @@ def check(declared: "str | Path", project: Path) -> list[str]:
                 "so its prepared copy would name bytes that can change after preparation"]
     project = Path(project)
     out = []
-    if not (project / "package-lock.json").is_file():
-        out.append("the project has no package-lock.json, so its dependencies are not pinned")
     if not (project / "package.json").is_file():
-        out.append("the project has no package.json")
-    if not (project / "node_modules").is_dir():
-        out.append("the project's dependencies are not installed; prepare them first with "
-                   f"`{resolved / 'bin' / 'npm'} ci` in {project}")
+        return out + ["the project has no package.json"]
+    if pnpm is not None:
+        out += pm.pnpm_problems(pnpm, project)
+        if not (project / "node_modules").is_dir():
+            out.append("the project's dependencies are not installed; prepare them first with "
+                       f"`{pm.preparation_command(pm.PNPM, str(resolved))}` in {project}")
+        elif not out:
+            version = json.loads((Path(pnpm).expanduser().resolve() / "package.json").read_text())["version"]
+            out += pm.layout_problems(project, {"version": version})
+    else:
+        if (pm.pin(project) or "").startswith("pnpm@"):
+            out.append(f"the project pins {pm.pin(project)}; declare the pnpm package with --pnpm")
+        if not (project / "package-lock.json").is_file():
+            out.append("the project has no package-lock.json, so its dependencies are not pinned")
+        if not (project / "node_modules").is_dir():
+            out.append("the project's dependencies are not installed; prepare them first with "
+                       f"`{resolved / 'bin' / 'npm'} ci` in {project}")
     pinned = project / ".node-version"
     if pinned.is_file():
         want = pinned.read_text().strip().lstrip("v")
@@ -193,7 +226,8 @@ def check(declared: "str | Path", project: Path) -> list[str]:
     return out
 
 
-def prepare(declared: "str | Path", runtime: Path, project: Path) -> dict[str, Any]:
+def prepare(declared: "str | Path", runtime: Path, project: Path,
+            pnpm: "str | Path | None" = None) -> dict[str, Any]:
     """Copy the toolchain into the run's runtime directory and return the record the run keeps.
     Call `check` first; this assumes it found nothing."""
     declared = Path(declared).expanduser().absolute()
@@ -211,12 +245,28 @@ def prepare(declared: "str | Path", runtime: Path, project: Path) -> dict[str, A
             shutil.rmtree(prepared, ignore_errors=True)
             raise ToolchainError(f"{declared} is Node {node_version}; the project's .node-version "
                                  f"pins {want}")
-    return {"format": FORMAT, "kind": KIND, "declared": str(declared), "resolved": str(resolved),
-            "prepared": str(prepared), "node_version": node_version, "npm_version": npm_version,
-            "identity": identity(prepared),
-            "dependencies": dependencies(project),
-            "trust": "project checks already execute project code; this makes a prepared "
-                     "toolchain available and does not make dependency code trusted"}
+    record = {"format": FORMAT, "kind": KIND, "declared": str(declared), "resolved": str(resolved),
+              "prepared": str(prepared), "node_version": node_version, "npm_version": npm_version,
+              "identity": identity(prepared),
+              "trust": "project checks already execute project code; this makes a prepared "
+                       "toolchain available and does not make dependency code trusted"}
+    if pnpm is None:
+        record["dependencies"] = dependencies(project)
+        return record
+    try:
+        manager = pm.prepare_pnpm(pnpm, prepared)
+    except ValueError as exc:
+        shutil.rmtree(prepared, ignore_errors=True)
+        raise ToolchainError(str(exc)) from exc
+    manager["identity"] = tree(prepared / pm.PNPM_PACKAGE)["digest"]
+    manager["writable_caches"] = [f"node_modules/{c}" for c in pm.TOOL_CACHES]
+    manager["network"] = ("dependencies are prepared before the run; worker pnpm runs with "
+                          "npm_config_offline and cannot fetch. Fresh-checkout verification "
+                          "installs from the registry with --frozen-lockfile: a fetch pinned by "
+                          "the lockfile, not an offline install")
+    record["package_manager"] = manager
+    record["dependencies"] = dependencies(project, pm.PNPM)
+    return record
 
 
 def identity(root: Path) -> dict[str, Any]:
@@ -227,10 +277,13 @@ def identity(root: Path) -> dict[str, Any]:
     return {"entries": entries, "digest": hashlib.sha256(blob).hexdigest()}
 
 
-def _layout(prepared: Path) -> bool:
+def _layout(prepared: Path, manager: str = pm.NPM) -> bool:
     """The prepared copy holds exactly the copied entries: nothing added beside them."""
     expected = {"": {"bin", "lib"}, "bin": {"node", "npm", "npx"}, "lib": {"node_modules"},
                 "lib/node_modules": {"npm"}}
+    if manager == pm.PNPM:
+        expected["bin"] = expected["bin"] | {"pnpm"}
+        expected["lib/node_modules"] = expected["lib/node_modules"] | {"pnpm"}
     try:
         return all(set(os.listdir(Path(prepared) / rel)) == names for rel, names in expected.items())
     except OSError:
@@ -238,8 +291,29 @@ def _layout(prepared: Path) -> bool:
 
 
 def source_matches(record: dict[str, Any]) -> bool:
-    """Whether the declared distribution still holds the bytes that were prepared from it."""
-    return identity(Path(record["resolved"]))["digest"] == record["identity"]["digest"]
+    """Whether the declared distributions still hold the bytes that were prepared from them."""
+    if identity(Path(record["resolved"]))["digest"] != record["identity"]["digest"]:
+        return False
+    manager = record.get("package_manager")
+    return manager is None or tree(Path(manager["resolved"]))["digest"] == manager["identity"]
+
+
+def materialize(record: dict[str, Any], target: Path) -> Path:
+    """A fresh prepared copy made from the recorded sources, for fresh-checkout verification.
+
+    It must reproduce the recorded identities exactly; otherwise nothing is verified with it."""
+    target = Path(target)
+    for entry in ENTRIES:
+        _copy(Path(record["resolved"]) / entry, target / entry)
+    if identity(target)["digest"] != record["identity"]["digest"]:
+        raise ToolchainError("the declared Node distribution no longer holds the prepared bytes")
+    manager = record.get("package_manager")
+    if manager:
+        pm.prepare_pnpm(manager["resolved"], target)
+        if (tree(target / pm.PNPM_PACKAGE)["digest"] != manager["identity"]
+                or _sha(target / pm.PNPM_WRAPPER) != manager["wrapper_sha256"]):
+            raise ToolchainError("the declared pnpm package no longer holds the prepared bytes")
+    return target
 
 
 def problems(config: dict[str, Any]) -> list[str]:
@@ -249,19 +323,26 @@ def problems(config: dict[str, Any]) -> list[str]:
         return []
     out = []
     prepared = Path(record["prepared"])
-    if identity(prepared)["digest"] != record["identity"]["digest"] or not _layout(prepared):
+    manager = pm.name_of(record)
+    if identity(prepared)["digest"] != record["identity"]["digest"] or not _layout(prepared, manager):
         out.append(f"the prepared toolchain at {prepared} is missing or no longer matches the "
                    "bytes recorded at start; start a new run")
+    if manager == pm.PNPM:
+        pnpm = record["package_manager"]
+        if (tree(prepared / pm.PNPM_PACKAGE)["digest"] != pnpm["identity"]
+                or _sha(prepared / pm.PNPM_WRAPPER) != pnpm["wrapper_sha256"]):
+            out.append(f"the prepared pnpm at {prepared} no longer matches the bytes recorded at "
+                       "start; start a new run")
     try:
-        now = dependencies(Path(config["paths"]["project"]))
+        now = dependencies(Path(config["paths"]["project"]), manager)
     except (OSError, ValueError) as exc:
         return out + [f"the project's package.json cannot be read ({type(exc).__name__}); the "
                       "prepared dependencies cannot be shown to correspond to it"]
     was = record["dependencies"]
-    if now["manifest"]["sha256"] != was["manifest"]["sha256"] or \
-            now["lockfile"]["sha256"] != was["lockfile"]["sha256"]:
-        out.append("the project's dependency declarations (package.json dependency fields or "
-                   "package-lock.json) changed since preparation, so the prepared dependencies no "
+    if not declarations_match(now, was):
+        out.append(f"the project's dependency declarations (package.json installation fields, "
+                   f"{pm.LOCKFILES[manager]} or the package manager's configuration files) changed "
+                   "since preparation, so the prepared dependencies no "
                    "longer correspond to the candidate. Nothing was reinstalled; a dependency change "
                    "needs its own adjudication and a newly prepared run")
     if now["node_modules"]["digest"] != was["node_modules"]["digest"]:
@@ -274,16 +355,29 @@ def boundary_rules(config: dict[str, Any]) -> dict[str, list[str]]:
     """Paths the worker boundary must deny writes to, and the one tree it may execute from."""
     record = config.get("toolchain")
     if not record:
-        return {"deny_write": [], "allow_exec": []}
+        return {"deny_write": [], "allow_exec": [], "allow_write": [], "signal_same_sandbox": False}
     # Resolved, because the boundary matches real paths: a rule on a symlinked path protects nothing.
     prepared = str(Path(record["prepared"]).resolve())
-    modules = str(Path(config["paths"]["project"]).resolve() / "node_modules")
-    return {"deny_write": [prepared, modules], "allow_exec": [modules]}
+    project = Path(config["paths"]["project"]).resolve()
+    modules = str(project / "node_modules")
+    # Tool caches a pnpm run's record names stay writable; every installed package stays protected.
+    caches = [str(project / c) for c in (record.get("package_manager") or {}).get("writable_caches", [])]
+    # A pnpm run's checks use worker pools (Vitest) that must stop their own children. Signals stay
+    # confined to the same sandbox; npm runs keep the original rules.
+    return {"deny_write": [prepared, modules], "allow_exec": [modules], "allow_write": caches,
+            "signal_same_sandbox": bool(record.get("package_manager"))}
+
+
+def env_vars(config: dict[str, Any]) -> dict[str, str]:
+    """The package manager's environment for anything run with the prepared tooling."""
+    record = config.get("toolchain")
+    return dict(pm.WORKER_ENV[pm.name_of(record)]) if record else {}
 
 
 def worker_env(config: dict[str, Any]) -> dict[str, str]:
-    """What the worker's environment adds: the prepared `bin` first on `PATH`, and offline npm."""
+    """What the worker's environment adds: the prepared `bin` first on `PATH`, and an offline
+    package manager."""
     record = config.get("toolchain")
     if not record:
         return {}
-    return {"PATH_PREFIX": str(Path(record["prepared"]) / "bin"), **WORKER_NPM_ENV}
+    return {"PATH_PREFIX": str(Path(record["prepared"]) / "bin"), **env_vars(config)}
