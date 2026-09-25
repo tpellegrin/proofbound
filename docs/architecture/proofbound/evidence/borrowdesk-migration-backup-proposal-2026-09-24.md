@@ -116,7 +116,7 @@ The run stops, and the coordinator reports, when:
 6. **An owner decision.** The requirements expose a material, owner-visible choice the goal does not
    settle. The run pauses without launching until the owner answers.
 7. **An unsafe mechanism.** The accepted requirements cannot keep writers out between the copy and
-   the schema change, and cannot detect a change made there (preparation, P6). That is a blocking
+   the schema change, and cannot detect a change made there (preparation, probe 6). That is a blocking
    challenge finding, not an adjudication in the worker's favour.
 8. **Acceptance cannot be bound.** The acceptance script cannot be bound without weakening a
    scenario in `acceptance/scenarios.md`.

@@ -64,34 +64,35 @@ creates a file" is one sentence the new option must extend explicitly.
 
 The primary documentation read was SQLite's pages on `VACUUM`, the online backup API and
 `sqlite3_serialize`, and better-sqlite3's `docs/api.md` at `v13.0.3`. The disposable probes ran
-on fresh copies of seed-built fixtures, with the installed versions.
+on fresh copies of seed-built fixtures, with the installed versions. They are numbered 1–13 here;
+the private probe files label them P1–P12 and J.
 
 | # | Question | Observed |
 |---|---|---|
-| P1 | `VACUUM INTO` while the migrating connection holds `BEGIN IMMEDIATE` | refused: "cannot VACUUM from within a transaction". SQLite documents this |
-| P2 | What a `VACUUM INTO` copy preserves | `STATE` equal (pragmas, schema, rows, `sqlite_sequence`), bytes not equal; the seed operates on it and its next loan id is 5 |
-| P3 | `VACUUM INTO` onto existing files | a non-empty file is refused and unchanged. **An existing empty file is silently written.** The source path itself is refused |
-| P4 | `serialize()` inside `BEGIN IMMEDIATE` | synchronous; bytes equal to the file; `STATE` equal; the seed operates on it |
-| P5 | The asynchronous `backup()` | fails ("unable to open database file") while the same connection holds the write lock; works outside it and in a read transaction. The library also advises against spanning event-loop turns inside a transaction |
-| P6 | A copy taken without the write lock, then a concurrent v0 write, then `migrate` | **the copy lacks the loan**: a consistent snapshot, but not the state migrated |
-| P7 | While `BEGIN IMMEDIATE` is held | a v0 writer waits about 5.5 s and fails with `DATABASE_BUSY`; a v0 reader proceeds |
-| P8 | Destination aliases | a symlink or hard link shares the source's inode. A **dangling** symlink looks absent to `existsSync` and present to `lstat`. `VACUUM INTO` follows it and **creates the file at the link's target**; an exclusive create (`wx`) refuses it |
-| P9 | Publishing without overwriting | `link()` refuses an existing name; `rename()` replaces it |
-| P10 | A truncated copy (5 of 14 pages) | the seed fails with `STORAGE_ERROR`, and `integrity_check` reports "malformed". This case is detectable, but not every partial copy is shown to be |
-| P11 | `migrate` with the source directory read-only | `STORAGE_ERROR` (`SQLITE_READONLY_DIRECTORY`); the file unchanged; the seed still reads it. This is a CLI route to "migration fails after a backup" |
-| P12 | `sqlite_sequence` against `max(loans.id)` | equal: public v0 commands cannot make them differ. Loan-id allocation is checked directly, and through the seed's next checkout |
-| J | A complete copy written at `<source>-journal` | **deleted by the next ordinary v0 read of the source**. SQLite owns that name, and `-wal` and `-shm` too |
+| 1 | `VACUUM INTO` while the migrating connection holds `BEGIN IMMEDIATE` | refused: "cannot VACUUM from within a transaction". SQLite documents this |
+| 2 | What a `VACUUM INTO` copy preserves | `STATE` equal (pragmas, schema, rows, `sqlite_sequence`), bytes not equal; the seed operates on it and its next loan id is 5 |
+| 3 | `VACUUM INTO` onto existing files | a non-empty file is refused and unchanged. **An existing empty file is silently written.** The source path itself is refused |
+| 4 | `serialize()` inside `BEGIN IMMEDIATE` | synchronous; bytes equal to the file; `STATE` equal; the seed operates on it |
+| 5 | The asynchronous `backup()` | fails ("unable to open database file") while the same connection holds the write lock; works outside it and in a read transaction. The library also advises against spanning event-loop turns inside a transaction |
+| 6 | A copy taken without the write lock, then a concurrent v0 write, then `migrate` | **the copy lacks the loan**: a consistent snapshot, but not the state migrated |
+| 7 | While `BEGIN IMMEDIATE` is held | a v0 writer waits about 5.5 s and fails with `DATABASE_BUSY`; a v0 reader proceeds |
+| 8 | Destination aliases | a symlink or hard link shares the source's inode. A **dangling** symlink looks absent to `existsSync` and present to `lstat`. `VACUUM INTO` follows it and **creates the file at the link's target**; an exclusive create (`wx`) refuses it |
+| 9 | Publishing without overwriting | `link()` refuses an existing name; `rename()` replaces it |
+| 10 | A truncated copy (5 of 14 pages) | the seed fails with `STORAGE_ERROR`, and `integrity_check` reports "malformed". This case is detectable, but not every partial copy is shown to be |
+| 11 | `migrate` with the source directory read-only | `STORAGE_ERROR` (`SQLITE_READONLY_DIRECTORY`); the file unchanged; the seed still reads it. This is a CLI route to "migration fails after a backup" |
+| 12 | `sqlite_sequence` against `max(loans.id)` | equal: public v0 commands cannot make them differ. Loan-id allocation is checked directly, and through the seed's next checkout |
+| 13 | A complete copy written at `<source>-journal` | **deleted by the next ordinary v0 read of the source**. SQLite owns that name, and `-wal` and `-shm` too |
 
 **Material constraints for the requirements:**
 1. **The exact pre-migration state needs the write lock across the copy and the schema change**,
-   or proof at lock time that nothing changed after the copy. A snapshot alone is not enough (P6).
-   `serialize()` works under the lock; `VACUUM INTO` and `backup()` do not (P1, P5). The mechanism
+   or proof at lock time that nothing changed after the copy. A snapshot alone is not enough (probe 6).
+   `serialize()` works under the lock; `VACUUM INTO` and `backup()` do not (probes 1 and 5). The mechanism
    is left to the worker's requirements and the challenge.
 2. **The destination check must use `lstat` and exclusive creation.** It must also refuse the
-   source's SQLite sibling names, even when absent (P3, P8, J).
+   source's SQLite sibling names, even when absent (probes 3, 8 and 13).
 3. **Interruption.** Anything written directly at the requested path can be left partial. Telling
    a completed backup apart needs a rule, such as publishing only a completed, verified file under
-   the requested name (P9). A partial copy is not reliably recognized by opening it (P10).
+   the requested name (probe 9). A partial copy is not reliably recognized by opening it (probe 10).
 4. **Verification** means comparing the copy's application records with the source's under the
    lock, not `integrity_check` alone.
 
