@@ -8,7 +8,9 @@ Reproduced first with BorrowDesk (Node 24.19.0, TypeScript 7), in the production
 These tests use a synthetic Node distribution, so they do not depend on the host's Node. Its
 `node` and `npm` are shell scripts, and its "native" dependency is a copy of a system binary
 installed under `node_modules`: a copy of the test interpreter, because a copied Apple platform
-binary is killed on current macOS. What each group falsifies:
+binary is killed on current macOS. A `pyvenv.cfg` beside the copy names the interpreter's home, as
+`venv --copies` does, so a relocatable build (python-build-standalone's, with compiled prefix
+`/install`) still finds its standard library. What each group falsifies:
 - **Preparation.** An unusable declaration is refused before anything is created. A usable one is
   copied into the run and recorded by content, with the project's dependencies.
 - **The boundary.** The prepared `bin` is on the worker `PATH`; the installed dependencies execute
@@ -60,6 +62,7 @@ case "$1" in
       mkdir -p node_modules/.bin node_modules/native
       printf '#!/bin/sh\necho shim-ran\n' > node_modules/.bin/tool; chmod +x node_modules/.bin/tool
       cp NATIVE node_modules/native/tool
+      printf 'home = %s\n' "PYHOME" > node_modules/native/pyvenv.cfg
       if [ -f rewrite-lock ]; then printf '{"lockfileVersion": 3, "rewritten": true}\n' > package-lock.json; fi ;;
   run) [ "$2" = check ] && exec /bin/sh ./check.sh ;;
   install) echo "installing $2" ; exit 1 ;;
@@ -94,7 +97,11 @@ def distribution(root: Path, version="99.0.0-test") -> Path:
     npm = dist / "lib/node_modules/npm/bin"
     npm.mkdir(parents=True)
     (dist / "bin/node").write_text(f'#!/bin/sh\n[ "$1" = --version ] && echo v{version}\n')
-    (npm / "npm-cli.js").write_text(NPM.replace("NATIVE", str(Path(sys.executable).resolve())))
+    # The copy finds its standard library through `pyvenv.cfg`, as a `venv --copies` interpreter
+    # does: a relocatable build (compiled prefix `/install`, for instance) cannot find it from
+    # the copy's own location.
+    (npm / "npm-cli.js").write_text(NPM.replace("NATIVE", str(Path(sys.executable).resolve()))
+                                    .replace("PYHOME", str(Path(sys.base_prefix).resolve() / "bin")))
     (npm / "npx-cli.js").write_text("#!/bin/sh\nexit 0\n")
     for script in (dist / "bin/node", npm / "npm-cli.js", npm / "npx-cli.js"):
         script.chmod(0o755)
