@@ -14,13 +14,13 @@ Typical spec:
 
 ```json
 {
-  "run_root": "/abs/project/DeepSeekAndDestroy/plans/p/runs/r",
+  "run_root": "/abs/project/.proofbound/plans/p/runs/r",
   "phase_id": "phase-4",
   "task_id": "U17",
   "title": "Persist canonical media state",
   "objective": "Persist canonical media selection across a real restart.",
   "authority": ["docs/architecture.md"],
-  "inputs": ["DeepSeekAndDestroy/.../discovery.md"],
+  "inputs": [".proofbound/.../discovery.md"],
   "extra_inventory": [".runtime/media"],
   "acceptance": [
     "selected media survives a fresh-process restart",

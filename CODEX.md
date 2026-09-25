@@ -14,7 +14,7 @@ Set these two once; every command below uses them. `$PB` is this repository.
 ```bash
 PB=/absolute/path/to/proofbound
 PROJECT='/absolute/path/to/your project'        # clean Git worktree, initial commit
-RUN="$PROJECT/DeepSeekAndDestroy/plans/CH-001/runs/first"
+RUN="$PROJECT/.proofbound/plans/CH-001/runs/first"
 ```
 
 `CH-001` is the `--change` identifier you pick; `first` is the run name `start` creates under it.

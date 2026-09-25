@@ -21,6 +21,7 @@ from _roles import ROLE_NAMES
 # One definition, in the module that owns run state: admission compares the project it was
 # granted for against the project a launch would actually touch.
 from dsd_state import project_root_from_run
+import _workspace
 
 
 
@@ -165,7 +166,9 @@ def launch(args: argparse.Namespace) -> int:
         run_checked([
             sys.executable, str(scripts / "scope_snapshot.py"), "capture",
             "--root", str(project_root), "--output", str(baseline),
-            "--git-dirty", "--exclude-prefix", "DeepSeekAndDestroy",
+            # Only the run's own workspace root is excluded: a write into any other root, the
+            # legacy one included, stays visible as a change in scope.
+            "--git-dirty", "--exclude-prefix", (_workspace.root_of(run_root) or Path(_workspace.WORKSPACE)).name,
             "--task-contract", str(contract),
         ])
         run_checked([

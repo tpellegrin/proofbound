@@ -490,7 +490,7 @@ raise SystemExit(2)
             ]
             self.assertEqual(len(handlers), 1)
             self.assertTrue(handlers[0].get("asyncRewake"))
-            tools = project / "DeepSeekAndDestroy" / "tools"
+            tools = project / ".proofbound" / "tools"
             self.assertTrue((tools / "claude_worker_rewake.py").exists())
             self.assertTrue((tools / "context_checkpoint.py").exists())
             self.assertIn(str((ROOT / "scripts").resolve()), (tools / "claude_worker_rewake.py").read_text())

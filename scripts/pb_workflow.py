@@ -23,6 +23,7 @@ from _freeze import current_candidate, freeze_identity
 from _receipts import receipt
 from _contract import declared_candidate
 import _worker_profiles as profiles
+import _workspace
 
 SCRIPTS = Path(__file__).resolve().parent
 ROOT = SCRIPTS.parent
@@ -159,7 +160,9 @@ def start(args):
     if not 30 <= args.deadline_seconds <= 3600:
         raise ValueError("--deadline-seconds must be between 30 and 3600")
     settings = profiles.resolve(args.worker_profile)
-    run = project / "DeepSeekAndDestroy" / "plans" / args.change / "runs" / "first"
+    # A new run goes under `.proofbound/`; a run started before that name exists where it was
+    # recorded and is resumed there, so the same change is never started a second time elsewhere.
+    run = _workspace.run_for(project, args.change)
     authority = project / "specs" / args.change
     if run.exists():
         if (run / "run-config.json").is_file():
@@ -732,10 +735,12 @@ def finish(args):
     out.mkdir(parents=True)
     (out / "coordinator-report.md").write_text(report)
     project = c["paths"]["project"]
-    patch = subprocess.check_output(["git", "-C", project, "diff", "--binary", c["baseline"], "--", ".", ":(exclude)DeepSeekAndDestroy"])
+    # Workflow state under any workspace root, this run's or another's, is never application change.
+    patch = subprocess.check_output(["git", "-C", project, "diff", "--binary", c["baseline"], "--", ".",
+                                     *(f":(exclude){root}" for root in _workspace.ROOTS)])
     untracked = subprocess.check_output(["git", "-C", project, "ls-files", "--others", "--exclude-standard", "-z"]).decode().split('\0')
     for rel in filter(None, untracked):
-        if rel.startswith("DeepSeekAndDestroy/"): continue
+        if _workspace.is_generated(rel): continue
         cp = subprocess.run(["git", "diff", "--no-index", "--binary", "--", "/dev/null", rel], cwd=project, capture_output=True)
         if cp.returncode not in (0, 1): raise ValueError("could not include untracked file in delivery patch")
         patch += cp.stdout

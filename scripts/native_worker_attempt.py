@@ -15,6 +15,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from _contract import validate_role_contract
+import _workspace
 from _roles import ROLE_NAMES
 from _rules_snapshot import sha256_file, verify_snapshot
 from run_worker import atomic_json, bind_report_at_terminal, freeze_scope_at_terminal, now, reserve_attempt
@@ -31,10 +32,7 @@ def reserve(args: argparse.Namespace) -> int:
     run = absolute(args.run_root, "run-root")
     if not project.is_dir() or not run.is_dir():
         raise ValueError("project-root and run-root must exist")
-    try:
-        run.relative_to(project / "DeepSeekAndDestroy")
-    except ValueError as exc:
-        raise ValueError(f"run-root must live under {project / 'DeepSeekAndDestroy'}") from exc
+    _workspace.containing(project, run)
 
     paths = {
         "project_root": project,
@@ -126,11 +124,8 @@ def finalize(args: argparse.Namespace) -> int:
     status = args.status
     exit_code = 0 if status == "completed" else (args.exit_code if args.exit_code is not None else 1)
     process_ended_at = now()
-    project_root = None
-    for ancestor in [event_dir, *event_dir.parents]:
-        if ancestor.name == "DeepSeekAndDestroy":
-            project_root = ancestor.parent.resolve()
-            break
+    workspace_root = _workspace.root_of(event_dir)
+    project_root = workspace_root.parent.resolve() if workspace_root is not None else None
     terminal_report, report_error = bind_report_at_terminal({
         "event_dir": event_dir,
         "report": Path(reservation["report"]).resolve(),

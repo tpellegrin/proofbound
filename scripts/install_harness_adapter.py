@@ -16,8 +16,13 @@ from pathlib import Path
 from typing import Any
 
 from detect_harness import select_harness
+import _workspace
 
-MARKER = "DeepSeekAndDestroy/tools/context_checkpoint.py"
+#: How an installed checkpoint hook is recognised: by its shim path under any workspace root, so
+#: reinstalling over an install made before `.proofbound/` replaces that hook instead of adding a
+#: second one beside it.
+MARKERS = tuple(f"{root}/tools/context_checkpoint.py" for root in _workspace.ROOTS)
+REWAKE_MARKERS = ("claude_worker_rewake.py",)
 
 
 def utc_stamp() -> str:
@@ -53,12 +58,13 @@ def write_json(path: Path, data: dict[str, Any]) -> None:
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
 
-def ensure_hook(data: dict[str, Any], event: str, group: dict[str, Any], marker: str = MARKER) -> bool:
+def ensure_hook(data: dict[str, Any], event: str, group: dict[str, Any], markers: tuple[str, ...] = MARKERS) -> bool:
     hooks = data.setdefault("hooks", {})
     groups = hooks.setdefault(event, [])
     for existing in groups:
         for handler in existing.get("hooks", []):
-            if marker in str(handler.get("command", "")) and (event.lower() in str(handler.get("command", "")).lower() or marker != MARKER):
+            command = str(handler.get("command", ""))
+            if any(m in command for m in markers) and (event.lower() in command.lower() or markers != MARKERS):
                 if existing == group:
                     return False
                 existing.clear(); existing.update(group); return True
@@ -76,11 +82,11 @@ def install_hook_fragment(path: Path, fragment_path: Path) -> tuple[bool, Path |
         changed = True
     for event, groups in (fragment.get("hooks") or {}).items():
         for group in groups:
-            marker = "claude_worker_rewake.py" if any(
+            markers = REWAKE_MARKERS if any(
                 "claude_worker_rewake.py" in str(h.get("command", ""))
                 for h in group.get("hooks", [])
-            ) else MARKER
-            changed |= ensure_hook(data, event, group, marker=marker)
+            ) else MARKERS
+            changed |= ensure_hook(data, event, group, markers=markers)
     backup_path = backup(path) if changed and path.exists() else None
     if changed:
         write_json(path, data)
@@ -103,7 +109,7 @@ def write_skill_shim(destination: Path, target: Path) -> None:
 
 
 def install_helper(skill_root: Path, project_root: Path) -> Path:
-    tools = project_root / "DeepSeekAndDestroy" / "tools"
+    tools = project_root / _workspace.WORKSPACE / "tools"
     tools.mkdir(parents=True, exist_ok=True)
     target = tools / "context_checkpoint.py"
     write_skill_shim(target, skill_root / "scripts" / "context_checkpoint.py")
@@ -129,7 +135,7 @@ def install_codex(project_root: Path, skill_root: Path) -> dict[str, Any]:
 def install_claude(project_root: Path, skill_root: Path) -> dict[str, Any]:
     path = project_root / ".claude" / "settings.json"
     changed, backup_path = install_hook_fragment(path, skill_root / "adapters" / "claude" / "settings.fragment.json")
-    rewake_target = project_root / "DeepSeekAndDestroy" / "tools" / "claude_worker_rewake.py"
+    rewake_target = project_root / _workspace.WORKSPACE / "tools" / "claude_worker_rewake.py"
     write_skill_shim(rewake_target, skill_root / "scripts" / "claude_worker_rewake.py")
     return {
         "harness": "claude-code",
@@ -187,7 +193,7 @@ def main() -> int:
         elif harness == "opencode": result = install_opencode(project_root, skill_root)
         else: result = install_kilo(project_root, skill_root)
         result.update({"project_root": str(project_root), "helper": str(helper), "installed_at": utc_stamp()})
-        report = project_root / "DeepSeekAndDestroy" / "harness-adapter-installation.md"
+        report = project_root / _workspace.WORKSPACE / "harness-adapter-installation.md"
         report.write_text("# DeepSeek and Destroy Harness Adapter\n\n```json\n" + json.dumps(result, indent=2) + "\n```\n", encoding="utf-8")
         print(json.dumps(result, indent=2)); return 0
     except Exception as exc:

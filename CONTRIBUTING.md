@@ -4,9 +4,11 @@ Proofbound is derived from DeepSeek-and-Destroy (MIT, © FrozenPepper) and is no
 with or endorsed by it. The inherited control plane is orchestration infrastructure, so its own
 test suite is the baseline that protects every invariant. Keep it green.
 
-**Naming boundary.** `Proofbound` is the project identity. Inherited `dsd_*` helpers, the
-`DeepSeekAndDestroy/` workspace root, protocol/manifest format strings, state keys and role
-names are compatibility-sensitive wire identifiers — do not rename them for consistency. See
+**Naming boundary.** `Proofbound` is the project identity. Inherited `dsd_*` helpers,
+protocol/manifest format strings, state keys and role names are compatibility-sensitive wire
+identifiers — do not rename them for consistency. New runs use the `.proofbound/` workspace root;
+the legacy `DeepSeekAndDestroy/` root stays recognised for runs created under it
+(`scripts/_workspace.py`). See
 [`docs/architecture/proofbound/README.md`](docs/architecture/proofbound/README.md) §0, which is
 also the entry point to the architecture and routes to the documents relevant to a given change.
 

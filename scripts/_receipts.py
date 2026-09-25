@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 import uuid
 
+import _workspace
+
 
 def receipt(run_root, action, result, **identities):
     root = Path(run_root).resolve()
@@ -29,7 +31,7 @@ def refusal(args, payload, code):
     if run is None:
         project = getattr(args, "project_root", None)
         if project is None: return None
-        run = Path(project) / "DeepSeekAndDestroy" / "authorization"
+        run = Path(project) / _workspace.WORKSPACE / "authorization"
     contract = getattr(args, "contract", None)
     identities = {"phase": getattr(args, "phase_id", None),
                   "task": getattr(args, "task_id", None),

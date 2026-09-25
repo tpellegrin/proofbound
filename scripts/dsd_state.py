@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from _contract import declared_candidate, declared_review_purpose, requires_admission
+import _workspace
 from _execution import admission_findings
 from _review_purpose import assert_role_qualifies
 from _roles import INDEPENDENT_REVIEW_ROLES
@@ -195,9 +196,9 @@ def project_root_from_run(run_root: Path, state: dict[str, Any]) -> Path:
             path = (run_root / path).resolve()
         if path.is_dir():
             return path.resolve()
-    for ancestor in [run_root, *run_root.parents]:
-        if ancestor.name == "DeepSeekAndDestroy":
-            return ancestor.parent.resolve()
+    root = _workspace.root_of(run_root)
+    if root is not None:
+        return root.parent.resolve()
     raise ValueError("cannot derive project root from run; state.project_worktree is missing/invalid")
 
 

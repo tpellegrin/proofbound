@@ -110,14 +110,16 @@ python3 "$PB/scripts/pb_workflow.py" start --project "$PROJECT" --change CH-001 
   --goal 'Describe the desired change and its public compatibility constraints.' \
   --check 'python3 -m unittest discover'
 
-RUN="$PROJECT/DeepSeekAndDestroy/plans/CH-001/runs/first"
+RUN="$PROJECT/.proofbound/plans/CH-001/runs/first"
 python3 "$PB/scripts/pb_workflow.py" status   --run "$RUN"      # the next permitted action
 python3 "$PB/scripts/pb_workflow.py" continue --run "$RUN"      # mechanical steps + worker
 ```
 
 `--change CH-001` is an identifier you choose; `first` is the run `start` creates under it, so the
-run path is `<project>/DeepSeekAndDestroy/plans/<change>/runs/first`. Use `--goal-file <path>`
-instead of `--goal` for a longer goal.
+run path is `<project>/.proofbound/plans/<change>/runs/first`. Use `--goal-file <path>`
+instead of `--goal` for a longer goal. `.proofbound/` is generated workflow state: add `/.proofbound/`
+to the project's `.gitignore`. A run started before this name existed stays under
+`DeepSeekAndDestroy/` and is continued there by its `--run` path.
 
 `start` preserves existing files, creates **unaccepted** requirements, and grants **zero** spending
 authority. `continue` performs one derived step, or returns the judgment it needs from you.

@@ -1,5 +1,5 @@
 {
-  "run_root": "/absolute/project/DeepSeekAndDestroy/plans/example/runs/run-001",
+  "run_root": "/absolute/project/.proofbound/plans/example/runs/run-001",
   "phase_id": "phase-1",
   "task_id": "U1",
   "title": "One bounded behavior",

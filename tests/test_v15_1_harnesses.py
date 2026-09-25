@@ -40,7 +40,7 @@ class V151HarnessAuditTest(unittest.TestCase):
             self.assertIn("export default", plugin.read_text())
             self.assertTrue(one["changed"]); self.assertFalse(two["changed"])
             self.assertNotIn(".kilo/plugins/", str(plugin))
-            tools = project / "DeepSeekAndDestroy" / "tools"
+            tools = project / ".proofbound" / "tools"
             shim = tools / "context_checkpoint.py"
             self.assertTrue(shim.is_file())
             self.assertIn(str((ROOT / "scripts").resolve()), shim.read_text())
@@ -102,7 +102,7 @@ class V151HarnessAuditTest(unittest.TestCase):
                     "--harness", harness, "--project-root", str(project), "--skill-root", str(ROOT),
                 ])
                 self.assertEqual(cp.returncode, 0, cp.stdout + cp.stderr)
-                tools = project / "DeepSeekAndDestroy" / "tools"
+                tools = project / ".proofbound" / "tools"
                 self.assertTrue((tools / "context_checkpoint.py").is_file(), harness)
                 for legacy in ("check_state.py", "dsd_state.py", "_roles.py", "_rules_snapshot.py", "_contract.py"):
                     self.assertFalse((tools / legacy).exists(), f"{harness}: stale {legacy}")

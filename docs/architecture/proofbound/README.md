@@ -23,10 +23,11 @@ The identity boundary is deliberate and load-bearing:
   documentation, architecture documents discussing *this* system rather than inherited implementation,
   and any genuinely new Proofbound-specific concept.
 - **DeepSeek-and-Destroy-derived internal identifiers remain compatibility-sensitive
-  implementation details until an explicit migration milestone.** That includes the
-  `DeepSeekAndDestroy/` workspace root, `dsd_*.py` helpers and their CLI surface, persisted
-  workspace paths, protocol and manifest format strings, snapshot formats, state keys,
-  environment variables, adapters, and existing role names.
+  implementation details until an explicit migration milestone.** That includes `dsd_*.py`
+  helpers and their CLI surface, persisted workspace paths, protocol and manifest format strings,
+  snapshot formats, state keys, environment variables, adapters, and existing role names.
+- **New runs use the `.proofbound/` workspace root.** Runs under the legacy `DeepSeekAndDestroy/`
+  stay usable in place. Both names are defined once, in `scripts/_workspace.py`.
 
 These are **wire and protocol identifiers**, not branding. Renaming them changes durable artifacts that
 installed projects and historical runs depend on, so it needs its own milestone with its own migration
@@ -49,7 +50,7 @@ an agent's token usage, its context pressure, or how well it will do the task.
 | **A.** Changing reviewer freshness, attempts, gates, roles, acceptance | README + [execution-and-review](execution-and-review.md) + [core-model](core-model.md) | everything else | 47 KB |
 | **B.** Implementing the artifact graph or ledger | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [plan](../specification-reflection-harness-implementation-plan.md) | freeze, autonomy, research, history | 231 KB + plan |
 | **B2.** Implementing freeze / contract identity (M2C) | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [freeze-and-binding](freeze-and-binding.md) + [plan](../specification-reflection-harness-implementation-plan.md) | autonomy, research, history | 268 KB + plan |
-| **C.** Implementing decision provenance | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [long-running-autonomy](long-running-autonomy.md) | research, history | 89 KB |
+| **C.** Implementing decision provenance | README + [core-model](core-model.md) + [artifacts-and-provenance](artifacts-and-provenance.md) + [long-running-autonomy](long-running-autonomy.md) | research, history | 90 KB |
 | **D.** Implementing context telemetry | README + [core-model](core-model.md) + [context-economy](context-economy.md) | artifacts, autonomy, history | 45 KB |
 | **D2.** Authoring scenarios or grading a run | README + [evaluation](evaluation.md) | the binding chain, comparison rules, run history | 56 KB |
 | **D3.** Calibrating a suite, comparing runs, or designing a control arm | README + [evaluation-comparison](evaluation-comparison.md) | scenario authoring, the binding chain | 56 KB |

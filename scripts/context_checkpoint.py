@@ -18,6 +18,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import _workspace
+
 TERMINAL = {"completed", "human-blocked", "paused-by-user", "abandoned"}
 
 
@@ -75,12 +77,18 @@ def resolve_path(value: Any, base: Path) -> Path | None:
     return path if path.is_absolute() else (base / path).resolve()
 
 
+def installed_tool(project_root: Path) -> Path:
+    """The project's installed checkpoint shim: `.proofbound/tools/`, or where an older install put it."""
+    for root in _workspace.ROOTS:
+        shim = project_root / root / "tools" / "context_checkpoint.py"
+        if shim.is_file():
+            return shim
+    return project_root / _workspace.WORKSPACE / "tools" / "context_checkpoint.py"
+
+
 def active_state_paths(project_root: Path) -> list[Path]:
-    root = project_root / "DeepSeekAndDestroy" / "plans"
-    if not root.is_dir():
-        return []
     candidates: list[Path] = []
-    for path in root.glob("*/runs/*/state.json"):
+    for path in (p for root in _workspace.plans(project_root) for p in root.glob("*/runs/*/state.json")):
         try:
             state = read_json(path)
         except Exception:
@@ -315,7 +323,7 @@ The compacted conversation is not authoritative. Reload the skill, read live
 any live worker:
 
 ```bash
-python3 "{project_root / 'DeepSeekAndDestroy/tools/context_checkpoint.py'}" verify-resume \\
+python3 "{installed_tool(project_root)}" verify-resume \\
   --run-root "{run_root}" --sequence {sequence} --harness {harness}
 ```
 
@@ -374,7 +382,7 @@ def rehydrate_text(project_root: Path, run_root_arg: str | None, session_id: str
 Before any project reasoning:
 1. Reload the DeepSeek and Destroy skill.
 2. Read live `{run_root / 'state.json'}` first.
-3. Run `python3 "{project_root / 'DeepSeekAndDestroy/tools/context_checkpoint.py'}" --run-root "{run_root}" verify-resume --sequence {sequence}`.
+3. Run `python3 "{installed_tool(project_root)}" --run-root "{run_root}" verify-resume --sequence {sequence}`.
 4. Revalidate any worker recorded as live when needed.
 5. Execute a mechanical live `next_action` immediately. If it requires parent judgment, open only the exact decision/evidence/authority it names; read HANDOVER only for genuinely missing non-state continuity.
 

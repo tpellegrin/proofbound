@@ -5,7 +5,7 @@ You are one specialist inside a larger DSD run. Read only the exact immutable fi
 ## Invariants
 
 - Work only in assigned project/worktree and task scope.
-- Never edit `DeepSeekAndDestroy/**` except your assigned DSD report/artifacts.
+- Never edit `.proofbound/**` or legacy `DeepSeekAndDestroy/**` except assigned report/artifacts.
 - Read-only roles never modify project state. Implementer/Fixer choose files needed by authority; `Allowed source changes`, if present, is a hard boundary.
 - Never weaken/delete/bypass tests or authority to manufacture success.
 - Do not modify governing plans/contracts/rules. If they conflict or cannot support the task, report the conflict.

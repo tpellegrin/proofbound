@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from _contract import role_writes_project, validate_role_contract
+import _workspace
 from _roles import ROLE_NAMES
 from _rules_snapshot import sha256_file, verify_snapshot
 
@@ -204,9 +205,9 @@ def resolve_preflight(args: argparse.Namespace) -> tuple[dict[str, Path] | None,
     if not run_root.is_dir():
         return None, f"run root missing/not directory: {run_root}"
     try:
-        run_root.relative_to(project_root / "DeepSeekAndDestroy")
-    except ValueError:
-        return None, f"run root must live under {project_root / 'DeepSeekAndDestroy'}: {run_root}"
+        _workspace.containing(project_root, run_root)
+    except ValueError as exc:
+        return None, str(exc)
     if not paths["prompt"].is_file():
         return None, f"prompt file missing: {paths['prompt']}"
     if not paths["task_contract"].is_file():

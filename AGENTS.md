@@ -34,10 +34,11 @@ repository scope rather than relying on remembering not to emit it.
 
 ## Project identity
 
-`Proofbound` is the project identity. Inherited DeepSeek-and-Destroy identifiers — the
-`DeepSeekAndDestroy/` workspace root, `dsd_*` helpers and their CLI surface, protocol and manifest
-format strings, state keys, environment variables, and existing role names — are
-compatibility-sensitive **wire identifiers**, not branding. Do not rename them for consistency; that
+`Proofbound` is the project identity. Inherited DeepSeek-and-Destroy identifiers — `dsd_*`
+helpers and their CLI surface, protocol and manifest format strings, state keys, environment
+variables, and existing role names — are compatibility-sensitive **wire identifiers**, not
+branding. New runs use the `.proofbound/` workspace root; the legacy `DeepSeekAndDestroy/` root
+stays recognised for runs created under it. Do not rename them for consistency; that
 needs its own migration milestone. See
 [`docs/architecture/proofbound/README.md`](docs/architecture/proofbound/README.md) §0.
 

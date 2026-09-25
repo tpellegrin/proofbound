@@ -374,8 +374,8 @@ experiment. State test: the **arm label is derived**, not stored — a run is th
 when it carries no author report — so no `arm` field is persisted, the same discipline that keeps
 `provider` derived from the model identifier.
 
-Scope is unaffected: the launcher excludes `DeepSeekAndDestroy` from the scope baseline and the run
-root must live under it, so a treatment artifact in the run tree cannot make the reflector look like
+Scope is unaffected: the launcher excludes the run's own workspace root from the scope baseline and
+the run root must live under it, so a treatment artifact in the run tree cannot make the reflector look like
 it mutated the project.
 
 ### E21.9 Two changes the comparison substrate needs first

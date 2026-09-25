@@ -5,7 +5,7 @@ Cold reference for state/evidence/recovery/concurrency. Normal tasks use `dsd_at
 ## Run layout
 
 ```text
-DeepSeekAndDestroy/plans/<plan-id>/runs/<run-id>/
+.proofbound/plans/<plan-id>/runs/<run-id>/
   state.json
   plan-reference.md
   authority-index.json

@@ -7,6 +7,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from _review_purpose import qualifying_roles
+import _workspace
 
 FIELDS = {
     "run_root", "phase_id", "task_id", "revision", "output", "title", "objective",
@@ -52,10 +53,7 @@ def array(spec: dict[str, Any], name: str) -> list[str]:
 
 
 def project_root_from_run(run_root: Path) -> Path:
-    for ancestor in [run_root, *run_root.parents]:
-        if ancestor.name == "DeepSeekAndDestroy":
-            return ancestor.parent.resolve()
-    raise ValueError("run_root must live below DeepSeekAndDestroy/")
+    return _workspace.project_of(run_root)
 
 
 def existing_paths(values: list[str], project: Path, label: str) -> list[Path]:
@@ -75,8 +73,8 @@ def project_prefix(raw: str, label: str) -> str:
     if not value or value in {".", "./", "/"} or path.is_absolute() or ".." in path.parts:
         raise ValueError(f"unsafe {label}: {raw}")
     normalized = path.as_posix().rstrip("/")
-    if normalized == "DeepSeekAndDestroy" or normalized.startswith("DeepSeekAndDestroy/"):
-        raise ValueError(f"{label} cannot target DeepSeekAndDestroy/**")
+    if _workspace.is_generated(normalized):
+        raise ValueError(f"{label} cannot target a workspace root ({', '.join(r + '/**' for r in _workspace.ROOTS)})")
     return normalized
 
 

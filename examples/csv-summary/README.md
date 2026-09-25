@@ -25,7 +25,7 @@ PROJECT=/private/tmp/csv-summary-pilot-1/proofbound
 python3 "$PB/scripts/pb_workflow.py" doctor
 python3 "$PB/scripts/pb_workflow.py" start --project "$PROJECT" --change CH-001 \
   --goal-file /private/tmp/csv-summary-pilot-1/goal.md --check 'python3 -m unittest discover'
-RUN="$PROJECT/DeepSeekAndDestroy/plans/CH-001/runs/first"
+RUN="$PROJECT/.proofbound/plans/CH-001/runs/first"
 python3 "$PB/scripts/pb_workflow.py" status --run "$RUN"
 ```
 

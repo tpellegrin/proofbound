@@ -113,7 +113,7 @@ def distribution(root: Path, version="99.0.0-test") -> Path:
 def node_project(root: Path, dist: Path, *, install=True, version="99.0.0-test") -> Path:
     project = root / "project"
     project.mkdir()
-    (project / ".gitignore").write_text("DeepSeekAndDestroy/\nnode_modules/\ndist/\n")
+    (project / ".gitignore").write_text(".proofbound/\nnode_modules/\ndist/\n")
     (project / ".node-version").write_text(version + "\n")
     (project / "package.json").write_text(json.dumps(
         {"name": "p", "version": "1.0.0", "scripts": {"check": "sh ./check.sh"},
@@ -221,7 +221,7 @@ class Preparation(unittest.TestCase):
                 h = Harness(self, **kwargs)
                 out = h.start()
                 self.assertIn(words, out.get("error", ""), out)
-                self.assertFalse((h.project / "DeepSeekAndDestroy").exists())
+                self.assertFalse([r for r in (".proofbound", "DeepSeekAndDestroy") if (h.project / r).exists()])
 
     def test_a_toolchain_whose_links_leave_it_is_refused(self):
         for label, text in {"absolute": None, "not copied": "../lib/node_modules/other/cli.js"}.items():
@@ -234,7 +234,7 @@ class Preparation(unittest.TestCase):
                 os.symlink(text or str(h.dist / "lib/node_modules/npm/bin/npx-cli.js"), link)
                 out = h.start()
                 self.assertIn("symlinks that leave the copied toolchain", out.get("error", ""), out)
-                self.assertFalse((h.project / "DeepSeekAndDestroy").exists())
+                self.assertFalse([r for r in (".proofbound", "DeepSeekAndDestroy") if (h.project / r).exists()])
 
     def test_a_repeated_start_names_a_changed_toolchain(self):
         h = Harness(self)

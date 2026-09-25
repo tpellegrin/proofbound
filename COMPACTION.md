@@ -17,7 +17,7 @@ A safe boundary means the current atomic orchestration decision and exact `next_
 ## Prepare
 
 ```bash
-python3 DeepSeekAndDestroy/tools/context_checkpoint.py prepare \
+python3 .proofbound/tools/context_checkpoint.py prepare \
   --harness <parent-harness> \
   --reason <reason> \
   [--context-percent <known-percent>]
@@ -38,7 +38,7 @@ Before new project reasoning:
 6. only when `next_action` requires parent judgment, read the exact named decision/evidence/authority. Read HANDOVER only if genuinely needed for non-state continuity.
 
 ```bash
-python3 DeepSeekAndDestroy/tools/context_checkpoint.py \
+python3 .proofbound/tools/context_checkpoint.py \
   --run-root <exact-run-root> verify-resume \
   --sequence <sequence> --harness <parent-harness>
 ```

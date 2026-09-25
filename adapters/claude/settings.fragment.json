@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}/DeepSeekAndDestroy/tools/context_checkpoint.py\" hook --harness claude-code --event precompact",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}/.proofbound/tools/context_checkpoint.py\" hook --harness claude-code --event precompact",
             "statusMessage": "Preparing DSD context checkpoint",
             "timeout": 30
           }
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}/DeepSeekAndDestroy/tools/context_checkpoint.py\" hook --harness claude-code --event postcompact",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}/.proofbound/tools/context_checkpoint.py\" hook --harness claude-code --event postcompact",
             "statusMessage": "Recording DSD compaction",
             "timeout": 30
           }
@@ -32,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}/DeepSeekAndDestroy/tools/context_checkpoint.py\" hook --harness claude-code --event sessionstart",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}/.proofbound/tools/context_checkpoint.py\" hook --harness claude-code --event sessionstart",
             "statusMessage": "Reloading DSD run state",
             "timeout": 30
           }
@@ -45,7 +45,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}/DeepSeekAndDestroy/tools/claude_worker_rewake.py\"",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}/.proofbound/tools/claude_worker_rewake.py\"",
             "statusMessage": "Watching DSD external worker",
             "timeout": 604800,
             "asyncRewake": true

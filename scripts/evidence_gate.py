@@ -19,6 +19,7 @@ from typing import Any
 from _contract import (allowed_source_changes, has_explicit_write_restriction,
                        path_allowed, role_writes_project)
 from _roles import ROLE_NAMES
+import _workspace
 from _rules_snapshot import sha256_file, verify_snapshot
 
 
@@ -378,8 +379,10 @@ def main() -> int:
             if baseline_data.get("inventory_mode") not in {"git-dirty", "git-worktree"}:
                 errors.append("SCOPE-BASELINE-UNSAFE: terminal gate requires compact Git scope inventory")
             exclusions = [str(x).strip("/") for x in baseline_data.get("exclude_prefixes", [])]
-            if exclusions != ["DeepSeekAndDestroy"]:
-                errors.append("SCOPE-BASELINE-UNSAFE: only DeepSeekAndDestroy may be excluded")
+            own = _workspace.root_of(run_root)
+            if own is None or exclusions != [own.name]:
+                expected = own.name if own is not None else "the run's workspace root"
+                errors.append(f"SCOPE-BASELINE-UNSAFE: only {expected} may be excluded")
             requested = run_path(args.scope_output)
             scope_diff, scope_result, scope_errors, scope_warnings = frozen_scope_for_terminal(
                 terminal=terminal, terminal_event=terminal_event, run_root=run_root,

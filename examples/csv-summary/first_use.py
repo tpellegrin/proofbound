@@ -52,7 +52,7 @@ def prepare(into: Path, *, coordinator: str, per_launch: float, executor: str) -
     into.mkdir(parents=True, exist_ok=False)
     project = into / "project"
     shutil.copytree(HERE / "project", project, ignore=shutil.ignore_patterns("__pycache__"))
-    (project / ".gitignore").write_text("DeepSeekAndDestroy/\n__pycache__/\n")
+    (project / ".gitignore").write_text(".proofbound/\n__pycache__/\n")
     for args in (("init", "-q"), ("config", "user.name", "Proofbound first-use fixture"),
                  ("config", "user.email", "fixture@proofbound.invalid"), ("add", "."),
                  ("commit", "-qm", "CSV summary starting project")):
@@ -66,7 +66,7 @@ def prepare(into: Path, *, coordinator: str, per_launch: float, executor: str) -
     dirty = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT, capture_output=True,
                            text=True)
     python = sys.executable
-    run = project / "DeepSeekAndDestroy" / "plans" / CHANGE / "runs" / "first"
+    run = project / ".proofbound" / "plans" / CHANGE / "runs" / "first"
     pb = ROOT / "scripts" / "pb_workflow.py"
     aggregate = round(LAUNCHES["ceiling"] * per_launch, 6)
 

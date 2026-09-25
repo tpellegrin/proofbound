@@ -6,7 +6,7 @@ compatibility: codex, claude-code, opencode, kilo, and comparable coding harness
 metadata:
   default-worker-harness: opencode-cli
   default-worker-model: opencode-go/deepseek-v4-flash
-  workspace-root: DeepSeekAndDestroy
+  workspace-root: .proofbound
 ---
 
 # Proofbound

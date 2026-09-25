@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from _roles import ROLE_SKILLS
+import _workspace
 from _rules_snapshot import MANIFEST_FORMAT, PROTOCOL_NAMES, protocol_fingerprint, sha256_file, verify_snapshot
 
 PROTOCOL_FILES = {
@@ -71,9 +72,9 @@ def main() -> int:
     plan = args.plan.resolve()
 
     try:
-        run_root.relative_to(project_root / "DeepSeekAndDestroy")
-    except ValueError:
-        print(f"ERROR: run root must live under {project_root / 'DeepSeekAndDestroy'}: {run_root}", file=sys.stderr)
+        _workspace.containing(project_root, run_root)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
         return 2
     if not project_root.is_dir():
         print(f"ERROR: project root does not exist: {project_root}", file=sys.stderr)

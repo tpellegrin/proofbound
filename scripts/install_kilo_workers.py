@@ -11,6 +11,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import _workspace
+
 DEFAULT_MODEL = "deepseek/deepseek-v4-flash"
 AGENTS = ("dsd-mutating-worker", "dsd-readonly-worker")
 
@@ -108,7 +110,7 @@ def main() -> int:
             "installed_at": stamp(),
             "next_step": "Run `kilo agent list` and confirm both DSD subagents are registered.",
         }
-        report_dir = project / "DeepSeekAndDestroy"
+        report_dir = project / _workspace.WORKSPACE
         report_dir.mkdir(parents=True, exist_ok=True)
         (report_dir / "kilo-agent-installation.md").write_text(
             "# DeepSeek and Destroy Kilo Agent Installation\n\n```json\n"

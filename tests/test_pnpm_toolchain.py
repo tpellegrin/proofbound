@@ -106,7 +106,7 @@ class Harness(npm_tests.Harness):
         if lock is not None:
             (self.project / "pnpm-lock.yaml").write_text(lock)
         (self.project / "check.sh").write_text(CHECK)
-        (self.project / ".gitignore").write_text("DeepSeekAndDestroy/\nnode_modules/\n")
+        (self.project / ".gitignore").write_text(".proofbound/\nnode_modules/\n")
         for trigger in triggers:
             (self.project / trigger).write_text("x\n")
         for argv in [("init", "-q"), ("config", "user.name", "T"), ("config", "user.email", "t@e.invalid"),
@@ -174,7 +174,7 @@ class Preparation(unittest.TestCase):
                 h = Harness(self, **kwargs)
                 out = h.start()
                 self.assertIn(words, out.get("error", ""), out)
-                self.assertFalse((h.project / "DeepSeekAndDestroy").exists())
+                self.assertFalse([r for r in (".proofbound", "DeepSeekAndDestroy") if (h.project / r).exists()])
 
     def test_credentials_in_npmrc_and_a_missing_pnpm_declaration_are_refused(self):
         h = Harness(self)

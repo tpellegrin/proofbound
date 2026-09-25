@@ -3,7 +3,7 @@ import type { Plugin } from "@kilocode/plugin"
 const server: Plugin = async (ctx) => ({
   "experimental.session.compacting": async (_input, output) => {
     const root = process.env.DSD_PROJECT_ROOT || ctx.worktree || ctx.directory
-    const script = `${root}/DeepSeekAndDestroy/tools/context_checkpoint.py`
+    const script = `${root}/.proofbound/tools/context_checkpoint.py`
     const prepare = Bun.spawnSync([
       "python3", script,
       "--project-root", root,

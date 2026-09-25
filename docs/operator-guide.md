@@ -24,6 +24,18 @@ fixed for the run; see [worker profiles](architecture/proofbound/worker-profiles
 The same goal/change invocation returns the existing run; a conflicting invocation refuses.
 An interrupted initialization is retained and diagnosed, never silently overwritten.
 
+**Where things are written.** Three kinds of material, kept apart:
+- **`<project>/.proofbound/`** is generated workflow state: runs, receipts, worker rules, attempts
+  and deliveries. Ignore it with a root-anchored `/.proofbound/` in `.gitignore`. It is never part
+  of a delivery's patch.
+- **`<project>/specs/<change>/`** holds the deliberate, reviewable specification: the goal,
+  requirements, graph and ledger. It is delivered with the change.
+- **Retained private evidence** belongs outside the project.
+
+A run created before `.proofbound/` lives under `<project>/DeepSeekAndDestroy/`. It stays usable
+where it is, with nothing moved or rewritten. `start` for that change returns it rather than
+creating a second copy. A change with a run under both roots is refused as ambiguous.
+
 `doctor` reports Python, installed executor/version, the selected worker profile, its credential
 (presence only) or local endpoint (reachability only), platform and boundary availability. It
 checks executable identity against the historically qualified OpenCode build. It does not contact a provider or establish that a credential is valid. It does not
@@ -107,7 +119,7 @@ python3 "$PB/scripts/pb_workflow.py" start --project "$PROJECT" --change CH-001 
   inside the verification directory. That is a registry fetch pinned by the lockfile, recorded
   as such, not an offline install.
 - **Tooling that walks the whole project**, for example a formatter reading only `.gitignore`,
-  also sees the run's `DeepSeekAndDestroy/` directory unless the project ignores it.
+  also sees the run's `.proofbound/` directory unless the project ignores it.
 
 ## Authority and resources
 

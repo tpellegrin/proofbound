@@ -45,7 +45,7 @@ class OperatorWorkflow(unittest.TestCase):
         self.tmp = Path(tempfile.mkdtemp(prefix="pb first use "))
         self.addCleanup(shutil.rmtree, self.tmp, True)
         self.project = self.tmp / "ordinary project"; self.project.mkdir()
-        (self.project / '.gitignore').write_text('DeepSeekAndDestroy/\n__pycache__/\n')
+        (self.project / '.gitignore').write_text('.proofbound/\n__pycache__/\n')
         (self.project / 'README.md').write_text('# Greeting library\n')
         for args in [('init','-q'), ('config','user.name','Test Owner'), ('config','user.email','owner@example.invalid'), ('add','.'), ('commit','-qm','initial')]:
             subprocess.run(['git', '-C', str(self.project), *args], check=True)
@@ -329,7 +329,7 @@ class OperatorWorkflow(unittest.TestCase):
         the stale-review guard then saw those bytes as a change and refused. Every fixture here
         gitignored `__pycache__`, so the suite never noticed. This project deliberately does not.
         """
-        (self.project/'.gitignore').write_text('DeepSeekAndDestroy/\n')
+        (self.project/'.gitignore').write_text('.proofbound/\n')
         subprocess.run(['git','-C',str(self.project),'add','.gitignore'],check=True)
         subprocess.run(['git','-C',str(self.project),'commit','-qm','stop ignoring bytecode'],check=True)
         self.reach('implementation')

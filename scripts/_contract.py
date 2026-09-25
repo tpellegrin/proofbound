@@ -11,6 +11,7 @@ import re
 from pathlib import PurePosixPath
 
 from _roles import ALWAYS_PROJECT_WRITER_ROLES
+import _workspace
 
 
 def markdown_section(text: str, heading: str) -> str:
@@ -40,8 +41,9 @@ def _safe_prefixes(text: str, heading: str, *, forbid_dsd: bool = False) -> list
         if path.is_absolute() or ".." in path.parts or value in {".", "./"}:
             raise ValueError(f"unsafe {heading} entry: {value}")
         normalized = path.as_posix()
-        if forbid_dsd and (normalized == "DeepSeekAndDestroy" or normalized.startswith("DeepSeekAndDestroy/")):
-            raise ValueError(f"{heading} cannot target DeepSeekAndDestroy/**")
+        if forbid_dsd and _workspace.is_generated(normalized):
+            raise ValueError(f"{heading} cannot target a workspace root "
+                             f"({', '.join(r + '/**' for r in _workspace.ROOTS)})")
         result.append(normalized)
     return list(dict.fromkeys(result))
 

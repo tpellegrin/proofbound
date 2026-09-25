@@ -503,7 +503,8 @@ binding work.
 is recorded rather than hidden.
 
 Verified from code: task contracts and acceptance both live inside the run tree, under
-`<project>/DeepSeekAndDestroy/`. Both are `L3`. After that tree is deleted, **no file in project state
+the project's workspace root, `<project>/.proofbound/` (or `DeepSeekAndDestroy/` for a run created
+before that name). Both are `L3`. After that tree is deleted, **no file in project state
 records that accepted task `T` was governed by `C`**. The ledger records accepted artifacts, the freeze
 records candidates, the consistency record records challenges; none records implementation tasks.
 

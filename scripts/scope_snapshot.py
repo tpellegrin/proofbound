@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Iterable
 
 from _contract import extra_scope_inventory
+import _workspace
 
 
 def sha256_file(path: Path) -> str:
@@ -330,8 +331,9 @@ def main() -> int:
                 for raw in requested_extra:
                     candidate = lexical_path(root, raw)
                     rel = candidate.relative_to(root).as_posix()
-                    if rel == "DeepSeekAndDestroy" or rel.startswith("DeepSeekAndDestroy/"):
-                        raise ValueError("--extra-inventory cannot target DeepSeekAndDestroy/**")
+                    if _workspace.is_generated(rel):
+                        raise ValueError("--extra-inventory cannot target a workspace root ("
+                                         + ", ".join(r + "/**" for r in _workspace.ROOTS) + ")")
                     extra_specs.append(rel)
                 extra_specs = list(dict.fromkeys(extra_specs))
                 paths.update(expand_paths(root, extra_specs))

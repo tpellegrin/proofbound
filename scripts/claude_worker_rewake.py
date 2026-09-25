@@ -17,6 +17,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+import _workspace
+
 
 def launched_event_path(payload: dict[str, Any]) -> Path | None:
     if str(payload.get("tool_name", "")) != "Bash":
@@ -57,9 +59,8 @@ def safe_terminal(path: Path, payload: dict[str, Any]) -> Path | None:
     if not isinstance(root_value, str) or not root_value.strip():
         return None
     project = Path(root_value).resolve()
-    durable = project / "DeepSeekAndDestroy"
     try:
-        terminal.relative_to(durable)
+        _workspace.containing(project, terminal)
     except ValueError:
         return None
     return terminal
