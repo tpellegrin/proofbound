@@ -846,16 +846,10 @@ def verify_delivery(args):
                                        "longer holds the toolchain bytes the run prepared"}
         else:
             env = {"PATH": str(Path(toolchain["resolved"]) / "bin") + os.pathsep + os.environ.get("PATH", "")}
-            prepared = _bounded(toolchain["dependencies"]["prepare_command"], checkout,
-                                CHECK_TIMEOUT_SECONDS, env=env)
-            now = _toolchain.dependencies(checkout)
-            result["dependencies"] = {
-                "command": toolchain["dependencies"]["prepare_command"], "returncode": prepared["returncode"],
-                "lockfile_matches_prepared": now["lockfile"]["sha256"] == toolchain["dependencies"]["lockfile"]["sha256"],
-                "node_modules_digest": now["node_modules"]["digest"],
-                "note": "installed files can embed their install location (native build configuration), so "
-                        "node_modules digests are compared within a run, not across locations; the lockfile is "
-                        "the comparable identity"}
+            result["dependencies"] = _prepare_dependencies(toolchain, checkout, env)
+            if not result["dependencies"]["matches_prepared"]:
+                applied = False
+                result["project_check"] = {"passed": None, "note": "not run: " + result["dependencies"]["why"]}
     if applied:
         result["project_check"] = _bounded(shlex.split(config["check_command"]), checkout,
                                            config.get("check_timeout_seconds",
@@ -867,10 +861,67 @@ def verify_delivery(args):
             result["outcome_check"] = {**_bounded(argv, into, CHECK_TIMEOUT_SECONDS, env=env),
                                        "command": args.outcome_check}
     result["verified"] = bool(applied and result["project_check"]["passed"]
-                              and (result.get("dependencies") or {"returncode": 0})["returncode"] == 0
+                              and (result.get("dependencies") or {"matches_prepared": True})["matches_prepared"]
                               and (result.get("outcome_check") or {"passed": True})["passed"])
     atomic_json(into / "verification.json", result)
     return result
+
+
+def _declared_dependencies(checkout, recorded):
+    """Whether the checkout declares the dependencies the run prepared, from the bytes on disk.
+
+    The lockfile and `package.json`'s dependency fields are comparable across locations; the
+    installed `node_modules` digest is not, so only its presence is compared.
+    """
+    import _toolchain
+    try:
+        now = _toolchain.dependencies(checkout)
+    except (OSError, ValueError) as exc:
+        return {"readable": False, "error": f"{type(exc).__name__}: {exc}"[:500],
+                "lockfile_matches_prepared": None, "manifest_matches_prepared": None}
+    return {"readable": True,
+            "lockfile_matches_prepared": now["lockfile"]["sha256"] == recorded["lockfile"]["sha256"],
+            "manifest_matches_prepared": now["manifest"]["sha256"] == recorded["manifest"]["sha256"],
+            "node_modules_present": now["node_modules"]["digest"] is not None,
+            "node_modules_digest": now["node_modules"]["digest"]}
+
+
+def _prepare_dependencies(toolchain, checkout, env):
+    """Prepare a fresh checkout's dependencies the way the run did, refusing a candidate whose
+    declared dependencies differ from the ones the run prepared.
+
+    A declaration mismatch is known before installation, so the preparation command is not run.
+    After it runs, the result must still declare the prepared dependencies and hold installed
+    ones. `matches_prepared` is false, with `why`, whenever either does not hold.
+    """
+    recorded = toolchain["dependencies"]
+    command = recorded["prepare_command"]
+    out = {"command": command, "before": _declared_dependencies(checkout, recorded)}
+    if not (out["before"]["lockfile_matches_prepared"] and out["before"]["manifest_matches_prepared"]):
+        out.update(returncode=None, matches_prepared=False,
+                   why=f"{shlex.join(command)} not run: the candidate does not declare the dependencies "
+                       "the run prepared (package-lock.json or package.json dependency fields)")
+        return out
+    prepared = _bounded(command, checkout, CHECK_TIMEOUT_SECONDS, env=env)
+    out.update({k: v for k, v in prepared.items() if k not in ("passed", "note")})
+    after = _declared_dependencies(checkout, recorded)
+    out.update({k: v for k, v in after.items() if k != "readable"})
+    if not prepared["passed"]:
+        why = f"{shlex.join(command)} did not succeed" + (f": {prepared['note']}" if prepared.get("note") else "")
+    elif not after["readable"] or not (after["lockfile_matches_prepared"]
+                                       and after["manifest_matches_prepared"]):
+        why = f"after {shlex.join(command)}, the checkout no longer declares the prepared dependencies"
+    elif not after["node_modules_present"]:
+        why = f"{shlex.join(command)} left no installed node_modules"
+    else:
+        why = None
+    out["matches_prepared"] = why is None
+    if why: out["why"] = why
+    out["note"] = ("stdout and stderr are the command's bounded output; they do not establish whether it "
+                   "contacted a registry. Installed files can embed their install location (native build "
+                   "configuration), so node_modules digests are compared within a run, not across "
+                   "locations; the lockfile is the comparable identity")
+    return out
 
 
 def _recompute_accounting(delivery):
@@ -923,6 +974,8 @@ def _bounded(argv, cwd, timeout, env=None):
     except subprocess.TimeoutExpired:
         return {"returncode": None, "passed": None,
                 "note": f"did not finish within {timeout}s; unknown, not failed"}
+    except OSError as exc:
+        return {"returncode": None, "passed": False, "note": f"could not be started: {exc}"[:500]}
     return {"returncode": cp.returncode, "passed": cp.returncode == 0,
             "stdout": cp.stdout[-4000:], "stderr": cp.stderr[-4000:]}
 

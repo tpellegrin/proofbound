@@ -59,7 +59,10 @@ What each step does:
   a worker's edit to the dependency declarations. Nothing reinstalls: a dependency change needs its
   own adjudication and a newly prepared run.
 - **`verify-delivery`** runs `npm ci` in its fresh checkout with the declared toolchain, but only
-  while that toolchain still holds the prepared bytes.
+  while that toolchain still holds the prepared bytes. A candidate whose lockfile or dependency
+  fields differ from the prepared ones is not verified, and `npm ci` is not run. A failed `npm ci`,
+  or one that leaves no `node_modules` or changes those declarations, is not verified either. Its
+  bounded output is kept, and that output does not show whether the registry was contacted.
 
 Project checks already execute project code. A declared toolchain makes prepared tooling available;
 it does not make dependency code trusted. The worker profile's network and credential rules are

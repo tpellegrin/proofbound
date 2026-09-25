@@ -19,11 +19,16 @@ binary is killed on current macOS. What each group falsifies:
 - **Readiness.** Project tooling is reported verified only after the check ran inside the boundary.
 - **An undeclared run** keeps its behaviour: no toolchain, no new rule, no new `PATH` entry.
 - **`verify-delivery`** uses the declared source only while it holds the prepared bytes, and
-  prepares the fresh checkout as the run was prepared.
+  prepares the fresh checkout as the run was prepared. A candidate that declares other
+  dependencies than the run prepared is refused before `npm ci`, and a failed or incomplete
+  preparation fails verification with its output retained. Reproduced at `a5d0ac2`: a delivery
+  whose recorded lockfile digest differed reported `lockfile_matches_prepared: false` beside
+  `verified: true`.
 """
 import json
 import os
 from pathlib import Path
+import shlex
 import shutil
 import subprocess
 import sys
@@ -47,9 +52,15 @@ if sys.argv[1:3] == ['session', 'list']:
 NPM = r'''#!/bin/sh
 case "$1" in
   --version) echo 11.0.0-test ;;
-  ci) mkdir -p node_modules/.bin node_modules/native
+  ci) if [ -f fail-ci ]; then
+        [ "$(cat fail-ci)" = partial ] && mkdir -p node_modules/.bin
+        echo "npm error simulated preparation failure" >&2; exit 1
+      fi
+      echo "added 1 package"
+      mkdir -p node_modules/.bin node_modules/native
       printf '#!/bin/sh\necho shim-ran\n' > node_modules/.bin/tool; chmod +x node_modules/.bin/tool
-      cp NATIVE node_modules/native/tool ;;
+      cp NATIVE node_modules/native/tool
+      if [ -f rewrite-lock ]; then printf '{"lockfileVersion": 3, "rewritten": true}\n' > package-lock.json; fi ;;
   run) [ "$2" = check ] && exec /bin/sh ./check.sh ;;
   install) echo "installing $2" ; exit 1 ;;
 esac
@@ -106,7 +117,7 @@ def node_project(root: Path, dist: Path, *, install=True, version="99.0.0-test")
                  ("config", "user.email", "t@e.invalid"), ("add", "."), ("commit", "-qm", "i")]:
         subprocess.run(["git", "-C", str(project), *argv], check=True)
     if install:
-        subprocess.run([str(dist / "bin/npm"), "ci"], cwd=project, check=True)
+        subprocess.run([str(dist / "bin/npm"), "ci"], cwd=project, check=True, capture_output=True)
     return project
 
 
@@ -360,24 +371,32 @@ class Undeclared(unittest.TestCase):
 class VerifyDelivery(unittest.TestCase):
     """The toolchain path of `verify-delivery`, on a delivery built for the purpose."""
 
-    def delivery(self, h):
+    def delivery(self, h, *, adds=("new.txt", "hello"), toolchain=True,
+                 check="npm run check"):
         from dsd_state import atomic_json
-        import hashlib
         baseline = subprocess.check_output(["git", "-C", str(h.project), "rev-parse", "HEAD"],
                                            text=True).strip()
-        record = _toolchain.prepare(h.dist, h.tmp / "runtime", h.project)
         out = h.tmp / "delivery"
         (out / "evidence").mkdir(parents=True)
-        (out / "change.patch").write_text("diff --git a/new.txt b/new.txt\nnew file mode 100644\n"
-                                          "--- /dev/null\n+++ b/new.txt\n@@ -0,0 +1 @@\n+hello\n")
+        name, line = adds
+        (out / "change.patch").write_text(f"diff --git a/{name} b/{name}\nnew file mode 100644\n"
+                                          f"--- /dev/null\n+++ b/{name}\n@@ -0,0 +1 @@\n+{line}\n")
         atomic_json(out / "handoff.json", {"baseline": baseline, "outcome": "accepted"})
-        atomic_json(out / "evidence/run-config.json",
-                    {"check_command": "npm run check", "paths": {"project": str(h.project)},
-                     "toolchain": record})
+        config = {"check_command": check, "paths": {"project": str(h.project)}}
+        if toolchain:
+            config["toolchain"] = _toolchain.prepare(h.dist, h.tmp / "runtime", h.project)
+        atomic_json(out / "evidence/run-config.json", config)
+        self.seal(out)
+        return out
+
+    @staticmethod
+    def seal(out):
+        """Rewrite the synthetic delivery's manifest, as a consistent delivery would carry."""
+        from dsd_state import atomic_json
+        import hashlib
         atomic_json(out / "manifest.json", {
             str(p.relative_to(out)): hashlib.sha256(p.read_bytes()).hexdigest()
             for p in out.rglob("*") if p.is_file() and p.name != "manifest.json"})
-        return out
 
     def verify(self, h, delivery):
         cp = subprocess.run([sys.executable, str(CLI), "verify-delivery", "--delivery", delivery,
@@ -389,9 +408,90 @@ class VerifyDelivery(unittest.TestCase):
         h = Harness(self)
         got = self.verify(h, self.delivery(h))
         self.assertTrue(got["verified"], got)
-        self.assertEqual(got["dependencies"]["returncode"], 0)
-        self.assertTrue(got["dependencies"]["lockfile_matches_prepared"])
+        deps = got["dependencies"]
+        self.assertEqual(deps["returncode"], 0)
+        self.assertTrue(deps["matches_prepared"])
+        self.assertTrue(deps["before"]["lockfile_matches_prepared"])
+        self.assertTrue(deps["lockfile_matches_prepared"])
+        self.assertTrue(deps["manifest_matches_prepared"])
+        self.assertTrue(deps["node_modules_present"])
+        self.assertIn("added 1 package", deps["stdout"], "preparation output is retained")
+        self.assertIn("registry", deps["note"])
         self.assertIn("native-ran", got["project_check"]["stdout"])
+
+    def test_a_recorded_lockfile_identity_the_candidate_does_not_match_is_not_verified(self):
+        """Reproduced at a5d0ac2: `lockfile_matches_prepared: false` beside `verified: true`."""
+        h = Harness(self)
+        delivery = self.delivery(h)
+        path = delivery / "evidence/run-config.json"
+        config = json.loads(path.read_text())
+        config["toolchain"]["dependencies"]["lockfile"]["sha256"] = "0" * 64
+        path.write_text(json.dumps(config))
+        self.seal(delivery)
+        got = self.verify(h, delivery)
+        self.assertEqual(got["manifest_altered"], [])
+        self.assertFalse(got["verified"], got)
+        deps = got["dependencies"]
+        self.assertFalse(deps["matches_prepared"])
+        self.assertFalse(deps["before"]["lockfile_matches_prepared"])
+        self.assertIsNone(deps["returncode"])
+        self.assertIn("not run", deps["why"])
+        self.assertFalse((Path(got["checkout"]) / "node_modules").exists(),
+                         "a mismatch known before installation installs nothing")
+        self.assertIsNone(got["project_check"]["passed"])
+
+    def test_a_preparation_that_changes_the_declared_dependencies_is_not_verified(self):
+        h = Harness(self)
+        got = self.verify(h, self.delivery(h, adds=("rewrite-lock", "yes")))
+        self.assertFalse(got["verified"], got)
+        deps = got["dependencies"]
+        self.assertEqual(deps["returncode"], 0)
+        self.assertTrue(deps["before"]["lockfile_matches_prepared"])
+        self.assertFalse(deps["lockfile_matches_prepared"])
+        self.assertIn("no longer declares", deps["why"])
+        self.assertIsNone(got["project_check"]["passed"])
+
+    def test_a_failed_preparation_is_diagnosable_whether_nothing_or_part_was_installed(self):
+        for content, present in (("nothing", False), ("partial", True)):
+            with self.subTest(installed=content):
+                h = Harness(self)
+                got = self.verify(h, self.delivery(h, adds=("fail-ci", content)))
+                self.assertFalse(got["verified"], got)
+                deps = got["dependencies"]
+                self.assertEqual(deps["returncode"], 1)
+                self.assertFalse(deps["matches_prepared"])
+                self.assertIn("did not succeed", deps["why"])
+                self.assertIn("simulated preparation failure", deps["stderr"])
+                self.assertEqual(deps["node_modules_present"], present)
+                self.assertIsNone(got["project_check"]["passed"])
+                self.assertIn("did not succeed", got["project_check"]["note"])
+                written = json.loads((Path(got["checkout"]).parent / "verification.json").read_text())
+                self.assertEqual(written["verified"], False)
+
+    def test_a_preparation_command_that_cannot_start_is_reported_not_raised(self):
+        h = Harness(self)
+        delivery = self.delivery(h)
+        path = delivery / "evidence/run-config.json"
+        config = json.loads(path.read_text())
+        config["toolchain"]["dependencies"]["prepare_command"] = ["pb-no-such-npm", "ci"]
+        path.write_text(json.dumps(config))
+        self.seal(delivery)
+        got = self.verify(h, delivery)
+        self.assertFalse(got["verified"], got)
+        deps = got["dependencies"]
+        self.assertIsNone(deps["returncode"])
+        self.assertIn("could not be started", deps["why"])
+        self.assertFalse(deps["node_modules_present"])
+        self.assertIsNone(got["project_check"]["passed"])
+
+    def test_a_delivery_without_a_declared_toolchain_is_unchanged(self):
+        h = Harness(self)
+        check = f"{shlex.quote(sys.executable)} -c pass"
+        got = self.verify(h, self.delivery(h, toolchain=False, check=check))
+        self.assertTrue(got["verified"], got)
+        self.assertNotIn("dependencies", got)
+        self.assertTrue(got["project_check"]["passed"])
+        self.assertFalse((Path(got["checkout"]) / "node_modules").exists())
 
     def test_a_changed_source_is_not_used(self):
         h = Harness(self)
