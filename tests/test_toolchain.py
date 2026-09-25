@@ -124,7 +124,10 @@ def node_project(root: Path, dist: Path, *, install=True, version="99.0.0-test")
 class Harness:
     def __init__(self, case, *, toolchain=True, install=True, version="99.0.0-test", executor=None):
         self.case = case
-        self.tmp = Path(tempfile.mkdtemp(prefix="pb-toolchain-", dir="/private/tmp"))
+        # macOS resolves /tmp to /private/tmp, and the boundary matches real paths; elsewhere,
+        # the platform default.
+        self.tmp = Path(tempfile.mkdtemp(prefix="pb-toolchain-",
+                                         dir="/private/tmp" if sys.platform == "darwin" else None))
         case.addCleanup(shutil.rmtree, self.tmp, True)
         self.dist = distribution(self.tmp)
         self.project = node_project(self.tmp, self.dist, install=install, version=version)
