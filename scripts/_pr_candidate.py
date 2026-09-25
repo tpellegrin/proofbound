@@ -144,14 +144,22 @@ def check_verification(path: Path, delivery: dict[str, Any]) -> dict[str, Any]:
         raise CandidateError("verification cannot be bound to this delivery: " + "; ".join(problems))
     return {"path": str(path), "sha256": sha256(path), "verified_at": v.get("verified_at"),
             "candidate_tree": v["candidate_tree"], "verifier": v["verifier"],
-            "project_check": {k: (v.get("project_check") or {}).get(k)
-                              for k in ("command", "returncode", "passed")},
+            "project_check": {**{k: (v.get("project_check") or {}).get(k)
+                                 for k in ("command", "returncode", "passed")},
+                              "output_tail": _tail((v.get("project_check") or {}).get("stdout"))},
             "dependencies": {k: (v.get("dependencies") or {}).get(k)
                              for k in ("returncode", "matches_prepared")} if v.get("dependencies") else None,
-            "outcome_check": {k: (v.get("outcome_check") or {}).get(k)
-                              for k in ("returncode", "passed")} if v.get("outcome_check") else None,
+            "outcome_check": {**{k: (v.get("outcome_check") or {}).get(k)
+                                 for k in ("returncode", "passed")},
+                              "output_tail": _tail((v.get("outcome_check") or {}).get("stdout"))}
+                             if v.get("outcome_check") else None,
             "accounting": {k: (v.get("accounting") or {}).get(k)
                            for k in ("available", "derived_recomputes", "usage_recomputes")}}
+
+
+def _tail(text: "str | None", lines: int = 8) -> list[str]:
+    """The last lines a check printed, verbatim. Relayed, never interpreted (`P1`)."""
+    return [line for line in (text or "").splitlines() if line.strip()][-lines:]
 
 
 # ---------------------------------------------------------------- the candidate commit

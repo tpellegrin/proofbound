@@ -167,6 +167,7 @@ class Harness:
         check = (f"{sys.executable} -c \"import pathlib, sys; "
                  + ("pathlib.Path('generated.txt').write_text('x'); " if check_writes_tracked else "")
                  + "pathlib.Path('build').mkdir(exist_ok=True); pathlib.Path('build/out').write_text('ignored'); "
+                 "print('checked 1 file'); print('ran in', pathlib.Path.cwd()); "
                  "sys.exit(pathlib.Path('src/app.txt').read_text() != 'v2\\n')\"")
         (d / "evidence/run-config.json").write_text(json.dumps({
             "check_command": check, "goal": str(p / "specs/CH-PR-1/goal.md"),
@@ -304,6 +305,9 @@ class Preparation(unittest.TestCase):
         self.assertIn("**revised**: The owner narrowed the goal.", body)
         self.assertIn("## Architecture touched (coordinator claims, with references)", body)
         self.assertIn(f"https://github.com/acme/app/blob/{c['commit']}/src/app.txt", body)
+        # The check's own output is relayed verbatim; a line naming a local path is withheld.
+        self.assertIn("checked 1 file", body)
+        self.assertIn("[line withheld: it names a local path]", body)
         # No private local path in the published text.
         for private in (str(h.tmp), str(Path.home()), "/private/tmp/", "/var/folders/"):
             self.assertNotIn(private, body)

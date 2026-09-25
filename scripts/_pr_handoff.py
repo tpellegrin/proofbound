@@ -113,8 +113,21 @@ def _lines(items: list[str], empty: str) -> str:
     return "\n".join(f"- {x}" for x in items) if items else f"- {empty}"
 
 
-def render_body(summary: dict[str, Any], plan: dict[str, Any]) -> str:
+def _output(tail: "list[str] | None", private: list[str]) -> str:
+    """A check's last output lines, verbatim, as recorded; a line naming a local path is withheld."""
+    if not tail:
+        return ""
+    shown = ["[line withheld: it names a local path]" if _private_paths(line, private) else line
+             for line in tail]
+    fence = "~~~~"
+    return ("\n  <details><summary>last lines of its output, as recorded</summary>\n\n  " + fence
+            + "\n" + "\n".join("  " + line.replace(fence, "~ ~ ~ ~") for line in shown)
+            + "\n  " + fence + "\n  </details>")
+
+
+def render_body(summary: dict[str, Any], plan: dict[str, Any], private: "list[str] | None" = None) -> str:
     """The exact PR text. Material limitations first; facts and judgments labelled apart."""
+    private = private or []
     d, v, c, t = plan["delivery"], plan["verification"], plan["candidate"], plan["target"]
     blob = f"{t['html_url']}/blob/{c['commit']}"
     goal = summary["goal_satisfaction"]
@@ -122,12 +135,14 @@ def render_body(summary: dict[str, Any], plan: dict[str, Any]) -> str:
         f"- {a['claim']} — " + ", ".join(
             (f"[{r}]({r})" if r.startswith("https://") else f"[`{r}`]({blob}/{r})") for r in a["references"])
         for a in summary["architecture"]) or "- The coordinator stated no architecture claims."
-    checks = [f"- Project check `{v['project_check']['command']}`: exit {v['project_check']['returncode']}"]
+    checks = [f"- Project check `{v['project_check']['command']}`: exit {v['project_check']['returncode']}"
+              + _output(v["project_check"].get("output_tail"), private)]
     if v.get("dependencies"):
         checks.append(f"- Dependency preparation: exit {v['dependencies']['returncode']}, "
                       f"matches the prepared dependencies: {v['dependencies']['matches_prepared']}")
     if v.get("outcome_check"):
-        checks.append(f"- Outcome check (command kept private): exit {v['outcome_check']['returncode']}")
+        checks.append(f"- Outcome check (command kept private): exit {v['outcome_check']['returncode']}"
+                      + _output(v["outcome_check"].get("output_tail"), private))
     u = plan.get("usage") or {}
     files = "\n".join(f"- `{f['status']}` `{f['path']}`" + (f" (mode {f['old_mode']} → {f['new_mode']})"
                       if f["status"] in "MT" and f["old_mode"] != f["new_mode"] else "")
@@ -290,8 +305,9 @@ def prepare(*, delivery: Path, verification: Path, repo: str, base: str, summary
                   "table": (usage.get("billing") or {}).get("table")},
         "effects": list(EFFECTS), "not_done": list(NOT_DONE), "inspection": inspection,
     }
-    body = render_body(summary, plan)
-    leaked = _private_paths(body, [str(into), d["path"], str(Path(verification).resolve().parent)])
+    private = [str(into), d["path"], str(Path(verification).resolve().parent)]
+    body = render_body(summary, plan, private)
+    leaked = _private_paths(body, private)
     if leaked:
         problems.append(f"the PR body would publish private local paths {leaked}; remove them from "
                         "the review summary")
