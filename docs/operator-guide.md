@@ -68,6 +68,39 @@ Project checks already execute project code. A declared toolchain makes prepared
 it does not make dependency code trusted. The worker profile's network and credential rules are
 unchanged, and your home stays outside the boundary. A run without `--toolchain` is unchanged.
 
+**A pnpm project** (`packageManager: "pnpm@x.y.z"`, `pnpm-lock.yaml`) also declares its pnpm: the
+unpacked `pnpm` npm package whose version the pin names. Prepare the dependencies with that pnpm and
+the declared Node first on `PATH`, because install scripts run `node`. Copy the packages, so no
+installed file is a hard link into a store:
+
+```bash
+PATH="$NODE/bin:$PATH" HUSKY=0 node "$PNPM/bin/pnpm.cjs" install --frozen-lockfile \
+  --package-import-method copy --store-dir /absolute/store/outside/the/project \
+  --config.manage-package-manager-versions=false
+python3 "$PB/scripts/pb_workflow.py" start --project "$PROJECT" --change CH-001 \
+  --goal-file goal.md --check 'pnpm validate' --toolchain "$NODE" --pnpm "$PNPM"
+```
+
+- **Refused at `start`:**
+  - a pin that names another version;
+  - a missing `pnpm-lock.yaml`, or both lockfiles;
+  - a workspace with several importers, `patchedDependencies`, or `file:`/`link:` dependencies;
+  - registry credentials in the project's `.npmrc`;
+  - a store hard link, or a symlink that leaves the project.
+- **Bound, and checked before every launch and at acceptance:** the lockfile, the manifest's
+  installation fields, and `.npmrc`, `pnpm-workspace.yaml` and `.pnpmfile.cjs` (present or
+  absent).
+- **Inside the boundary**, worker pnpm is offline, and its version management is off.
+  - Checks may write three tool caches in `node_modules`, `.vite`, `.vite-temp` and `.tmp`,
+    which the dependency digest leaves out.
+  - Checks may signal processes in the same sandbox, for example to stop test workers.
+  - Everything else in `node_modules`, and the prepared tooling, stays write-protected.
+- **`verify-delivery`** installs with the declared pnpm and `--frozen-lockfile`, into a store
+  inside the verification directory. That is a registry fetch pinned by the lockfile, recorded
+  as such, not an offline install.
+- **Tooling that walks the whole project**, for example a formatter reading only `.gitignore`,
+  also sees the run's `DeepSeekAndDestroy/` directory unless the project ignores it.
+
 ## Authority and resources
 
 The owner supplies the goal, compatibility constraints and spending authority. The coordinator may
